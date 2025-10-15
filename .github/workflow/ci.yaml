@@ -1,0 +1,21 @@
+name: Deploy
+on: [push]
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v5
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+          cache: 'maven'
+          cache-dependency-path: 'code/backend/pom.xml'
+      - name: Build with Maven
+        run: java Hello.java
+        #   run: mvn -B package --file pom.xml
+        working-directory: code/backend
