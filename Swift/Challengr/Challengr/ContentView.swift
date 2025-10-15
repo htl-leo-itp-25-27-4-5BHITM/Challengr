@@ -59,7 +59,7 @@ struct ContentView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 80, height: 80)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.challengrYellow)
                         .padding(.bottom, 8)
 
                     Spacer()
