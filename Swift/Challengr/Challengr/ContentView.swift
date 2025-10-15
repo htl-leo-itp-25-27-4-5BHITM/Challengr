@@ -52,39 +52,39 @@ struct ContentView: View {
         }
     }
 
-    struct CardView: View {
+struct CardView: View {
 
-        let item: CardItem
+    let item: CardItem
 
-        var body: some View {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    item.image
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 80, height: 80)
-                        .foregroundColor(item.color)
-                        .padding(.bottom, 8)
+    var body: some View {
+        HStack(alignment: .center, spacing: 16) {
+            item.image
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 80, height: 80)
+                .foregroundColor(.white)
 
-                    Spacer()
-                }
-               
+            VStack(alignment: .leading, spacing: 4) {
                 Text(item.title)
-                    .font(.headline)
+                    .font(.title)
                     .fontWeight(.bold)
-                    .foregroundStyle(.challengrBlack)
+                    .foregroundColor(.white)
 
                 Text(item.subtitle)
                     .font(.subheadline)
-                    .foregroundColor(.gray)
-                    .padding(.bottom, 8)
+                    .foregroundColor(.white.opacity(0.9))
+                    .lineLimit(2)
             }
-            .padding()
-            .background(Color.white)
-            .cornerRadius(10)
-            .shadow(color: Color.gray.opacity(0.4), radius: 4, x: 0, y: 2)
+
+            Spacer()
         }
+        .padding()
+        .background(item.color)
+        .cornerRadius(40)
+        .shadow(color: item.color.opacity(0.4), radius: 6, x: 0, y: 4)
     }
+}
+
 
     struct CardItem: Identifiable {
         let id = UUID()
