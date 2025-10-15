@@ -2,7 +2,7 @@
 
 Challengr ist eine Plattform für spontane Real-Life-Challenges.
 Nutzer können sich in ihrer Nähe treffen, kleine Aufgaben gegeneinander absolvieren, Punkte sammeln und in Ranglisten aufsteigen.
-Die App verbindet Real-Life-Interaktion, Gamification und Standortfunktionen.etc.
+Die App verbindet Real-Life-Interaktion, Gamification und Standortfunktionen.
 
 [Figma-Design für Challengr](https://www.figma.com/design/OQ6QYvTq1UIQZRkCFZPHSL/Challengr?t=awcb6RPzgswE0VKY-1)
 
