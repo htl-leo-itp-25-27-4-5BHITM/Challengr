@@ -12,23 +12,27 @@ struct ContentView: View {
             CardItem(
                 image: Image(systemName: "sportscourt"),
                 title: "Fitness",
-                subtitle: "Verschiedene sportliche Challanges!"
+                subtitle: "Verschiedene sportliche Challanges!",
+                color: .challengrYellow
             ),
             CardItem(
                 image: Image(systemName: "flame"),
                 title: "Mutprobe",
-                subtitle: "Wer traut sich mehr?"
+                subtitle: "Wer traut sich mehr?",
+                color: .chalengrRed
 
             ),
             CardItem(
                 image: Image(systemName: "lightbulb"),
                 title: "Wissen",
-                subtitle: "Teste dein Wissen!"
+                subtitle: "Teste dein Wissen!",
+                color: .challengrGreen
             ),
             CardItem(
                 image: Image(systemName: "magnifyingglass"),
                 title: "Suchen",
-                subtitle: "Wer findet etwas zuerst?"
+                subtitle: "Wer findet etwas zuerst?",
+                color: .challengrBlack
             )
         ]
 
@@ -59,7 +63,7 @@ struct ContentView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 80, height: 80)
-                        .foregroundColor(.challengrYellow)
+                        .foregroundColor(item.color)
                         .padding(.bottom, 8)
 
                     Spacer()
@@ -68,6 +72,7 @@ struct ContentView: View {
                 Text(item.title)
                     .font(.headline)
                     .fontWeight(.bold)
+                    .foregroundStyle(.challengrBlack)
 
                 Text(item.subtitle)
                     .font(.subheadline)
@@ -86,6 +91,7 @@ struct ContentView: View {
         let image: Image
         let title: String
         let subtitle: String
+        let color: Color
     }
 
 
