@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+var model = Model()
+
 @main
 struct ChallengrApp: App {
     var body: some Scene {

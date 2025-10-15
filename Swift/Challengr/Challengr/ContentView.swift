@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    @State private var challenges: ChallengeData = [:]
+    
     let items = [
             CardItem(
                 image: Image(systemName: "sportscourt"),
@@ -49,6 +52,24 @@ struct ContentView: View {
             }
             .background(Color(UIColor.systemGray6))
             .edgesIgnoringSafeArea(.bottom)
+            
+            List {
+                    ForEach(challenges.keys.sorted(), id: \.self) { category in
+                        Section(header: Text(category)) {
+                            ForEach(challenges[category]!, id: \.self) { item in
+                                Text(item)
+                            }
+                        }
+                    }
+                }
+                .task {
+                    do {
+                        challenges = try await loadChallenges()
+                    } catch {
+                        print("Fehler beim Laden:", error)
+                    }
+                }
+
         }
     }
 
