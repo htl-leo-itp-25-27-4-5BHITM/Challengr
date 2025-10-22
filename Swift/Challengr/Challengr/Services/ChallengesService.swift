@@ -18,3 +18,17 @@ func loadChallenges() async throws -> ChallengeData {
     print("challenges loaded:", challenges)
     return challenges
 }
+
+struct CategoryChallenge: Codable {
+    let description: String
+    let tasks: [String]
+}
+
+func loadCategoryChallenges(category: String) async throws -> CategoryChallenge {
+    let encodedCategory = category.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!
+    let url = URL(string: "http://localhost:8080/challenge/\(encodedCategory)")!
+
+    let (data, _) = try await URLSession.shared.data(from: url)
+    let decoder = JSONDecoder()
+    return try decoder.decode(CategoryChallenge.self, from: data)
+}

@@ -39,37 +39,22 @@ struct ContentView: View {
             )
         ]
 
-        var body: some View {
-
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    ForEach(items) { item in
-                        CardView(item: item)
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 20)
-            }
-            .background(Color(UIColor.systemGray6))
-            .edgesIgnoringSafeArea(.bottom)
-            
-            List {
-                    ForEach(challenges.keys.sorted(), id: \.self) { category in
-                        Section(header: Text(category)) {
-                            ForEach(challenges[category]!, id: \.self) { item in
-                                Text(item)
+    var body: some View {
+            NavigationStack {
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(items) { item in
+                            NavigationLink(destination: ChallengeDetailView(category: item.title, color: item.color)) {
+                                CardView(item: item)
                             }
                         }
                     }
+                    .padding(.horizontal)
+                    .padding(.vertical, 20)
                 }
-                .task {
-                    do {
-                        challenges = try await loadChallenges()
-                    } catch {
-                        print("Fehler beim Laden:", error)
-                    }
-                }
-
+                .background(Color(UIColor.systemGray6))
+                .navigationTitle("Challengr")
+            }
         }
     }
 
