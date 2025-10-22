@@ -2,11 +2,19 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Challenge App</title>
+  <title>Challenger App</title>
+  <script src="js.js" defer></script>
+  <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <h1>Challenge App</h1>
-  <div id="content"></div>
-  <script src="js.js" defer></script>
+  <div id="app">
+    <h1>Challenger Kategorien</h1>
+    <div id="category-cards"></div>
+    <div id="full-overlay" style="display:none;">
+      <button id="go-back">Zurück</button>
+      <h2 id="overlay-title"></h2>
+      <ul id="overlay-list"></ul>
+    </div>
+  </div>
 </body>
 </html>
