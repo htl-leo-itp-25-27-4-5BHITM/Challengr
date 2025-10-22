@@ -1,20 +1,19 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Challenger App</title>
-  <script src="js.js" defer></script>
-  <link rel="stylesheet" href="./style.css">
+    <meta charset="UTF-8">
+    <title>Challengr Kategorien</title>
+    <script src="js.js" defer></script>
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="app">
-    <h1>Challenger Kategorien</h1>
-    <div id="category-cards"></div>
-    <div id="full-overlay" style="display:none;">
-      <button id="go-back">Zurück</button>
-      <h2 id="overlay-title"></h2>
-      <ul id="overlay-list"></ul>
-    </div>
-  </div>
+    <main>
+        <h1>Challengr Kategorien</h1>
+        <div class="card-list"></div>
+        <div class="detail-overlay" style="display:none;">
+            <button id="go-back" class="go-back-btn">&#8592;</button>
+            <div id="detail-content"></div>
+        </div>
+    </main>
 </body>
 </html>
