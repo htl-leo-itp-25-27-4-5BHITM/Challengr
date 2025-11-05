@@ -24,10 +24,22 @@ Die App verbindet Real-Life-Interaktion, Gamification und Standortfunktionen.
 
 ---
 
-## Sprint (Sprint 1 – Start: 05.11.2025)
+## Sprint (Sprint 1 – Start: 15.10.2025)
 
 Ziele:
 
 - Kategorien und Challenges anzeigen
 - Gemeinsames Backend für Web und Swift
 - Markdown-Projektantrag auf GitHub
+
+
+---
+
+
+
+## Sprint (Sprint 2 – Start: 5.11.2025)
+
+Ziele:
+
+- Kartensystem in Applikationen einbinden
+- Standortfindung
