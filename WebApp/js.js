@@ -22,6 +22,7 @@ const iconMap = {
 fetch("http://localhost:8080/challenge")
   .then(res => res.json())
   .then(data => {
+    console.log(data);
     const cardList = document.querySelector('.card-list');
     cardList.innerHTML = '';
     const sortList = ["Fitness", "Mutprobe", "Wissen", "Suchen"];
