@@ -4,35 +4,66 @@
 //
 //  Created by Julian Richter on 05.11.25.
 //
-
 import SwiftUI
 import MapKit
 import CoreLocation
+import Combine
+
+// Einfacher LocationManager
+class UserLocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
+    private let manager = CLLocationManager()
+    @Published var coordinate: CLLocationCoordinate2D?
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyBest
+        manager.requestWhenInUseAuthorization()
+        manager.startUpdatingLocation()
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let loc = locations.last else { return }
+        DispatchQueue.main.async {
+            self.coordinate = loc.coordinate
+        }
+    }
+}
 
 struct MapView: View {
-    @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 0, longitude: 0), // Startwert
-        span: MKCoordinateSpan(latitudeDelta: 5, longitudeDelta: 5) // Zoom-Level 5
+    @StateObject private var locationManager = UserLocationManager()
+    @State private var position: MapCameraPosition = .userLocation(
+        followsHeading: false,
+        fallback: .camera(
+            MapCamera(
+                centerCoordinate: CLLocationCoordinate2D(latitude: 48.2082, longitude: 16.3738), // Wien
+                distance: 500,
+                heading: 0,
+                pitch: 0
+            )
+        )
     )
-    
-    @State private var locationManager = CLLocationManager()
-    
+
     var body: some View {
-        Map(coordinateRegion: $region, showsUserLocation: true)
-            .onAppear {
-                locationManager.requestWhenInUseAuthorization()
-                locationManager.startUpdatingLocation()
-                
-                if let location = locationManager.location?.coordinate {
-                    region.center = location
-                    region.span = MKCoordinateSpan(latitudeDelta: 5, longitudeDelta: 5)
-                }
-            }
+        Map(position: $position)
             .mapControls {
-                MapUserLocationButton() // Zurück zum eigenen Standort
+                MapUserLocationButton()
                 MapCompass()
             }
             .ignoresSafeArea()
+            .onReceive(locationManager.$coordinate) { coordinate in
+                if let coordinate = coordinate {
+                    // Sobald der echte Standort da ist, springe dahin
+                    position = .camera(
+                        MapCamera(
+                            centerCoordinate: coordinate,
+                            distance: 500,
+                            heading: 0,
+                            pitch: 0
+                        )
+                    )
+                }
+            }
     }
 }
 
