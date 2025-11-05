@@ -27,7 +27,7 @@ fetch("http://localhost:8080/challenge")
     cardList.innerHTML = '';
     const sortList = ["Fitness", "Mutprobe", "Wissen", "Suchen"];
     sortList.forEach(cat => {
-      if(!(cat in data)) return;
+      if (!(cat in data)) return;
       const value = data[cat];
       const card = document.createElement('div');
       card.className = "card";
