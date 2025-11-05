@@ -5,6 +5,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
 }).addTo(map);
 
+let currentposition = []
 let marker = null;
 let circle = null;
 
@@ -14,6 +15,8 @@ function updatePosition(pos) {
     const acc = pos.coords.accuracy;
 
     console.log(`Position: ${lat.toFixed(6)}, ${lng.toFixed(6)} (±${Math.round(acc)}m)`);
+    currentposition = [lat, lng, acc];
+    console.log(currentposition);
 
     if (!marker) {
         marker = L.marker([lat, lng]).addTo(map).bindPopup("Du bist hier");
