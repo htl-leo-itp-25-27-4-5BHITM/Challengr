@@ -1,8 +1,15 @@
 // 🌍 Karte initialisieren
 const map = L.map('map').setView([48.2082, 16.3738], 13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19
-}).addTo(map);
+L.tileLayer(
+  'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}@2x.png',
+  {
+    subdomains: ['a','b','c','d'],
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    maxZoom: 19
+  }
+).addTo(map);
+
+
 
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(pos => {
