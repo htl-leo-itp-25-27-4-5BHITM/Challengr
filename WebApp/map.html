@@ -1,28 +1,34 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="de">
 <head>
-    <meta charset="utf-8" />
-    <title>OpenStreetMap mit aktueller Position</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="./map.js" defer></script>
-    <link rel="stylesheet" href="./style.css">
-
-
-    <style>
-        #map {
-            height: 100vh;
-            width: 100vw;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <title>Challengr</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="style.css" />
+  <script src="map.js" defer></script>
 </head>
-
 <body>
-    <div class="card-icon" onclick="cards()">🏠</div>
-    <div id="map"></div>
+  <div id="map"></div>
 
-    <div id="ChallengesStyle"></div>
+  <button id="challenge-btn">🏆</button>
+
+  <!-- Sheet (Challenges) -->
+  <div id="challenge-sheet" class="hidden">
+    <div class="sheet-header">
+      <div class="drag-indicator"></div>
+      <h2>Challengr</h2>
+      <button id="close-btn">✕</button>
+    </div>
+
+    <div id="categories" class="card-list"></div>
+
+    <div id="detail-view" class="hidden">
+      <button id="back-btn">← Zurück</button>
+      <h3 id="detail-title"></h3>
+      <p id="detail-desc"></p>
+      <ul id="detail-tasks"></ul>
+    </div>
+  </div>
 </body>
-
 </html>
