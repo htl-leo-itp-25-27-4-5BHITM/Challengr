@@ -41,7 +41,7 @@ struct ContentView: View {
                     }
                 }
 
-            // 📍 Location Button bleibt unten rechts
+            // Location Button bleibt unten rechts
             LocationButton(.currentLocation) {
                 position = .userLocation(
                     followsHeading: false,
@@ -61,11 +61,11 @@ struct ContentView: View {
             .cornerRadius(12)
             .padding()
 
-            // 🟡 Challenge Button – zentriert unten
+            // Challenge Button
             VStack {
                 Spacer()
                 Button {
-                    showChallengeView = true // 👉 Öffnet das Sheet
+                    showChallengeView = true // Öffnet Sheet
                 } label: {
                     Image(systemName: "trophy.fill")
                         .font(.system(size: 48, weight: .semibold))
@@ -79,11 +79,12 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        // 🧭 Sheet-Präsentation (swoosh von unten)
+        // swoosh von unten
         .sheet(isPresented: $showChallengeView) {
             ChallengeView()
                 .presentationDetents([.large]) // optional [.medium, .large]
                 .presentationDragIndicator(.visible)
+                .presentationBackground(.clear)
         }
     }
 }
