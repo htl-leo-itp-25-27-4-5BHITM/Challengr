@@ -26,7 +26,15 @@ struct MapView: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             Map(position: $position)
-                .mapControls { MapCompass() }
+                .mapStyle(
+                    .standard(
+                        elevation: .realistic,
+                        pointsOfInterest: .excludingAll, // entfernt POIs wie Restaurants etc
+                        showsTraffic: false
+                    )
+                )
+                .tint(.challengrGreen) // Farbe für Markierung
+                .accentColor(.challengrYellow)
                 .ignoresSafeArea()
                 .onReceive(locationHelper.$userLocation) { userLoc in
                     if let userLoc = userLoc {
@@ -40,6 +48,7 @@ struct MapView: View {
                         )
                     }
                 }
+
 
             // Location Button bleibt unten rechts
             LocationButton(.currentLocation) {
@@ -82,7 +91,7 @@ struct MapView: View {
         // swoosh von unten
         .sheet(isPresented: $showChallengeView) {
             ChallengeView()
-                .presentationDetents([.large]) // optional [.medium, .large]
+                .presentationDetents([.medium]) // optional [.medium, .large]
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.clear)
         }
