@@ -168,6 +168,27 @@ h1 {
   border-bottom: none;
 }
 
+.category-btn {
+  display: block;
+  width: 100%;
+  margin-bottom: 16px;
+  background: #FDD006;
+  color: #1E000E;
+  font-size: 1.18em;
+  font-weight: bold;
+  border: none;
+  border-radius: 17px;
+  padding: 14px 0;
+  box-shadow: 0 6px 18px rgba(40,40,60,0.11);
+  transition: background 0.22s;
+  cursor: pointer;
+}
+.category-btn:hover {
+  background: #BA1F33;
+  color: #fff;
+}
+
+
 @media (max-width: 700px) {
   .card-list {
     max-width: 98vw;
