@@ -54,7 +54,7 @@ struct ChallengeView: View {
                 .background(.clear)
                 .scrollContentBackground(.hidden)
                 //.background(Color(UIColor.systemGray6))
-                .navigationTitle("Challengr")
+                //.navigationTitle("Challengr")
             }
             .background(.clear)
         }
