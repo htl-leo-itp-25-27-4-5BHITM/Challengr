@@ -65,25 +65,25 @@ struct ContentView: View {
                 VStack {
                     Spacer()
                     NavigationLink(destination: ChallengeView()) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "flag.checkered")
-                                .font(.title3)
-                            Text("Challenges")
-                                .font(.headline)
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 28)
-                        .padding(.vertical, 14)
-                        .background(Color.blue)
-                        .cornerRadius(16)
-                        .shadow(radius: 5)
+                        Image(systemName: "trophy.fill") // Alternativen: "target", "flame.fill", "flag.checkered"
+                            .font(.system(size: 48, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 100, height: 100)
+                            .background(Color.challengrYellow)
+                            .clipShape(Circle())
+                            .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 4)
                     }
-                    .padding(.bottom, 30)
+                    .padding(.bottom, 40)
                 }
                 .frame(maxWidth: .infinity)
+                .navigationTitle("Karte")
+                .navigationBarTitleDisplayMode(.inline)
+
+
             }
             .navigationTitle("Karte")
             .navigationBarTitleDisplayMode(.inline)
+            
         }
     }
 }
