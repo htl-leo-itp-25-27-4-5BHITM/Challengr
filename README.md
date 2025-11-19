@@ -32,10 +32,7 @@ Ziele:
 - Gemeinsames Backend für Web und Swift
 - Markdown-Projektantrag auf GitHub
 
-
 ---
-
-
 
 ## Sprint (Sprint 2 – Start: 5.11.2025)
 
@@ -43,3 +40,18 @@ Ziele:
 
 - Kartensystem in Applikationen einbinden
 - Standortfindung
+
+---
+
+
+
+## Sprint (Sprint 3 – Start: 19.11.2025)
+
+Ziele:
+
+* Zweiten Spieler auf der Karte anzeigen
+* Standortdaten über Datenbank austauschen (PostgreSQL)
+* WebSockets für Echtzeit-Positionsupdates nutzen (WebApp & Swift)
+* Docker-Setup vorbereiten (c.aberger-Webimage - Compose)
+* Datenbankschema + import.sql im Backend (Quarkus) aufsetzen
+* Vorbereitung & Evaluierung WebSockets unter Swift
