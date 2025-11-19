@@ -93,3 +93,24 @@ function showDetail(title, data) {
     list.appendChild(li);
   });
 }
+
+window._pins = [];
+
+addPin(48.2100, 16.3600);
+
+
+function addPin(lat, lon, text = "Gegner") {
+  const marker = L.marker([lat, lon]).addTo(map);
+  marker.bindPopup(text);
+
+  window._pins.push(marker); // speichern für späteres Löschen
+  return marker;
+}
+
+
+function clearPins() {
+  window._pins.forEach(pin => {
+    map.removeLayer(pin);
+  });
+  window._pins = []; // Liste zurücksetzen
+}
