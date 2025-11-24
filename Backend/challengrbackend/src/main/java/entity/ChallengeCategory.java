@@ -16,7 +16,7 @@ public class ChallengeCategory {
     @Column(length = 1000)
     private String description;
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "challengeCategory", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Challenges> challenges;
 
     public ChallengeCategory() {}
