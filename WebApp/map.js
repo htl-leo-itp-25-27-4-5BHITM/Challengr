@@ -98,15 +98,37 @@ function renderCards() {
   }
 }
 
+let categoriesRaw = [];
+let allChallenges = [];
+challenges = {};
+
+Promise.all([
+  fetch("http://localhost:8080/api/challenges/categories").then(r => r.json()),
+  fetch("http://localhost:8080/api/challenges").then(r => r.json())
+])
+  .then(([categories, challengesData]) => {
+    
+    categoriesRaw = categories;   
+    allChallenges = challengesData;
+
+    challenges = {};
+
+    categories.forEach(cat => {
+      challenges[cat.name] = {
+        id: cat.id,
+        description: cat.description
+      };
+    });
+  });
+
+
 
 function showDetail(categoryName) {
   categoriesDiv.classList.add("hidden");
   detailView.classList.remove("hidden");
 
-  const data = challenges[categoryName];
-
   document.getElementById("detail-title").textContent = categoryName;
-  document.getElementById("detail-desc").textContent = data.description;
+  document.getElementById("detail-desc").textContent = `Challenges für ${categoryName}`;
 
   const list = document.getElementById("detail-tasks");
   list.innerHTML = "";
@@ -114,18 +136,26 @@ function showDetail(categoryName) {
   const cardClass = colorMap[categoryName] || "card-default";
   const icon = iconMap[categoryName] || "❓";
 
-  data.tasks.forEach(taskText => {
+  const category = categoriesRaw.find(c => c.name === categoryName);
+  if (!category) return;
+
+  const filtered = allChallenges.filter(ch => 
+    ch.challengeCategory && ch.challengeCategory.id === category.id
+  );
+
+  filtered.forEach(ch => {
     const card = document.createElement("div");
     card.className = `card ${cardClass} task-card`;
     card.innerHTML = `
       <div class="icon">${icon}</div>
       <div>
-        <h4>${taskText}</h4>
+        <h4>${ch.text}</h4>
       </div>
     `;
     list.appendChild(card);
   });
 }
+
 
 
 
