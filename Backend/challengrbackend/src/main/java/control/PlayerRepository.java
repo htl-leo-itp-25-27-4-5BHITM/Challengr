@@ -19,4 +19,17 @@ public class PlayerRepository {
         return query.getResultList();
     }
 
+    public void createPlayer(Player player) {
+        em.persist(player);
+    }
+
+    public void updatePlayerPos(Player player) {
+        Player existing = em.find(Player.class, player.getId());
+
+        existing.setLatitude(player.getLatitude());
+        existing.setLongitude(player.getLongitude());
+
+        em.merge(existing);
+    }
+
 }

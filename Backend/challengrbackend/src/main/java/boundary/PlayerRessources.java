@@ -21,4 +21,18 @@ public class PlayerRessources {
         return playerRepository.getAllPlayers();
     }
 
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public void createPlayer(Player player) {
+        playerRepository.createPlayer(player);
+    }
+
+    @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public void updatePlayerPos(Player player) {
+        playerRepository.updatePlayerPos(player);
+    }
+
 }
