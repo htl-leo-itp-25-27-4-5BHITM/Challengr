@@ -51,22 +51,40 @@ const iconMap = {
   "Suchen": "🔍"
 };
 
+
 let challenges = {};
 
-fetch("http://localhost:8080/challenge")
-  .then(res => res.json())
-  .then(data => {
-    console.log("Daten geladen:", data);
-    challenges = data;
-    renderCards(); 
+Promise.all([
+  fetch("http://localhost:8080/api/challenges/categories").then(r => r.json()),
+  fetch("http://localhost:8080/api/challenges").then(r => r.json())
+])
+  .then(([categories, allChallenges]) => {
+    console.log("Kategorien:", categories);
+    console.log("Challenges:", allChallenges);
+
+    challenges = {};
+
+    categories.forEach(cat => {
+      challenges[cat.name] = {
+        description: cat.description,
+        tasks: allChallenges
+          .filter(c => c.category_id === cat.id)
+          .map(c => c.text)
+      };
+    });
+
+    renderCards();
   })
   .catch(err => console.error("Fehler beim Laden:", err));
 
+
 function renderCards() {
-  categoriesDiv.innerHTML = ""; 
+  categoriesDiv.innerHTML = "";
+
   for (const [title, data] of Object.entries(challenges)) {
     const card = document.createElement("div");
     card.className = `card ${colorMap[title] || "card-default"}`;
+
     card.innerHTML = `
       <div class="icon">${iconMap[title] || "❓"}</div>
       <div>
@@ -74,36 +92,61 @@ function renderCards() {
         <p>${data.description}</p>
       </div>
     `;
+
     card.addEventListener("click", () => showDetail(title, data));
     categoriesDiv.appendChild(card);
   }
 }
 
-function showDetail(title, data) {
+
+function showDetail(categoryName) {
   categoriesDiv.classList.add("hidden");
   detailView.classList.remove("hidden");
-  document.getElementById("detail-title").textContent = title;
+
+  const data = challenges[categoryName];
+
+  document.getElementById("detail-title").textContent = categoryName;
   document.getElementById("detail-desc").textContent = data.description;
 
   const list = document.getElementById("detail-tasks");
   list.innerHTML = "";
-  data.tasks.forEach(task => {
-    const li = document.createElement("li");
-    li.textContent = task;
-    list.appendChild(li);
+
+  const cardClass = colorMap[categoryName] || "card-default";
+  const icon = iconMap[categoryName] || "❓";
+
+  data.tasks.forEach(taskText => {
+    const card = document.createElement("div");
+    card.className = `card ${cardClass} task-card`;
+    card.innerHTML = `
+      <div class="icon">${icon}</div>
+      <div>
+        <h4>${taskText}</h4>
+      </div>
+    `;
+    list.appendChild(card);
   });
 }
 
+
+
+const redIcon = L.icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 window._pins = [];
 
-addPin(48.2100, 16.3600);
 
 
-function addPin(lat, lon, text = "Gegner") {
-  const marker = L.marker([lat, lon]).addTo(map);
+function addPin(lat, lon, text = "Challengr") {
+  const marker = L.marker([lat, lon], { icon: redIcon }).addTo(map);
   marker.bindPopup(text);
 
-  window._pins.push(marker); // speichern für späteres Löschen
+  window._pins.push(marker);
   return marker;
 }
 
@@ -112,5 +155,31 @@ function clearPins() {
   window._pins.forEach(pin => {
     map.removeLayer(pin);
   });
-  window._pins = []; // Liste zurücksetzen
+  window._pins = []; 
 }
+
+
+loadOtherPlayers();
+
+async function loadOtherPlayers() {
+  try {
+    const res = await fetch("http://localhost:8080/api/players");
+    const players = await res.json();
+
+    clearPins(); // alte Pins weg
+
+    players.forEach(p => {
+      // Leaflet muss Double/Float haben → parseFloat
+      const lat = parseFloat(p.latitude);
+      const lon = parseFloat(p.longitude);
+
+      if (!isNaN(lat) && !isNaN(lon)) {
+        addPin(lat, lon, p.name || "Spieler");
+      }
+    });
+
+  } catch (err) {
+    console.error("Fehler beim Laden der Spieler-Pins:", err);
+  }
+}
+
