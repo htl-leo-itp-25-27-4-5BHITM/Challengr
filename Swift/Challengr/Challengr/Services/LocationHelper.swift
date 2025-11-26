@@ -7,7 +7,7 @@
 
 import Foundation
 import CoreLocation
-import Combine // Wichtig!
+import Combine
 
 class LocationHelper: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
