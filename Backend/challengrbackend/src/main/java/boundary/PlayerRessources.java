@@ -31,31 +31,14 @@ public class PlayerRessources {
     }
 
     @POST
-    @Transactional
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Player createPlayer(Player player) {
+    public void createPlayer(Player player) {
         playerRepository.createPlayer(player);
-        return player; // Rückgabe für Swift
     }
-
 
     @PUT
-    @Path("/{id}")
-    @Transactional
-    public void updatePlayerPos(@PathParam("id") Long id, Player player) {
-        Player existing = em.find(Player.class, id);
-        if (existing != null) {
-            existing.setLatitude(player.getLatitude());
-            existing.setLongitude(player.getLongitude());
-            em.merge(existing);
-        } else {
-            em.persist(player); // neu erstellen
-            System.out.println("Player not found, created new player with name: " + player.getName());
-        }
-
+    public void updatePlayerPos(Player player) {
+        playerRepository.updatePlayerPos(player);
     }
-
 
     @POST
     @Path("/nearby")
