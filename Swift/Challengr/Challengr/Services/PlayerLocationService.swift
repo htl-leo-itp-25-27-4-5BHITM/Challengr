@@ -8,7 +8,8 @@
 import Foundation
 import CoreLocation
 
-typealias PlayerData = [String: [String]]
+typealias PlayerData = [String: Player]
+
 
 let urlPlayersNearby = URL(string: "http://localhost:8080/players/nearby")!
 

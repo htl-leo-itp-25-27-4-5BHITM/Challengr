@@ -30,14 +30,12 @@ struct MapView: View {
     )
 
     // MARK: - Marker (Spielerpositionen)
-    @State private var annotations: [PlayerAnnotation] = [
-        PlayerAnnotation(
-            coordinate: CLLocationCoordinate2D(latitude: 48.26835, longitude: 14.25235),
-            title: "Challengr"
-        )
-    ]
+    @State private var annotations: [PlayerAnnotation] = []
 
     @State private var showChallengeView = false
+
+    // Deine Player-ID
+    let ownPlayerId: Int64 = 1
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -45,7 +43,8 @@ struct MapView: View {
             // MARK: - SwiftUI Map mit Marker-Unterstützung
             Map(position: $position) {
                 ForEach(annotations) { annotation in
-                    Marker(annotation.title, coordinate: annotation.coordinate).tint(.chalengrRed)
+                    Marker(annotation.title, coordinate: annotation.coordinate)
+                        .tint(.chalengrRed)
                 }
             }
             .mapStyle(
@@ -59,15 +58,46 @@ struct MapView: View {
             .accentColor(.challengrYellow)
             .ignoresSafeArea()
             .onReceive(locationHelper.$userLocation) { userLoc in
-                if let userLoc = userLoc {
-                    position = .camera(
-                        MapCamera(
-                            centerCoordinate: userLoc,
-                            distance: 1000,
-                            heading: 0,
-                            pitch: 0
-                        )
+                guard let userLoc = userLoc else { return }
+
+                // Kamera folgt dem Nutzer
+                position = .camera(
+                    MapCamera(
+                        centerCoordinate: userLoc,
+                        distance: 1000,
+                        heading: 0,
+                        pitch: 0
                     )
+                )
+
+                // Nearby Players laden
+                Task {
+                    do {
+                        let players = try await loadPlayersNearby(
+                            currentLocation: userLoc,
+                            ownPlayerId: ownPlayerId
+                        )
+
+                        var newAnnotations: [PlayerAnnotation] = []
+
+                        // Spieler aus JSON holen (PlayerData = [String: [String]])
+                        for (_, fields) in players {
+                            let annotation = PlayerAnnotation(
+                                coordinate: CLLocationCoordinate2D(
+                                    latitude: fields.latitude,
+                                    longitude: fields.longitude
+                                ),
+                                title: fields.name
+                            )
+                            newAnnotations.append(annotation)
+                        }
+
+                        annotations = newAnnotations
+
+
+                    } catch {
+                        print("Fehler beim Laden der Nearby Players: \(error)")
+                    }
                 }
             }
 

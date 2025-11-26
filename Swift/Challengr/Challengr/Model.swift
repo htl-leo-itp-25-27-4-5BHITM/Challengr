@@ -17,3 +17,9 @@ struct Challenge: Identifiable, Hashable, Codable {
     var name: String
         
 }
+
+struct Player: Codable {
+    let latitude: Double
+    let longitude: Double
+    let name: String
+}
