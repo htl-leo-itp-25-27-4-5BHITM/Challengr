@@ -1,5 +1,6 @@
 package entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.List;
 
@@ -16,6 +17,7 @@ public class ChallengeCategory {
     @Column(length = 1000)
     private String description;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "challengeCategory", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Challenges> challenges;
 
