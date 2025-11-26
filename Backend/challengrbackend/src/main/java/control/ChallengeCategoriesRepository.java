@@ -1,7 +1,7 @@
 package control;
 
+import entity.ChallengeCategory;
 import entity.Challenges;
-import entity.Player;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -9,13 +9,13 @@ import jakarta.persistence.EntityManager;
 import java.util.List;
 
 @ApplicationScoped
-public class ChallengeRepository {
+public class ChallengeCategoriesRepository {
 
     @Inject
     EntityManager em;
 
-    public List<Challenges> getAllChallenges() {
-        var query = em.createQuery("SELECT c FROM Challenges c", Challenges.class);
+    public List<ChallengeCategory> getAllCategories() {
+        var query = em.createQuery("SELECT cc FROM ChallengeCategory cc", ChallengeCategory.class);
 
         return query.getResultList();
     }

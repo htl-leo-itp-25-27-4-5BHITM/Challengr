@@ -10,27 +10,24 @@ import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 
 @Path("/api/players")
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
 public class PlayerRessources {
     @Inject
     PlayerRepository playerRepository;
 
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<Player> findAllCars() {
+    public List<Player> findAllPlayers() {
         return playerRepository.getAllPlayers();
     }
 
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public void createPlayer(Player player) {
         playerRepository.createPlayer(player);
     }
 
     @PUT
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public void updatePlayerPos(Player player) {
         playerRepository.updatePlayerPos(player);
     }

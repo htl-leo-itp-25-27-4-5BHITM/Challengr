@@ -1,26 +1,29 @@
 package boundary;
 
+import control.ChallengeCategoriesRepository;
 import control.ChallengeRepository;
-import control.PlayerRepository;
+import entity.ChallengeCategory;
 import entity.Challenges;
-import entity.Player;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
 
-@Path("/api/challenges")
+@Path("/api/challenges/categories")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-public class ChallengeRessources {
+public class ChallengeCategoriesRessources {
     @Inject
-    ChallengeRepository challengeRepository;
+    ChallengeCategoriesRepository categoriesRepository;
 
 
     @GET
-    public List<Challenges> findAllChallenges() {
-        return challengeRepository.getAllChallenges();
+    public List<ChallengeCategory> findAllCategories() {
+        return categoriesRepository.getAllCategories();
     }
 
 }
