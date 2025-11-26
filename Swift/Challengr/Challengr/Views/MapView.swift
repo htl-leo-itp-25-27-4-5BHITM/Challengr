@@ -80,20 +80,20 @@ struct MapView: View {
 
                         var newAnnotations: [PlayerAnnotation] = []
 
-                        // Spieler aus JSON holen (PlayerData = [String: [String]])
-                        for (_, fields) in players {
-                            let annotation = PlayerAnnotation(
-                                coordinate: CLLocationCoordinate2D(
-                                    latitude: fields.latitude,
-                                    longitude: fields.longitude
-                                ),
-                                title: fields.name
+                        for player in players {
+                            newAnnotations.append(
+                                PlayerAnnotation(
+                                    coordinate: CLLocationCoordinate2D(
+                                        latitude: player.latitude,
+                                        longitude: player.longitude
+                                    ),
+                                    title: player.name
+                                )
                             )
-                            newAnnotations.append(annotation)
                         }
 
                         annotations = newAnnotations
-
+                        
 
                     } catch {
                         print("Fehler beim Laden der Nearby Players: \(error)")

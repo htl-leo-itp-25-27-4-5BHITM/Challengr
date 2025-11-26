@@ -18,8 +18,10 @@ struct Challenge: Identifiable, Hashable, Codable {
         
 }
 
-struct Player: Codable {
+struct Player: Codable, Identifiable {
+    let id: Int
+    let name: String
     let latitude: Double
     let longitude: Double
-    let name: String
 }
+

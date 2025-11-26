@@ -8,10 +8,11 @@
 import Foundation
 import CoreLocation
 
-typealias PlayerData = [String: Player]
+typealias PlayerData = [Player]
 
 
-let urlPlayersNearby = URL(string: "http://localhost:8080/players/nearby")!
+
+let urlPlayersNearby = URL(string: "http://localhost:8080/api/players/nearby")!
 
 struct NearbyRequest: Codable {
     let latitude: Double
@@ -29,16 +30,29 @@ func loadPlayersNearby(currentLocation: CLLocationCoordinate2D, ownPlayerId: Int
     let body = NearbyRequest(
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
-        radius: 50,           // 50m Radius
-        playerId: ownPlayerId // eigener Spieler bleibt immer sichtbar
+        radius: 200,
+        playerId: ownPlayerId
     )
 
     request.httpBody = try JSONEncoder().encode(body)
 
+    // Daten vom Server abrufen
     let (data, _) = try await URLSession.shared.data(for: request)
 
-    print("Nearby players loaded:", String(decoding: data, as: UTF8.self))
+    // Raw Response loggen
+    print("Nearby players raw response:")
+    print(String(decoding: data, as: UTF8.self))
 
-    // Zurzeit PlayerData = [String: [String]] - deswegen decodieren
-    return try JSONDecoder().decode(PlayerData.self, from: data)
+    // Decoding in PlayerData (Array)
+    let players = try JSONDecoder().decode(PlayerData.self, from: data)
+
+    // Optional: schön formatiert loggen
+    let pretty = try JSONEncoder().encode(players)
+    print("Decoded players JSON:")
+    print(String(data: pretty, encoding: .utf8)!)
+
+    // Rückgabe an den Aufrufer
+    return players
 }
+
+
