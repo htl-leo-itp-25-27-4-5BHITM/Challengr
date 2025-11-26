@@ -10,10 +10,10 @@ public class Player {
     private Long id;
 
     private String name;
-    private Long longitude;
-    private Long latitude;
+    private double longitude;
+    private double latitude;
 
-    public Player(String name, Long longitude, Long latitude) {
+    public Player(String name, double longitude, double latitude) {
         this.name = name;
         this.longitude = longitude;
         this.latitude = latitude;
@@ -37,19 +37,19 @@ public class Player {
         this.name = name;
     }
 
-    public Long getLongitude() {
+    public double getLongitude() {
         return longitude;
     }
 
-    public void setLongitude(Long longitude) {
+    public void setLongitude(double longitude) {
         this.longitude = longitude;
     }
 
-    public Long getLatitude() {
+    public double getLatitude() {
         return latitude;
     }
 
-    public void setLatitude(Long latitude) {
+    public void setLatitude(double latitude) {
         this.latitude = latitude;
     }
 }
