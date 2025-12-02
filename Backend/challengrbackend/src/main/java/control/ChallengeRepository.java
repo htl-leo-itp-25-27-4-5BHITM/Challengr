@@ -20,4 +20,10 @@ public class ChallengeRepository {
         return query.getResultList();
     }
 
+    public List<Challenges> findChallengesByKat(String kategorie) {
+        var query = em.createQuery("select c from Challenges c where c.challengeCategory.name = :categorie", Challenges.class);
+        query.setParameter("categorie", kategorie);
+        return query.getResultList();
+    }
+
 }

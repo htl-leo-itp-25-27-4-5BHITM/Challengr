@@ -23,4 +23,10 @@ public class ChallengeRessources {
         return challengeRepository.getAllChallenges();
     }
 
+    @GET
+    @Path("/{kategorie}")
+    public List<Challenges> findChallengesByKat(@PathParam("kategorie") String kategorie) {
+        return challengeRepository.findChallengesByKat(kategorie);
+    }
+
 }
