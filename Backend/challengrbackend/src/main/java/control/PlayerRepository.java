@@ -4,6 +4,7 @@ import entity.Player;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 
 import java.util.List;
 
@@ -19,9 +20,13 @@ public class PlayerRepository {
         return query.getResultList();
     }
 
-    public void createPlayer(Player player) {
+    @Transactional
+    public Player createPlayer(Player player) {
         em.persist(player);
+        em.flush(); // damit die ID sofort erzeugt wird
+        return player;
     }
+
 
     public void updatePlayerPos(Player player) {
         Player existing = em.find(Player.class, player.getId());

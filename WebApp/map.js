@@ -9,13 +9,20 @@ L.tileLayer(
 ).addTo(map);
 
 if (navigator.geolocation) {
-  navigator.geolocation.getCurrentPosition(pos => {
+  navigator.geolocation.getCurrentPosition(async pos => {
     const lat = pos.coords.latitude;
     const lon = pos.coords.longitude;
+
     map.setView([lat, lon], 15);
     L.marker([lat, lon]).addTo(map).bindPopup("Dein Standort");
+
+    const myId = 1; 
+
+    
+      await updateMyPosition(myId, lat, lon);
   });
 }
+
 
 const challengeBtn = document.getElementById("challenge-btn");
 const sheet = document.getElementById("challenge-sheet");
@@ -196,20 +203,70 @@ async function loadOtherPlayers() {
     const res = await fetch("http://localhost:8080/api/players");
     const players = await res.json();
 
-    clearPins(); // alte Pins weg
+    clearPins();
 
-    players.forEach(p => {
-      // Leaflet muss Double/Float haben → parseFloat
-      const lat = parseFloat(p.latitude);
-      const lon = parseFloat(p.longitude);
 
-      if (!isNaN(lat) && !isNaN(lon)) {
-        addPin(lat, lon, p.name || "Spieler");
-      }
-    });
+
+  
+      players.forEach(p => {
+        if (p.id === 1) return;
+        const lat = parseFloat(p.latitude);
+        const lon = parseFloat(p.longitude);
+
+        if (!isNaN(lat) && !isNaN(lon)) {
+          addPin(lat, lon, p.name || "Spieler");
+        }
+      });
+    
 
   } catch (err) {
     console.error("Fehler beim Laden der Spieler-Pins:", err);
   }
 }
 
+
+async function updateMyPosition(playerId, lat, lon) {
+  try {
+    const res = await fetch(`http://localhost:8080/api/players/${playerId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        id: playerId,
+        name: window.myName || null, // optional
+        latitude: lat,
+        longitude: lon
+      })
+    });
+
+    if (!res.ok) {
+      console.error("Fehler beim Updaten deiner Position:", await res.text());
+    }
+
+  } catch (err) {
+    console.error("Update Position Error:", err);
+  }
+}
+
+
+async function createNewPlayer(lat, lon) {
+  try {
+    const res = await fetch("http://localhost:8080/api/players", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: "Player_" + Math.floor(Math.random()*9999),
+        latitude: lat,
+        longitude: lon
+      })
+    });
+
+    return await res.json();
+
+  } catch (err) {
+    console.error("Fehler beim Erstellen eines Players:", err);
+  }
+}

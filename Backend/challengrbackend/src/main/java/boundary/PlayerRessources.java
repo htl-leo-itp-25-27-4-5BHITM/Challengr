@@ -31,8 +31,16 @@ public class PlayerRessources {
     }
 
     @POST
-    public void createPlayer(Player player) {
-        playerRepository.createPlayer(player);
+    @Transactional
+    public PlayerDTO createPlayer(Player player) {
+        Player saved = playerRepository.createPlayer(player);
+
+        return new PlayerDTO(
+                saved.getId(),
+                saved.getName(),
+                saved.getLatitude(),
+                saved.getLongitude()
+        );
     }
 
     @PUT
