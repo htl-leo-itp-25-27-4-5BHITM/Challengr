@@ -66,6 +66,22 @@ public class PlayerRessources {
     }
 
 
+    @GET
+    @Path("/{id}")
+    public PlayerDTO getPlayer(@PathParam("id") Long id) {
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new WebApplicationException("Player not found", 404);
+        }
+        return new PlayerDTO(
+                player.getId(),
+                player.getName(),
+                player.getLatitude(),
+                player.getLongitude()
+        );
+    }
+
+
     @POST
     @Path("/nearby")
     @Transactional
