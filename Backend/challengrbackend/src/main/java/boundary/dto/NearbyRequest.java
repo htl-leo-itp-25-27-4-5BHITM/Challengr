@@ -1,8 +1,9 @@
 package boundary.dto;
 
-public class NearbyRequest {
-    public double latitude;
-    public double longitude;
-    public double radius;
-    public Long playerId; // eigener Spieler
-}
+public record NearbyRequest(
+        Long playerId,
+        double latitude,
+        double longitude,
+        double radius // in Metern
+) {}
+

@@ -1,58 +1,53 @@
-//
-//  ChallengesService.swift
-//  Challengr
-//
-//  Created by Julian Richter on 26.11.25.
-//
-
 import Foundation
 import CoreLocation
 
-typealias PlayerData = [Player]
+final class PlayerLocationService {
+
+    // Im Simulator: Backend läuft auf dem Mac
+    private let baseURL = "http://localhost:8080/api/players"
 
 
+    /// Aktualisiert einen existierenden Spieler in der DB
+    func updatePlayer(
+        id: Int64,
+        name: String,
+        latitude: Double,
+        longitude: Double
+    ) async throws {
+        guard let url = URL(string: "\(baseURL)/\(id)") else { return }
 
-let urlPlayersNearby = URL(string: "http://localhost:8080/api/players/nearby")!
+        let dto = PlayerDTO(id: id, name: name, latitude: latitude, longitude: longitude)
 
-struct NearbyRequest: Codable {
-    let latitude: Double
-    let longitude: Double
-    let radius: Double
-    let playerId: Int64
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(dto)
+
+        _ = try await URLSession.shared.data(for: request)
+    }
+
+    /// Holt Spieler in der Nähe (inkl. eigenem Spieler)
+    func loadNearbyPlayers(
+        currentPlayerId: Int64,
+        latitude: Double,
+        longitude: Double,
+        radius: Double
+    ) async throws -> [PlayerDTO] {
+        guard let url = URL(string: "\(baseURL)/nearby") else { return [] }
+
+        let body = NearbyRequest(
+            playerId: currentPlayerId,
+            latitude: latitude,
+            longitude: longitude,
+            radius: radius
+        )
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(body)
+
+        let (data, _) = try await URLSession.shared.data(for: request)
+        return try JSONDecoder().decode([PlayerDTO].self, from: data)
+    }
 }
-
-func loadPlayersNearby(currentLocation: CLLocationCoordinate2D, ownPlayerId: Int64) async throws -> PlayerData {
-
-    var request = URLRequest(url: urlPlayersNearby)
-    request.httpMethod = "POST"
-    request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-
-    let body = NearbyRequest(
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-        radius: 200,
-        playerId: ownPlayerId
-    )
-
-    request.httpBody = try JSONEncoder().encode(body)
-
-    // Daten vom Server abrufen
-    let (data, _) = try await URLSession.shared.data(for: request)
-
-    // Raw Response loggen
-    print("Nearby players raw response:")
-    print(String(decoding: data, as: UTF8.self))
-
-    // Decoding in PlayerData (Array)
-    let players = try JSONDecoder().decode(PlayerData.self, from: data)
-
-    // Optional: schön formatiert loggen
-    let pretty = try JSONEncoder().encode(players)
-    print("Decoded players JSON:")
-    print(String(data: pretty, encoding: .utf8)!)
-
-    // Rückgabe an den Aufrufer
-    return players
-}
-
-

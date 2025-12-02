@@ -1,10 +1,3 @@
-//
-//  MapView.swift
-//  Challengr
-//
-//  Created by Julian Richter on 05.11.25.
-//
-
 import SwiftUI
 import MapKit
 import CoreLocation
@@ -19,6 +12,7 @@ struct PlayerAnnotation: Identifiable {
 
 struct MapView: View {
     @StateObject private var locationHelper = LocationHelper()
+    private let playerService = PlayerLocationService()
 
     @State private var position: MapCameraPosition = .camera(
         MapCamera(
@@ -29,18 +23,14 @@ struct MapView: View {
         )
     )
 
-    // MARK: - Marker (Spielerpositionen)
     @State private var annotations: [PlayerAnnotation] = []
-
     @State private var showChallengeView = false
 
-    // Deine Player-ID
     let ownPlayerId: Int64 = 1
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
 
-            // MARK: - SwiftUI Map mit Marker-Unterstützung
             Map(position: $position) {
                 ForEach(annotations) { annotation in
                     Marker(annotation.title, coordinate: annotation.coordinate)
@@ -60,7 +50,6 @@ struct MapView: View {
             .onReceive(locationHelper.$userLocation) { userLoc in
                 guard let userLoc = userLoc else { return }
 
-                // Kamera folgt dem Nutzer
                 position = .camera(
                     MapCamera(
                         centerCoordinate: userLoc,
@@ -70,38 +59,32 @@ struct MapView: View {
                     )
                 )
 
-                // Nearby Players laden
                 Task {
                     do {
-                        let players = try await loadPlayersNearby(
-                            currentLocation: userLoc,
-                            ownPlayerId: ownPlayerId
+                        let players = try await playerService.loadNearbyPlayers(
+                            currentPlayerId: ownPlayerId,
+                            latitude: userLoc.latitude,
+                            longitude: userLoc.longitude,
+                            radius: 200.0
                         )
 
-                        var newAnnotations: [PlayerAnnotation] = []
-
-                        for player in players {
-                            newAnnotations.append(
-                                PlayerAnnotation(
-                                    coordinate: CLLocationCoordinate2D(
-                                        latitude: player.latitude,
-                                        longitude: player.longitude
-                                    ),
-                                    title: player.name
-                                )
+                        let newAnnotations = players.map { player in
+                            PlayerAnnotation(
+                                coordinate: CLLocationCoordinate2D(
+                                    latitude: player.latitude,
+                                    longitude: player.longitude
+                                ),
+                                title: player.name
                             )
                         }
 
                         annotations = newAnnotations
-                        
-
                     } catch {
                         print("Fehler beim Laden der Nearby Players: \(error)")
                     }
                 }
             }
 
-            // MARK: - Location Button
             LocationButton(.currentLocation) {
                 position = .userLocation(
                     followsHeading: false,
@@ -121,7 +104,6 @@ struct MapView: View {
             .cornerRadius(12)
             .padding()
 
-            // MARK: - Challenge Button
             VStack {
                 Spacer()
                 Button {
@@ -138,9 +120,7 @@ struct MapView: View {
                 .padding(.bottom, 40)
             }
             .frame(maxWidth: .infinity)
-
         }
-        // MARK: - Challenge Sheet
         .sheet(isPresented: $showChallengeView) {
             ChallengeView()
                 .presentationDetents([ .medium ])

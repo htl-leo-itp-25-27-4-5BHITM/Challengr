@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-var model = Model()
 
 @main
 struct ChallengrApp: App {

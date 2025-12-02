@@ -32,4 +32,8 @@ public class PlayerRepository {
         em.merge(existing);
     }
 
+    public Player findById(Long id) {
+        return em.find(Player.class, id);
+    }
+
 }
