@@ -107,7 +107,7 @@ public class PlayerRessources {
                     }
                     // eigener Spieler immer anzeigen
                     if (p.getId().equals(req.playerId())) {
-                        return true;
+                        return false;
                     }
                     // Distanz in Metern berechnen
                     double dist = distance(
