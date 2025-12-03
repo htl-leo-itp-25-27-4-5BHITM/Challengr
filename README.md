@@ -43,8 +43,6 @@ Ziele:
 
 ---
 
-
-
 ## Sprint (Sprint 3 – Start: 19.11.2025)
 
 Ziele:
@@ -55,3 +53,19 @@ Ziele:
 * Docker-Setup vorbereiten (c.aberger-Webimage - Compose)
 * Datenbankschema + import.sql im Backend (Quarkus) aufsetzen
 * Vorbereitung & Evaluierung WebSockets unter Swift
+
+---
+
+
+
+## Sprint (Sprint 4 – Start: 3.12.2025)
+
+Ziele:
+
+* Implementieren einer Funktion, mit der ein Spieler eine Challenge an einem fremden Spieler vorschlagen kann
+* Erstellen und verwalten eines Radius-Checks, um zu bestimmen, welche Spieler als mögliche Zielspieler verfügbar sind
+* Implementieren einer Meldung/Benachrichtigung, die dem herausfordernden Spieler die Device-ID des herausgefordertem Spieler anzeigt
+* Entwicklung eines Dialog-Fensters, das die Herausforderung klar visualisiert
+* Integrieren einer Vibrationsfunktion, wenn ein Spieler in den eigenen Radius gelangt
+
+---
