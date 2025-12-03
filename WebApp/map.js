@@ -8,10 +8,13 @@ L.tileLayer(
   }
 ).addTo(map);
 
+let lat = 0;
+let lon = 0;
+
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(async pos => {
-    const lat = pos.coords.latitude;
-    const lon = pos.coords.longitude;
+    lat = pos.coords.latitude;
+    lon = pos.coords.longitude;
 
     map.setView([lat, lon], 15);
     L.marker([lat, lon]).addTo(map).bindPopup("Dein Standort");
@@ -181,10 +184,19 @@ window._pins = [];
 
 function addPin(lat, lon, text = "Challengr") {
   const marker = L.marker([lat, lon], { icon: redIcon }).addTo(map);
-  marker.bindPopup(text);
+  
+
+   marker.on("click", () => {
+    console.log("Pin geklickt:", text, lat, lon);
+    challengOtherPlayer();
+  });
 
   window._pins.push(marker);
   return marker;
+}
+
+function challengOtherPlayer() {
+
 }
 
 
@@ -195,18 +207,38 @@ function clearPins() {
   window._pins = []; 
 }
 
-
-loadOtherPlayers();
-
-async function loadOtherPlayers() {
+loadNearbyPlayersWeb(1, lat, lon, 2000);  
+async function loadNearbyPlayersWeb(currentPlayerId, lat, lon, radiusMeters) {
   try {
-    const res = await fetch("http://localhost:8080/api/players");
+    const url = `http://localhost:8080/api/players/nearby?playerId=${currentPlayerId}&latitude=${lat}&longitude=${lon}&radius=${radiusMeters}`;
+
+    const res = await fetch(url);
     const players = await res.json();
 
     clearPins();
 
+    players.forEach(p => {
+      if (p.id === currentPlayerId) return;
+
+      const lat = parseFloat(p.latitude);
+      const lon = parseFloat(p.longitude);
+
+      if (!isNaN(lat) && !isNaN(lon)) {
+        addPin(lat, lon, p.name || "Spieler");
+      }
+    });
+  } catch (err) {
+    console.error("Fehler beim Laden der Nearby Players:", err);
+  }
+}
 
 
+async function loadOtherPlayers() {
+  try {
+    const res = await fetch("http://localhost:8080/api/players/nearby");
+    const players = await res.json();
+
+    clearPins();
   
       players.forEach(p => {
         if (p.id === 1) return;
