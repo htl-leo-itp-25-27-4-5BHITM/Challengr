@@ -27,27 +27,29 @@ final class PlayerLocationService {
     }
 
     /// Holt Spieler in der Nähe (inkl. eigenem Spieler)
+    /// Holt Spieler in der Nähe (inkl. eigenem Spieler, falls Backend ihn zurückgibt)
     func loadNearbyPlayers(
         currentPlayerId: Int64,
         latitude: Double,
         longitude: Double,
         radius: Double
     ) async throws -> [PlayerDTO] {
-        guard let url = URL(string: "\(baseURL)/nearby") else { return [] }
 
-        let body = NearbyRequest(
-            playerId: currentPlayerId,
-            latitude: latitude,
-            longitude: longitude,
-            radius: radius
-        )
+        var components = URLComponents(string: "\(baseURL)/nearby")!
+        components.queryItems = [
+            URLQueryItem(name: "playerId", value: String(currentPlayerId)),
+            URLQueryItem(name: "latitude", value: String(latitude)),
+            URLQueryItem(name: "longitude", value: String(longitude)),
+            URLQueryItem(name: "radius", value: String(radius))
+        ]
+
+        guard let url = components.url else { return [] }
 
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(body)
+        request.httpMethod = "GET"
 
         let (data, _) = try await URLSession.shared.data(for: request)
         return try JSONDecoder().decode([PlayerDTO].self, from: data)
     }
+
 }

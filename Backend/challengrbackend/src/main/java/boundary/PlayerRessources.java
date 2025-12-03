@@ -90,33 +90,33 @@ public class PlayerRessources {
     }
 
 
-    @POST
+    @GET
     @Path("/nearby")
-    @Transactional
-    public List<PlayerDTO> getNearbyPlayers(NearbyRequest req) {
-
+    public List<PlayerDTO> getNearbyPlayers(
+            @QueryParam("playerId") long playerId,
+            @QueryParam("latitude") double latitude,
+            @QueryParam("longitude") double longitude,
+            @QueryParam("radius") double radius
+    ) {
         List<Player> allPlayers = em.createQuery(
                 "SELECT p FROM Player p", Player.class
         ).getResultList();
 
         return allPlayers.stream()
                 .filter(p -> {
-                    // Spieler ohne Koords rausfiltern
                     if (p.getLatitude() == 0 || p.getLongitude() == 0) {
                         return false;
                     }
-                    // eigener Spieler immer anzeigen
-                    if (p.getId().equals(req.playerId())) {
+                    if (p.getId().equals(playerId)) {
                         return false;
                     }
-                    // Distanz in Metern berechnen
                     double dist = distance(
-                            req.latitude(),
-                            req.longitude(),
+                            latitude,
+                            longitude,
                             p.getLatitude(),
                             p.getLongitude()
                     );
-                    return dist <= req.radius();
+                    return dist <= radius;
                 })
                 .map(p -> new PlayerDTO(
                         p.getId(),
@@ -126,6 +126,7 @@ public class PlayerRessources {
                 ))
                 .toList();
     }
+
 
     // Haversine in Metern
     private double distance(double lat1, double lon1, double lat2, double lon2) {
