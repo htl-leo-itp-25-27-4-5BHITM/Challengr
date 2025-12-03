@@ -14,6 +14,9 @@ struct MapView: View {
     @StateObject private var locationHelper = LocationHelper()
     private let playerService = PlayerLocationService()
 
+    // Startposition
+    private let startCoordinate = CLLocationCoordinate2D(latitude: 48.2082, longitude: 16.3738)
+
     @State private var position: MapCameraPosition = .camera(
         MapCamera(
             centerCoordinate: CLLocationCoordinate2D(latitude: 48.2082, longitude: 16.3738),
@@ -23,6 +26,10 @@ struct MapView: View {
         )
     )
 
+    // Harte Zoom-Grenzen in Metern
+    let minDistance: CLLocationDistance = 200
+    let maxDistance: CLLocationDistance = 5000
+
     @State private var annotations: [PlayerAnnotation] = []
     @State private var showChallengeView = false
 
@@ -31,7 +38,13 @@ struct MapView: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
 
-            Map(position: $position) {
+            Map(
+                position: $position,
+                bounds: MapCameraBounds(
+                    minimumDistance: minDistance,
+                    maximumDistance: maxDistance
+                )
+            ) {
                 ForEach(annotations) { annotation in
                     Marker(annotation.title, coordinate: annotation.coordinate)
                         .tint(.chalengrRed)
@@ -50,10 +63,11 @@ struct MapView: View {
             .onReceive(locationHelper.$userLocation) { userLoc in
                 guard let userLoc = userLoc else { return }
 
+                // Kamera folgt dem Nutzer – Zoom wird durch bounds hart begrenzt
                 position = .camera(
                     MapCamera(
                         centerCoordinate: userLoc,
-                        distance: 1000,
+                        distance: 1000,   // MapCameraBounds clamped das auf 200–5000
                         heading: 0,
                         pitch: 0
                     )
@@ -90,8 +104,8 @@ struct MapView: View {
                     followsHeading: false,
                     fallback: .camera(
                         MapCamera(
-                            centerCoordinate: CLLocationCoordinate2D(latitude: 48.2082, longitude: 16.3738),
-                            distance: 1000,
+                            centerCoordinate: startCoordinate,
+                            distance: 1000,   // wird ebenfalls durch bounds begrenzt
                             heading: 0,
                             pitch: 0
                         )
