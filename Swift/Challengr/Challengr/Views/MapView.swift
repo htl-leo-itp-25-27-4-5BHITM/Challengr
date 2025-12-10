@@ -35,7 +35,8 @@ struct MapView: View {
     
     @State private var selectedPlayer: PlayerAnnotation? = nil
     @State private var showPlayerPopup = false
-
+    
+    @State private var showPlayerChallengeDialog = false
 
     let ownPlayerId: Int64 = 1
 
@@ -159,20 +160,45 @@ struct MapView: View {
         .overlay {
             if let player = selectedPlayer, showPlayerPopup {
                 VStack {
-                    Text(player.title)
+                    Text("\(player.title)\nherausfordern")
                         .font(.headline)
                         .padding()
                         .background(.ultraThinMaterial)
                         .cornerRadius(12)
                         .shadow(radius: 5)
                         .onTapGesture {
+                            // Öffnet das größere Challenge Dialog
+                            showPlayerChallengeDialog = true
+                        }
+
+                    /*
+                        .onTapGesture {
                             showPlayerPopup = false
                         }
+                     */
                 }
                 .padding(.top, 80)
                 .transition(.scale)
             }
         }
+        
+        .overlay {
+            if let player = selectedPlayer, showPlayerChallengeDialog {
+                ZStack {
+                    Color.black.opacity(0.4) // Abdunkelung
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            showPlayerChallengeDialog = false
+                        }
+
+                    ChallengeDialogView(playerName: player.title) {
+                        showPlayerChallengeDialog = false
+                    }
+                }
+                .transition(.scale)
+            }
+        }
+
 
 
         .sheet(isPresented: $showChallengeView) {
