@@ -10,6 +10,7 @@ L.tileLayer(
 
 let lat = 0;
 let lon = 0;
+let myId = 1;
 
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(async pos => {
@@ -21,8 +22,19 @@ if (navigator.geolocation) {
 
     const myId = 1; 
 
+    const pulseCircle = L.circle([lat, lon], {
+      radius: 200,
+      color: 'blue',
+      fillColor: 'blue',
+      fillOpacity: 0.05
+    }).addTo(map);
+
+    // CSS-Klasse hinzufügen → aktiviert Animation
+    pulseCircle.getElement().classList.add("pulse-circle");
+
+
     
-      await updateMyPosition(myId, lat, lon);
+    await updateMyPosition(myId, lat, lon);
   });
 }
 
@@ -207,13 +219,36 @@ function clearPins() {
   window._pins = []; 
 }
 
-loadNearbyPlayersWeb(1, lat, lon, 2000);  
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(async pos => {
+    lat = pos.coords.latitude;
+    lon = pos.coords.longitude;
+
+    console.log("Got GPS:", lat, lon);
+    map.setView([lat, lon], 15);
+    L.marker([lat, lon]).addTo(map).bindPopup("Dein Standort");
+
+    // update server position first
+    await updateMyPosition(myId, lat, lon);
+
+    // jetzt Nearby laden und später regelmäßig updaten
+    await loadNearbyPlayersWeb(myId, lat, lon, 200);
+    setInterval(() => loadNearbyPlayersWeb(myId, lat, lon, 200), 5000); // alle 5s prüfen
+  }, err => {
+    console.error("Geolocation error:", err);
+  }, { enableHighAccuracy: true });
+} else {
+  console.warn("Browser unterstützt Geolocation nicht");
+}
+
+
 async function loadNearbyPlayersWeb(currentPlayerId, lat, lon, radiusMeters) {
   try {
     const url = `http://localhost:8080/api/players/nearby?playerId=${currentPlayerId}&latitude=${lat}&longitude=${lon}&radius=${radiusMeters}`;
 
     const res = await fetch(url);
     const players = await res.json();
+    console.log("Nearby Players:", players);
 
     clearPins();
 
@@ -232,11 +267,12 @@ async function loadNearbyPlayersWeb(currentPlayerId, lat, lon, radiusMeters) {
   }
 }
 
-
 async function loadOtherPlayers() {
   try {
     const res = await fetch("http://localhost:8080/api/players/nearby");
     const players = await res.json();
+
+        console.log("Nearby Players:", players);
 
     clearPins();
   

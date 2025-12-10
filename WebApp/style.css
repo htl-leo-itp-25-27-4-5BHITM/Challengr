@@ -184,3 +184,23 @@ h2 {
     margin: 0;
     font-size: 1.1rem;
 }
+
+
+.pulse-circle {
+  animation: pulseBorder 2s infinite ease-in-out;
+}
+
+@keyframes pulseBorder {
+  0% {
+    stroke-width: 1;
+    stroke-opacity: 0.8;
+  }
+  50% {
+    stroke-width: 5;        /* breiter → wirkt wie Puls */
+    stroke-opacity: 0.2;    /* schwächer in der Mitte */
+  }
+  100% {
+    stroke-width: 1;
+    stroke-opacity: 0.8;
+  }
+}
