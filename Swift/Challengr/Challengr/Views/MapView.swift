@@ -3,6 +3,8 @@ import MapKit
 import CoreLocation
 import CoreLocationUI
 import Combine
+import UIKit
+
 
 struct PlayerAnnotation: Identifiable {
     let id = UUID()
@@ -39,6 +41,11 @@ struct MapView: View {
     @State private var showPlayerChallengeDialog = false
 
     let ownPlayerId: Int64 = 1
+    
+    private func vibrate() {
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.success)
+        }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -114,6 +121,10 @@ struct MapView: View {
                         }
 
                         annotations = newAnnotations
+                        if players.count > 0 {
+                                    print("Mehrere Spieler gefunden: \(players.count)")
+                                    vibrate()    // oder vibrateLight()
+                                }
                     } catch {
                         print("Fehler beim Laden der Nearby Players: \(error)")
                     }
