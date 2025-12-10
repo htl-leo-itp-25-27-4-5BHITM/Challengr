@@ -1,3 +1,6 @@
+const playerCountSound = new Audio("/sound1.mp3");
+let lastPlayerCount = 0;
+
 const map = L.map('map').setView([48.2082, 16.3738], 13);
 L.tileLayer(
   'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}@2x.png',
@@ -207,9 +210,11 @@ function addPin(lat, lon, text = "Challengr") {
   return marker;
 }
 
-function challengOtherPlayer() {
-
+function challengOtherPlayer(){
+  alert("Challenge einen anderen Spieler!");
 }
+
+
 
 
 function clearPins() {
@@ -241,31 +246,42 @@ if (navigator.geolocation) {
   console.warn("Browser unterstützt Geolocation nicht");
 }
 
-
 async function loadNearbyPlayersWeb(currentPlayerId, lat, lon, radiusMeters) {
   try {
     const url = `http://localhost:8080/api/players/nearby?playerId=${currentPlayerId}&latitude=${lat}&longitude=${lon}&radius=${radiusMeters}`;
 
     const res = await fetch(url);
     const players = await res.json();
+
     console.log("Nearby Players:", players);
 
-    clearPins();
+    // Spieler ohne dich selbst zählen
+    const currentCount = players.filter(p => p.id !== currentPlayerId).length;
 
+    // Wenn höher als vorher → Sound abspielen
+    if (currentCount > lastPlayerCount) {
+      playerCountSound.currentTime = 0; // immer von vorne
+      playerCountSound.play();
+      console.log("Neuer Spieler in der Nähe! Sound abgespielt.");
+    }
+
+    // Counter aktualisieren
+    lastPlayerCount = currentCount;
+
+    // Pins aktualisieren
+    clearPins();
     players.forEach(p => {
       if (p.id === currentPlayerId) return;
-
       const lat = parseFloat(p.latitude);
       const lon = parseFloat(p.longitude);
-
-      if (!isNaN(lat) && !isNaN(lon)) {
-        addPin(lat, lon, p.name || "Spieler");
-      }
+      if (!isNaN(lat) && !isNaN(lon)) addPin(lat, lon, p.name || "Spieler");
     });
+
   } catch (err) {
     console.error("Fehler beim Laden der Nearby Players:", err);
   }
 }
+
 
 async function loadOtherPlayers() {
   try {
