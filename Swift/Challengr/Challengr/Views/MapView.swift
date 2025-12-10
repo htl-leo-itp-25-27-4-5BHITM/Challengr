@@ -32,6 +32,10 @@ struct MapView: View {
 
     @State private var annotations: [PlayerAnnotation] = []
     @State private var showChallengeView = false
+    
+    @State private var selectedPlayer: PlayerAnnotation? = nil
+    @State private var showPlayerPopup = false
+
 
     let ownPlayerId: Int64 = 1
 
@@ -46,9 +50,25 @@ struct MapView: View {
                 )
             ) {
                 ForEach(annotations) { annotation in
-                    Marker(annotation.title, coordinate: annotation.coordinate)
-                        .tint(.chalengrRed)
+                    Annotation(annotation.title, coordinate: annotation.coordinate) {
+                        Button {
+                            if selectedPlayer?.id == annotation.id {
+                                // erneuter Klick auf den gleichen Spieler → Popup schließen
+                                showPlayerPopup.toggle()
+                            } else {
+                                // neuer Spieler → Popup anzeigen
+                                selectedPlayer = annotation
+                                showPlayerPopup = true
+                            }
+                        } label: {
+                            Image(systemName: "mappin.circle.fill")
+                                .font(.title)
+                                .foregroundColor(.chalengrRed)
+                        }
+                    }
+
                 }
+
             }
             .mapStyle(
                 .standard(
@@ -135,6 +155,26 @@ struct MapView: View {
             }
             .frame(maxWidth: .infinity)
         }
+        
+        .overlay {
+            if let player = selectedPlayer, showPlayerPopup {
+                VStack {
+                    Text(player.title)
+                        .font(.headline)
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(12)
+                        .shadow(radius: 5)
+                        .onTapGesture {
+                            showPlayerPopup = false
+                        }
+                }
+                .padding(.top, 80)
+                .transition(.scale)
+            }
+        }
+
+
         .sheet(isPresented: $showChallengeView) {
             ChallengeView()
                 .presentationDetents([ .medium ])
