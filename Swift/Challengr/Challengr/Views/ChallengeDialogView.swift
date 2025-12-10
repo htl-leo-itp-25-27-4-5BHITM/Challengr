@@ -34,34 +34,37 @@ struct ChallengeDialogView: View {
                 ProgressView("Wird geladen...")
                     .padding()
             } else {
-                VStack(spacing: 16) {
-                    ForEach(categories, id: \.self) { category in
-                        Button {
-                            Task {
-                                await loadRandomChallenge(for: category)
-                            }
-                        } label: {
-                            HStack(spacing: 16) {
-                                Image(systemName: icon(for: category))
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 50, height: 50)
-                                    .foregroundColor(.white)
+                // Kategorien nur anzeigen, wenn noch keine Challenge ausgewählt wurde
+                if selectedChallenge == nil {
+                    VStack(spacing: 16) {
+                        ForEach(categories, id: \.self) { category in
+                            Button {
+                                Task {
+                                    await loadRandomChallenge(for: category)
+                                }
+                            } label: {
+                                HStack(spacing: 16) {
+                                    Image(systemName: icon(for: category))
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 50, height: 50)
+                                        .foregroundColor(.white)
 
-                                Text(category)
-                                    .font(.headline)
-                                    .foregroundColor(.white)
+                                    Text(category)
+                                        .font(.headline)
+                                        .foregroundColor(.white)
 
-                                Spacer()
+                                    Spacer()
+                                }
+                                .padding()
+                                .background(color(for: category))
+                                .cornerRadius(30)
+                                .shadow(color: color(for: category).opacity(0.4), radius: 6, x: 0, y: 4)
                             }
-                            .padding()
-                            .background(color(for: category))
-                            .cornerRadius(30)
-                            .shadow(color: color(for: category).opacity(0.4), radius: 6, x: 0, y: 4)
                         }
                     }
+                    .padding(.vertical)
                 }
-                .padding(.vertical)
             }
 
             Button("Schließen") {
