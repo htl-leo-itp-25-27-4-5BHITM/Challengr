@@ -12,19 +12,20 @@ struct ChallengeDialogView: View {
         VStack(spacing: 20) {
             Text("Challenge \(playerName)")
                 .font(.title2)
-                .bold()
+                .fontWeight(.bold)
 
             if let challenge = selectedChallenge {
-                // 📌 Anzeige der gelosten Challenge
                 VStack(spacing: 12) {
                     Text("Zufällige Challenge:")
                         .font(.headline)
+                        .foregroundColor(.secondary)
 
                     Text(challenge)
                         .multilineTextAlignment(.center)
                         .padding()
                         .background(Color.yellow.opacity(0.2))
-                        .cornerRadius(12)
+                        .cornerRadius(16)
+                        .shadow(radius: 5)
                 }
                 .padding(.top)
             }
@@ -33,7 +34,6 @@ struct ChallengeDialogView: View {
                 ProgressView("Wird geladen...")
                     .padding()
             } else {
-                // 📌 Kategorien anzeigen
                 VStack(spacing: 16) {
                     ForEach(categories, id: \.self) { category in
                         Button {
@@ -41,13 +41,23 @@ struct ChallengeDialogView: View {
                                 await loadRandomChallenge(for: category)
                             }
                         } label: {
-                            Text(category)
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.blue)
-                                .cornerRadius(12)
+                            HStack(spacing: 16) {
+                                Image(systemName: icon(for: category))
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 50, height: 50)
+                                    .foregroundColor(.white)
+
+                                Text(category)
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+
+                                Spacer()
+                            }
+                            .padding()
+                            .background(color(for: category))
+                            .cornerRadius(30)
+                            .shadow(color: color(for: category).opacity(0.4), radius: 6, x: 0, y: 4)
                         }
                     }
                 }
@@ -58,14 +68,16 @@ struct ChallengeDialogView: View {
                 onClose()
             }
             .padding()
+            .frame(maxWidth: .infinity)
             .background(Color.red)
             .foregroundColor(.white)
-            .cornerRadius(10)
+            .cornerRadius(16)
+            .shadow(radius: 5)
         }
         .padding()
-        .frame(maxWidth: 320)
+        .frame(maxWidth: 350)
         .background(.ultraThinMaterial)
-        .cornerRadius(20)
+        .cornerRadius(30)
         .shadow(radius: 20)
     }
 
@@ -88,5 +100,26 @@ struct ChallengeDialogView: View {
         }
 
         isLoading = false
+    }
+
+    // MARK: - Design Helper
+    private func color(for category: String) -> Color {
+        switch category {
+        case "Fitness": return .challengrYellow
+        case "Mutprobe": return .chalengrRed
+        case "Wissen": return .challengrGreen
+        case "Suchen": return .challengrBlack
+        default: return .blue
+        }
+    }
+
+    private func icon(for category: String) -> String {
+        switch category {
+        case "Fitness": return "sportscourt"
+        case "Mutprobe": return "flame"
+        case "Wissen": return "lightbulb"
+        case "Suchen": return "magnifyingglass"
+        default: return "questionmark"
+        }
     }
 }
