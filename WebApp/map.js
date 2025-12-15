@@ -1,5 +1,13 @@
 const playerCountSound = new Audio("./sound1.mp3");
 let lastPlayerCount = 0;
+let playerRadius = 50000; 
+let dialogState = {
+  isOpen: false,
+  isLoading: false,
+  selectedChallenge: null,
+  playerName: ""
+};
+
 
 const map = L.map('map').setView([48.2082, 16.3738], 13);
 L.tileLayer(
@@ -26,7 +34,7 @@ if (navigator.geolocation) {
     const myId = 1; 
 
     const pulseCircle = L.circle([lat, lon], {
-      radius: 200,
+      radius: playerRadius,
       color: 'blue',
       fillColor: 'blue',
       fillOpacity: 0.05
@@ -61,6 +69,17 @@ backBtn.addEventListener("click", () => {
   detailView.classList.add("hidden");
   categoriesDiv.classList.remove("hidden");
 });
+
+function getCategoryColor(category) {
+  switch (category) {
+    case "Fitness": return "#FFD93D";
+    case "Mutprobe": return "#F05454";
+    case "Wissen": return "#6BCB77";
+    case "Suchen": return "#222222";
+    default: return "#3498db";
+  }
+}
+
 
 const colorMap = {
   "Fitness": "card-yellow",
@@ -210,10 +229,97 @@ function addPin(lat, lon, text = "Challengr") {
   return marker;
 }
 
-function challengOtherPlayer(){
-  alert("Challenge einen anderen Spieler!");
+function challengOtherPlayer(playerName = "Spieler") {
+  console.log("challengOtherPlayer called", playerName);
+
+  dialogState = {
+    isOpen: true,
+    isLoading: false,
+    selectedChallenge: null,
+    playerName
+  };
+
+  renderChallengeDialog();
 }
 
+
+function renderChallengeDialog() {
+  const backdrop = document.getElementById("challenge-dialog-backdrop");
+  const title = document.getElementById("dialog-title");
+  const subtitle = document.getElementById("dialog-subtitle");
+  const categoriesDiv = document.getElementById("dialog-categories");
+  const resultDiv = document.getElementById("dialog-result");
+
+  if (!backdrop || !title || !subtitle || !categoriesDiv || !resultDiv) {
+    console.error("Dialog HTML fehlt");
+    return;
+  }
+
+  backdrop.classList.remove("hidden");
+  title.textContent = `Challenge ${dialogState.playerName}`;
+
+  // Reset
+  categoriesDiv.innerHTML = "";
+  resultDiv.classList.add("hidden");
+  subtitle.classList.remove("hidden");
+
+  // Loading
+  if (dialogState.isLoading) {
+  subtitle.textContent = "Wird geladen...";
+  categoriesDiv.innerHTML = "";
+  return;
+}
+
+  // Challenge ausgewählt
+  if (dialogState.selectedChallenge) {
+    subtitle.textContent = "Zufällige Challenge:";
+    resultDiv.textContent = dialogState.selectedChallenge;
+    resultDiv.classList.remove("hidden");
+    return;
+  }
+
+  // Kategorien anzeigen
+  subtitle.textContent = "Wähle eine Kategorie";
+
+  ["Fitness", "Mutprobe", "Wissen", "Suchen"].forEach(cat => {
+    const btn = document.createElement("button");
+    btn.innerHTML = `
+  <span class="dialog-icon">${iconMap[cat]}</span>
+  <span class="dialog-text">${cat}</span>
+  <span class="dialog-spacer"></span>
+`;
+
+    btn.style.background = getCategoryColor(cat);
+    btn.onclick = () => loadRandomChallenge(cat);
+    categoriesDiv.appendChild(btn);
+  });
+}
+
+
+async function loadRandomChallenge(categoryName) {
+  dialogState.isLoading = true;
+  renderChallengeDialog();
+
+  const category = categoriesRaw.find(c => c.name === categoryName);
+  if (!category) {
+    dialogState.selectedChallenge = "Kategorie nicht gefunden";
+    dialogState.isLoading = false;
+    renderChallengeDialog();
+    return;
+  }
+
+const filtered = allChallenges.filter(c =>
+  c.challengeCategory && c.challengeCategory.id === category.id
+);
+
+  dialogState.selectedChallenge =
+    filtered.length
+      ? filtered[Math.floor(Math.random() * filtered.length)].text
+      : "Keine Challenge gefunden.";
+
+  dialogState.isLoading = false;
+  renderChallengeDialog();
+}
 
 
 
@@ -237,8 +343,8 @@ if (navigator.geolocation) {
     await updateMyPosition(myId, lat, lon);
 
     // jetzt Nearby laden und später regelmäßig updaten
-    await loadNearbyPlayersWeb(myId, lat, lon, 200);
-    setInterval(() => loadNearbyPlayersWeb(myId, lat, lon, 200), 5000); // alle 5s prüfen
+    await loadNearbyPlayersWeb(myId, lat, lon, playerRadius);
+    setInterval(() => loadNearbyPlayersWeb(myId, lat, lon, playerRadius), 5000); // alle 5s prüfen
   }, err => {
     console.error("Geolocation error:", err);
   }, { enableHighAccuracy: true });
@@ -354,3 +460,9 @@ async function createNewPlayer(lat, lon) {
     console.error("Fehler beim Erstellen eines Players:", err);
   }
 }
+
+
+document.getElementById("dialog-close").addEventListener("click", () => {
+  document.getElementById("challenge-dialog-backdrop").classList.add("hidden");
+  dialogState.isOpen = false;
+});
