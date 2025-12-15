@@ -1,4 +1,4 @@
-const playerCountSound = new Audio("/sound1.mp3");
+const playerCountSound = new Audio("./sound1.mp3");
 let lastPlayerCount = 0;
 
 const map = L.map('map').setView([48.2082, 16.3738], 13);
