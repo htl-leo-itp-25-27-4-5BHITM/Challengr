@@ -1,3 +1,17 @@
+import { GameClient } from "./GameSocketClient.js";
+
+let myId = 3;             // hast du schon
+const gameClient = new GameClient(myId);
+gameClient.connect();
+
+gameClient.on("battle-requested", (msg) => {
+  console.log("Battle für mich:", msg);
+
+  // Einfacher Dialog
+  alert(`Neue Challenge von Spieler ${msg.fromPlayerId}!\nChallenge-ID: ${msg.challengeId}`);
+});
+
+
 // Sound that is played when a new nearby player appears
 const playerCountSound = new Audio("./sound1.mp3");
 
@@ -12,8 +26,10 @@ let dialogState = {
   isOpen: false,
   isLoading: false,
   selectedChallenge: null,
-  playerName: ""
+  playerName: "",
+  targetPlayerId: null
 };
+
 
 // Create Leaflet map and set initial view (Vienna as fallback)
 const map = L.map('map').setView([48.2082, 16.3738], 13);
@@ -30,8 +46,6 @@ L.tileLayer(
 let lat = 0;
 let lon = 0;
 
-// Hard‑coded player id for the web client (must match an entry in DB)
-let myId = 3;
 
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(async pos => {
@@ -41,7 +55,6 @@ if (navigator.geolocation) {
     map.setView([lat, lon], 15);
     L.marker([lat, lon]).addTo(map).bindPopup("Dein Standort");
 
-    const myId = 3; 
 
     const pulseCircle = L.circle([lat, lon], {
       radius: playerRadius,
@@ -120,13 +133,14 @@ Promise.all([
     challenges = {};
 
     categories.forEach(cat => {
-      challenges[cat.name] = {
-        description: cat.description,
-        tasks: allChallenges
-          .filter(c => c.category_id === cat.id)
-          .map(c => c.text)
-      };
-    });
+  challenges[cat.name] = {
+    description: cat.description,
+    tasks: allChallenges
+      .filter(c => c.challengeCategory && c.challengeCategory.id === cat.id)
+      .map(c => ({ id: c.id, text: c.text }))
+  };
+});
+
 
     renderCards();
   })
@@ -155,26 +169,16 @@ function renderCards() {
 
 let categoriesRaw = [];
 let allChallenges = [];
-challenges = {};
 
 Promise.all([
   fetch("http://localhost:8080/api/challenges/categories").then(r => r.json()),
   fetch("http://localhost:8080/api/challenges").then(r => r.json())
 ])
   .then(([categories, challengesData]) => {
-    
-    categoriesRaw = categories;   
+    categoriesRaw = categories;
     allChallenges = challengesData;
-
-    challenges = {};
-
-    categories.forEach(cat => {
-      challenges[cat.name] = {
-        id: cat.id,
-        description: cat.description
-      };
-    });
   });
+
 
 
 
@@ -227,31 +231,32 @@ window._pins = [];
 
 
 
-function addPin(lat, lon, text = "Challengr") {
+function addPin(lat, lon, player) {
   const marker = L.marker([lat, lon], { icon: redIcon }).addTo(map);
-  
 
-   marker.on("click", () => {
-    console.log("Pin geklickt:", text, lat, lon);
-    challengOtherPlayer();
+  marker.on("click", () => {
+    console.log("Pin geklickt:", player.name, lat, lon);
+    challengOtherPlayer(player.id, player.name);
   });
 
   window._pins.push(marker);
   return marker;
 }
 
-function challengOtherPlayer(playerName = "Spieler") {
-  console.log("challengOtherPlayer called", playerName);
 
-  dialogState = {
-    isOpen: true,
-    isLoading: false,
-    selectedChallenge: null,
-    playerName
-  };
+
+function challengOtherPlayer(playerId, playerName = "Spieler") {
+  console.log("challengOtherPlayer called", playerId, playerName);
+
+  dialogState.isOpen = true;
+  dialogState.isLoading = false;
+  dialogState.selectedChallenge = null;
+  dialogState.playerName = playerName;
+  dialogState.targetPlayerId = playerId;
 
   renderChallengeDialog();
 }
+
 
 
 function renderChallengeDialog() {
@@ -311,26 +316,30 @@ async function loadRandomChallenge(categoryName) {
   dialogState.isLoading = true;
   renderChallengeDialog();
 
-  const category = categoriesRaw.find(c => c.name === categoryName);
-  if (!category) {
-    dialogState.selectedChallenge = "Kategorie nicht gefunden";
+  // passende Challenges aus deinem Objekt holen
+  const category = challenges[categoryName];
+  if (!category || !category.tasks || category.tasks.length === 0) {
     dialogState.isLoading = false;
+    dialogState.selectedChallenge = "Keine Challenges in dieser Kategorie.";
     renderChallengeDialog();
     return;
   }
 
-const filtered = allChallenges.filter(c =>
-  c.challengeCategory && c.challengeCategory.id === category.id
-);
-
-  dialogState.selectedChallenge =
-    filtered.length
-      ? filtered[Math.floor(Math.random() * filtered.length)].text
-      : "Keine Challenge gefunden.";
+  // Zufällige Challenge wählen
+  const random = category.tasks[Math.floor(Math.random() * category.tasks.length)];
+  const challengeText = random.text || random;
+  const challengeId = random.id;          // hier echte ID verwenden
 
   dialogState.isLoading = false;
+  dialogState.selectedChallenge = challengeText;
   renderChallengeDialog();
+
+  // WebSocket-Call: Battle anlegen
+  if (dialogState.targetPlayerId && challengeId) {
+    gameClient.createBattle(dialogState.targetPlayerId, challengeId);
+  }
 }
+
 
 
 
@@ -391,7 +400,7 @@ async function loadNearbyPlayersWeb(currentPlayerId, lat, lon, radiusMeters) {
       if (p.id === currentPlayerId) return;
       const lat = parseFloat(p.latitude);
       const lon = parseFloat(p.longitude);
-      if (!isNaN(lat) && !isNaN(lon)) addPin(lat, lon, p.name || "Spieler");
+      if (!isNaN(lat) && !isNaN(lon)) addPin(lat, lon, p);
     });
 
   } catch (err) {

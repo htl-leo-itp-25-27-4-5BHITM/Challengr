@@ -6,7 +6,12 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <link rel="stylesheet" href="style.css" />
-  <script src="map.js" defer></script>
+  <script type="module">
+  import { GameClient } from "./GameSocketClient.js";
+  import "./map.js";
+  window.GameClient = GameClient; // falls map.js darauf zugreifen soll
+</script>
+
 </head>
 <body>
   <div id="map"></div>
