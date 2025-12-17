@@ -1,6 +1,13 @@
+// Sound that is played when a new nearby player appears
 const playerCountSound = new Audio("./sound1.mp3");
+
+// Stores the last known number of nearby players (without yourself)
 let lastPlayerCount = 0;
-let playerRadius = 50000; 
+
+// Search radius in meters for nearby players
+let playerRadius = 200; 
+
+// State object for the challenge dialog UI
 let dialogState = {
   isOpen: false,
   isLoading: false,
@@ -8,7 +15,7 @@ let dialogState = {
   playerName: ""
 };
 
-
+// Create Leaflet map and set initial view (Vienna as fallback)
 const map = L.map('map').setView([48.2082, 16.3738], 13);
 L.tileLayer(
   'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}@2x.png',
@@ -19,8 +26,11 @@ L.tileLayer(
   }
 ).addTo(map);
 
+// Global coordinates for the current user
 let lat = 0;
 let lon = 0;
+
+// Hard‑coded player id for the web client (must match an entry in DB)
 let myId = 3;
 
 if (navigator.geolocation) {
@@ -49,7 +59,7 @@ if (navigator.geolocation) {
   });
 }
 
-
+// References to bottom‑sheet challenge UI elements
 const challengeBtn = document.getElementById("challenge-btn");
 const sheet = document.getElementById("challenge-sheet");
 const closeBtn = document.getElementById("close-btn");
@@ -98,6 +108,7 @@ const iconMap = {
 
 let challenges = {};
 
+// Load categories and challenges from backend
 Promise.all([
   fetch("http://localhost:8080/api/challenges/categories").then(r => r.json()),
   fetch("http://localhost:8080/api/challenges").then(r => r.json())
@@ -342,7 +353,7 @@ if (navigator.geolocation) {
     // update server position first
     await updateMyPosition(myId, lat, lon);
 
-    // jetzt Nearby laden und später regelmäßig updaten
+    // loading nearby players
     await loadNearbyPlayersWeb(myId, lat, lon, playerRadius);
     setInterval(() => loadNearbyPlayersWeb(myId, lat, lon, playerRadius), 5000); // alle 5s prüfen
   }, err => {
@@ -361,20 +372,20 @@ async function loadNearbyPlayersWeb(currentPlayerId, lat, lon, radiusMeters) {
 
     console.log("Nearby Players:", players);
 
-    // Spieler ohne dich selbst zählen
+    // count other players
     const currentCount = players.filter(p => p.id !== currentPlayerId).length;
 
-    // Wenn höher als vorher → Sound abspielen
+    // if higher than before play sound
     if (currentCount > lastPlayerCount) {
       playerCountSound.currentTime = 0; // immer von vorne
       playerCountSound.play();
       console.log("Neuer Spieler in der Nähe! Sound abgespielt.");
     }
 
-    // Counter aktualisieren
+    // Counter update
     lastPlayerCount = currentCount;
 
-    // Pins aktualisieren
+    // Pins update
     clearPins();
     players.forEach(p => {
       if (p.id === currentPlayerId) return;

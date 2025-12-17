@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="59fbb081-b3d9-432c-a0e1-0b26c7f59fa8" name="Changes" comment="quarkus base">
-      <change beforePath="$PROJECT_DIR$/Swift/Challengr/Challengr.xcodeproj/project.xcworkspace/xcuserdata/basti.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/Swift/Challengr/Challengr.xcodeproj/project.xcworkspace/xcuserdata/basti.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../../../OneDrive-Persönlich/_4BHITM/4,06 ITP/Projekt/Challengr/Swift/Challengr/Challengr.xcodeproj/project.xcworkspace/xcuserdata/basti.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/../../../../../OneDrive-Persönlich/_4BHITM/4,06 ITP/Projekt/Challengr/Swift/Challengr/Challengr.xcodeproj/project.xcworkspace/xcuserdata/basti.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -13,7 +13,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../../../../../OneDrive-Persönlich/_4BHITM/4,06 ITP/Projekt/Challengr" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
   &quot;lastFilter&quot;: {
@@ -41,6 +41,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
@@ -101,8 +102,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.26199.169" />
-        <option value="bundled-js-predefined-d6986cc7102b-9c94529fcfe0-JavaScript-IU-252.26199.169" />
+        <option value="bundled-js-predefined-d6986cc7102b-c7e53b3be11b-JavaScript-WS-253.28294.332" />
       </set>
     </attachedChunks>
   </component>
@@ -117,6 +117,7 @@
       <workItem from="1760516577538" duration="1123000" />
       <workItem from="1761116024730" duration="127000" />
       <workItem from="1762935127980" duration="10000" />
+      <workItem from="1765793814996" duration="23000" />
     </task>
     <task id="LOCAL-00001" summary="quarkus base">
       <option name="closed" value="true" />
