@@ -6,3 +6,13 @@
 //
 
 import Foundation
+
+struct ChallengePayload: Codable, Sendable {
+    let fromPlayerId: Int64
+    let toPlayerId: Int64
+    let fromPlayerName: String
+    let category: String
+    let challenge: String
+}
+
+

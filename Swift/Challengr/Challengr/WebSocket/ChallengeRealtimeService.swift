@@ -24,7 +24,9 @@ final class ChallengeRealtimeService {
             category: category,
             challenge: challenge
         )
-
+/*
         await WebSocketService.shared.send(msg)
+ */
     }
 }
+
