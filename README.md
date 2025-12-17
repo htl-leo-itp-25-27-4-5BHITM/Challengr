@@ -56,8 +56,6 @@ Ziele:
 
 ---
 
-
-
 ## Sprint (Sprint 4 – Start: 3.12.2025)
 
 Ziele:
@@ -69,3 +67,12 @@ Ziele:
 * Integrieren einer Vibrationsfunktion, wenn ein Spieler in den eigenen Radius gelangt
 
 ---
+
+
+## Sprint (Sprint 5 – Start: 17.12.2025)
+
+Ziele:
+
+* Anzeige der zugewiesenen Challenge für herausgeforderte Spieler:innen
+* Visualisierung des Radius in der Map-Ansicht
+* Einführung von WebSockets für Echtzeit-Updates
