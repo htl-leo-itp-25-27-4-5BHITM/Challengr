@@ -1,7 +1,6 @@
 package control;
 
 import entity.Challenges;
-import entity.Player;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -16,14 +15,19 @@ public class ChallengeRepository {
 
     public List<Challenges> getAllChallenges() {
         var query = em.createQuery("SELECT c FROM Challenges c", Challenges.class);
-
         return query.getResultList();
     }
 
     public List<Challenges> findChallengesByKat(String kategorie) {
-        var query = em.createQuery("select c from Challenges c where c.challengeCategory.name = :categorie", Challenges.class);
+        var query = em.createQuery(
+                "SELECT c FROM Challenges c WHERE c.challengeCategory.name = :categorie",
+                Challenges.class
+        );
         query.setParameter("categorie", kategorie);
         return query.getResultList();
     }
 
+    public Challenges findById(Long id) {
+        return em.find(Challenges.class, id);
+    }
 }
