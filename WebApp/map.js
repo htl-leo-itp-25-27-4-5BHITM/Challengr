@@ -21,7 +21,7 @@ L.tileLayer(
 
 let lat = 0;
 let lon = 0;
-let myId = 1;
+let myId = 3;
 
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(async pos => {
@@ -31,7 +31,7 @@ if (navigator.geolocation) {
     map.setView([lat, lon], 15);
     L.marker([lat, lon]).addTo(map).bindPopup("Dein Standort");
 
-    const myId = 1; 
+    const myId = 3; 
 
     const pulseCircle = L.circle([lat, lon], {
       radius: playerRadius,
