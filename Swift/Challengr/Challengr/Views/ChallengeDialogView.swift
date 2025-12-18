@@ -1,16 +1,26 @@
 import SwiftUI
 
 struct ChallengeDialogView: View {
-    let playerName: String
+    // Wer wird herausgefordert (für Überschrift + toId)
+    let otherPlayerId: Int64
+    let otherPlayerName: String
+
+    // Eigener Spieler (fromId)
+    let ownPlayerId: Int64
+
+    // WebSocket zum Backend
+    let socket: GameSocketService
+
     var onClose: () -> Void
 
     @State private var isLoading = false
     @State private var selectedChallenge: String? = nil
+    @State private var selectedChallengeId: Int64? = nil
     @State private var categories: [String] = ["Fitness", "Mutprobe", "Wissen", "Suchen"]
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("Challenge \(playerName)")
+            Text("Challenge \(otherPlayerName)")
                 .font(.title2)
                 .fontWeight(.bold)
 
@@ -34,7 +44,6 @@ struct ChallengeDialogView: View {
                 ProgressView("Wird geladen...")
                     .padding()
             } else {
-                // Kategorien nur anzeigen, wenn noch keine Challenge ausgewählt wurde
                 if selectedChallenge == nil {
                     VStack(spacing: 16) {
                         ForEach(categories, id: \.self) { category in
@@ -59,13 +68,25 @@ struct ChallengeDialogView: View {
                                 .padding()
                                 .background(color(for: category))
                                 .cornerRadius(30)
-                                .shadow(color: color(for: category).opacity(0.4), radius: 6, x: 0, y: 4)
+                                .shadow(color: color(for: category).opacity(0.4),
+                                        radius: 6, x: 0, y: 4)
                             }
                         }
                     }
                     .padding(.vertical)
                 }
             }
+
+            Button("Challenge senden") {
+                socket.sendCreateBattle(
+                    fromId: ownPlayerId,
+                    toId: otherPlayerId,
+                    challengeId: selectedChallengeId ?? 0
+                )
+                onClose()
+            }
+            .disabled(selectedChallenge == nil)
+
 
             Button("Schließen") {
                 onClose()
@@ -84,20 +105,22 @@ struct ChallengeDialogView: View {
         .shadow(radius: 20)
     }
 
-    // 🔥 WICHTIG: Random Challenge für Kategorie laden
+    // MARK: - Challenge laden
+
     private func loadRandomChallenge(for category: String) async {
         isLoading = true
         selectedChallenge = nil
+        selectedChallengeId = nil
 
         do {
-            let categoryData = try await loadCategoryChallenges(category: category)
+            let challenges = try await loadCategoryChallenges(category: category)
 
-            if let random = categoryData.tasks.randomElement() {
-                selectedChallenge = random
+            if let random = challenges.randomElement() {
+                selectedChallenge = random.text
+                selectedChallengeId = Int64(random.id)
             } else {
                 selectedChallenge = "Keine Challenge gefunden."
             }
-
         } catch {
             selectedChallenge = "Fehler beim Laden."
         }
@@ -105,7 +128,9 @@ struct ChallengeDialogView: View {
         isLoading = false
     }
 
+
     // MARK: - Design Helper
+
     private func color(for category: String) -> Color {
         switch category {
         case "Fitness": return .challengrYellow

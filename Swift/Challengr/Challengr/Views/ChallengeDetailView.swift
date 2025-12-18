@@ -51,12 +51,18 @@ struct ChallengeDetailView: View {
 
     func loadCategory() async {
         do {
-            let data = try await loadCategoryChallenges(category: category)
-            description = data.description
-            tasks = data.tasks
+            let challenges = try await loadCategoryChallenges(category: category)
+
+            // Beschreibung aus erster Challenge
+            description = challenges.first?.challengeCategory.description ?? ""
+
+            // Alle Texte als Aufgabenliste
+            tasks = challenges.map { $0.text }
         } catch {
             print("Fehler beim Laden der Kategorie:", error)
         }
         isLoading = false
     }
+
+
 }

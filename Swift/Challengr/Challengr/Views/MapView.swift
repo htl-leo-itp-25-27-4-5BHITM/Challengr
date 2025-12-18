@@ -5,9 +5,9 @@ import CoreLocationUI
 import Combine
 import UIKit
 
-
 struct PlayerAnnotation: Identifiable {
     let id = UUID()
+    let playerId: Int64                     // ✅ echte Spieler-ID
     let coordinate: CLLocationCoordinate2D
     let title: String
 }
@@ -16,6 +16,13 @@ struct MapView: View {
     @StateObject private var locationHelper = LocationHelper()
     private let playerService = PlayerLocationService()
 
+    // Eigener Spieler (muss zu deiner DB passen)
+    let ownPlayerId: Int64 = 1
+
+    // WebSocket für diesen Spieler
+    @StateObject private var socket = GameSocketService(playerId: 1)
+    @State private var incomingChallenge: (battleId: Int64, fromId: Int64, challengeId: Int64)? = nil
+    
     // Startposition
     private let startCoordinate = CLLocationCoordinate2D(latitude: 48.2082, longitude: 16.3738)
 
@@ -34,18 +41,15 @@ struct MapView: View {
 
     @State private var annotations: [PlayerAnnotation] = []
     @State private var showChallengeView = false
-    
+
     @State private var selectedPlayer: PlayerAnnotation? = nil
     @State private var showPlayerPopup = false
-    
     @State private var showPlayerChallengeDialog = false
 
-    let ownPlayerId: Int64 = 1
-    
     private func vibrate() {
-            let generator = UINotificationFeedbackGenerator()
-            generator.notificationOccurred(.success)
-        }
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+    }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -74,9 +78,7 @@ struct MapView: View {
                                 .foregroundColor(.chalengrRed)
                         }
                     }
-
                 }
-
             }
             .mapStyle(
                 .standard(
@@ -88,6 +90,19 @@ struct MapView: View {
             .tint(.challengrGreen)
             .accentColor(.challengrYellow)
             .ignoresSafeArea()
+            .onAppear {
+                // WebSocket verbinden
+                socket.connect()
+              
+                socket.onChallengeReceived = { battleId, fromId, toId, challengeId in
+                    print("📥 battle-requested: battle \(battleId), \(fromId) -> \(toId), Challenge \(challengeId)")
+                    if toId == ownPlayerId {
+                        incomingChallenge = (battleId: battleId, fromId: fromId, challengeId: challengeId)
+                    }
+                }
+
+            }
+
             .onReceive(locationHelper.$userLocation) { userLoc in
                 guard let userLoc = userLoc else { return }
 
@@ -112,6 +127,7 @@ struct MapView: View {
 
                         let newAnnotations = players.map { player in
                             PlayerAnnotation(
+                                playerId: player.id,   // ✅ ID vom Backend
                                 coordinate: CLLocationCoordinate2D(
                                     latitude: player.latitude,
                                     longitude: player.longitude
@@ -122,9 +138,9 @@ struct MapView: View {
 
                         annotations = newAnnotations
                         if players.count > 0 {
-                                    print("Mehrere Spieler gefunden: \(players.count)")
-                                    vibrate()    // oder vibrateLight()
-                                }
+                            print("Mehrere Spieler gefunden: \(players.count)")
+                            vibrate()
+                        }
                     } catch {
                         print("Fehler beim Laden der Nearby Players: \(error)")
                     }
@@ -167,7 +183,7 @@ struct MapView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        
+
         .overlay {
             if let player = selectedPlayer, showPlayerPopup {
                 VStack {
@@ -181,28 +197,27 @@ struct MapView: View {
                             // Öffnet das größere Challenge Dialog
                             showPlayerChallengeDialog = true
                         }
-
-                    /*
-                        .onTapGesture {
-                            showPlayerPopup = false
-                        }
-                     */
                 }
                 .padding(.top, 80)
                 .transition(.scale)
             }
         }
-        
+
         .overlay {
             if let player = selectedPlayer, showPlayerChallengeDialog {
                 ZStack {
-                    Color.black.opacity(0.4) // Abdunkelung
+                    Color.black.opacity(0.4)
                         .ignoresSafeArea()
                         .onTapGesture {
                             showPlayerChallengeDialog = false
                         }
 
-                    ChallengeDialogView(playerName: player.title) {
+                    ChallengeDialogView(
+                        otherPlayerId: player.playerId,   // ✅ echte ID
+                        otherPlayerName: player.title,
+                        ownPlayerId: ownPlayerId,
+                        socket: socket
+                    ) {
                         showPlayerChallengeDialog = false
                     }
                 }
@@ -210,8 +225,37 @@ struct MapView: View {
             }
         }
 
+        .overlay {
+            if let challenge = incomingChallenge {
+                VStack(spacing: 12) {
+                    Text("Du wurdest herausgefordert!")
+                        .font(.headline)
+                    Text("Von Spieler-ID \(challenge.fromId)\nChallenge-ID \(challenge.challengeId)")
+                        .multilineTextAlignment(.center)
+                        .font(.subheadline)
 
+                    HStack {
+                        Button("Annehmen") {
+                            // TODO: z.B. Battle-Status an Server schicken
+                            incomingChallenge = nil
+                        }
+                        .padding(.horizontal)
 
+                        Button("Ablehnen") {
+                            incomingChallenge = nil
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+                .padding()
+                .background(.ultraThinMaterial)
+                .cornerRadius(12)
+                .shadow(radius: 5)
+                .padding()
+            }
+        }
+
+        
         .sheet(isPresented: $showChallengeView) {
             ChallengeView()
                 .presentationDetents([ .medium ])
