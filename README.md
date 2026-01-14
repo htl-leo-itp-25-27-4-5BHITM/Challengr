@@ -68,7 +68,6 @@ Ziele:
 
 ---
 
-
 ## Sprint (Sprint 5 – Start: 17.12.2025)
 
 Ziele:
@@ -76,3 +75,15 @@ Ziele:
 * Anzeige der zugewiesenen Challenge für herausgeforderte Spieler:innen
 * Visualisierung des Radius in der Map-Ansicht
 * Einführung von WebSockets für Echtzeit-Updates
+
+---
+
+
+
+## Sprint (Sprint 6 – Start: 14.01.2026)
+
+Ziele:
+
+* Verbesserung des Stylings
+* Entwicklung eines vollständigen Dialoges für eine Challenge
+* Evaluierung eines JS‑Bundlers (Vite mit Proxy‑Setup und fixem Entwicklungsport) - Alternativ Webpack
