@@ -1,6 +1,6 @@
 import { GameClient } from "./GameSocketClient.js";
 
-let myId = 3;             // hast du schon
+let myId = 3;             // deine Spieler-ID
 const gameClient = new GameClient(myId);
 gameClient.connect();
 
@@ -11,7 +11,6 @@ gameClient.on("battle-requested", (msg) => {
   alert(`Neue Challenge von Spieler ${msg.fromPlayerId}!\nChallenge-ID: ${msg.challengeId}`);
 });
 
-
 // Sound that is played when a new nearby player appears
 const playerCountSound = new Audio("./sound1.mp3");
 
@@ -19,7 +18,7 @@ const playerCountSound = new Audio("./sound1.mp3");
 let lastPlayerCount = 0;
 
 // Search radius in meters for nearby players
-let playerRadius = 200; 
+let playerRadius = 200;
 
 // State object for the challenge dialog UI
 let dialogState = {
@@ -29,7 +28,6 @@ let dialogState = {
   playerName: "",
   targetPlayerId: null
 };
-
 
 // Create Leaflet map and set initial view (Vienna as fallback)
 const map = L.map('map').setView([48.2082, 16.3738], 13);
@@ -46,7 +44,6 @@ L.tileLayer(
 let lat = 0;
 let lon = 0;
 
-
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(async pos => {
     lat = pos.coords.latitude;
@@ -54,7 +51,6 @@ if (navigator.geolocation) {
 
     map.setView([lat, lon], 15);
     L.marker([lat, lon]).addTo(map).bindPopup("Dein Standort");
-
 
     const pulseCircle = L.circle([lat, lon], {
       radius: playerRadius,
@@ -66,8 +62,6 @@ if (navigator.geolocation) {
     // CSS-Klasse hinzufügen → aktiviert Animation
     pulseCircle.getElement().classList.add("pulse-circle");
 
-
-    
     await updateMyPosition(myId, lat, lon);
   });
 }
@@ -103,7 +97,6 @@ function getCategoryColor(category) {
   }
 }
 
-
 const colorMap = {
   "Fitness": "card-yellow",
   "Mutprobe": "card-red",
@@ -118,13 +111,12 @@ const iconMap = {
   "Suchen": "🔍"
 };
 
-
 let challenges = {};
 
-// Load categories and challenges from backend
+// Load categories and challenges from backend (über Vite-Proxy!)
 Promise.all([
-  fetch("http://localhost:8080/api/challenges/categories").then(r => r.json()),
-  fetch("http://localhost:8080/api/challenges").then(r => r.json())
+  fetch("/api/challenges/categories").then(r => r.json()),
+  fetch("/api/challenges").then(r => r.json())
 ])
   .then(([categories, allChallenges]) => {
     console.log("Kategorien:", categories);
@@ -133,19 +125,17 @@ Promise.all([
     challenges = {};
 
     categories.forEach(cat => {
-  challenges[cat.name] = {
-    description: cat.description,
-    tasks: allChallenges
-      .filter(c => c.challengeCategory && c.challengeCategory.id === cat.id)
-      .map(c => ({ id: c.id, text: c.text }))
-  };
-});
-
+      challenges[cat.name] = {
+        description: cat.description,
+        tasks: allChallenges
+          .filter(c => c.challengeCategory && c.challengeCategory.id === cat.id)
+          .map(c => ({ id: c.id, text: c.text }))
+      };
+    });
 
     renderCards();
   })
   .catch(err => console.error("Fehler beim Laden:", err));
-
 
 function renderCards() {
   categoriesDiv.innerHTML = "";
@@ -170,17 +160,15 @@ function renderCards() {
 let categoriesRaw = [];
 let allChallenges = [];
 
+// Nochmals Challenges laden (falls du das brauchst)
 Promise.all([
-  fetch("http://localhost:8080/api/challenges/categories").then(r => r.json()),
-  fetch("http://localhost:8080/api/challenges").then(r => r.json())
+  fetch("/api/challenges/categories").then(r => r.json()),
+  fetch("/api/challenges").then(r => r.json())
 ])
   .then(([categories, challengesData]) => {
     categoriesRaw = categories;
     allChallenges = challengesData;
   });
-
-
-
 
 function showDetail(categoryName) {
   categoriesDiv.classList.add("hidden");
@@ -198,7 +186,7 @@ function showDetail(categoryName) {
   const category = categoriesRaw.find(c => c.name === categoryName);
   if (!category) return;
 
-  const filtered = allChallenges.filter(ch => 
+  const filtered = allChallenges.filter(ch =>
     ch.challengeCategory && ch.challengeCategory.id === category.id
   );
 
@@ -215,9 +203,6 @@ function showDetail(categoryName) {
   });
 }
 
-
-
-
 const redIcon = L.icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
@@ -228,8 +213,6 @@ const redIcon = L.icon({
 });
 
 window._pins = [];
-
-
 
 function addPin(lat, lon, player) {
   const marker = L.marker([lat, lon], { icon: redIcon }).addTo(map);
@@ -243,8 +226,6 @@ function addPin(lat, lon, player) {
   return marker;
 }
 
-
-
 function challengOtherPlayer(playerId, playerName = "Spieler") {
   console.log("challengOtherPlayer called", playerId, playerName);
 
@@ -256,8 +237,6 @@ function challengOtherPlayer(playerId, playerName = "Spieler") {
 
   renderChallengeDialog();
 }
-
-
 
 function renderChallengeDialog() {
   const backdrop = document.getElementById("challenge-dialog-backdrop");
@@ -281,10 +260,10 @@ function renderChallengeDialog() {
 
   // Loading
   if (dialogState.isLoading) {
-  subtitle.textContent = "Wird geladen...";
-  categoriesDiv.innerHTML = "";
-  return;
-}
+    subtitle.textContent = "Wird geladen...";
+    categoriesDiv.innerHTML = "";
+    return;
+  }
 
   // Challenge ausgewählt
   if (dialogState.selectedChallenge) {
@@ -300,10 +279,10 @@ function renderChallengeDialog() {
   ["Fitness", "Mutprobe", "Wissen", "Suchen"].forEach(cat => {
     const btn = document.createElement("button");
     btn.innerHTML = `
-  <span class="dialog-icon">${iconMap[cat]}</span>
-  <span class="dialog-text">${cat}</span>
-  <span class="dialog-spacer"></span>
-`;
+      <span class="dialog-icon">${iconMap[cat]}</span>
+      <span class="dialog-text">${cat}</span>
+      <span class="dialog-spacer"></span>
+    `;
 
     btn.style.background = getCategoryColor(cat);
     btn.onclick = () => loadRandomChallenge(cat);
@@ -311,12 +290,10 @@ function renderChallengeDialog() {
   });
 }
 
-
 async function loadRandomChallenge(categoryName) {
   dialogState.isLoading = true;
   renderChallengeDialog();
 
-  // passende Challenges aus deinem Objekt holen
   const category = challenges[categoryName];
   if (!category || !category.tasks || category.tasks.length === 0) {
     dialogState.isLoading = false;
@@ -325,29 +302,24 @@ async function loadRandomChallenge(categoryName) {
     return;
   }
 
-  // Zufällige Challenge wählen
   const random = category.tasks[Math.floor(Math.random() * category.tasks.length)];
   const challengeText = random.text || random;
-  const challengeId = random.id;          // hier echte ID verwenden
+  const challengeId = random.id;          // echte ID
 
   dialogState.isLoading = false;
   dialogState.selectedChallenge = challengeText;
   renderChallengeDialog();
 
-  // WebSocket-Call: Battle anlegen
   if (dialogState.targetPlayerId && challengeId) {
     gameClient.createBattle(dialogState.targetPlayerId, challengeId);
   }
 }
 
-
-
-
 function clearPins() {
   window._pins.forEach(pin => {
     map.removeLayer(pin);
   });
-  window._pins = []; 
+  window._pins = [];
 }
 
 if (navigator.geolocation) {
@@ -364,7 +336,7 @@ if (navigator.geolocation) {
 
     // loading nearby players
     await loadNearbyPlayersWeb(myId, lat, lon, playerRadius);
-    setInterval(() => loadNearbyPlayersWeb(myId, lat, lon, playerRadius), 5000); // alle 5s prüfen
+    setInterval(() => loadNearbyPlayersWeb(myId, lat, lon, playerRadius), 5000);
   }, err => {
     console.error("Geolocation error:", err);
   }, { enableHighAccuracy: true });
@@ -374,33 +346,31 @@ if (navigator.geolocation) {
 
 async function loadNearbyPlayersWeb(currentPlayerId, lat, lon, radiusMeters) {
   try {
-    const url = `http://localhost:8080/api/players/nearby?playerId=${currentPlayerId}&latitude=${lat}&longitude=${lon}&radius=${radiusMeters}`;
+    const url =
+      `/api/players/nearby?playerId=${currentPlayerId}` +
+      `&latitude=${lat}&longitude=${lon}&radius=${radiusMeters}`;
 
     const res = await fetch(url);
     const players = await res.json();
 
     console.log("Nearby Players:", players);
 
-    // count other players
     const currentCount = players.filter(p => p.id !== currentPlayerId).length;
 
-    // if higher than before play sound
     if (currentCount > lastPlayerCount) {
-      playerCountSound.currentTime = 0; // immer von vorne
+      playerCountSound.currentTime = 0;
       playerCountSound.play();
       console.log("Neuer Spieler in der Nähe! Sound abgespielt.");
     }
 
-    // Counter update
     lastPlayerCount = currentCount;
 
-    // Pins update
     clearPins();
     players.forEach(p => {
       if (p.id === currentPlayerId) return;
-      const lat = parseFloat(p.latitude);
-      const lon = parseFloat(p.longitude);
-      if (!isNaN(lat) && !isNaN(lon)) addPin(lat, lon, p);
+      const plat = parseFloat(p.latitude);
+      const plon = parseFloat(p.longitude);
+      if (!isNaN(plat) && !isNaN(plon)) addPin(plat, plon, p);
     });
 
   } catch (err) {
@@ -408,43 +378,40 @@ async function loadNearbyPlayersWeb(currentPlayerId, lat, lon, radiusMeters) {
   }
 }
 
-
 async function loadOtherPlayers() {
   try {
-    const res = await fetch("http://localhost:8080/api/players/nearby");
+    const res = await fetch("/api/players/nearby");
     const players = await res.json();
 
-        console.log("Nearby Players:", players);
+    console.log("Nearby Players:", players);
 
     clearPins();
-  
-      players.forEach(p => {
-        if (p.id === 1) return;
-        const lat = parseFloat(p.latitude);
-        const lon = parseFloat(p.longitude);
 
-        if (!isNaN(lat) && !isNaN(lon)) {
-          addPin(lat, lon, p.name || "Spieler");
-        }
-      });
-    
+    players.forEach(p => {
+      if (p.id === 1) return;
+      const plat = parseFloat(p.latitude);
+      const plon = parseFloat(p.longitude);
+
+      if (!isNaN(plat) && !isNaN(plon)) {
+        addPin(plat, plon, p.name || "Spieler");
+      }
+    });
 
   } catch (err) {
     console.error("Fehler beim Laden der Spieler-Pins:", err);
   }
 }
 
-
 async function updateMyPosition(playerId, lat, lon) {
   try {
-    const res = await fetch(`http://localhost:8080/api/players/${playerId}`, {
+    const res = await fetch(`/api/players/${playerId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         id: playerId,
-        name: window.myName || null, // optional
+        name: window.myName || null,
         latitude: lat,
         longitude: lon
       })
@@ -459,16 +426,15 @@ async function updateMyPosition(playerId, lat, lon) {
   }
 }
 
-
 async function createNewPlayer(lat, lon) {
   try {
-    const res = await fetch("http://localhost:8080/api/players", {
+    const res = await fetch("/api/players", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        name: "Player_" + Math.floor(Math.random()*9999),
+        name: "Player_" + Math.floor(Math.random() * 9999),
         latitude: lat,
         longitude: lon
       })
@@ -480,7 +446,6 @@ async function createNewPlayer(lat, lon) {
     console.error("Fehler beim Erstellen eines Players:", err);
   }
 }
-
 
 document.getElementById("dialog-close").addEventListener("click", () => {
   document.getElementById("challenge-dialog-backdrop").classList.add("hidden");
