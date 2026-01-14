@@ -10,7 +10,7 @@ export class GameClient {
   }
 
   connect() {
-    this.socket = new WebSocket(`ws://10.214.1.90:8080/ws/game?playerId=${this.playerId}`);
+    this.socket = new WebSocket(`ws://localhost:8080/ws/game?playerId=${this.playerId}`);
 
     this.socket.onopen = () => console.log("WS open", this.playerId);
     this.socket.onmessage = (event) => {

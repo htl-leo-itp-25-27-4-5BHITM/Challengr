@@ -20,7 +20,7 @@ final class GameSocketService: ObservableObject {
     func connect() {
         guard webSocketTask == nil else { return }
 
-        guard let url = URL(string: "ws://10.214.1.90:8080/ws/game?playerId=\(playerId)") else {
+        guard let url = URL(string: "ws://localhost:8080/ws/game?playerId=\(playerId)") else {
             print("❌ Ungültige WebSocket-URL")
             return
         }
