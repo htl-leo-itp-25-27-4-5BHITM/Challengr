@@ -22,6 +22,7 @@ struct MapView: View {
     // WebSocket
     @StateObject private var socket = GameSocketService(playerId: 1)
     @State private var incomingChallenge: (battleId: Int64, fromId: Int64, challengeId: Int64)? = nil
+    @State private var currentBattleId: Int64? = nil
 
     // Eigene Position
     @State private var ownCoordinate: CLLocationCoordinate2D? = nil
@@ -104,12 +105,14 @@ struct MapView: View {
 
                 socket.onChallengeReceived = { battleId, fromId, toId, challengeId in
                     print("📥 battle-requested: battle \(battleId), \(fromId) -> \(toId), Challenge \(challengeId)")
+
                     if toId == ownPlayerId {
                         incomingChallenge = (
                             battleId: battleId,
                             fromId: fromId,
                             challengeId: challengeId
                         )
+                        currentBattleId = battleId     // <‑ wichtig für das Overlay
                     }
                 }
             }
@@ -240,9 +243,10 @@ struct MapView: View {
             }
         }
 
-        // 📥 Incoming Challenge
         .overlay {
-            if let challenge = incomingChallenge {
+            if let challenge = incomingChallenge,
+               let battleId = currentBattleId {
+
                 VStack(spacing: 12) {
                     Text("Du wurdest herausgefordert!")
                         .font(.headline)
@@ -253,12 +257,16 @@ struct MapView: View {
 
                     HStack {
                         Button("Annehmen") {
-                            incomingChallenge = nil
+                            socket.sendUpdateBattleStatus(battleId: battleId, status: "ACCEPTED")
+                            incomingChallenge = nil   // Overlay schließen
+                            currentBattleId = nil
                         }
                         .padding(.horizontal)
 
                         Button("Ablehnen") {
-                            incomingChallenge = nil
+                            socket.sendUpdateBattleStatus(battleId: battleId, status: "DECLINED")
+                            incomingChallenge = nil   // Overlay schließen
+                            currentBattleId = nil
                         }
                         .padding(.horizontal)
                     }
@@ -270,6 +278,7 @@ struct MapView: View {
                 .padding()
             }
         }
+
 
         // 🧾 Challenge Sheet
         .sheet(isPresented: $showChallengeView) {
