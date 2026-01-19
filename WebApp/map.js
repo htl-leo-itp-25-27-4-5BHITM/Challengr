@@ -25,9 +25,11 @@ let dialogState = {
   isOpen: false,
   isLoading: false,
   selectedChallenge: null,
+  selectedChallengeId: null,
   playerName: "",
   targetPlayerId: null
 };
+
 
 // Create Leaflet map and set initial view (Vienna as fallback)
 const map = L.map('map').setView([48.2082, 16.3738], 13);
@@ -227,16 +229,16 @@ function addPin(lat, lon, player) {
 }
 
 function challengOtherPlayer(playerId, playerName = "Spieler") {
-  console.log("challengOtherPlayer called", playerId, playerName);
-
   dialogState.isOpen = true;
   dialogState.isLoading = false;
   dialogState.selectedChallenge = null;
+  dialogState.selectedChallengeId = null;
   dialogState.playerName = playerName;
   dialogState.targetPlayerId = playerId;
 
   renderChallengeDialog();
 }
+
 
 function renderChallengeDialog() {
   const backdrop = document.getElementById("challenge-dialog-backdrop");
@@ -255,8 +257,13 @@ function renderChallengeDialog() {
 
   // Reset
   categoriesDiv.innerHTML = "";
+  resultDiv.innerHTML = "";
   resultDiv.classList.add("hidden");
-  subtitle.classList.remove("hidden");
+
+  const oldBtn = document.getElementById("dialog-send-btn");
+  if (oldBtn) oldBtn.remove();
+
+
 
   // Loading
   if (dialogState.isLoading) {
@@ -266,12 +273,61 @@ function renderChallengeDialog() {
   }
 
   // Challenge ausgewählt
-  if (dialogState.selectedChallenge) {
-    subtitle.textContent = "Zufällige Challenge:";
-    resultDiv.textContent = dialogState.selectedChallenge;
-    resultDiv.classList.remove("hidden");
-    return;
-  }
+ if (dialogState.selectedChallenge) {
+  subtitle.textContent = "Ausgewählte Challenge:";
+  resultDiv.textContent = dialogState.selectedChallenge;
+  resultDiv.classList.remove("hidden");
+
+  // alten Send-Button entfernen
+  const oldBtn = document.getElementById("dialog-send-btn");
+  if (oldBtn) oldBtn.remove();
+
+  // neuen Button UNTERHALB der Challenge
+const sendBtn = document.createElement("button");
+sendBtn.id = "dialog-send-btn";
+sendBtn.textContent = "Senden";
+
+// Inline-Style wie close-btn (funktioniert überall)
+sendBtn.style.width = "100%";
+sendBtn.style.padding = "12px";
+sendBtn.style.marginTop = "12px";
+sendBtn.style.borderRadius = "12px";
+sendBtn.style.border = "1px solid #ddd";
+sendBtn.style.background = "#fff";
+sendBtn.style.color = "#000";
+sendBtn.style.fontSize = "16px";
+sendBtn.style.cursor = "pointer";
+
+sendBtn.onclick = sendChallenge;
+
+// UNTER den Challenge-Text setzen
+resultDiv.parentElement.appendChild(sendBtn);
+
+
+  return;
+}
+
+
+
+function sendChallenge() {
+  if (!dialogState.targetPlayerId || !dialogState.selectedChallengeId) return;
+
+  gameClient.createBattle(
+    dialogState.targetPlayerId,
+    dialogState.selectedChallengeId
+  );
+
+  dialogState.isOpen = false;
+  dialogState.selectedChallenge = null;
+  dialogState.selectedChallengeId = null;
+
+  document
+    .getElementById("challenge-dialog-backdrop")
+    .classList.add("hidden");
+}
+
+
+
 
   // Kategorien anzeigen
   subtitle.textContent = "Wähle eine Kategorie";
@@ -298,21 +354,17 @@ async function loadRandomChallenge(categoryName) {
   if (!category || !category.tasks || category.tasks.length === 0) {
     dialogState.isLoading = false;
     dialogState.selectedChallenge = "Keine Challenges in dieser Kategorie.";
+    dialogState.selectedChallengeId = null;
     renderChallengeDialog();
     return;
   }
 
   const random = category.tasks[Math.floor(Math.random() * category.tasks.length)];
-  const challengeText = random.text || random;
-  const challengeId = random.id;          // echte ID
 
   dialogState.isLoading = false;
-  dialogState.selectedChallenge = challengeText;
+  dialogState.selectedChallenge = random.text;
+  dialogState.selectedChallengeId = random.id;
   renderChallengeDialog();
-
-  if (dialogState.targetPlayerId && challengeId) {
-    gameClient.createBattle(dialogState.targetPlayerId, challengeId);
-  }
 }
 
 function clearPins() {
