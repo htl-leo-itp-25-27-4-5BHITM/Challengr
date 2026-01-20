@@ -5,6 +5,7 @@ struct ChallengeDialogView: View {
     let otherPlayerId: Int64
     let otherPlayerName: String
 
+    private let challengesService = ChallengesService()
     // Eigener Spieler (fromId)
     let ownPlayerId: Int64
 
@@ -113,7 +114,7 @@ struct ChallengeDialogView: View {
         selectedChallengeId = nil
 
         do {
-            let challenges = try await loadCategoryChallenges(category: category)
+            let challenges = try await challengesService.loadCategoryChallenges(category: category)
 
             if let random = challenges.randomElement() {
                 selectedChallenge = random.text
@@ -123,10 +124,12 @@ struct ChallengeDialogView: View {
             }
         } catch {
             selectedChallenge = "Fehler beim Laden."
+            print("Fehler beim Laden der Kategorie:", error)
         }
 
         isLoading = false
     }
+
 
 
     // MARK: - Design Helper
