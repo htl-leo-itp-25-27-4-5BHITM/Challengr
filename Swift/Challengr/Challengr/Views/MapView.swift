@@ -1,3 +1,5 @@
+// MARK: - Imports
+
 import SwiftUI
 import MapKit
 import CoreLocation
@@ -5,6 +7,9 @@ import CoreLocationUI
 import Combine
 import UIKit
 
+// MARK: - Models
+
+/// Simple model to represent a player as a map annotation.
 struct PlayerAnnotation: Identifiable {
     let id = UUID()
     let playerId: Int64
@@ -12,16 +17,25 @@ struct PlayerAnnotation: Identifiable {
     let title: String
 }
 
+
 struct MapView: View {
+    
+    // MARK: - State & Services + Helpers
+    
+    /// Helper that provides the current user location
     @StateObject private var locationHelper = LocationHelper()
+    
+    /// Services to load from the backend
     private let playerService = PlayerLocationService()
     private let challengesService = ChallengesService()
 
-    // Eigener Spieler
+    /// static player id
     let ownPlayerId: Int64 = 1
 
-    // WebSocket
+    /// WebSocket
     @StateObject private var socket = GameSocketService(playerId: 1)
+    
+    /// Information about an incoming challenge from another player.
     @State private var incomingChallenge: (
         battleId: Int64,
         fromId: Int64,
@@ -30,19 +44,22 @@ struct MapView: View {
         category: String
     )? = nil
 
+    /// Battle Infos and Settings.
     @State private var currentBattleId: Int64? = nil
     @State private var isBattleActive = false
     @State private var activeBattleInfo: (challengeName: String,
                                           category: String,
                                           playerA: String,
                                           playerB: String)? = nil
+    /// Static ownPlayerName & coordinates
     @State private var ownPlayerName: String = ""
-
-    // Eigene Position
     @State private var ownCoordinate: CLLocationCoordinate2D? = nil
 
+    /// Fallback (Default Map: Vienna)
     private let startCoordinate = CLLocationCoordinate2D(latitude: 48.2082, longitude: 16.3738)
 
+    
+    /// Current map camera position and Zoom
     @State private var position: MapCameraPosition = .camera(
         MapCamera(
             centerCoordinate: CLLocationCoordinate2D(latitude: 48.2082, longitude: 16.3738),
@@ -52,22 +69,27 @@ struct MapView: View {
         )
     )
 
-    // Zoom-Grenzen
     let minDistance: CLLocationDistance = 200
     let maxDistance: CLLocationDistance = 5000
 
+    
+    /// All players that should be displayed
     @State private var annotations: [PlayerAnnotation] = []
+    
+    /// Challenge Infos Window
     @State private var showChallengeView = false
 
+    /// Player Selected Infos
     @State private var selectedPlayer: PlayerAnnotation? = nil
     @State private var showPlayerPopup = false
     @State private var showPlayerChallengeDialog = false
 
+    
+    /// Cache of all challenges loaded from the backend (for all categories)
     @State private var allChallenges: [ChallengesService.Challenge] = []
     
     
-    
-    // 🔽 Challenge-Text + Kategorie-Name zu einer Challenge-ID finden
+    /// Resolves a challenge text and category name for a given challenge ID
     private func challengeInfo(for id: Int64) -> (name: String, category: String) {
         if let ch = allChallenges.first(where: { Int64($0.id) == id }) {
             return (ch.text, ch.challengeCategory.name)
@@ -76,7 +98,7 @@ struct MapView: View {
         }
     }
 
-    
+    /// Triggers a success haptic feedback.
     private func vibrate() {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
@@ -101,8 +123,10 @@ struct MapView: View {
         }
     }
 
-    // MARK: - Teil-Views
-
+    
+    // MARK: - Map & Controls
+    
+    /// Main map layer with annotations, camera bounds and appearance.
     private var mapLayer: some View {
         Map(
             position: $position,
@@ -111,14 +135,14 @@ struct MapView: View {
                 maximumDistance: maxDistance
             )
         ) {
-            // 200m Radius um eigenen Spieler
+            /// 200m radius around ownplayer
             if let ownCoordinate {
                 MapCircle(center: ownCoordinate, radius: 200)
                     .foregroundStyle(Color.blue.opacity(0.2))
                     .stroke(Color.blue.opacity(0.6), lineWidth: 2)
             }
 
-            // Andere Spieler
+            // Annotations for all nearby players.
             ForEach(annotations) { annotation in
                 Annotation(annotation.title, coordinate: annotation.coordinate) {
                     Button {
@@ -147,9 +171,11 @@ struct MapView: View {
         .accentColor(.challengrYellow)
         .ignoresSafeArea()
         .onAppear(perform: setupSocket)
+        /// React to location updates
         .onReceive(locationHelper.$userLocation, perform: handleLocation)
     }
 
+    /// Floating button that centers the map on the current user location.
     private var locationButton: some View {
         LocationButton(.currentLocation) {
             position = .userLocation(
@@ -171,6 +197,7 @@ struct MapView: View {
         .padding()
     }
 
+    /// Trophy button at the bottom that opens the global ChallengeView.
     private var challengeButton: some View {
         VStack {
             Spacer()
@@ -189,7 +216,10 @@ struct MapView: View {
         }
         .frame(maxWidth: .infinity)
     }
+    
+    // MARK: - Overlays
 
+    /// Small popup above a selected player on the map.
     private var playerPopupOverlay: some View {
         Group {
             if let player = selectedPlayer, showPlayerPopup {
@@ -210,6 +240,7 @@ struct MapView: View {
         }
     }
 
+    /// Fullscreen  overlay that hosts the ChallengeDialogView.
     private var challengeDialogOverlay: some View {
         Group {
             if let player = selectedPlayer, showPlayerChallengeDialog {
@@ -234,6 +265,7 @@ struct MapView: View {
         }
     }
 
+    /// Overlay that appears when another player challenges the local player.
     private var incomingChallengeOverlay: some View {
         Group {
             if let challenge = incomingChallenge,
@@ -256,6 +288,7 @@ struct MapView: View {
                             .font(.subheadline)
 
                         HStack {
+                            /// Accept battle on backend.
                             Button("Annehmen") {
                                 socket.sendUpdateBattleStatus(
                                     battleId: battleId,
@@ -275,6 +308,7 @@ struct MapView: View {
                             }
                             .padding(.horizontal)
 
+                            /// Decline battle on backend.
                             Button("Ablehnen") {
                                 socket.sendUpdateBattleStatus(
                                     battleId: battleId,
@@ -297,7 +331,10 @@ struct MapView: View {
             }
         }
     }
+    
+    // MARK: - Sheets & Screens
 
+    /// Bottom sheet that shows the full challenge list.
     private var challengeSheet: some View {
         ChallengeView()
             .presentationDetents([.medium])
@@ -305,6 +342,7 @@ struct MapView: View {
             .presentationBackground(.clear)
     }
 
+    /// Fullscreen battle screen displayed after accepting a challenge.
     private var battleScreen: some View {
         Group {
             if let info = activeBattleInfo {
@@ -323,10 +361,11 @@ struct MapView: View {
 
     // MARK: - Logik
 
+    /// Sets up the WebSocket connection and preloads all challenges.
     private func setupSocket() {
         socket.connect()
 
-        // 🔽 Challenges aller Kategorien einmalig vorladen
+        // Preload challenges for all categories once at startup.
         Task {
             do {
                 let fitness = try await challengesService.loadCategoryChallenges(category: "Fitness")
@@ -343,7 +382,6 @@ struct MapView: View {
 
         socket.onChallengeReceived = { battleId, fromId, toId, challengeId in
             if toId == ownPlayerId {
-                // 🔽 Jetzt dynamisch aus dem Cache holen
                 let info = challengeInfo(for: challengeId)
 
                 incomingChallenge = (
@@ -358,12 +396,12 @@ struct MapView: View {
         }
     }
 
-
+    /// Handles updates of the user location and refreshes nearby players.
     private func handleLocation(_ userLoc: CLLocationCoordinate2D?) {
         guard let userLoc = userLoc else { return }
 
+        /// Make the camera follow the player.
         ownCoordinate = userLoc
-
         position = .camera(
             MapCamera(
                 centerCoordinate: userLoc,
