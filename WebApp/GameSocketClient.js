@@ -5,7 +5,9 @@ export class GameClient {
     this.socket = null;
     this.listeners = {
       "battle-requested": [],
-      "battle-updated": []
+      "battle-updated": [],
+      "battle-result": [],
+      "battle-created": []
     };
   }
 
@@ -43,6 +45,14 @@ export class GameClient {
       type: "update-battle-status",
       battleId,
       status
+    }));
+  }
+
+  sendVote(battleId, winnerName) {
+    this.socket.send(JSON.stringify({
+      type: "battle-vote",
+      battleId,
+      winnerName
     }));
   }
 }

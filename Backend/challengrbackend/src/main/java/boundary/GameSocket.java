@@ -114,6 +114,25 @@ public class GameSocket {
 
         // nur an den Herausgeforderten schicken
         sendToPlayer(toId, payload);
+        
+        // Bestätigung an den Initiator senden
+        String confirmPayload = """
+            {
+              "type": "battle-created",
+              "battleId": %d,
+              "fromPlayerId": %d,
+              "toPlayerId": %d,
+              "challengeId": %d,
+              "status": "%s"
+            }
+            """.formatted(
+                battle.getId(),
+                battle.getFromPlayer().getId(),
+                battle.getToPlayer().getId(),
+                battle.getChallenge().getId(),
+                battle.getStatus()
+        );
+        sendToPlayer(fromId, confirmPayload);
     }
 
     // ---------------- update-battle-status -------------------

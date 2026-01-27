@@ -4,12 +4,113 @@ let myId = 3;             // deine Spieler-ID
 const gameClient = new GameClient(myId);
 gameClient.connect();
 
+// Battle State
+let currentBattleState = {
+  battleId: null,
+  challengeName: "",
+  category: "",
+  playerLeft: "",
+  playerRight: "",
+  fromPlayerId: null,
+  toPlayerId: null,
+  isInitiator: false  // true wenn ich die challenge gestartet habe
+};
+
 gameClient.on("battle-requested", (msg) => {
   console.log("Battle für mich:", msg);
 
-  // Einfacher Dialog
-  alert(`Neue Challenge von Spieler ${msg.fromPlayerId}!\nChallenge-ID: ${msg.challengeId}`);
+  // Battle State speichern
+  currentBattleState.battleId = msg.battleId;
+  currentBattleState.fromPlayerId = msg.fromPlayerId;
+  currentBattleState.toPlayerId = msg.toPlayerId;
+  currentBattleState.isInitiator = false;
+
+  // Challenge-Details laden und Battle anzeigen
+  fetch(`/api/challenges/${msg.challengeId}`)
+    .then(r => r.json())
+    .then(challenge => {
+      currentBattleState.challengeName = challenge.text;
+      currentBattleState.category = challenge.challengeCategory?.name || "Challenge";
+      
+      // Spieler-Namen laden
+      return Promise.all([
+        fetch(`/api/players/${msg.fromPlayerId}`).then(r => r.json()),
+        fetch(`/api/players/${msg.toPlayerId}`).then(r => r.json())
+      ]);
+    })
+    .then(([fromPlayer, toPlayer]) => {
+      currentBattleState.playerLeft = fromPlayer.name;
+      currentBattleState.playerRight = toPlayer.name;
+
+      showBattleDialog({
+        category: currentBattleState.category,
+        challengeName: currentBattleState.challengeName,
+        playerLeft: currentBattleState.playerLeft,
+        playerRight: currentBattleState.playerRight,
+        onSuccess: handleBattleSuccess,
+        onSurrender: handleBattleSurrender,
+        onClose: () => console.log("Battle dialog closed")
+      });
+    });
 });
+
+// Wenn ich die Battle erstelle, bekomme ich eine Bestätigung zurück
+gameClient.on("battle-created", (msg) => {
+  console.log("Battle created confirmation:", msg);
+  currentBattleState.battleId = msg.battleId;
+});
+
+gameClient.on("battle-updated", (msg) => {
+  console.log("Battle updated:", msg);
+});
+
+gameClient.on("battle-result", (msg) => {
+  console.log("Battle result received:", msg);
+  
+  // Prüfen ob ich gewonnen oder verloren habe
+  const myName = window.myName || "Player_" + myId;
+  const iWon = msg.winnerName === myName || msg.winnerName === currentBattleState.playerLeft || msg.winnerName === currentBattleState.playerRight;
+  
+  if (msg.winnerName === myName || (currentBattleState.isInitiator && msg.winnerName === currentBattleState.playerLeft)) {
+    showBattleWin({
+      winnerName: msg.winnerName,
+      winnerAvatar: msg.winnerAvatar,
+      winnerPointsDelta: msg.winnerPointsDelta
+    });
+  } else {
+    showBattleLose({
+      loserName: msg.loserName,
+      loserPointsDelta: Math.abs(msg.loserPointsDelta),
+      trashTalk: msg.trashTalk,
+      winnerName: msg.winnerName
+    });
+  }
+});
+
+function handleBattleSuccess() {
+  console.log("Battle erfolgreich abgeschlossen - zeige Voting");
+  showVotingDialog({
+    playerA: currentBattleState.playerLeft,
+    playerB: currentBattleState.playerRight,
+    onVote: (winnerName) => {
+      console.log("Vote für:", winnerName);
+      gameClient.sendVote(currentBattleState.battleId, winnerName);
+    }
+  });
+}
+
+function handleBattleSurrender() {
+  console.log("Aufgegeben - andere Spieler gewinnt");
+  const opponent = currentBattleState.isInitiator ? currentBattleState.playerRight : currentBattleState.playerLeft;
+  gameClient.sendVote(currentBattleState.battleId, opponent);
+  
+  showBattleLose({
+    loserName: "Du",
+    loserPointsDelta: 10,
+    trashTalk: "Nächstes Mal schaffst du es!",
+    winnerName: opponent
+  });
+}
 
 // Sound that is played when a new nearby player appears
 const playerCountSound = new Audio("./sound1.mp3");
@@ -26,6 +127,7 @@ let dialogState = {
   isLoading: false,
   selectedChallenge: null,
   selectedChallengeId: null,
+  selectedCategory: null,
   playerName: "",
   targetPlayerId: null
 };
@@ -317,6 +419,15 @@ function sendChallenge() {
     dialogState.selectedChallengeId
   );
 
+  // Battle State als Initiator speichern
+  currentBattleState.isInitiator = true;
+  currentBattleState.fromPlayerId = myId;
+  currentBattleState.toPlayerId = dialogState.targetPlayerId;
+  currentBattleState.challengeName = dialogState.selectedChallenge;
+  currentBattleState.category = dialogState.selectedCategory || "Challenge"; // Richtige Kategorie
+  currentBattleState.playerLeft = "Ich";
+  currentBattleState.playerRight = dialogState.playerName;
+
   dialogState.isOpen = false;
   dialogState.selectedChallenge = null;
   dialogState.selectedChallengeId = null;
@@ -325,22 +436,19 @@ function sendChallenge() {
     .getElementById("challenge-dialog-backdrop")
     .classList.add("hidden");
 
-  // Angenommen, Spieler + Challenge ausgewählt
+  // Battle Dialog direkt anzeigen
   showBattleDialog({
-    category: dialogState.selectedChallenge ? "Fitness" : "Mutprobe",
-    challengeName: dialogState.selectedChallenge || "Sprint 100m",
+    category: currentBattleState.category,
+    challengeName: currentBattleState.challengeName,
     playerLeft: "Ich",
     playerRight: dialogState.playerName || "Spieler 2",
+    onSuccess: handleBattleSuccess,
+    onSurrender: handleBattleSurrender,
     onClose: () => {
       console.log("Challenge erfolgreich abgeschlossen");
       dialogState.isOpen = false;
-    },
-    onSurrender: () => {
-      console.log("Aufgegeben");
-      dialogState.isOpen = false;
     }
   });
-
 }
 
 
@@ -367,6 +475,7 @@ function sendChallenge() {
 
 async function loadRandomChallenge(categoryName) {
   dialogState.isLoading = true;
+  dialogState.selectedCategory = categoryName;  // Kategorie merken
   renderChallengeDialog();
 
   const category = challenges[categoryName];
@@ -387,7 +496,7 @@ async function loadRandomChallenge(categoryName) {
 }
 
 
-function showBattleDialog({ category, challengeName, playerLeft, playerRight, onClose, onSurrender }) {
+function showBattleDialog({ category, challengeName, playerLeft, playerRight, onClose, onSurrender, onSuccess }) {
   const backdrop = document.getElementById("battle-dialog-backdrop");
   const categoryEl = document.getElementById("battle-category");
   const challengeEl = document.getElementById("battle-challenge");
@@ -411,28 +520,61 @@ function showBattleDialog({ category, challengeName, playerLeft, playerRight, on
   }
 
   successBtn.onclick = () => {
-    showBattleWin({
-  winnerName: "Ich",
-  winnerPointsDelta: 50
-});
-
     cleanup();
-    if (onClose) onClose();
+    if (onSuccess) onSuccess();
   };
 
   surrenderBtn.onclick = () => {
-    showBattleLose({
-  loserName: "Ich",
-  loserPointsDelta: 25,
-  trashTalk: "Haha, nächstes Mal packst du es!",
-  winnerName: "Spieler 2"
-});
-
     cleanup();
     if (onSurrender) onSurrender();
   };
 
   closeBtn.onclick = cleanup;
+}
+
+
+function showVotingDialog({ playerA, playerB, onVote }) {
+  const backdrop = document.getElementById("battle-voting-backdrop");
+  const btnA = document.getElementById("vote-player-a");
+  const btnB = document.getElementById("vote-player-b");
+  const feedback = document.getElementById("voting-feedback");
+
+  btnA.textContent = playerA.toUpperCase();
+  btnB.textContent = playerB.toUpperCase();
+  
+  let hasVoted = false;
+
+  function handleVote(playerName) {
+    if (hasVoted) return;
+    hasVoted = true;
+    
+    feedback.textContent = `DU HAST FÜR ${playerName.toUpperCase()} GESTIMMT`;
+    feedback.style.color = "#4CAF50";
+    
+    btnA.disabled = true;
+    btnB.disabled = true;
+    btnA.style.opacity = "0.5";
+    btnB.style.opacity = "0.5";
+    
+    if (onVote) onVote(playerName);
+    
+    // Dialog nach 2 Sekunden schließen
+    setTimeout(() => {
+      backdrop.classList.add("hidden");
+      hasVoted = false;
+      btnA.disabled = false;
+      btnB.disabled = false;
+      btnA.style.opacity = "1";
+      btnB.style.opacity = "1";
+      feedback.textContent = "Tippe auf einen Spieler";
+      feedback.style.color = "gray";
+    }, 2000);
+  }
+
+  btnA.onclick = () => handleVote(playerA);
+  btnB.onclick = () => handleVote(playerB);
+
+  backdrop.classList.remove("hidden");
 }
 
 

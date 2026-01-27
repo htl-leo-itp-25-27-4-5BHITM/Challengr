@@ -426,3 +426,32 @@ h2 {
   font-weight: 600;
   cursor: pointer;
 }
+
+/* Voting Dialog Styling */
+.vote-btn {
+  padding: 20px;
+  width: 100%;
+  border: none;
+  border-radius: 18px;
+  background-color: #FFD93D;
+  color: #222;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.vote-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+}
+
+.vote-btn:disabled {
+  cursor: not-allowed;
+}
+
+#voting-feedback {
+  margin-top: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+}
