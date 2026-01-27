@@ -14,6 +14,9 @@ final class GameSocketService: ObservableObject {
     init(playerId: Int64) {
         self.playerId = playerId
     }
+    
+    var onBattleResult: ((BattleResultData) -> Void)?
+
 
     // MARK: - Connect / Disconnect
 
@@ -76,6 +79,16 @@ final class GameSocketService: ObservableObject {
             print("❌ JSON serialisation error:", error)
         }
     }
+    
+    func sendVote(battleId: Int64, winnerName: String) {
+        let payload: [String: Any] = [
+            "type": "battle-vote",
+            "battleId": battleId,
+            "winnerName": winnerName
+        ]
+        send(json: payload)
+    }
+
 
     // MARK: - Empfangen
 
@@ -109,29 +122,42 @@ final class GameSocketService: ObservableObject {
                 return
             }
 
-            // JSON vom Server:
-            // {
-            //   "type": "battle-requested",
-            //   "battleId": 10,
-            //   "fromPlayerId": 3,
-            //   "toPlayerId": 1,
-            //   "challengeId": 7,
-            //   "status": "REQUESTED"
-            // }
             if type == "battle-requested" {
                 let battleId = (json["battleId"] as? NSNumber)?.int64Value ?? 0
-                let fromId = (json["fromPlayerId"] as? NSNumber)?.int64Value ?? 0
-                let toId = (json["toPlayerId"] as? NSNumber)?.int64Value ?? 0
+                let fromId   = (json["fromPlayerId"] as? NSNumber)?.int64Value ?? 0
+                let toId     = (json["toPlayerId"] as? NSNumber)?.int64Value ?? 0
                 let challengeId = (json["challengeId"] as? NSNumber)?.int64Value ?? 0
                 onChallengeReceived?(battleId, fromId, toId, challengeId)
             }
 
-            // Optional: weitere Typen wie "battle-updated" usw. hier auswerten
+            // NEU: Ergebnis nach Voting
+            if type == "battle-result" {
+                let winnerName = json["winnerName"] as? String ?? ""
+                let loserName  = json["loserName"]  as? String ?? ""
+                let winnerDelta = json["winnerPointsDelta"] as? Int ?? 0
+                let loserDelta  = json["loserPointsDelta"]  as? Int ?? 0
+                let trashTalk   = json["trashTalk"] as? String ?? "Good game!"
+
+                let result = BattleResultData(
+                    winnerName: winnerName,
+                    winnerAvatar: "opponentAvatar",
+                    winnerPointsDelta: winnerDelta,
+                    loserName: loserName,
+                    loserAvatar: "ownAvatar",
+                    loserPointsDelta: loserDelta,
+                    trashTalk: trashTalk
+                )
+
+                DispatchQueue.main.async {
+                    self.onBattleResult?(result)
+                }
+            }
 
         } catch {
             print("Error parsing WS JSON:", error)
         }
     }
+
 
     deinit {
         disconnect()

@@ -28,6 +28,7 @@ struct BattleView: View {
     let playerRight: String
     let onClose: () -> Void
     let onSurrender: () -> Void // zum Schließen
+    let onFinished: () -> Void
 
     var body: some View {
         ZStack {
@@ -68,11 +69,10 @@ struct BattleView: View {
                     .font(.subheadline)
 
                 HStack(spacing: 24) {
-                    Button("Geschafft ✅") {
-                        // TODO: später Ergebnis ans Backend schicken
-                        onClose()
-                    }
-                    .buttonStyle(.borderedProminent)
+                    Button("Geschafft") {
+                                onFinished()            // statt direkt schließen
+                            }
+                            .buttonStyle(.borderedProminent)
 
                     Button("Aufgeben ❌") {
                         onSurrender()

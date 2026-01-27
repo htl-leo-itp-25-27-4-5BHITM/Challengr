@@ -20,9 +20,11 @@ struct PlayerAnnotation: Identifiable {
 enum ActiveFullScreen {
     case none
     case battle
+    case voting
     case win
     case lose
 }
+
 
 
 struct MapView: View {
@@ -77,6 +79,10 @@ struct MapView: View {
             pitch: 0
         )
     )
+    
+    @State private var myVote: String? = nil
+    @State private var opponentVote: String? = nil
+
 
     let minDistance: CLLocationDistance = 200
     let maxDistance: CLLocationDistance = 5000
@@ -138,19 +144,16 @@ struct MapView: View {
                         playerLeft: info.playerA,
                         playerRight: info.playerB,
                         onClose: {
-                            // z.B. wenn „Geschafft“ gedrückt wird (solange noch kein Win-Screen da ist)
                             activeFullScreen = .none
                         },
                         onSurrender: {
-                            // Backend-Status setzen
+                            // wie bei dir
                             if let battleId = currentBattleId {
                                 socket.sendUpdateBattleStatus(
                                     battleId: battleId,
                                     status: "DONE_SURRENDER"
                                 )
                             }
-
-                            // Ergebnisdaten für den Lose-Screen
                             resultData = BattleResultData(
                                 winnerName: "WebappSpieler",
                                 winnerAvatar: "opponentAvatar",
@@ -160,28 +163,55 @@ struct MapView: View {
                                 loserPointsDelta: -10,
                                 trashTalk: "You surrendered… better luck next time!"
                             )
-
-                            // auf Lose-Screen umschalten
                             activeFullScreen = .lose
+                        },
+                        onFinished: {
+                            // hier ins Voting springen
+                            activeFullScreen = .voting
                         }
                     )
                 } else {
                     EmptyView()
                 }
 
+
             case .win:
                 if let data = resultData {
-                    BattleWinView(data: data)
+                    BattleWinView(data: data) {
+                        activeFullScreen = .none   // zurück zur Map
+                    }
                 } else {
                     EmptyView()
                 }
 
+
             case .lose:
                 if let data = resultData {
-                    BattleLoseView(data: data)
+                    BattleLoseView(data: data) {
+                        activeFullScreen = .none   // schließt das Fullscreen-Cover
+                    }
                 } else {
                     EmptyView()
                 }
+            case .voting:
+                if let info = activeBattleInfo,
+                   let battleId = currentBattleId {
+                    BattleVotingView(
+                        playerA: info.playerA,  // dein Name
+                        playerB: info.playerB   // Gegner
+                    ) { chosen in
+                        myVote = chosen
+                        socket.sendVote(
+                            battleId: battleId,
+                            winnerName: chosen
+                        )
+                    }
+                } else {
+                    EmptyView()
+                }
+
+
+
             case .none:
                 EmptyView()
             }
@@ -366,15 +396,15 @@ struct MapView: View {
                                 activeBattleInfo = (
                                     challengeName: challenge.name,
                                     category: challenge.category,
-                                    playerA: ownPlayerName,
-                                    playerB: opponentName
+                                    playerA: ownPlayerName,   // <- DU
+                                    playerB: opponentName     // <- GEGNER
                                 )
 
                                 incomingChallenge = nil
-                                currentBattleId = nil
-
+                                // currentBattleId NICHT auf nil setzen!
                                 activeFullScreen = .battle
                             }
+
 
                             .padding(.horizontal)
 
@@ -423,7 +453,6 @@ struct MapView: View {
                     playerLeft: info.playerA,
                     playerRight: info.playerB,
                     onClose: {
-                        // vorerst: einfach schließen
                         activeFullScreen = .none
                     },
                     onSurrender: {
@@ -442,10 +471,11 @@ struct MapView: View {
                             trashTalk: "You surrendered… better luck next time!"
                         )
 
-                        print("SURRENDER resultData:", resultData as Any)
-
-                        // Battle-View zu, Lose-View auf
                         activeFullScreen = .lose
+                    },
+                    onFinished: {
+                        // „Geschafft“ gedrückt -> Voting
+                        activeFullScreen = .voting
                     }
                 )
             } else {
@@ -453,6 +483,7 @@ struct MapView: View {
             }
         }
     }
+
 
 
 
@@ -493,6 +524,20 @@ struct MapView: View {
                 currentBattleId = battleId
             }
         }
+        
+        socket.onBattleResult = { data in
+            resultData = data
+
+            // 5 Sekunden warten, danach Win/Lose anzeigen
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                if data.winnerName == ownPlayerName {
+                    activeFullScreen = .win
+                } else {
+                    activeFullScreen = .lose
+                }
+            }
+        }
+
     }
 
     /// Handles updates of the user location and refreshes nearby players.

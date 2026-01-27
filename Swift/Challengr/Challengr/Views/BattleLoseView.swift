@@ -8,10 +8,11 @@ import SwiftUI
 
 struct BattleLoseView: View {
     let data: BattleResultData
+    let onClose: () -> Void   // neu
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()   // klarer Hintergrund
+            Color.black.ignoresSafeArea()
 
             VStack(spacing: 24) {
                 Text("Niederlage")
@@ -19,38 +20,25 @@ struct BattleLoseView: View {
                     .fontWeight(.bold)
                     .foregroundColor(.red)
 
-                VStack(spacing: 8) {
-                    // Placeholder avatar
-                    Image(systemName: "person.fill.xmark")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 100)
-                        .foregroundColor(.white)
-
-                    Text(data.loserName.isEmpty ? "Du" : data.loserName)
-                        .font(.title2)
-                        .foregroundColor(.white)
-
-                    Text("\(data.loserPointsDelta) Punkte")
-                        .font(.headline)
-                        .foregroundColor(.red)
-                }
-
                 Text(data.trashTalk)
-                    .font(.body)
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .padding()
 
                 Spacer()
 
-                Text("Sieger: \(data.winnerName)")
-                    .font(.footnote)
-                    .foregroundColor(.gray)
+                Button("Zurück zur Karte") {
+                    onClose()          // hier geht's zurück
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.white)
+                .foregroundColor(.black)
+                .padding(.bottom, 40)
             }
             .padding()
         }
     }
 }
+
 
 

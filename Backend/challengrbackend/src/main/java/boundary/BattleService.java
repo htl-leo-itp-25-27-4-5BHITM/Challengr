@@ -75,7 +75,7 @@ public class BattleService {
         return battle;
     }
 
-    // Winner setzen und Battle abschließen
+    // Winner setzen und Battle abschließen (kannst du später fürs echte Ranking nutzen)
     @Transactional
     public Battle finishBattle(Long battleId, Long winnerPlayerId) {
         Battle battle = battleRepository.findById(battleId);
@@ -88,7 +88,7 @@ public class BattleService {
             throw new IllegalArgumentException("winner not found");
         }
 
-        battle.setWinner(winner);   // vorausgesetzt: Feld winner in Battle-Entity
+        battle.setWinner(winner);
         battle.setStatus("DONE");
         return battle;
     }
