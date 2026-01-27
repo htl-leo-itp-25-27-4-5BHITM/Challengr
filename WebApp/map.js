@@ -324,6 +324,23 @@ function sendChallenge() {
   document
     .getElementById("challenge-dialog-backdrop")
     .classList.add("hidden");
+
+  // Angenommen, Spieler + Challenge ausgewählt
+  showBattleDialog({
+    category: dialogState.selectedChallenge ? "Fitness" : "Mutprobe",
+    challengeName: dialogState.selectedChallenge || "Sprint 100m",
+    playerLeft: "Ich",
+    playerRight: dialogState.playerName || "Spieler 2",
+    onClose: () => {
+      console.log("Challenge erfolgreich abgeschlossen");
+      dialogState.isOpen = false;
+    },
+    onSurrender: () => {
+      console.log("Aufgegeben");
+      dialogState.isOpen = false;
+    }
+  });
+
 }
 
 
@@ -346,6 +363,8 @@ function sendChallenge() {
   });
 }
 
+
+
 async function loadRandomChallenge(categoryName) {
   dialogState.isLoading = true;
   renderChallengeDialog();
@@ -366,6 +385,128 @@ async function loadRandomChallenge(categoryName) {
   dialogState.selectedChallengeId = random.id;
   renderChallengeDialog();
 }
+
+
+function showBattleDialog({ category, challengeName, playerLeft, playerRight, onClose, onSurrender }) {
+  const backdrop = document.getElementById("battle-dialog-backdrop");
+  const categoryEl = document.getElementById("battle-category");
+  const challengeEl = document.getElementById("battle-challenge");
+  const vsEl = document.getElementById("battle-vs");
+
+  categoryEl.textContent = category.toUpperCase();
+  challengeEl.textContent = challengeName;
+  vsEl.textContent = `${playerLeft}  VS  ${playerRight}`;
+
+  backdrop.classList.remove("hidden");
+
+  const successBtn = document.getElementById("battle-success-btn");
+  const surrenderBtn = document.getElementById("battle-surrender-btn");
+  const closeBtn = document.getElementById("battle-close-btn");
+
+  function cleanup() {
+    backdrop.classList.add("hidden");
+    successBtn.onclick = null;
+    surrenderBtn.onclick = null;
+    closeBtn.onclick = null;
+  }
+
+  successBtn.onclick = () => {
+    showBattleWin({
+  winnerName: "Ich",
+  winnerPointsDelta: 50
+});
+
+    cleanup();
+    if (onClose) onClose();
+  };
+
+  surrenderBtn.onclick = () => {
+    showBattleLose({
+  loserName: "Ich",
+  loserPointsDelta: 25,
+  trashTalk: "Haha, nächstes Mal packst du es!",
+  winnerName: "Spieler 2"
+});
+
+    cleanup();
+    if (onSurrender) onSurrender();
+  };
+
+  closeBtn.onclick = cleanup;
+}
+
+
+function showBattleWin({ winnerName, winnerAvatar, winnerPointsDelta }) {
+  const backdrop = document.getElementById("battle-win-backdrop");
+  const nameEl = document.getElementById("battle-win-name");
+  const pointsEl = document.getElementById("battle-win-points");
+  const footerEl = document.getElementById("battle-win-footer");
+  const closeBtn = document.getElementById("battle-win-close");
+
+  nameEl.textContent = winnerName;
+  pointsEl.textContent = `+${winnerPointsDelta} Punkte`;
+  footerEl.textContent = `Sieger: ${winnerName}`;
+
+  backdrop.classList.remove("hidden");
+
+  function cleanup() {
+    backdrop.classList.add("hidden");
+    closeBtn.onclick = null;
+  }
+
+  closeBtn.onclick = cleanup;
+}
+
+function showBattleLose({ loserName, loserPointsDelta, trashTalk, winnerName }) {
+  const backdrop = document.getElementById("battle-lose-backdrop");
+  const nameEl = document.getElementById("battle-lose-name");
+  const pointsEl = document.getElementById("battle-lose-points");
+  const trashEl = document.getElementById("battle-lose-trash");
+  const footerEl = document.getElementById("battle-lose-footer");
+  const closeBtn = document.getElementById("battle-lose-close");
+
+  nameEl.textContent = loserName || "Du";
+  pointsEl.textContent = `-${loserPointsDelta} Punkte`;
+  trashEl.textContent = trashTalk || "";
+  footerEl.textContent = `Sieger: ${winnerName}`;
+
+  backdrop.classList.remove("hidden");
+
+  function cleanup() {
+    backdrop.classList.add("hidden");
+    closeBtn.onclick = null;
+  }
+
+  closeBtn.onclick = cleanup;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function clearPins() {
   window._pins.forEach(pin => {
