@@ -321,22 +321,44 @@ struct MapView: View {
     private var playerPopupOverlay: some View {
         Group {
             if let player = selectedPlayer, showPlayerPopup {
-                VStack {
-                    Text("\(player.title)\nherausfordern")
-                        .font(.headline)
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(12)
-                        .shadow(radius: 5)
-                        .onTapGesture {
-                            showPlayerChallengeDialog = true
-                        }
+                VStack(spacing: 10) {
+
+                    Text(player.title.uppercased())
+                        .font(.system(size: 14, weight: .black, design: .rounded))
+                        .tracking(1)
+                        .foregroundStyle(.challengrBlack)
+
+                    Button {
+                        showPlayerChallengeDialog = true
+                    } label: {
+                        Text("HERAUSFORDERN")
+                            .font(.system(size: 13, weight: .black))
+                            .tracking(1)
+                            .foregroundStyle(.challengrBlack)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 18)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(.challengrYellow)
+                            )
+                    }
                 }
+                .padding(14)
+                .background(
+                    RoundedRectangle(cornerRadius: 18)
+                        .fill(.ultraThinMaterial)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(.white.opacity(0.15), lineWidth: 1)
+                )
+                .shadow(radius: 15)
                 .padding(.top, 80)
                 .transition(.scale)
             }
         }
     }
+
 
     /// Fullscreen  overlay that hosts the ChallengeDialogView.
     private var challengeDialogOverlay: some View {
@@ -374,20 +396,35 @@ struct MapView: View {
                     ?? "Gegner \(challenge.fromId)"
 
                 ZStack {
-                    Color.black.opacity(0.4)
+                    Color.black.opacity(0.45)
                         .ignoresSafeArea()
 
-                    VStack(spacing: 12) {
-                        Text("Du wurdest herausgefordert!")
-                            .font(.headline)
+                    VStack(spacing: 18) {
 
-                        Text("Von \(opponentName)\nChallenge: \(challenge.name)")
+                        Text("CHALLENGE!")
+                            .font(.system(size: 14, weight: .black, design: .rounded))
+                            .tracking(1.4)
+                            .foregroundStyle(.challengrBlack)
+
+                        Text(opponentName.uppercased())
+                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .foregroundStyle(.challengrBlack)
+
+                        Text(challenge.name)
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
                             .multilineTextAlignment(.center)
-                            .font(.subheadline)
+                            .foregroundStyle(.challengrBlack)
+                            .padding(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(.challengrYellow)
+                            )
 
-                        HStack {
-                            /// Accept battle on backend.
-                            Button("Annehmen") {
+                        // ACTIONS
+                        HStack(spacing: 14) {
+
+                            // ACCEPT
+                            Button {
                                 socket.sendUpdateBattleStatus(
                                     battleId: battleId,
                                     status: "ACCEPTED"
@@ -396,20 +433,27 @@ struct MapView: View {
                                 activeBattleInfo = (
                                     challengeName: challenge.name,
                                     category: challenge.category,
-                                    playerA: ownPlayerName,   // <- DU
-                                    playerB: opponentName     // <- GEGNER
+                                    playerA: ownPlayerName,
+                                    playerB: opponentName
                                 )
 
                                 incomingChallenge = nil
-                                // currentBattleId NICHT auf nil setzen!
                                 activeFullScreen = .battle
+                            } label: {
+                                Text("ANNEHMEN")
+                                    .font(.system(size: 14, weight: .black))
+                                    .tracking(1)
+                                    .foregroundStyle(.challengrBlack)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .fill(.challengrGreen)
+                                    )
                             }
 
-
-                            .padding(.horizontal)
-
-                            /// Decline battle on backend.
-                            Button("Ablehnen") {
+                            // DECLINE
+                            Button {
                                 socket.sendUpdateBattleStatus(
                                     battleId: battleId,
                                     status: "DECLINED"
@@ -417,20 +461,37 @@ struct MapView: View {
 
                                 incomingChallenge = nil
                                 currentBattleId = nil
+                            } label: {
+                                Text("ABLEHNEN")
+                                    .font(.system(size: 14, weight: .black))
+                                    .tracking(1)
+                                    .foregroundStyle(.chalengrRed)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .stroke(.chalengrRed, lineWidth: 2)
+                                    )
                             }
-                            .padding(.horizontal)
                         }
                     }
-                    .padding()
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(12)
-                    .shadow(radius: 5)
-                    .padding()
+                    .padding(18)
+                    .frame(maxWidth: 300)
+                    .background(
+                        RoundedRectangle(cornerRadius: 22)
+                            .fill(.ultraThinMaterial)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 22)
+                            .stroke(.white.opacity(0.15), lineWidth: 1)
+                    )
+                    .shadow(radius: 25)
                 }
                 .transition(.scale)
             }
         }
     }
+
     
     // MARK: - Sheets & Screens
 
