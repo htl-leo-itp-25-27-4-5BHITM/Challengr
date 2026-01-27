@@ -8,12 +8,26 @@
 
 import SwiftUI
 
+struct BattleResultData {
+    let winnerName: String
+    let winnerAvatar: String   // später: Bildname
+    let winnerPointsDelta: Int
+
+    let loserName: String
+    let loserAvatar: String
+    let loserPointsDelta: Int
+
+    let trashTalk: String      // nur im Lose-Screen angezeigt
+}
+
+
 struct BattleView: View {
     let challengeName: String
     let category: String
     let playerLeft: String
     let playerRight: String
-    let onClose: () -> Void   // zum Schließen
+    let onClose: () -> Void
+    let onSurrender: () -> Void // zum Schließen
 
     var body: some View {
         ZStack {
@@ -61,7 +75,7 @@ struct BattleView: View {
                     .buttonStyle(.borderedProminent)
 
                     Button("Aufgeben ❌") {
-                        onClose()
+                        onSurrender()
                     }
                     .buttonStyle(.bordered)
                     .tint(.red)

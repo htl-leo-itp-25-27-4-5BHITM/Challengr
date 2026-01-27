@@ -17,6 +17,13 @@ struct PlayerAnnotation: Identifiable {
     let title: String
 }
 
+enum ActiveFullScreen {
+    case none
+    case battle
+    case win
+    case lose
+}
+
 
 struct MapView: View {
     
@@ -46,11 +53,13 @@ struct MapView: View {
 
     /// Battle Infos and Settings.
     @State private var currentBattleId: Int64? = nil
-    @State private var isBattleActive = false
     @State private var activeBattleInfo: (challengeName: String,
                                           category: String,
                                           playerA: String,
                                           playerB: String)? = nil
+    @State private var activeFullScreen: ActiveFullScreen = .none
+    @State private var resultData: BattleResultData? = nil
+
     /// Static ownPlayerName & coordinates
     @State private var ownPlayerName: String = ""
     @State private var ownCoordinate: CLLocationCoordinate2D? = nil
@@ -118,10 +127,69 @@ struct MapView: View {
         .sheet(isPresented: $showChallengeView) {
             challengeSheet
         }
-        .fullScreenCover(isPresented: $isBattleActive) {
-            battleScreen
+        
+        .fullScreenCover(isPresented: .constant(activeFullScreen != .none)) {
+            switch activeFullScreen {
+            case .battle:
+                if let info = activeBattleInfo {
+                    BattleView(
+                        challengeName: info.challengeName,
+                        category: info.category,
+                        playerLeft: info.playerA,
+                        playerRight: info.playerB,
+                        onClose: {
+                            // z.B. wenn „Geschafft“ gedrückt wird (solange noch kein Win-Screen da ist)
+                            activeFullScreen = .none
+                        },
+                        onSurrender: {
+                            // Backend-Status setzen
+                            if let battleId = currentBattleId {
+                                socket.sendUpdateBattleStatus(
+                                    battleId: battleId,
+                                    status: "DONE_SURRENDER"
+                                )
+                            }
+
+                            // Ergebnisdaten für den Lose-Screen
+                            resultData = BattleResultData(
+                                winnerName: "WebappSpieler",
+                                winnerAvatar: "opponentAvatar",
+                                winnerPointsDelta: 20,
+                                loserName: ownPlayerName,
+                                loserAvatar: "ownAvatar",
+                                loserPointsDelta: -10,
+                                trashTalk: "You surrendered… better luck next time!"
+                            )
+
+                            // auf Lose-Screen umschalten
+                            activeFullScreen = .lose
+                        }
+                    )
+                } else {
+                    EmptyView()
+                }
+
+            case .win:
+                if let data = resultData {
+                    BattleWinView(data: data)
+                } else {
+                    EmptyView()
+                }
+
+            case .lose:
+                if let data = resultData {
+                    BattleLoseView(data: data)
+                } else {
+                    EmptyView()
+                }
+            case .none:
+                EmptyView()
+            }
         }
+
+
     }
+
 
     
     // MARK: - Map & Controls
@@ -304,8 +372,10 @@ struct MapView: View {
 
                                 incomingChallenge = nil
                                 currentBattleId = nil
-                                isBattleActive = true
+
+                                activeFullScreen = .battle
                             }
+
                             .padding(.horizontal)
 
                             /// Decline battle on backend.
@@ -345,18 +415,47 @@ struct MapView: View {
     /// Fullscreen battle screen displayed after accepting a challenge.
     private var battleScreen: some View {
         Group {
-            if let info = activeBattleInfo {
+            if let info = activeBattleInfo,
+               let battleId = currentBattleId {
                 BattleView(
                     challengeName: info.challengeName,
                     category: info.category,
                     playerLeft: info.playerA,
-                    playerRight: info.playerB
-                ) {
-                    isBattleActive = false
-                }
+                    playerRight: info.playerB,
+                    onClose: {
+                        // vorerst: einfach schließen
+                        activeFullScreen = .none
+                    },
+                    onSurrender: {
+                        socket.sendUpdateBattleStatus(
+                            battleId: battleId,
+                            status: "DONE_SURRENDER"
+                        )
+
+                        resultData = BattleResultData(
+                            winnerName: info.playerB,
+                            winnerAvatar: "opponentAvatar",
+                            winnerPointsDelta: 20,
+                            loserName: info.playerA,
+                            loserAvatar: "ownAvatar",
+                            loserPointsDelta: -10,
+                            trashTalk: "You surrendered… better luck next time!"
+                        )
+
+                        print("SURRENDER resultData:", resultData as Any)
+
+                        // Battle-View zu, Lose-View auf
+                        activeFullScreen = .lose
+                    }
+                )
+            } else {
+                EmptyView()
             }
         }
     }
+
+
+
 
 
     // MARK: - Logik
