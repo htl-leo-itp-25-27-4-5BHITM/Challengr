@@ -8,37 +8,55 @@ import SwiftUI
 
 struct BattleLoseView: View {
     let data: BattleResultData
-    let onClose: () -> Void   // neu
+    let onClose: () -> Void
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            // Background
+            Color.challengrBlack
+                .ignoresSafeArea()
 
-            VStack(spacing: 24) {
-                Text("Niederlage")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(.red)
+            VStack(spacing: 32) {
 
-                Text(data.trashTalk)
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-                    .padding()
+                // GAME OVER / LOSE HEADER
+                Text("NIEDERLAGE")
+                    .font(.system(size: 44, weight: .black, design: .rounded))
+                    .foregroundStyle(.chalengrRed)
+                    .tracking(2)
+
+                // TRASH TALK PANEL
+                VStack {
+                    Text(data.trashTalk)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.challengrWhite)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(24)
+                .frame(maxWidth: .infinity)
+                .background(.challengrBlack)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(.chalengrRed, lineWidth: 3)
+                )
 
                 Spacer()
 
-                Button("Zurück zur Karte") {
-                    onClose()          // hier geht's zurück
+                // CTA BUTTON
+                Button(action: onClose) {
+                    Text("ZURÜCK ZUR KARTE")
+                        .font(.system(size: 18, weight: .black))
+                        .tracking(1)
+                        .foregroundStyle(.challengrBlack)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18)
+                                .fill(.challengrYellow)
+                        )
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.white)
-                .foregroundColor(.black)
                 .padding(.bottom, 40)
             }
             .padding()
         }
     }
 }
-
-
-

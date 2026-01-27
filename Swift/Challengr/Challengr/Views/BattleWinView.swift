@@ -8,37 +8,53 @@ import SwiftUI
 
 struct BattleWinView: View {
     let data: BattleResultData
-    let onClose: () -> Void   // wie bei Lose
+    let onClose: () -> Void
 
     var body: some View {
         ZStack {
-            Color.green.ignoresSafeArea()
+            // Background
+            Color.challengrGreen
+                .ignoresSafeArea()
 
-            VStack(spacing: 24) {
-                Text("Gewonnen!")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
+            VStack(spacing: 32) {
 
-                Text("Glückwunsch, \(data.winnerName)!")
-                    .foregroundColor(.white)
+                // TITLE
+                Text("GEWONNEN!")
+                    .font(.system(size: 44, weight: .black, design: .rounded))
+                    .tracking(2)
+                    .foregroundStyle(.challengrWhite)
 
-                Text("+\(data.winnerPointsDelta) Punkte")
-                    .font(.title2)
-                    .foregroundColor(.white)
+                // CONGRATS
+                Text("GLÜCKWUNSCH, \(data.winnerName.uppercased())!")
+                    .font(.system(size: 20, weight: .bold))
+                    .tracking(1)
+                    .foregroundStyle(.challengrWhite)
+                    .multilineTextAlignment(.center)
+
+                // POINTS
+                Text("+\(data.winnerPointsDelta) PUNKTE")
+                    .font(.system(size: 28, weight: .black))
+                    .tracking(1)
+                    .foregroundStyle(.challengrWhite)
 
                 Spacer()
 
-                Button("Zurück zur Karte") {
-                    onClose()
+                // BACK BUTTON
+                Button(action: onClose) {
+                    Text("ZURÜCK ZUR KARTE")
+                        .font(.system(size: 18, weight: .black))
+                        .tracking(1)
+                        .foregroundStyle(.challengrBlack)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18)
+                                .fill(.challengrWhite)
+                        )
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.white)
-                .foregroundColor(.black)
                 .padding(.bottom, 40)
             }
             .padding()
         }
     }
 }
-

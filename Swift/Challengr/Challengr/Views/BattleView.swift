@@ -27,64 +27,99 @@ struct BattleView: View {
     let playerLeft: String
     let playerRight: String
     let onClose: () -> Void
-    let onSurrender: () -> Void // zum Schließen
+    let onSurrender: () -> Void
     let onFinished: () -> Void
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [.black, .gray],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Background
+            Color.challengrWhite
+                .ignoresSafeArea()
 
-            VStack(spacing: 24) {
+            VStack(spacing: 32) {
+
+                // CATEGORY
                 Text(category.uppercased())
-                    .font(.caption)
-                    .foregroundColor(.yellow)
+                    .font(.system(size: 14, weight: .black, design: .rounded))
+                    .tracking(1.5)
+                    .foregroundStyle(.challengrBlack)
 
+                // CHALLENGE NAME
                 Text(challengeName)
-                    .font(.title)
-                    .fontWeight(.bold)
+                    .font(.system(size: 28, weight: .black, design: .rounded))
                     .multilineTextAlignment(.center)
+                    .foregroundStyle(.challengrBlack)
 
-                Text("\(playerLeft)  VS  \(playerRight)")
-                    .font(.headline)
-                    .padding(.top, 8)
+                // VS LINE
+                Text("\(playerLeft.uppercased())  VS  \(playerRight.uppercased())")
+                    .font(.system(size: 16, weight: .bold))
+                    .tracking(1)
+                    .foregroundStyle(.challengrBlack.opacity(0.9))
 
-                // Platzhalter für spätere Figuren
-                HStack(spacing: 40) {
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.blue)
-                        .frame(width: 100, height: 160)
-
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.red)
-                        .frame(width: 100, height: 160)
+                // PLAYER PANELS
+                HStack(spacing: 32) {
+                    playerPanel(name: playerLeft, color: .challengrYellow)
+                    playerPanel(name: playerRight, color: .chalengrRed)
                 }
                 .padding(.vertical, 16)
 
-                Text("Challenge geschafft?")
-                    .font(.subheadline)
+                // QUESTION
+                Text("CHALLENGE GESCHAFFT?")
+                    .font(.system(size: 14, weight: .black))
+                    .tracking(1.2)
+                    .foregroundStyle(.challengrBlack)
 
-                HStack(spacing: 24) {
-                    Button("Geschafft") {
-                                onFinished()            // statt direkt schließen
-                            }
-                            .buttonStyle(.borderedProminent)
+                // ACTION BUTTONS
+                HStack(spacing: 20) {
 
-                    Button("Aufgeben ❌") {
-                        onSurrender()
+                    Button(action: onFinished) {
+                        Text("GESCHAFFT")
+                            .font(.system(size: 16, weight: .black))
+                            .tracking(1)
+                            .foregroundStyle(.challengrBlack)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(.challengrGreen)
+                            )
                     }
-                    .buttonStyle(.bordered)
-                    .tint(.red)
+
+                    Button(action: onSurrender) {
+                        Text("AUFGEBEN ❌")
+                            .font(.system(size: 16, weight: .black))
+                            .tracking(1)
+                            .foregroundStyle(.chalengrRed)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(.chalengrRed, lineWidth: 3)
+                            )
+                    }
                 }
 
                 Spacer()
             }
-            .foregroundColor(.white)
             .padding()
+        }
+    }
+
+    // MARK: - Player Panel
+    private func playerPanel(name: String, color: Color) -> some View {
+        VStack {
+            RoundedRectangle(cornerRadius: 18)
+                .fill(.challengrWhite)
+                .frame(width: 110, height: 170)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(color, lineWidth: 3)
+                )
+
+            Text(name.uppercased())
+                .font(.system(size: 14, weight: .bold))
+                .tracking(1)
+                .foregroundStyle(color)
         }
     }
 }

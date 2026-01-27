@@ -5,7 +5,6 @@
 //  Created by Sebastian Lehner  on 27.01.26.
 //
 
-
 import SwiftUI
 
 struct BattleVotingView: View {
@@ -17,44 +16,71 @@ struct BattleVotingView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            // Heller Hintergrund
+            Color.challengrWhite
+                .ignoresSafeArea()
 
-            VStack(spacing: 24) {
-                Text("Wer hat gewonnen?")
-                    .font(.title2)
-                    .foregroundColor(.white)
+            VStack(spacing: 32) {
 
-                VStack(spacing: 16) {
-                    voteButton(for: playerA)
-                    voteButton(for: playerB)
+                // TITLE
+                Text("WER HAT GEWONNEN?")
+                    .font(.system(size: 26, weight: .black, design: .rounded))
+                    .tracking(1.5)
+                    .foregroundStyle(.challengrBlack)
+
+                // VOTING BUTTONS
+                VStack(spacing: 20) {
+                    voteButton(
+                        for: playerA,
+                        color: .challengrYellow
+                    )
+
+                    voteButton(
+                        for: playerB,
+                        color: .chalengrRed
+                    )
                 }
 
+                // FEEDBACK
                 if let selected {
-                    Text("Du hast für \(selected) gestimmt.")
-                        .foregroundColor(.gray)
-                        .font(.footnote)
+                    Text("DU HAST FÜR \(selected.uppercased()) GESTIMMT")
+                        .font(.system(size: 12, weight: .bold))
+                        .tracking(1)
+                        .foregroundStyle(.challengrBlack)
                 } else {
-                    Text("Tippe auf einen Spieler, um abzustimmen.")
-                        .foregroundColor(.gray)
-                        .font(.footnote)
+                    Text("TIPPE AUF EINEN SPIELER")
+                        .font(.system(size: 12, weight: .bold))
+                        .tracking(1)
+                        .foregroundStyle(.challengrBlack.opacity(0.6))
                 }
+
+                Spacer()
             }
             .padding()
         }
     }
 
-    private func voteButton(for name: String) -> some View {
+    // MARK: - Vote Button
+    private func voteButton(
+        for name: String,
+        color: Color
+    ) -> some View {
         Button {
             selected = name
             onVote(name)
         } label: {
-            Text(name)
-                .font(.headline)
-                .foregroundColor(.white)
-                .padding()
+            Text(name.uppercased())
+                .font(.system(size: 18, weight: .black))
+                .tracking(1)
+                .foregroundStyle(.challengrBlack)
                 .frame(maxWidth: .infinity)
-                .background(selected == name ? Color.green : Color.red)
-                .cornerRadius(12)
+                .padding(.vertical, 20)
+                .background(
+                    RoundedRectangle(cornerRadius: 18)
+                        .fill(color)
+                )
         }
+        .disabled(selected != nil)
+        .opacity(selected == nil || selected == name ? 1 : 0.5)
     }
 }
