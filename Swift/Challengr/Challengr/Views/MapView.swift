@@ -101,6 +101,7 @@ struct MapView: View {
     
     /// Challenge Infos Window
     @State private var showChallengeView = false
+    @State private var showTrophyRoad = false
 
     /// Player Selected Infos
     @State private var selectedPlayer: PlayerAnnotation? = nil
@@ -133,7 +134,7 @@ struct MapView: View {
         ZStack(alignment: .bottomTrailing) {
             mapLayer
             locationButton
-            challengeButton
+            trophyRoadButton
         }
         .overlay(playerPopupOverlay)
         .overlay(challengeDialogOverlay)
@@ -304,11 +305,12 @@ struct MapView: View {
     }
 
     /// Trophy button at the bottom that opens the global ChallengeView.
-    private var challengeButton: some View {
+    /// Trophy Road / Challenge Button
+    private var trophyRoadButton: some View {
         VStack {
             Spacer()
             Button {
-                showChallengeView = true
+                showTrophyRoad = true // neues Binding für Trophy Road
             } label: {
                 Image(systemName: "trophy.fill")
                     .font(.system(size: 48, weight: .semibold))
@@ -318,10 +320,17 @@ struct MapView: View {
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 4)
             }
+            .sheet(isPresented: $showTrophyRoad) {
+                TrophyRoadView()
+            }
             .padding(.bottom, 40)
         }
         .frame(maxWidth: .infinity)
     }
+
+    
+    
+    
     
     // MARK: - Overlays
 
