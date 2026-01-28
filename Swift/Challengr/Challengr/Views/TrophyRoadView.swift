@@ -54,39 +54,49 @@ struct TrophyRoadView: View {
                         .shadow(color: .gray.opacity(0.4), radius: 6, x: 2, y: 2)
                         .padding(.top, 20)
 
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(spacing: 0) {
-                            ForEach(trophyRanks.indices.reversed(), id: \.self) { index in
-                                let rank = trophyRanks[index]
-                                rankBox(for: rank)
+                    // MARK: - ScrollViewReader für automatisches Scrollen
+                    ScrollViewReader { proxy in
+                        ScrollView(.vertical, showsIndicators: false) {
+                            VStack(spacing: 0) {
+                                ForEach(trophyRanks.indices.reversed(), id: \.self) { index in
+                                    let rank = trophyRanks[index]
+                                    rankBox(for: rank)
+                                        .id(rank.id) // <- wichtig für scrollTo
 
-                                if index > 0 {
-                                    let lowerRank = trophyRanks[index - 1]
-                                    etappenBlock(from: lowerRank, to: rank)
+                                    if index > 0 {
+                                        let lowerRank = trophyRanks[index - 1]
+                                        etappenBlock(from: lowerRank, to: rank)
+                                    }
                                 }
                             }
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 40)
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 40)
+                        .onAppear {
+                            // Automatisch zum aktuellen Rang scrollen
+                            withAnimation(.easeOut(duration: 0.5)) {
+                                proxy.scrollTo(currentRank.id, anchor: .center)
+                            }
+                        }
                     }
                 }
                 
                 VStack {
+                    Spacer()
+                    HStack {
                         Spacer()
-                        HStack {
-                            Spacer()
-                            NavigationLink(destination: ChallengeView()) {
-                                Image(systemName: "info.circle.fill")
-                                    .font(.system(size: 36))
-                                    .foregroundColor(.blue)
-                                    .padding()
-                                    .background(Circle().fill(Color.white))
-                                    .shadow(radius: 6)
-                            }
-                            .padding(.trailing, 24)
-                            .padding(.bottom, 24)
+                        NavigationLink(destination: ChallengeView()) {
+                            Image(systemName: "info.circle.fill")
+                                .font(.system(size: 36))
+                                .foregroundColor(.blue)
+                                .padding()
+                                .background(Circle().fill(Color.white))
+                                .shadow(radius: 6)
                         }
+                        .padding(.trailing, 24)
+                        .padding(.bottom, 24)
                     }
+                }
             }
         }
     }
