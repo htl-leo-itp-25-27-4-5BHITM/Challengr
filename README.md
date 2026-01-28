@@ -78,8 +78,6 @@ Ziele:
 
 ---
 
-
-
 ## Sprint (Sprint 6 – Start: 14.01.2026)
 
 Ziele:
@@ -87,3 +85,17 @@ Ziele:
 * Verbesserung des Stylings
 * Entwicklung eines vollständigen Dialoges für eine Challenge
 * Evaluierung eines JS‑Bundlers (Vite mit Proxy‑Setup und fixem Entwicklungsport) - Alternativ Webpack
+
+---
+
+
+
+## Sprint (Sprint 7 – Start: 28.01.2026)
+
+Ziele:
+
+* Einbindung eines Punktesystems
+* Speicherung der Punkte im Backend
+* Implementierung der Dialog Logik in der WebApp
+
+---
