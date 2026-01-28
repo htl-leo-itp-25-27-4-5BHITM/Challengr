@@ -43,3 +43,16 @@ INSERT INTO challenges (text, category_id) VALUES
                                                ('Welches chemische Symbol steht für Gold?', (SELECT id FROM challenge_categories WHERE name='Wissen')),
                                                ('Nenne drei Planeten unseres Sonnensystems', (SELECT id FROM challenge_categories WHERE name='Wissen')),
                                                ('Welches Jahr gilt als Beginn des Internetzeitalters?', (SELECT id FROM challenge_categories WHERE name='Wissen'));
+
+
+-- Ranks
+INSERT INTO rank (name, min, max, color) VALUES
+                                             ('Quitter', 0, 99, 'gray'),
+                                             ('Punchbag', 100, 199, 'red'),
+                                             ('Scrapper', 200, 349, 'green'),
+                                             ('Contender', 350, 599, 'yellow'),
+                                             ('Tryhard', 600, 949, 'orange'),
+                                             ('Brawler', 950, 1399, 'red'),
+                                             ('Dueler', 1400, 1999, 'purple'),
+                                             ('Challengr', 2000, 2800, 'yellow');
+
