@@ -52,6 +52,14 @@ struct MapView: View {
         name: String,
         category: String
     )? = nil
+    
+    @State private var outgoingBattleInfo: (
+        battleId: Int64,
+        opponentId: Int64,
+        challengeName: String,
+        category: String
+    )? = nil
+
 
     /// Battle Infos and Settings.
     @State private var currentBattleId: Int64? = nil
@@ -573,8 +581,8 @@ struct MapView: View {
 
         socket.onChallengeReceived = { battleId, fromId, toId, challengeId in
             if toId == ownPlayerId {
+                // wie bisher: eingehende Challenge
                 let info = challengeInfo(for: challengeId)
-
                 incomingChallenge = (
                     battleId: battleId,
                     fromId: fromId,
@@ -583,8 +591,67 @@ struct MapView: View {
                     category: info.category
                 )
                 currentBattleId = battleId
+            } else if fromId == ownPlayerId {
+                // NEU: wir sind der Angreifer
+                let info = challengeInfo(for: challengeId)
+                outgoingBattleInfo = (
+                    battleId: battleId,
+                    opponentId: toId,
+                    challengeName: info.name,
+                    category: info.category
+                )
+                currentBattleId = battleId
             }
         }
+
+        
+        socket.onBattleAccepted = { battleId in
+            
+            print("🔥 onBattleAccepted: battleId:", battleId,
+                      "currentBattleId:", currentBattleId as Any,
+                      "incomingChallenge:", incomingChallenge as Any,
+                      "outgoingBattleInfo:", outgoingBattleInfo as Any)
+            // Muss unser Battle sein
+            guard currentBattleId == battleId else { return }
+
+            // Fall A: Wir wurden herausgefordert (incomingChallenge gesetzt)
+            if let challenge = incomingChallenge {
+                let opponentName =
+                    annotations.first(where: { $0.playerId == challenge.fromId })?.title
+                    ?? "Gegner \(challenge.fromId)"
+
+                activeBattleInfo = (
+                    challengeName: challenge.name,
+                    category: challenge.category,
+                    playerA: ownPlayerName,
+                    playerB: opponentName
+                )
+
+                incomingChallenge = nil
+                activeFullScreen = .battle
+                return
+            }
+
+            // Fall B: Wir sind der Angreifer (outgoingBattleInfo gesetzt)
+            if let outgoing = outgoingBattleInfo {
+                let opponentName =
+                    annotations.first(where: { $0.playerId == outgoing.opponentId })?.title
+                    ?? "Gegner \(outgoing.opponentId)"
+
+                activeBattleInfo = (
+                    challengeName: outgoing.challengeName,
+                    category: outgoing.category,
+                    playerA: ownPlayerName,
+                    playerB: opponentName
+                )
+
+                activeFullScreen = .battle
+                return
+            }
+        }
+
+
+    
         
         socket.onBattleResult = { data in
             resultData = data

@@ -114,6 +114,7 @@ public class GameSocket {
 
         // nur an den Herausgeforderten schicken
         sendToPlayer(toId, payload);
+        sendToPlayer(fromId, payload);
         
         // Bestätigung an den Initiator senden
         String confirmPayload = """

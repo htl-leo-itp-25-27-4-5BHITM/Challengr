@@ -10,6 +10,9 @@ final class GameSocketService: ObservableObject {
     // Wird aufgerufen, wenn eine Battle-Anfrage reinkommt
     // battleId, fromId, toId, challengeId
     var onChallengeReceived: ((Int64, Int64, Int64, Int64) -> Void)?
+    // Wird aufgerufen, wenn ein Battle den Status ACCEPTED erreicht
+    var onBattleAccepted: ((Int64) -> Void)?
+
 
     init(playerId: Int64) {
         self.playerId = playerId
@@ -121,6 +124,8 @@ final class GameSocketService: ObservableObject {
                   let type = json["type"] as? String else {
                 return
             }
+            
+            
 
             if type == "battle-requested" {
                 let battleId = (json["battleId"] as? NSNumber)?.int64Value ?? 0
@@ -129,6 +134,21 @@ final class GameSocketService: ObservableObject {
                 let challengeId = (json["challengeId"] as? NSNumber)?.int64Value ?? 0
                 onChallengeReceived?(battleId, fromId, toId, challengeId)
             }
+            
+            if type == "battle-updated" {
+                let battleId = (json["battleId"] as? NSNumber)?.int64Value ?? 0
+                let status   = json["status"] as? String ?? ""
+
+                print("🔁 battle-updated empfangen:", battleId, status)
+
+                if status == "ACCEPTED" {
+                    DispatchQueue.main.async {
+                        self.onBattleAccepted?(battleId)
+                    }
+                }
+            }
+
+
 
             // NEU: Ergebnis nach Voting
             if type == "battle-result" {
