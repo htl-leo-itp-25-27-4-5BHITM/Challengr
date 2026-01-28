@@ -1,20 +1,24 @@
 // GameClient.js
+
 export class GameClient {
   constructor(playerId) {
+    // Spieler-ID dynamisch (z.B. aus Login)
     this.playerId = playerId;
     this.socket = null;
 
-    // Event-Callbacks (wie Swift Closures)
+    // Event-Callbacks (ähnlich wie Closures in Swift)
     this.handlers = {
       "battle-requested": [],
       "battle-updated": [],
-      "battle-result": []
+      "battle-result": [],
+      "battle-created": []
     };
   }
 
   // =====================
   // CONNECT / DISCONNECT
   // =====================
+
   connect() {
     if (this.socket) return;
 
@@ -53,8 +57,13 @@ export class GameClient {
   }
 
   // =====================
-  // EVENT SYSTEM (on)
+  // EVENT SYSTEM (on / emit)
   // =====================
+
+  /**
+   * Registriert einen Listener für einen bestimmten Message-Typ.
+   * type: "battle-requested" | "battle-updated" | "battle-result"
+   */
   on(type, callback) {
     if (!this.handlers[type]) {
       this.handlers[type] = [];
@@ -64,12 +73,13 @@ export class GameClient {
 
   emit(type, payload) {
     if (!this.handlers[type]) return;
-    this.handlers[type].forEach(cb => cb(payload));
+    this.handlers[type].forEach((cb) => cb(payload));
   }
 
   // =====================
   // SEND
   // =====================
+
   send(data) {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       console.warn("❌ WS not connected");
@@ -78,6 +88,11 @@ export class GameClient {
     this.socket.send(JSON.stringify(data));
   }
 
+  /**
+   * Battle anlegen (wir sind der Angreifer).
+   * toPlayerId: Gegner
+   * challengeId: ID der Challenge
+   */
   createBattle(toPlayerId, challengeId) {
     this.send({
       type: "create-battle",
@@ -87,6 +102,10 @@ export class GameClient {
     });
   }
 
+  /**
+   * Battle-Status updaten:
+   * z.B. "ACCEPTED", "DECLINED", "DONE_SURRENDER"
+   */
   updateBattleStatus(battleId, status) {
     this.send({
       type: "update-battle-status",
@@ -94,7 +113,11 @@ export class GameClient {
       status
     });
   }
+  
 
+  /**
+   * Vote im Voting-Screen senden.
+   */
   voteBattle(battleId, winnerName) {
     this.send({
       type: "battle-vote",
@@ -106,6 +129,7 @@ export class GameClient {
   // =====================
   // RECEIVE
   // =====================
+
   handleIncoming(msg) {
     const type = msg.type;
     if (!type) return;
@@ -116,9 +140,20 @@ export class GameClient {
         battleId: msg.battleId,
         fromPlayerId: msg.fromPlayerId,
         toPlayerId: msg.toPlayerId,
-        challengeId: msg.challengeId
+        challengeId: msg.challengeId,
+        status: msg.status
       });
     }
+
+    if (type === "battle-created") {
+    this.emit("battle-created", {
+      battleId: msg.battleId,
+      fromPlayerId: msg.fromPlayerId,
+      toPlayerId: msg.toPlayerId,
+      challengeId: msg.challengeId,
+      status: msg.status
+    });
+  }
 
     // battle-updated
     if (type === "battle-updated") {
@@ -131,12 +166,18 @@ export class GameClient {
     // battle-result
     if (type === "battle-result") {
       this.emit("battle-result", {
+        battleId: msg.battleId,
         winnerName: msg.winnerName,
         loserName: msg.loserName,
         winnerPointsDelta: msg.winnerPointsDelta,
         loserPointsDelta: msg.loserPointsDelta,
         trashTalk: msg.trashTalk
       });
+    }
+
+    // optional: error-handling
+    if (type === "error") {
+      console.error("Server error:", msg.message);
     }
   }
 }

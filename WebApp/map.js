@@ -1,5 +1,6 @@
 import { GameClient } from "./GameSocketClient.js";
 
+window.myName = "WebappSpieler"; 
 let myId = 3;
 const gameClient = new GameClient(myId);
 gameClient.connect();
@@ -20,16 +21,52 @@ let currentBattleState = {
   isInitiator: false  // true wenn ich die challenge gestartet habe
 };
 
-gameClient.on("battle-requested", async (msg) => {
-  console.log("Battle für mich:", msg);
+const incomingBackdrop = document.getElementById("incoming-challenge-backdrop");
+const incomingOpponentEl = document.getElementById("incoming-opponent");
+const incomingTextEl = document.getElementById("incoming-challenge-text");
+const incomingAcceptBtn = document.getElementById("incoming-accept");
+const incomingDeclineBtn = document.getElementById("incoming-decline");
 
-  // Battle State
+let incomingBattleId = null;
+
+function showIncomingChallengeUI({ opponentName, challengeText, onAccept, onDecline }) {
+  incomingOpponentEl.textContent = opponentName.toUpperCase();
+  incomingTextEl.textContent = challengeText;
+  incomingBackdrop.classList.remove("hidden");
+
+  function cleanup() {
+    incomingBackdrop.classList.add("hidden");
+    incomingAcceptBtn.onclick = null;
+    incomingDeclineBtn.onclick = null;
+  }
+
+  incomingAcceptBtn.onclick = () => {
+    cleanup();
+    if (onAccept) onAccept();
+  };
+
+  incomingDeclineBtn.onclick = () => {
+    cleanup();
+    if (onDecline) onDecline();
+  };
+}
+
+
+gameClient.on("battle-requested", async (msg) => {
+  console.log("➡ battle-requested:", msg);
+
+  if (msg.toPlayerId !== myId) {
+    // Kopie für Angreifer, nichts anzeigen
+    return;
+  }
+
   Object.assign(currentBattleState, {
     battleId: msg.battleId,
     fromPlayerId: msg.fromPlayerId,
     toPlayerId: msg.toPlayerId,
     isInitiator: false
   });
+  incomingBattleId = msg.battleId;
 
   try {
     const challenge = await api(`/api/challenges/${msg.challengeId}`);
@@ -45,20 +82,34 @@ gameClient.on("battle-requested", async (msg) => {
       playerRight: toPlayer.name
     });
 
-    showBattleDialog({
-      category: currentBattleState.category,
-      challengeName: currentBattleState.challengeName,
-      playerLeft: currentBattleState.playerLeft,
-      playerRight: currentBattleState.playerRight,
-      onSuccess: handleBattleSuccess,
-      onSurrender: handleBattleSurrender,
-      onClose: () => console.log("Battle dialog closed")
-    });
+    showIncomingChallengeUI({
+      opponentName: fromPlayer.name,
+      challengeText: currentBattleState.challengeName,
+      onAccept: () => {
+        gameClient.updateBattleStatus(incomingBattleId, "ACCEPTED");
 
+        showBattleDialog({
+          category: currentBattleState.category,
+          challengeName: currentBattleState.challengeName,
+          playerLeft: currentBattleState.playerLeft,
+          playerRight: currentBattleState.playerRight,
+          onSuccess: handleBattleSuccess,
+          onSurrender: handleBattleSurrender,
+          onClose: () => console.log("Battle dialog closed")
+        });
+      },
+      onDecline: () => {
+        gameClient.updateBattleStatus(incomingBattleId, "DECLINED");
+      }
+    });
   } catch (e) {
     console.error("Battle load failed", e);
   }
 });
+
+
+
+
 
 // Wenn ich die Battle erstelle, bekomme ich eine Bestätigung zurück
 gameClient.on("battle-created", (msg) => {
@@ -102,16 +153,20 @@ function handleBattleSuccess() {
     playerB: currentBattleState.playerRight,
     onVote: (winnerName) => {
       console.log("Vote für:", winnerName);
-      gameClient.sendVote(currentBattleState.battleId, winnerName);
+      // HIER korrigieren:
+      gameClient.voteBattle(currentBattleState.battleId, winnerName);
     }
   });
 }
 
 function handleBattleSurrender() {
   console.log("Aufgegeben - andere Spieler gewinnt");
-  const opponent = currentBattleState.isInitiator ? currentBattleState.playerRight : currentBattleState.playerLeft;
-  gameClient.sendVote(currentBattleState.battleId, opponent);
-  
+  const opponent = currentBattleState.isInitiator
+    ? currentBattleState.playerRight
+    : currentBattleState.playerLeft;
+
+  gameClient.voteBattle(currentBattleState.battleId, opponent);
+
   showBattleLose({
     loserName: "Du",
     loserPointsDelta: 10,
@@ -119,6 +174,7 @@ function handleBattleSurrender() {
     winnerName: opponent
   });
 }
+
 
 // Sound that is played when a new nearby player appears
 const playerCountSound = new Audio("./sound1.mp3");
@@ -422,17 +478,18 @@ resultDiv.parentElement.appendChild(sendBtn);
 function sendChallenge() {
   if (!dialogState.targetPlayerId || !dialogState.selectedChallengeId) return;
 
+  // Battle anlegen
   gameClient.createBattle(
     dialogState.targetPlayerId,
     dialogState.selectedChallengeId
   );
 
-  // Battle State als Initiator speichern
+  // State merken, aber KEIN showBattleDialog hier
   currentBattleState.isInitiator = true;
   currentBattleState.fromPlayerId = myId;
   currentBattleState.toPlayerId = dialogState.targetPlayerId;
   currentBattleState.challengeName = dialogState.selectedChallenge;
-  currentBattleState.category = dialogState.selectedCategory || "Challenge"; // Richtige Kategorie
+  currentBattleState.category = dialogState.selectedCategory || "Challenge";
   currentBattleState.playerLeft = "Ich";
   currentBattleState.playerRight = dialogState.playerName;
 
@@ -444,20 +501,9 @@ function sendChallenge() {
     .getElementById("challenge-dialog-backdrop")
     .classList.add("hidden");
 
-  // Battle Dialog direkt anzeigen
-  showBattleDialog({
-    category: currentBattleState.category,
-    challengeName: currentBattleState.challengeName,
-    playerLeft: "Ich",
-    playerRight: dialogState.playerName || "Spieler 2",
-    onSuccess: handleBattleSuccess,
-    onSurrender: handleBattleSurrender,
-    onClose: () => {
-      console.log("Challenge erfolgreich abgeschlossen");
-      dialogState.isOpen = false;
-    }
-  });
+  // Optional: „Warte bis Gegner annimmt…“ anzeigen, aber NICHT die Challenge selbst.
 }
+
 
 
 
