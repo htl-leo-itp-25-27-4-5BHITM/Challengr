@@ -1,8 +1,12 @@
 import { GameClient } from "./GameSocketClient.js";
 
-let myId = 3;             // deine Spieler-ID
+let myId = 3;
 const gameClient = new GameClient(myId);
 gameClient.connect();
+
+
+const api = (url) => fetch(url).then(r => r.json());
+
 
 // Battle State
 let currentBattleState = {
@@ -16,42 +20,44 @@ let currentBattleState = {
   isInitiator: false  // true wenn ich die challenge gestartet habe
 };
 
-gameClient.on("battle-requested", (msg) => {
+gameClient.on("battle-requested", async (msg) => {
   console.log("Battle für mich:", msg);
 
-  // Battle State speichern
-  currentBattleState.battleId = msg.battleId;
-  currentBattleState.fromPlayerId = msg.fromPlayerId;
-  currentBattleState.toPlayerId = msg.toPlayerId;
-  currentBattleState.isInitiator = false;
+  // Battle State
+  Object.assign(currentBattleState, {
+    battleId: msg.battleId,
+    fromPlayerId: msg.fromPlayerId,
+    toPlayerId: msg.toPlayerId,
+    isInitiator: false
+  });
 
-  // Challenge-Details laden und Battle anzeigen
-  fetch(`/api/challenges/${msg.challengeId}`)
-    .then(r => r.json())
-    .then(challenge => {
-      currentBattleState.challengeName = challenge.text;
-      currentBattleState.category = challenge.challengeCategory?.name || "Challenge";
-      
-      // Spieler-Namen laden
-      return Promise.all([
-        fetch(`/api/players/${msg.fromPlayerId}`).then(r => r.json()),
-        fetch(`/api/players/${msg.toPlayerId}`).then(r => r.json())
-      ]);
-    })
-    .then(([fromPlayer, toPlayer]) => {
-      currentBattleState.playerLeft = fromPlayer.name;
-      currentBattleState.playerRight = toPlayer.name;
+  try {
+    const challenge = await api(`/api/challenges/${msg.challengeId}`);
+    const [fromPlayer, toPlayer] = await Promise.all([
+      api(`/api/players/${msg.fromPlayerId}`),
+      api(`/api/players/${msg.toPlayerId}`)
+    ]);
 
-      showBattleDialog({
-        category: currentBattleState.category,
-        challengeName: currentBattleState.challengeName,
-        playerLeft: currentBattleState.playerLeft,
-        playerRight: currentBattleState.playerRight,
-        onSuccess: handleBattleSuccess,
-        onSurrender: handleBattleSurrender,
-        onClose: () => console.log("Battle dialog closed")
-      });
+    Object.assign(currentBattleState, {
+      challengeName: challenge.text,
+      category: challenge.challengeCategory?.name || "Challenge",
+      playerLeft: fromPlayer.name,
+      playerRight: toPlayer.name
     });
+
+    showBattleDialog({
+      category: currentBattleState.category,
+      challengeName: currentBattleState.challengeName,
+      playerLeft: currentBattleState.playerLeft,
+      playerRight: currentBattleState.playerRight,
+      onSuccess: handleBattleSuccess,
+      onSurrender: handleBattleSurrender,
+      onClose: () => console.log("Battle dialog closed")
+    });
+
+  } catch (e) {
+    console.error("Battle load failed", e);
+  }
 });
 
 // Wenn ich die Battle erstelle, bekomme ich eine Bestätigung zurück
@@ -60,18 +66,19 @@ gameClient.on("battle-created", (msg) => {
   currentBattleState.battleId = msg.battleId;
 });
 
+
 gameClient.on("battle-updated", (msg) => {
   console.log("Battle updated:", msg);
 });
 
+
 gameClient.on("battle-result", (msg) => {
   console.log("Battle result received:", msg);
-  
-  // Prüfen ob ich gewonnen oder verloren habe
-  const myName = window.myName || "Player_" + myId;
-  const iWon = msg.winnerName === myName || msg.winnerName === currentBattleState.playerLeft || msg.winnerName === currentBattleState.playerRight;
-  
-  if (msg.winnerName === myName || (currentBattleState.isInitiator && msg.winnerName === currentBattleState.playerLeft)) {
+
+  const myName = window.myName || `Player_${myId}`;
+  const iWon = msg.winnerName === myName;
+
+  if (iWon) {
     showBattleWin({
       winnerName: msg.winnerName,
       winnerAvatar: msg.winnerAvatar,
@@ -86,6 +93,7 @@ gameClient.on("battle-result", (msg) => {
     });
   }
 });
+
 
 function handleBattleSuccess() {
   console.log("Battle erfolgreich abgeschlossen - zeige Voting");
@@ -621,7 +629,6 @@ function showBattleLose({ loserName, loserPointsDelta, trashTalk, winnerName }) 
 
   closeBtn.onclick = cleanup;
 }
-
 
 
 

@@ -3,56 +3,140 @@ export class GameClient {
   constructor(playerId) {
     this.playerId = playerId;
     this.socket = null;
-    this.listeners = {
+
+    // Event-Callbacks (wie Swift Closures)
+    this.handlers = {
       "battle-requested": [],
       "battle-updated": [],
-      "battle-result": [],
-      "battle-created": []
+      "battle-result": []
     };
   }
 
+  // =====================
+  // CONNECT / DISCONNECT
+  // =====================
   connect() {
-  this.socket = new WebSocket(
-    `ws://${location.host}/ws/game?playerId=${this.playerId}`
-  );
+    if (this.socket) return;
 
-  this.socket.onopen = () => console.log("WS open", this.playerId);
-  this.socket.onmessage = (event) => {
-    const msg = JSON.parse(event.data);
-    const list = this.listeners[msg.type] || [];
-    list.forEach(cb => cb(msg));
-  };
-  this.socket.onerror = (e) => console.error("WS error", e);
-}
+    const url = `ws://localhost:8080/ws/game?playerId=${this.playerId}`;
+    this.socket = new WebSocket(url);
 
+    this.socket.onopen = () => {
+      console.log("🔌 WS connected (player", this.playerId, ")");
+    };
 
-  on(type, cb) {
-    if (!this.listeners[type]) this.listeners[type] = [];
-    this.listeners[type].push(cb);
+    this.socket.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        console.log("⬇ WS message:", msg);
+        this.handleIncoming(msg);
+      } catch (e) {
+        console.error("❌ WS parse error", e);
+      }
+    };
+
+    this.socket.onclose = () => {
+      console.log("🔌 WS disconnected");
+      this.socket = null;
+    };
+
+    this.socket.onerror = (err) => {
+      console.error("❌ WS error", err);
+    };
   }
 
-  createBattle(toId, challengeId) {
-    this.socket.send(JSON.stringify({
+  disconnect() {
+    if (this.socket) {
+      this.socket.close();
+      this.socket = null;
+    }
+  }
+
+  // =====================
+  // EVENT SYSTEM (on)
+  // =====================
+  on(type, callback) {
+    if (!this.handlers[type]) {
+      this.handlers[type] = [];
+    }
+    this.handlers[type].push(callback);
+  }
+
+  emit(type, payload) {
+    if (!this.handlers[type]) return;
+    this.handlers[type].forEach(cb => cb(payload));
+  }
+
+  // =====================
+  // SEND
+  // =====================
+  send(data) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      console.warn("❌ WS not connected");
+      return;
+    }
+    this.socket.send(JSON.stringify(data));
+  }
+
+  createBattle(toPlayerId, challengeId) {
+    this.send({
       type: "create-battle",
       fromId: this.playerId,
-      toId,
-      challengeId
-    }));
+      toId: toPlayerId,
+      challengeId: challengeId
+    });
   }
 
   updateBattleStatus(battleId, status) {
-    this.socket.send(JSON.stringify({
+    this.send({
       type: "update-battle-status",
       battleId,
       status
-    }));
+    });
   }
 
-  sendVote(battleId, winnerName) {
-    this.socket.send(JSON.stringify({
+  voteBattle(battleId, winnerName) {
+    this.send({
       type: "battle-vote",
       battleId,
       winnerName
-    }));
+    });
+  }
+
+  // =====================
+  // RECEIVE
+  // =====================
+  handleIncoming(msg) {
+    const type = msg.type;
+    if (!type) return;
+
+    // battle-requested
+    if (type === "battle-requested") {
+      this.emit("battle-requested", {
+        battleId: msg.battleId,
+        fromPlayerId: msg.fromPlayerId,
+        toPlayerId: msg.toPlayerId,
+        challengeId: msg.challengeId
+      });
+    }
+
+    // battle-updated
+    if (type === "battle-updated") {
+      this.emit("battle-updated", {
+        battleId: msg.battleId,
+        status: msg.status
+      });
+    }
+
+    // battle-result
+    if (type === "battle-result") {
+      this.emit("battle-result", {
+        winnerName: msg.winnerName,
+        loserName: msg.loserName,
+        winnerPointsDelta: msg.winnerPointsDelta,
+        loserPointsDelta: msg.loserPointsDelta,
+        trashTalk: msg.trashTalk
+      });
+    }
   }
 }
