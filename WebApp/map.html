@@ -7,150 +7,135 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <link rel="stylesheet" href="style.css" />
   <script type="module">
-  import { GameClient } from "./GameSocketClient.js";
-  import "./map.js";
-  window.GameClient = GameClient; // falls map.js darauf zugreifen soll
-</script>
-
+    import { GameClient } from "./GameSocketClient.js";
+    import "./map.js";
+    window.GameClient = GameClient;
+  </script>
 </head>
 <body>
   <div id="map"></div>
 
   <button id="challenge-btn">🏆</button>
 
+  <!-- Permissions Popup -->
   <div id="permissions-popup" class="perm-popup">
-  <div class="perm-content">
-    <h2>Erlaubnis benötigt</h2>
-    <p>Bitte Standort & Sounds erlauben, damit das Spiel funktioniert.</p>
-
-    <button id="perm-allow-btn">Erlauben</button>
-  </div>
-</div>
-
-<!-- Challenge Dialog (wie SwiftUI) -->
-<div id="challenge-dialog-backdrop" class="dialog hidden">
-<div id="challenge-dialog" class="dialog-content">
-    <h2 id="dialog-title">Challenge Spieler</h2>
-
-    <div id="dialog-content">
-      <p id="dialog-subtitle">Wähle eine Kategorie</p>
-
-      <div id="dialog-categories"></div>
-
-      <div id="dialog-result" class="hidden"></div>
+    <div class="perm-content">
+      <h2>Erlaubnis benötigt</h2>
+      <p>Bitte Standort & Sounds erlauben, damit das Spiel funktioniert.</p>
+      <button id="perm-allow-btn">Erlauben</button>
     </div>
-
-    <button id="dialog-close">Schließen</button>
   </div>
-</div>
 
-<!-- Battle Dialog (wie BattleView in SwiftUI) -->
-<div id="battle-dialog-backdrop" class="dialog hidden">
-  <div id="battle-dialog" class="dialog-content">
-    <h2 id="battle-category">Kategorie</h2>
-    <h3 id="battle-challenge">Challenge Name</h3>
-    <p id="battle-vs">Spieler1 VS Spieler2</p>
-
-    <div id="battle-avatars" style="display:flex; justify-content:center; gap:40px; margin:16px 0;">
-      <div class="battle-avatar left"></div>
-      <div class="battle-avatar right"></div>
+  <!-- Challenge Dialog -->
+  <div id="challenge-dialog-backdrop" class="dialog hidden">
+    <div id="challenge-dialog" class="dialog-content">
+      <h2 id="dialog-title">Challenge Spieler</h2>
+      <div id="dialog-content">
+        <p id="dialog-subtitle">Wähle eine Kategorie</p>
+        <div id="dialog-categories"></div>
+        <div id="dialog-result" class="hidden"></div>
+      </div>
+      <button id="dialog-close">Schließen</button>
     </div>
-
-    <p id="battle-subtitle">Challenge geschafft?</p>
-
-    <div style="display:flex; justify-content:center; gap:24px;">
-      <button id="battle-success-btn">Geschafft ✅</button>
-      <button id="battle-surrender-btn">Aufgeben ❌</button>
-    </div>
-
-    <button id="battle-close-btn">Schließen</button>
   </div>
-</div>
 
+  <!-- Battle Dialog -->
+  <div id="battle-dialog-backdrop" class="dialog hidden">
+    <div id="battle-dialog" class="dialog-content">
+      <h2 id="battle-category">Kategorie</h2>
+      <h3 id="battle-challenge">Challenge Name</h3>
+      <p id="battle-vs">Spieler1 VS Spieler2</p>
 
+      <div id="battle-avatars" style="display:flex; justify-content:center; gap:40px; margin:16px 0;">
+        <div class="battle-avatar left"></div>
+        <div class="battle-avatar right"></div>
+      </div>
 
-<!-- Battle Win Dialog -->
-<div id="battle-win-backdrop" class="dialog hidden">
-  <div id="battle-win-dialog" class="dialog-content">
-    <h2 id="battle-win-title">Sieg!</h2>
+      <p id="battle-subtitle">Challenge geschafft?</p>
 
-    <div id="battle-win-player" style="text-align:center; margin:16px 0;">
-      <h3 id="battle-win-name"></h3>
-      <p id="battle-win-points" style="color:green; font-weight:bold;"></p>
+      <div style="display:flex; justify-content:center; gap:24px;">
+        <button id="battle-success-btn">Geschafft ✅</button>
+        <button id="battle-surrender-btn">Aufgeben ❌</button>
+      </div>
+
+      <button id="battle-close-btn">Schließen</button>
     </div>
-
-    <p id="battle-win-footer" style="font-size:0.85rem; color:gray; text-align:center;"></p>
-
-    <button id="battle-win-close">Schließen</button>
   </div>
-</div>
 
-<!-- Battle Lose Dialog -->
-<div id="battle-lose-backdrop" class="dialog hidden">
-  <div id="battle-lose-dialog" class="dialog-content" style="background-color:black; color:white;">
-    <h2 id="battle-lose-title" style="color:red;">Niederlage</h2>
-
-    <div id="battle-lose-player" style="text-align:center; margin:16px 0;">
-     
-      <h3 id="battle-lose-name"></h3>
-      <p id="battle-lose-points" style="color:red; font-weight:bold;"></p>
+  <!-- Battle Win / Lose / Voting Dialogs (gleich wie vorher) -->
+  <div id="battle-win-backdrop" class="dialog hidden">
+    <div id="battle-win-dialog" class="dialog-content">
+      <h2 id="battle-win-title">Sieg!</h2>
+      <div id="battle-win-player" style="text-align:center; margin:16px 0;">
+        <h3 id="battle-win-name"></h3>
+        <p id="battle-win-points" style="color:green; font-weight:bold;"></p>
+      </div>
+      <p id="battle-win-footer" style="font-size:0.85rem; color:gray; text-align:center;"></p>
+      <button id="battle-win-close">Schließen</button>
     </div>
-
-    <p id="battle-lose-trash" style="margin:16px; font-size:1rem; text-align:center;"></p>
-
-    <p id="battle-lose-footer" style="font-size:0.85rem; color:gray; text-align:center;"></p>
-
-    <button id="battle-lose-close">Schließen</button>
   </div>
-</div>
 
-<!-- Battle Voting Dialog -->
-<div id="battle-voting-backdrop" class="dialog hidden">
-  <div id="battle-voting-dialog" class="dialog-content">
-    <h2 id="voting-title">WER HAT GEWONNEN?</h2>
-
-    <div id="voting-buttons" style="display:flex; flex-direction:column; gap:16px; margin:24px 0;">
-      <button id="vote-player-a" class="vote-btn">Spieler A</button>
-      <button id="vote-player-b" class="vote-btn">Spieler B</button>
+  <div id="battle-lose-backdrop" class="dialog hidden">
+    <div id="battle-lose-dialog" class="dialog-content" style="background-color:black; color:white;">
+      <h2 id="battle-lose-title" style="color:red;">Niederlage</h2>
+      <div id="battle-lose-player" style="text-align:center; margin:16px 0;">
+        <h3 id="battle-lose-name"></h3>
+        <p id="battle-lose-points" style="color:red; font-weight:bold;"></p>
+      </div>
+      <p id="battle-lose-trash" style="margin:16px; font-size:1rem; text-align:center;"></p>
+      <p id="battle-lose-footer" style="font-size:0.85rem; color:gray; text-align:center;"></p>
+      <button id="battle-lose-close">Schließen</button>
     </div>
-
-    <p id="voting-feedback" style="text-align:center; font-size:0.9rem; color:gray;">
-      Tippe auf einen Spieler
-    </p>
   </div>
-</div>
 
+  <div id="battle-voting-backdrop" class="dialog hidden">
+    <div id="battle-voting-dialog" class="dialog-content">
+      <h2 id="voting-title">WER HAT GEWONNEN?</h2>
+      <div id="voting-buttons" style="display:flex; flex-direction:column; gap:16px; margin:24px 0;">
+        <button id="vote-player-a" class="vote-btn">Spieler A</button>
+        <button id="vote-player-b" class="vote-btn">Spieler B</button>
+      </div>
+      <p id="voting-feedback" style="text-align:center; font-size:0.9rem; color:gray;">
+        Tippe auf einen Spieler
+      </p>
+    </div>
+  </div>
 
-
-  <!-- Sheet (Challenges) -->
+  <!-- Sheet (Challenges + Trophy Road) -->
   <div id="challenge-sheet" class="hidden">
     <div class="sheet-header">
       <div class="drag-indicator"></div>
-      <h2>Challengr</h2>
+      <h2 id="sheet-title">Challengr</h2>
+      <button id="sheet-info-btn">ℹ️</button>
       <button id="close-btn">✕</button>
     </div>
 
+    <!-- Challenges View -->
     <div id="categories" class="card-list"></div>
-
     <div id="detail-view" class="hidden">
       <button id="back-btn">← Zurück</button>
       <h3 id="detail-title"></h3>
       <p id="detail-desc"></p>
       <ul id="detail-tasks"></ul>
     </div>
-  </div>
-  <div id="incoming-challenge-backdrop" class="incoming-backdrop hidden">
-  <div class="incoming-card">
-    <div class="incoming-title">CHALLENGE!</div>
-    <div id="incoming-opponent" class="incoming-opponent"></div>
-    <div id="incoming-challenge-text" class="incoming-challenge-text"></div>
 
-    <div class="incoming-actions">
-      <button id="incoming-accept" class="btn-accept">ANNEHMEN</button>
-      <button id="incoming-decline" class="btn-decline">ABLEHNEN</button>
+    <!-- Trophy Road View -->
+    <div id="trophy-road-view" class="hidden">
+      <div id="trophy-road-list" class="card-list"></div>
     </div>
   </div>
-</div>
 
+  <!-- Incoming Challenge -->
+  <div id="incoming-challenge-backdrop" class="incoming-backdrop hidden">
+    <div class="incoming-card">
+      <div class="incoming-title">CHALLENGE!</div>
+      <div id="incoming-opponent" class="incoming-opponent"></div>
+      <div id="incoming-challenge-text" class="incoming-challenge-text"></div>
+      <div class="incoming-actions">
+        <button id="incoming-accept" class="btn-accept">ANNEHMEN</button>
+        <button id="incoming-decline" class="btn-decline">ABLEHNEN</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

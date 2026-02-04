@@ -5,6 +5,9 @@ let myId = 3;
 const gameClient = new GameClient(myId);
 gameClient.connect();
 
+let sheetMode = "challenges"; // oder "trophy"
+
+
 
 const api = (url) => fetch(url).then(r => r.json());
 
@@ -243,9 +246,11 @@ const categoriesDiv = document.getElementById("categories");
 const detailView = document.getElementById("detail-view");
 
 challengeBtn.addEventListener("click", () => {
-  sheet.classList.remove("hidden");
-  setTimeout(() => sheet.classList.add("visible"), 10);
+  sheetMode = "trophy";
+  openSheet();
+  renderSheet();
 });
+
 closeBtn.addEventListener("click", () => {
   sheet.classList.remove("visible");
   setTimeout(() => sheet.classList.add("hidden"), 300);
@@ -676,8 +681,139 @@ function showBattleLose({ loserName, loserPointsDelta, trashTalk, winnerName }) 
   closeBtn.onclick = cleanup;
 }
 
+challengeBtn.addEventListener("click", () => {
+  sheetMode = "trophy";
+  openSheet();
+  renderSheet();
+});
+
+document.getElementById("sheet-info-btn").onclick = () => {
+  sheetMode = sheetMode === "challenges" ? "trophy" : "challenges";
+  renderSheet();
+};
+
+function openSheet() {
+  sheet.classList.remove("hidden");
+  setTimeout(() => sheet.classList.add("visible"), 10);
+}
 
 
+let trophyRanks = [];
+let playerPoints = 210; // TODO: vom Backend laden, falls vorhanden
+
+async function loadTrophyRanks() {
+  try {
+    const res = await fetch("/api/ranks");
+    trophyRanks = await res.json();
+
+    // optional: direkt nach dem Laden die Road rendern, falls Sheet offen
+    if (sheetMode === "trophy") renderTrophyRoad();
+  } catch (err) {
+    console.error("Fehler beim Laden der Trophy Ranks:", err);
+  }
+}
+
+// Lade die Ränge gleich beim Start
+loadTrophyRanks();
+
+function getCurrentRank() {
+  return trophyRanks.find(r => playerPoints >= r.min && playerPoints <= r.max) || trophyRanks[0];
+}
+
+async function loadPlayerPoints(playerId) {
+  try {
+    const res = await fetch(`/api/players/${playerId}`);
+    const player = await res.json();
+    playerPoints = player.points || 0;
+
+    if (sheetMode === "trophy") renderTrophyRoad();
+  } catch (err) {
+    console.error("Fehler beim Laden der Spieler-Punkte:", err);
+  }
+}
+
+// z.B.
+loadPlayerPoints(myId);
+
+
+const trophyBtn = document.getElementById("challenge-btn");
+const trophyBackdrop = document.getElementById("trophy-road-backdrop");
+const trophyList = document.getElementById("trophy-road-list");
+const trophyClose = document.getElementById("trophy-close");
+const trophyInfoBtn = document.getElementById("trophy-info-btn");
+
+trophyBtn.addEventListener("click", () => {
+  renderTrophyRoad();
+
+  // Auto-scroll wie SwiftUI
+  setTimeout(() => {
+    const current = document.querySelector(".trophy-rank.current");
+    if (current) current.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 100);
+});
+
+
+const sheetInfoBtn = document.getElementById("sheet-info-btn");
+
+if (sheetInfoBtn) {
+  sheetInfoBtn.onclick = () => {
+    sheetMode = sheetMode === "challenges" ? "trophy" : "challenges";
+    renderSheet();
+  };
+}
+
+
+function renderTrophyRoad() {
+  const container = document.getElementById("trophy-road-list");
+  container.innerHTML = "";
+
+  const current = getCurrentRank();
+
+  [...trophyRanks].reverse().forEach((rank, i) => {
+    const card = document.createElement("div");
+    card.className = `card trophy-rank`;
+    card.style.background = `linear-gradient(135deg, ${rank.color}, #000)`;
+
+    card.innerHTML = `
+      <h3>${rank.name.toUpperCase()}</h3>
+      <p>${rank.min} – ${rank.max}</p>
+      ${rank === current ? `<span class="trophy-current">AKTUELL</span>` : ""}
+    `;
+
+    container.appendChild(card);
+
+    if (i < trophyRanks.length - 1) {
+      const road = document.createElement("div");
+      road.className = "trophy-connector";
+
+      for (let j = 0; j < 8; j++) {
+        road.appendChild(document.createElement("div")).className = "trophy-dot";
+      }
+
+      container.appendChild(road);
+    }
+  });
+}
+
+
+
+
+function renderSheet() {
+  const categories = document.getElementById("categories");
+  const detail = document.getElementById("detail-view");
+  const trophyView = document.getElementById("trophy-road-view");
+
+  categories.classList.add("hidden");
+  detail.classList.add("hidden");
+  trophyView.classList.add("hidden");
+
+  if (sheetMode === "challenges") {
+    categories.classList.remove("hidden");
+  } else {
+    trophyView.classList.remove("hidden");
+    renderTrophyRoad();
+  }
+}
 
 
 
