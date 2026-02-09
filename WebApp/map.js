@@ -123,7 +123,41 @@ gameClient.on("battle-created", (msg) => {
 
 gameClient.on("battle-updated", (msg) => {
   console.log("Battle updated:", msg);
+
+  if (msg.status === "ACCEPTED" &&
+      msg.battleId === currentBattleState.battleId &&
+      currentBattleState.isInitiator) {
+
+    showBattleDialog({
+      category: currentBattleState.category,
+      challengeName: currentBattleState.challengeName,
+      playerLeft: currentBattleState.playerLeft,
+      playerRight: currentBattleState.playerRight,
+      onSuccess: handleBattleSuccess,
+      onSurrender: handleBattleSurrender,
+      onClose: () => console.log("Battle dialog closed")
+    });
+  }
+
+  if (msg.status === "READY_FOR_VOTING" &&
+      msg.battleId === currentBattleState.battleId) {
+
+        
+    showVotingDialog({
+      playerA: currentBattleState.playerLeft,
+      playerB: currentBattleState.playerRight,
+      onVote: (winnerName) => {
+        console.log("Vote für:", winnerName);
+        gameClient.voteBattle(currentBattleState.battleId, winnerName);
+      }
+    });
+  }
 });
+
+
+
+
+
 
 
 gameClient.on("battle-result", (msg) => {
@@ -150,17 +184,10 @@ gameClient.on("battle-result", (msg) => {
 
 
 function handleBattleSuccess() {
-  console.log("Battle erfolgreich abgeschlossen - zeige Voting");
-  showVotingDialog({
-    playerA: currentBattleState.playerLeft,
-    playerB: currentBattleState.playerRight,
-    onVote: (winnerName) => {
-      console.log("Vote für:", winnerName);
-      // HIER korrigieren:
-      gameClient.voteBattle(currentBattleState.battleId, winnerName);
-    }
-  });
+  console.log("Battle erfolgreich abgeschlossen → READY_FOR_VOTING");
+  gameClient.updateBattleStatus(currentBattleState.battleId, "READY_FOR_VOTING");
 }
+
 
 function handleBattleSurrender() {
   console.log("Aufgegeben - andere Spieler gewinnt");
@@ -168,8 +195,11 @@ function handleBattleSurrender() {
     ? currentBattleState.playerRight
     : currentBattleState.playerLeft;
 
+  // Status + Vote senden
+  gameClient.updateBattleStatus(currentBattleState.battleId, "DONE_SURRENDER");
   gameClient.voteBattle(currentBattleState.battleId, opponent);
 
+  // Sofort Lose anzeigen (nur auf dieser Seite)
   showBattleLose({
     loserName: "Du",
     loserPointsDelta: 10,
@@ -177,6 +207,9 @@ function handleBattleSurrender() {
     winnerName: opponent
   });
 }
+
+
+
 
 
 // Sound that is played when a new nearby player appears
@@ -495,7 +528,7 @@ function sendChallenge() {
   currentBattleState.toPlayerId = dialogState.targetPlayerId;
   currentBattleState.challengeName = dialogState.selectedChallenge;
   currentBattleState.category = dialogState.selectedCategory || "Challenge";
-  currentBattleState.playerLeft = "Ich";
+  currentBattleState.playerLeft = window.myName || `Player_${myId}`;
   currentBattleState.playerRight = dialogState.playerName;
 
   dialogState.isOpen = false;
@@ -639,47 +672,63 @@ function showVotingDialog({ playerA, playerB, onVote }) {
 
 function showBattleWin({ winnerName, winnerAvatar, winnerPointsDelta }) {
   const backdrop = document.getElementById("battle-win-backdrop");
-  const nameEl = document.getElementById("battle-win-name");
+  const nameEl   = document.getElementById("battle-win-name");
   const pointsEl = document.getElementById("battle-win-points");
   const footerEl = document.getElementById("battle-win-footer");
   const closeBtn = document.getElementById("battle-win-close");
 
-  nameEl.textContent = winnerName;
+  nameEl.textContent   = winnerName;
   pointsEl.textContent = `+${winnerPointsDelta} Punkte`;
   footerEl.textContent = `Sieger: ${winnerName}`;
 
   backdrop.classList.remove("hidden");
 
   function cleanup() {
+    // Win-Overlay ausblenden
     backdrop.classList.add("hidden");
     closeBtn.onclick = null;
+
+    // NEU: verschwommenen Battle-Backdrop schließen
+    const battleDialogBackdrop = document.getElementById("battle-dialog-backdrop");
+    if (battleDialogBackdrop) {
+      battleDialogBackdrop.classList.add("hidden");
+    }
   }
 
   closeBtn.onclick = cleanup;
 }
 
+
 function showBattleLose({ loserName, loserPointsDelta, trashTalk, winnerName }) {
   const backdrop = document.getElementById("battle-lose-backdrop");
-  const nameEl = document.getElementById("battle-lose-name");
+  const nameEl   = document.getElementById("battle-lose-name");
   const pointsEl = document.getElementById("battle-lose-points");
-  const trashEl = document.getElementById("battle-lose-trash");
+  const trashEl  = document.getElementById("battle-lose-trash");
   const footerEl = document.getElementById("battle-lose-footer");
   const closeBtn = document.getElementById("battle-lose-close");
 
-  nameEl.textContent = loserName || "Du";
+  nameEl.textContent   = loserName || "Du";
   pointsEl.textContent = `-${loserPointsDelta} Punkte`;
-  trashEl.textContent = trashTalk || "";
+  trashEl.textContent  = trashTalk || "";
   footerEl.textContent = `Sieger: ${winnerName}`;
 
   backdrop.classList.remove("hidden");
 
   function cleanup() {
+    // Lose-Overlay ausblenden
     backdrop.classList.add("hidden");
     closeBtn.onclick = null;
+
+    // WICHTIG: den verschwommenen Battle-Backdrop schließen
+    const battleDialogBackdrop = document.getElementById("battle-dialog-backdrop");
+    if (battleDialogBackdrop) {
+      battleDialogBackdrop.classList.add("hidden");
+    }
   }
 
   closeBtn.onclick = cleanup;
 }
+
 
 challengeBtn.addEventListener("click", () => {
   sheetMode = "trophy";

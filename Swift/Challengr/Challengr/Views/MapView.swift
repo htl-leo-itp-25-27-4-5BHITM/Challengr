@@ -175,9 +175,14 @@ struct MapView: View {
                             activeFullScreen = .lose
                         },
                         onFinished: {
-                            // hier ins Voting springen
-                            activeFullScreen = .voting
+                            if let battleId = currentBattleId {
+                                socket.sendUpdateBattleStatus(
+                                    battleId: battleId,
+                                    status: "READY_FOR_VOTING"
+                                )
+                            }
                         }
+
                     )
                 } else {
                     EmptyView()
@@ -552,9 +557,15 @@ struct MapView: View {
                         activeFullScreen = .lose
                     },
                     onFinished: {
-                        // „Geschafft“ gedrückt -> Voting
-                        activeFullScreen = .voting
-                    }
+                            // NEU: statt direkt Voting öffnen
+                            if let battleId = currentBattleId {
+                                socket.sendUpdateBattleStatus(
+                                    battleId: battleId,
+                                    status: "READY_FOR_VOTING"
+                                )
+                            }
+                        }
+                    
                 )
             } else {
                 EmptyView()
@@ -587,6 +598,16 @@ struct MapView: View {
                 print("Fehler beim Vorladen der Challenges:", error)
             }
         }
+        
+        Task {
+                do {
+                    let me = try await playerService.loadPlayerById(id: ownPlayerId)
+                    ownPlayerName = me.name
+                    print("ownPlayerName aus DB:", ownPlayerName)
+                } catch {
+                    print("Konnte eigenen Spieler nicht laden:", error)
+                }
+            }
 
         socket.onChallengeReceived = { battleId, fromId, toId, challengeId in
             if toId == ownPlayerId {
@@ -674,6 +695,30 @@ struct MapView: View {
                 }
             }
         }
+        
+        socket.onReadyForVoting = { battleId in
+            currentBattleId = battleId
+            activeFullScreen = .voting   // beide springen in Voting-Screen
+        }
+        
+        socket.onBattleUpdatedStatus = { battleId, status in
+            if status == "DONE_SURRENDER" {
+                // Der GEGNER hat aufgegeben → wir gewinnen
+                if let info = activeBattleInfo {
+                    resultData = BattleResultData(
+                        winnerName: info.playerA,   // falls wir Player A sind
+                        winnerAvatar: "ownAvatar",
+                        winnerPointsDelta: 20,
+                        loserName: info.playerB,
+                        loserAvatar: "opponentAvatar",
+                        loserPointsDelta: -10,
+                        trashTalk: "Der Gegner hat aufgegeben!"
+                    )
+                }
+                activeFullScreen = .win
+            }
+        }
+
 
     }
 

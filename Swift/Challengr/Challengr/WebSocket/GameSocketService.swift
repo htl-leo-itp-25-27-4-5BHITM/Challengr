@@ -12,6 +12,10 @@ final class GameSocketService: ObservableObject {
     var onChallengeReceived: ((Int64, Int64, Int64, Int64) -> Void)?
     // Wird aufgerufen, wenn ein Battle den Status ACCEPTED erreicht
     var onBattleAccepted: ((Int64) -> Void)?
+    
+    var onReadyForVoting: ((Int64) -> Void)?
+    
+    var onBattleUpdatedStatus: ((Int64, String) -> Void)?
 
 
     init(playerId: Int64) {
@@ -142,8 +146,12 @@ final class GameSocketService: ObservableObject {
                 print("🔁 battle-updated empfangen:", battleId, status)
 
                 if status == "ACCEPTED" {
+                    DispatchQueue.main.async { self.onBattleAccepted?(battleId) }
+                } else if status == "READY_FOR_VOTING" {
+                    DispatchQueue.main.async { self.onReadyForVoting?(battleId) }
+                } else {
                     DispatchQueue.main.async {
-                        self.onBattleAccepted?(battleId)
+                        self.onBattleUpdatedStatus?(battleId, status)
                     }
                 }
             }
