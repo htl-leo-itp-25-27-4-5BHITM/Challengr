@@ -75,7 +75,7 @@ public class BattleService {
         return battle;
     }
 
-    // Winner setzen und Battle abschließen (kannst du später fürs echte Ranking nutzen)
+    // Winner setzen, Punkte vergeben und Battle abschließen
     @Transactional
     public Battle finishBattle(Long battleId, Long winnerPlayerId) {
         Battle battle = battleRepository.findById(battleId);
@@ -88,8 +88,28 @@ public class BattleService {
             throw new IllegalArgumentException("winner not found");
         }
 
+        // Gewinner/Verlierer bestimmen
+        Player from = battle.getFromPlayer();
+        Player to   = battle.getToPlayer();
+
+        Player loser;
+        if (from.getId().equals(winnerPlayerId)) {
+            loser = to;
+        } else if (to.getId().equals(winnerPlayerId)) {
+            loser = from;
+        } else {
+            throw new IllegalArgumentException("winner is not part of this battle");
+        }
+
+        // Punkte anpassen (hier: +20 / -10, kannst du frei wählen)
+        winner.setPoints(winner.getPoints() + 20);
+        loser.setPoints(loser.getPoints() - 10);
+
+        // Winner im Battle speichern und Status setzen
         battle.setWinner(winner);
         battle.setStatus("DONE");
+
+        // Durch @Transactional werden Änderungen an Battle + Playern gespeichert
         return battle;
     }
 

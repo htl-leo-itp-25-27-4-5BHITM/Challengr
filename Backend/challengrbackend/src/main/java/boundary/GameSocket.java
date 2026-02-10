@@ -178,8 +178,6 @@ public class GameSocket {
 
     private void computeAndBroadcastResult(Long battleId, List<String> votes) {
         // Simple Logik:
-        // Wenn beide das Gleiche wählen => dieser Name gewinnt,
-        // sonst gewinnt der erste Vote, der zweite ist Verlierer.
         String winnerName = votes.get(0);
         String loserName  = "Unbekannt";
 
@@ -197,19 +195,43 @@ public class GameSocket {
         int winnerDelta = 20;
         int loserDelta  = -10;
 
-        String payload = """
-            {
-              "type": "battle-result",
-              "battleId": %d,
-              "winnerName": "%s",
-              "winnerAvatar": "opponentAvatar",
-              "winnerPointsDelta": %d,
-              "loserName": "%s",
-              "loserAvatar": "ownAvatar",
-              "loserPointsDelta": %d,
-              "trashTalk": "GG!"
+        // NEU: Winner-Player bestimmen und in DB speichern
+        try {
+            Battle battle = battleService.battleRepository.findById(battleId); // ggf. Methode im Service anlegen
+            if (battle != null) {
+                Long winnerPlayerId = null;
+
+                if (battle.getFromPlayer() != null
+                        && winnerName.equals(battle.getFromPlayer().getName())) {
+                    winnerPlayerId = battle.getFromPlayer().getId();
+                } else if (battle.getToPlayer() != null
+                        && winnerName.equals(battle.getToPlayer().getName())) {
+                    winnerPlayerId = battle.getToPlayer().getId();
+                }
+
+                if (winnerPlayerId != null) {
+                    // Winner + Punkte + Status in der DB speichern
+                    battleService.finishBattle(battleId, winnerPlayerId);
+                }
             }
-            """.formatted(
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Fehler beim Speichern ignorieren → Ergebnis wird trotzdem verschickt
+        }
+
+        String payload = """
+        {
+          "type": "battle-result",
+          "battleId": %d,
+          "winnerName": "%s",
+          "winnerAvatar": "opponentAvatar",
+          "winnerPointsDelta": %d,
+          "loserName": "%s",
+          "loserAvatar": "ownAvatar",
+          "loserPointsDelta": %d,
+          "trashTalk": "GG!"
+        }
+        """.formatted(
                 battleId,
                 escapeJson(winnerName),
                 winnerDelta,
@@ -217,7 +239,6 @@ public class GameSocket {
                 loserDelta
         );
 
-        // Ergebnis an alle verbundenen Spieler schicken (einfacher fürs Testen)
         SESSIONS.values().forEach(s -> {
             if (s.isOpen()) {
                 s.getAsyncRemote().sendText(payload);
@@ -226,6 +247,7 @@ public class GameSocket {
 
         System.out.println("Sent battle-result for battle " + battleId + ": " + payload);
     }
+
 
     // ---------------------------------------------------------
     // Hilfsfunktionen

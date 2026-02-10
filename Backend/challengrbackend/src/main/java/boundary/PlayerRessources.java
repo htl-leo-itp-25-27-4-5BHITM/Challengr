@@ -4,7 +4,6 @@ import boundary.dto.NearbyRequest;
 import boundary.dto.PlayerDTO;
 import control.PlayerRepository;
 import entity.Player;
-import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -12,18 +11,17 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Path("/api/players")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class PlayerRessources {
+
     @Inject
     PlayerRepository playerRepository;
 
     @Inject
     EntityManager em;
-
 
     @GET
     public List<Player> findAllPlayers() {
@@ -39,7 +37,8 @@ public class PlayerRessources {
                 saved.getId(),
                 saved.getName(),
                 saved.getLatitude(),
-                saved.getLongitude()
+                saved.getLongitude(),
+                saved.getPoints()          // NEU
         );
     }
 
@@ -64,15 +63,16 @@ public class PlayerRessources {
 
         player.setLatitude(dto.latitude());
         player.setLongitude(dto.longitude());
+        // Punkte kommen aus Battles → hier NICHT setzen
 
         return new PlayerDTO(
                 player.getId(),
                 player.getName(),
                 player.getLatitude(),
-                player.getLongitude()
+                player.getLongitude(),
+                player.getPoints()          // NEU
         );
     }
-
 
     @GET
     @Path("/{id}")
@@ -85,10 +85,10 @@ public class PlayerRessources {
                 player.getId(),
                 player.getName(),
                 player.getLatitude(),
-                player.getLongitude()
+                player.getLongitude(),
+                player.getPoints()          // NEU
         );
     }
-
 
     @GET
     @Path("/nearby")
@@ -122,11 +122,11 @@ public class PlayerRessources {
                         p.getId(),
                         p.getName(),
                         p.getLatitude(),
-                        p.getLongitude()
+                        p.getLongitude(),
+                        p.getPoints()          // NEU
                 ))
                 .toList();
     }
-
 
     // Haversine in Metern
     private double distance(double lat1, double lon1, double lat2, double lon2) {
@@ -142,7 +142,4 @@ public class PlayerRessources {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
     }
-
-
-
 }

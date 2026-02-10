@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "player")
 public class Player {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -12,6 +13,9 @@ public class Player {
     private String name;
     private double longitude;
     private double latitude;
+
+    // NEU: Punkte, Default 0
+    private int points = 0;
 
     public Player(String name, double longitude, double latitude) {
         this.name = name;
@@ -51,5 +55,15 @@ public class Player {
 
     public void setLatitude(double latitude) {
         this.latitude = latitude;
+    }
+
+    // NEU: Punkte-Getter/Setter
+
+    public int getPoints() {
+        return points;
+    }
+
+    public void setPoints(int points) {
+        this.points = points;
     }
 }

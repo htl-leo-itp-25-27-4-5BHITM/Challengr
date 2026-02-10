@@ -4,6 +4,6 @@ public record PlayerDTO(
         Long id,
         String name,
         double latitude,
-        double longitude
+        double longitude,
+        int points          // NEU
 ) {}
-

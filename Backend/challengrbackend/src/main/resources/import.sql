@@ -1,9 +1,7 @@
--- Player Insert
-
-INSERT INTO player (name, longitude, latitude) VALUES
-                                                   ('EigenerSpieler', 14.251389, 48.268333),  -- ca. HTL Leonding Standort
-                                                   ('ZweiterSpieler', 48.2683, 14.2514), -- ein Spieler in der Nähe von HTL Leonding
-                                                    ('WebappSpieler', 14.251385, 48.268639);
+INSERT INTO player (name, longitude, latitude, points) VALUES
+                                                           ('EigenerSpieler', 14.251389, 48.268333, 0),
+                                                           ('ZweiterSpieler', 48.2683,  14.2514, 0),
+                                                           ('WebappSpieler', 14.251385, 48.268639, 0);
 
 -- Kategorien einfügen (IDs werden automatisch generiert)
 INSERT INTO challenge_categories (name, description) VALUES
