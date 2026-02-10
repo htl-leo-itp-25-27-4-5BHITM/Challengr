@@ -156,23 +156,15 @@ struct MapView: View {
                             activeFullScreen = .none
                         },
                         onSurrender: {
-                            // wie bei dir
                             if let battleId = currentBattleId {
                                 socket.sendUpdateBattleStatus(
                                     battleId: battleId,
                                     status: "DONE_SURRENDER"
                                 )
+                                // optional, wenn du wie im Web auch noch einen Vote schicken willst:
+                                // socket.sendVote(battleId: battleId, winnerName: info.playerB)
                             }
-                            resultData = BattleResultData(
-                                winnerName: "WebappSpieler",
-                                winnerAvatar: "opponentAvatar",
-                                winnerPointsDelta: 20,
-                                loserName: ownPlayerName,
-                                loserAvatar: "ownAvatar",
-                                loserPointsDelta: -10,
-                                trashTalk: "You surrendered… better luck next time!"
-                            )
-                            activeFullScreen = .lose
+                            activeFullScreen = .none   // Battle schließen, Ergebnis kommt später über battle-result
                         },
                         onFinished: {
                             if let battleId = currentBattleId {
@@ -543,18 +535,8 @@ struct MapView: View {
                             battleId: battleId,
                             status: "DONE_SURRENDER"
                         )
-
-                        resultData = BattleResultData(
-                            winnerName: info.playerB,
-                            winnerAvatar: "opponentAvatar",
-                            winnerPointsDelta: 20,
-                            loserName: info.playerA,
-                            loserAvatar: "ownAvatar",
-                            loserPointsDelta: -10,
-                            trashTalk: "You surrendered… better luck next time!"
-                        )
-
-                        activeFullScreen = .lose
+                        // optional: socket.sendVote(battleId: battleId, winnerName: info.playerB)
+                        activeFullScreen = .none
                     },
                     onFinished: {
                             // NEU: statt direkt Voting öffnen
@@ -702,21 +684,7 @@ struct MapView: View {
         }
         
         socket.onBattleUpdatedStatus = { battleId, status in
-            if status == "DONE_SURRENDER" {
-                // Der GEGNER hat aufgegeben → wir gewinnen
-                if let info = activeBattleInfo {
-                    resultData = BattleResultData(
-                        winnerName: info.playerA,   // falls wir Player A sind
-                        winnerAvatar: "ownAvatar",
-                        winnerPointsDelta: 20,
-                        loserName: info.playerB,
-                        loserAvatar: "opponentAvatar",
-                        loserPointsDelta: -10,
-                        trashTalk: "Der Gegner hat aufgegeben!"
-                    )
-                }
-                activeFullScreen = .win
-            }
+            print("Battle \(battleId) status updated to \(status)")
         }
 
 

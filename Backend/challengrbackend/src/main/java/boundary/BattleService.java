@@ -29,6 +29,10 @@ public class BattleService {
     @Inject
     ChallengeCategoriesRepository categoryRepository;
 
+    public Battle findById(Long battleId) {
+        return battleRepository.findById(battleId);
+    }
+
     // Neues Battle anlegen
     @Transactional
     public Battle createRequestedBattle(Long fromPlayerId,
@@ -75,9 +79,58 @@ public class BattleService {
         return battle;
     }
 
-    // Winner setzen, Punkte vergeben und Battle abschließen
+    // NEU: Wird vom GameSocket mit winnerName aufgerufen
+    @Transactional
+    public void finalizeResult(Long battleId, String winnerName,
+                               int winnerDelta, int loserDelta) {
+
+        Battle battle = battleRepository.findById(battleId);
+        if (battle == null) {
+            throw new IllegalArgumentException("battle not found");
+        }
+
+        Player from = battle.getFromPlayer();
+        Player to   = battle.getToPlayer();
+        if (from == null || to == null) {
+            throw new IllegalStateException("battle players not set");
+        }
+
+        Long winnerPlayerId;
+        Player winner;
+        Player loser;
+
+        if (winnerName != null && winnerName.equalsIgnoreCase(from.getName())) {
+            winnerPlayerId = from.getId();
+            winner = from;
+            loser  = to;
+        } else if (winnerName != null && winnerName.equalsIgnoreCase(to.getName())) {
+            winnerPlayerId = to.getId();
+            winner = to;
+            loser  = from;
+        } else {
+            throw new IllegalArgumentException("winnerName does not match battle players");
+        }
+
+        // Punkte anpassen
+        winner.setPoints(winner.getPoints() + winnerDelta);
+        loser.setPoints(loser.getPoints() + loserDelta);
+
+        // Winner im Battle speichern und Status setzen
+        battle.setWinner(winner);
+        battle.setStatus("DONE");
+
+        System.out.println("finalizeResult: battleId=" + battleId +
+                " winner=" + winner.getName() +
+                " (" + winnerPlayerId + "), points: " +
+                winner.getPoints() + "/" + loser.getPoints());
+    }
+
+    // Winner setzen, Punkte vergeben und Battle abschließen (per ID)
     @Transactional
     public Battle finishBattle(Long battleId, Long winnerPlayerId) {
+        System.out.println("finishBattle called: battleId=" + battleId +
+                ", winnerPlayerId=" + winnerPlayerId);
+
         Battle battle = battleRepository.findById(battleId);
         if (battle == null) {
             throw new IllegalArgumentException("battle not found");
@@ -88,7 +141,6 @@ public class BattleService {
             throw new IllegalArgumentException("winner not found");
         }
 
-        // Gewinner/Verlierer bestimmen
         Player from = battle.getFromPlayer();
         Player to   = battle.getToPlayer();
 
@@ -101,15 +153,12 @@ public class BattleService {
             throw new IllegalArgumentException("winner is not part of this battle");
         }
 
-        // Punkte anpassen (hier: +20 / -10, kannst du frei wählen)
         winner.setPoints(winner.getPoints() + 20);
         loser.setPoints(loser.getPoints() - 10);
 
-        // Winner im Battle speichern und Status setzen
         battle.setWinner(winner);
         battle.setStatus("DONE");
 
-        // Durch @Transactional werden Änderungen an Battle + Playern gespeichert
         return battle;
     }
 

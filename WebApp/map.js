@@ -180,7 +180,11 @@ gameClient.on("battle-result", (msg) => {
       winnerName: msg.winnerName
     });
   }
+
+  // NEU: Punkte nach dem Battle neu laden
+  loadPlayerPoints(myId);
 });
+
 
 
 function handleBattleSuccess() {
@@ -190,23 +194,15 @@ function handleBattleSuccess() {
 
 
 function handleBattleSurrender() {
-  console.log("Aufgegeben - andere Spieler gewinnt");
-  const opponent = currentBattleState.isInitiator
-    ? currentBattleState.playerRight
-    : currentBattleState.playerLeft;
-
-  // Status + Vote senden
+  console.log("Aufgegeben - DONE_SURRENDER senden");
   gameClient.updateBattleStatus(currentBattleState.battleId, "DONE_SURRENDER");
-  gameClient.voteBattle(currentBattleState.battleId, opponent);
-
-  // Sofort Lose anzeigen (nur auf dieser Seite)
-  showBattleLose({
-    loserName: "Du",
-    loserPointsDelta: 10,
-    trashTalk: "Nächstes Mal schaffst du es!",
-    winnerName: opponent
-  });
+  // Optional: zusätzlich direkt einen Vote schicken, wenn du willst:
+  // const opponent = currentBattleState.isInitiator
+  //   ? currentBattleState.playerRight
+  //   : currentBattleState.playerLeft;
+  // gameClient.voteBattle(currentBattleState.battleId, opponent);
 }
+
 
 
 

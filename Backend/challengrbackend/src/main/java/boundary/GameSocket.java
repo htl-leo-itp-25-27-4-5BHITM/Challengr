@@ -24,6 +24,8 @@ public class GameSocket {
 
     // Merkt sich, welche Session zu welchem Player gehört
     private static final Map<Long, Session> SESSIONS = new ConcurrentHashMap<>();
+    // Mapping Session-ID -> Player-ID, damit wir beim Status-Update wissen, wer gesendet hat
+    private static final Map<String, Long> SESSION_TO_PLAYER = new ConcurrentHashMap<>();
 
     // Votes pro Battle: battleId -> Liste der Gewinner-Namen
     private static final Map<Long, List<String>> BATTLE_VOTES = new ConcurrentHashMap<>();
@@ -47,32 +49,35 @@ public class GameSocket {
         }
         Long playerId = Long.valueOf(params.get(0));
         SESSIONS.put(playerId, session);
+        SESSION_TO_PLAYER.put(session.getId(), playerId);
         System.out.println("WebSocket open for player " + playerId);
     }
 
     @OnClose
     public void onClose(Session session) {
-        // Session aus Map entfernen
+        // Session aus Maps entfernen
         SESSIONS.entrySet().removeIf(e -> e.getValue().getId().equals(session.getId()));
+        SESSION_TO_PLAYER.remove(session.getId());
         System.out.println("WebSocket closed: " + session.getId());
     }
 
     @OnMessage
     public void onMessage(String message, Session session) {
-        CompletableFuture.runAsync(() -> handleMessage(message, session));
+        Long playerId = SESSION_TO_PLAYER.get(session.getId());
+        CompletableFuture.runAsync(() -> handleMessage(message, session, playerId));
     }
 
     // ---------------------------------------------------------
     // Message Handling
     // ---------------------------------------------------------
 
-    private void handleMessage(String message, Session session) {
+    private void handleMessage(String message, Session session, Long playerId) {
         try {
             if (message.contains("\"type\":\"create-battle\"")) {
                 handleCreateBattle(message);
 
             } else if (message.contains("\"type\":\"update-battle-status\"")) {
-                handleUpdateBattleStatus(message);
+                handleUpdateBattleStatus(message, playerId);
 
             } else if (message.contains("\"type\":\"battle-vote\"")) {
                 handleBattleVote(message);
@@ -112,10 +117,10 @@ public class GameSocket {
                 battle.getStatus()
         );
 
-        // nur an den Herausgeforderten schicken
+        // an Herausgeforderten und Initiator schicken
         sendToPlayer(toId, payload);
         sendToPlayer(fromId, payload);
-        
+
         // Bestätigung an den Initiator senden
         String confirmPayload = """
             {
@@ -138,22 +143,65 @@ public class GameSocket {
 
     // ---------------- update-battle-status -------------------
 
-    private void handleUpdateBattleStatus(String message) {
+    private void handleUpdateBattleStatus(String message, Long senderId) {
         Long battleId = extractLong(message, "battleId");
         String status = extractString(message, "status");
 
         Battle battle = battleService.updateStatus(battleId, status);
 
         String payload = """
-            {
-              "type": "battle-updated",
-              "battleId": %d,
-              "status": "%s"
-            }
-            """.formatted(battle.getId(), battle.getStatus());
+        {
+          "type": "battle-updated",
+          "battleId": %d,
+          "status": "%s"
+        }
+        """.formatted(battle.getId(), battle.getStatus());
 
         sendToPlayer(battle.getFromPlayer().getId(), payload);
         sendToPlayer(battle.getToPlayer().getId(), payload);
+
+        // Sonderfall: Surrender → direkt Sieger/Verlierer bestimmen
+        if ("DONE_SURRENDER".equals(status)) {
+            handleSurrender(battle, senderId);
+        }
+    }
+
+    /**
+     * Wird aufgerufen, wenn einer der beiden Spieler DONE_SURRENDER sendet.
+     * senderId ist der Spieler, der aufgegeben hat → der andere gewinnt.
+     */
+    private void handleSurrender(Battle battle, Long senderId) {
+        if (senderId == null) {
+            System.out.println("handleSurrender: senderId null, ignoriere.");
+            return;
+        }
+
+        Long fromId = battle.getFromPlayer().getId();
+        Long toId   = battle.getToPlayer().getId();
+
+        String winnerName;
+        String loserName;
+
+        // Wenn der Angreifer (from) surrendered, gewinnt der Verteidiger (to)
+        if (Objects.equals(senderId, fromId)) {
+            winnerName = battle.getToPlayer().getName();
+            loserName  = battle.getFromPlayer().getName();
+        }
+        // Wenn der Verteidiger (to) surrendered, gewinnt der Angreifer (from)
+        else if (Objects.equals(senderId, toId)) {
+            winnerName = battle.getFromPlayer().getName();
+            loserName  = battle.getToPlayer().getName();
+        } else {
+            // Sicherheit: Absender gehört nicht zu diesem Battle
+            System.out.printf("Sender %d gehört nicht zu Battle %d%n", senderId, battle.getId());
+            return;
+        }
+
+        // Zwei "Votes" für den Gewinner simulieren
+        List<String> votes = List.of(winnerName, winnerName);
+
+        // Direkt Ergebnis berechnen, speichern und broadcasten
+        computeAndBroadcastResult(battle.getId(), votes);
     }
 
     // ---------------------- battle-vote ----------------------
@@ -177,7 +225,6 @@ public class GameSocket {
     }
 
     private void computeAndBroadcastResult(Long battleId, List<String> votes) {
-        // Simple Logik:
         String winnerName = votes.get(0);
         String loserName  = "Unbekannt";
 
@@ -195,28 +242,12 @@ public class GameSocket {
         int winnerDelta = 20;
         int loserDelta  = -10;
 
-        // NEU: Winner-Player bestimmen und in DB speichern
+        // Winner + Punkte + Battle-Status in einer @Transactional-Methode speichern
         try {
-            Battle battle = battleService.battleRepository.findById(battleId); // ggf. Methode im Service anlegen
-            if (battle != null) {
-                Long winnerPlayerId = null;
-
-                if (battle.getFromPlayer() != null
-                        && winnerName.equals(battle.getFromPlayer().getName())) {
-                    winnerPlayerId = battle.getFromPlayer().getId();
-                } else if (battle.getToPlayer() != null
-                        && winnerName.equals(battle.getToPlayer().getName())) {
-                    winnerPlayerId = battle.getToPlayer().getId();
-                }
-
-                if (winnerPlayerId != null) {
-                    // Winner + Punkte + Status in der DB speichern
-                    battleService.finishBattle(battleId, winnerPlayerId);
-                }
-            }
+            battleService.finalizeResult(battleId, winnerName, winnerDelta, loserDelta);
         } catch (Exception e) {
             e.printStackTrace();
-            // Fehler beim Speichern ignorieren → Ergebnis wird trotzdem verschickt
+            System.out.println("Fehler beim finalisieren von Battle " + battleId + ": " + e.getMessage());
         }
 
         String payload = """
@@ -247,7 +278,6 @@ public class GameSocket {
 
         System.out.println("Sent battle-result for battle " + battleId + ": " + payload);
     }
-
 
     // ---------------------------------------------------------
     // Hilfsfunktionen
