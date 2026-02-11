@@ -58,8 +58,17 @@ struct BattleView: View {
 
                 // PLAYER PANELS
                 HStack(spacing: 32) {
-                    playerPanel(name: playerLeft, color: .challengrYellow)
-                    playerPanel(name: playerRight, color: .chalengrRed)
+                    playerPanel(
+                        name: playerLeft,
+                        color: .challengrYellow,
+                        imageName: "playerBoy"
+                    )
+
+                    playerPanel(
+                        name: playerRight,
+                        color: .chalengrRed,
+                        imageName: "playerGirl"
+                    )
                 }
                 .padding(.vertical, 16)
 
@@ -106,15 +115,25 @@ struct BattleView: View {
     }
 
     // MARK: - Player Panel
-    private func playerPanel(name: String, color: Color) -> some View {
-        VStack {
-            RoundedRectangle(cornerRadius: 18)
-                .fill(.challengrWhite)
-                .frame(width: 110, height: 170)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(color, lineWidth: 3)
-                )
+    private func playerPanel(name: String, color: Color, imageName: String) -> some View {
+        VStack(spacing: 8) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(.challengrWhite)
+                    .frame(width: 110, height: 170)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(color, lineWidth: 3)
+                    )
+
+                Image(imageName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 110, height: 170)
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: 18)
+                    )
+            }
 
             Text(name.uppercased())
                 .font(.system(size: 14, weight: .bold))
