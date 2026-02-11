@@ -88,8 +88,6 @@ Ziele:
 
 ---
 
-
-
 ## Sprint (Sprint 7 – Start: 28.01.2026)
 
 Ziele:
@@ -99,3 +97,13 @@ Ziele:
 * Implementierung der Dialog Logik in der WebApp
 
 ---
+
+## Sprint (Sprint 8 – Start: 11.02.2026)
+
+Ziele:
+
+*  Finale Entwicklung eines Punktesystems
+
+* Speicherung der Punkte im Backend
+* Dynamisches Laden des Trophy Pfads
+* Einheitliches Styling
