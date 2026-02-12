@@ -1,7 +1,7 @@
 INSERT INTO player (name, longitude, latitude, points) VALUES
-                                                           ('EigenerSpieler', 14.251389, 48.268333, 0),
-                                                           ('ZweiterSpieler', 48.2683,  14.2514, 0),
-                                                           ('WebappSpieler', 14.251385, 48.268639, 0);
+                                                           ('EigenerSpieler', 14.251389, 48.268333, 200),
+                                                           ('ZweiterSpieler', 48.2683,  14.2514, 200),
+                                                           ('WebappSpieler', 14.251385, 48.268639, 200);
 
 -- Kategorien einfügen (IDs werden automatisch generiert)
 INSERT INTO challenge_categories (name, description) VALUES
@@ -45,7 +45,7 @@ INSERT INTO challenges (text, category_id) VALUES
 
 -- Ranks
 INSERT INTO rank (name, min, max, color) VALUES
-                                             ('Quitter', 0, 99, 'gray'),
+                                             ('Quittttter', 0, 99, 'gray'),
                                              ('Punchbag', 100, 199, 'red'),
                                              ('Scrapper', 200, 349, 'green'),
                                              ('Contender', 350, 599, 'yellow'),

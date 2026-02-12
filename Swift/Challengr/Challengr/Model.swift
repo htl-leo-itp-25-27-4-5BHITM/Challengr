@@ -9,12 +9,23 @@ import Foundation
 import CoreLocation
 
 // Spieler, so wie er vom Backend kommt
+// Nur für Requests (Client → Backend), ohne Punkte
+struct PlayerRequestDTO: Codable {
+    let id: Int64?
+    let name: String
+    let latitude: Double
+    let longitude: Double
+}
+
+// Für Responses (Backend → Client), inkl. Punkte
 struct PlayerDTO: Codable, Identifiable {
     let id: Int64
     let name: String
     let latitude: Double
     let longitude: Double
+    let points: Int
 }
+
 
 // Request für /players/nearby
 struct NearbyRequest: Codable {

@@ -8,6 +8,7 @@ final class PlayerLocationService {
 
 
     /// Aktualisiert einen existierenden Spieler in der DB
+    // PUT: nur Position/Name schicken, keine Punkte
     func updatePlayer(
         id: Int64,
         name: String,
@@ -16,7 +17,7 @@ final class PlayerLocationService {
     ) async throws {
         guard let url = URL(string: "\(baseURL)/\(id)") else { return }
 
-        let dto = PlayerDTO(id: id, name: name, latitude: latitude, longitude: longitude)
+        let dto = PlayerRequestDTO(id: id, name: name, latitude: latitude, longitude: longitude)
 
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
@@ -25,6 +26,7 @@ final class PlayerLocationService {
 
         _ = try await URLSession.shared.data(for: request)
     }
+
 
     /// Holt Spieler in der Nähe (inkl. eigenem Spieler)
     /// Holt Spieler in der Nähe (inkl. eigenem Spieler, falls Backend ihn zurückgibt)
@@ -67,3 +69,21 @@ final class PlayerLocationService {
 
 
 }
+
+struct PlayerPointsDTO: Codable {
+    let playerId: Int64
+    let points: Int
+}
+
+extension PlayerLocationService {
+    func loadPlayerPoints(id: Int64) async throws -> Int {
+        guard let url = URL(string: "\(baseURL)/\(id)/points") else {
+            throw URLError(.badURL)
+        }
+
+        let (data, _) = try await URLSession.shared.data(from: url)
+        let dto = try JSONDecoder().decode(PlayerPointsDTO.self, from: data)
+        return dto.points
+    }
+}
+

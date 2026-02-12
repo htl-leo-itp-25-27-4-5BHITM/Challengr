@@ -142,4 +142,26 @@ public class PlayerRessources {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
     }
+
+    public static class PlayerPointsDTO {
+        public long playerId;
+        public int points;
+
+        public PlayerPointsDTO() {}
+
+        public PlayerPointsDTO(long playerId, int points) {
+            this.playerId = playerId;
+            this.points = points;
+        }
+    }
+
+    @GET
+    @Path("/{id}/points")
+    public PlayerPointsDTO getPlayerPoints(@PathParam("id") Long id) {
+        Player p = playerRepository.findById(id);
+        if (p == null) {
+            throw new NotFoundException();
+        }
+        return new PlayerPointsDTO(p.getId(), p.getPoints()); // getPoints() = Feld in deiner Player-Entity
+    }
 }

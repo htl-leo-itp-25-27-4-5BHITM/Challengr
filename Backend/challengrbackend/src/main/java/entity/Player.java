@@ -15,7 +15,7 @@ public class Player {
     private double latitude;
 
     // NEU: Punkte, Default 0
-    private int points = 0;
+    private int points = 200;
 
     public Player(String name, double longitude, double latitude) {
         this.name = name;
