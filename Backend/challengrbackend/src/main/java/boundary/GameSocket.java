@@ -244,7 +244,7 @@ public class GameSocket {
 
         // Winner + Punkte + Battle-Status in einer @Transactional-Methode speichern
         try {
-            battleService.finalizeResult(battleId, winnerName, winnerDelta, loserDelta);
+            battleService.finalizeResult(battleId, winnerName);
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Fehler beim finalisieren von Battle " + battleId + ": " + e.getMessage());

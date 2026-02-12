@@ -1,5 +1,5 @@
 INSERT INTO player (name, longitude, latitude, points) VALUES
-                                                           ('EigenerSpieler', 14.251389, 48.268333, 200),
+                                                           ('EigenerSpieler', 14.251389, 48.268333, 800),
                                                            ('ZweiterSpieler', 48.2683,  14.2514, 200),
                                                            ('WebappSpieler', 14.251385, 48.268639, 200);
 
