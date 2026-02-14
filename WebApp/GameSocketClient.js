@@ -11,7 +11,8 @@ export class GameClient {
       "battle-requested": [],
       "battle-updated": [],
       "battle-result": [],
-      "battle-created": []
+      "battle-created": [],
+      "battle-pending": []    
     };
   }
 
@@ -162,6 +163,13 @@ export class GameClient {
         status: msg.status
       });
     }
+
+    if (type === "battle-pending") {
+      this.emit("battle-pending", {
+        battleId: msg.battleId
+      });
+    }
+
 
     // battle-result
     if (type === "battle-result") {

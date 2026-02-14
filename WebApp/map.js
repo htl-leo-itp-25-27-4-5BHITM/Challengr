@@ -6,6 +6,7 @@ const gameClient = new GameClient(myId);
 gameClient.connect();
 
 let sheetMode = "challenges"; // oder "trophy"
+let isResultPending = false;
 
 
 
@@ -29,6 +30,8 @@ const incomingOpponentEl = document.getElementById("incoming-opponent");
 const incomingTextEl = document.getElementById("incoming-challenge-text");
 const incomingAcceptBtn = document.getElementById("incoming-accept");
 const incomingDeclineBtn = document.getElementById("incoming-decline");
+const pendingOverlay = document.getElementById("battle-pending-overlay");
+
 
 let incomingBattleId = null;
 
@@ -149,11 +152,23 @@ gameClient.on("battle-updated", (msg) => {
       onVote: (winnerName) => {
         console.log("Vote für:", winnerName);
         gameClient.voteBattle(currentBattleState.battleId, winnerName);
+
+        isResultPending = true;
+        if (pendingOverlay) {
+          pendingOverlay.classList.remove("hidden");
+        }
       }
     });
   }
 });
 
+gameClient.on("battle-pending", (msg) => {
+  console.log("battle-pending:", msg);
+  isResultPending = true;
+  if (pendingOverlay) {
+    pendingOverlay.classList.remove("hidden");
+  }
+});
 
 
 
@@ -163,27 +178,34 @@ gameClient.on("battle-updated", (msg) => {
 gameClient.on("battle-result", (msg) => {
   console.log("Battle result received:", msg);
 
-  const myName = window.myName || `Player_${myId}`;
-  const iWon = msg.winnerName === myName;
+  // Loader kurz stehen lassen
+  setTimeout(() => {
+    isResultPending = false;
+    if (pendingOverlay) pendingOverlay.classList.add("hidden");
 
-  if (iWon) {
-    showBattleWin({
-      winnerName: msg.winnerName,
-      winnerAvatar: msg.winnerAvatar,
-      winnerPointsDelta: msg.winnerPointsDelta
-    });
-  } else {
-    showBattleLose({
-      loserName: msg.loserName,
-      loserPointsDelta: Math.abs(msg.loserPointsDelta),
-      trashTalk: msg.trashTalk,
-      winnerName: msg.winnerName
-    });
-  }
+    const myName = window.myName || `Player_${myId}`;
+    const iWon = msg.winnerName === myName;
 
-  // NEU: Punkte nach dem Battle neu laden
-  loadPlayerPoints(myId);
+    if (iWon) {
+      showBattleWin({
+        winnerName: msg.winnerName,
+        winnerAvatar: msg.winnerAvatar,
+        winnerPointsDelta: msg.winnerPointsDelta
+      });
+    } else {
+      showBattleLose({
+        loserName: msg.loserName,
+        loserPointsDelta: Math.abs(msg.loserPointsDelta),
+        trashTalk: msg.trashTalk,
+        winnerName: msg.winnerName
+      });
+    }
+
+    // Punkte nach dem Battle neu laden
+    loadPlayerPoints(myId);
+  }, 2500);  // 2 Sekunden Loading
 });
+
 
 
 
