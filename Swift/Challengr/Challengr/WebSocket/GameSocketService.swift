@@ -16,6 +16,8 @@ final class GameSocketService: ObservableObject {
     var onReadyForVoting: ((Int64) -> Void)?
     
     var onBattleUpdatedStatus: ((Int64, String) -> Void)?
+    
+    var onBattlePending: ((Int64) -> Void)?
 
 
     init(playerId: Int64) {
@@ -156,6 +158,13 @@ final class GameSocketService: ObservableObject {
                 }
             }
 
+            if type == "battle-pending" {
+                let battleId = (json["battleId"] as? NSNumber)?.int64Value ?? 0
+                print("🔄 battle-pending empfangen:", battleId)   // <--
+                DispatchQueue.main.async {
+                    self.onBattlePending?(battleId)
+                }
+            }
 
 
             // NEU: Ergebnis nach Voting

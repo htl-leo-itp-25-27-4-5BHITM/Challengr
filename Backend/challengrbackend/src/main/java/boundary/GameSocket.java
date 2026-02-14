@@ -192,7 +192,6 @@ public class GameSocket {
             winnerName = battle.getFromPlayer().getName();
             loserName  = battle.getToPlayer().getName();
         } else {
-            // Sicherheit: Absender gehört nicht zu diesem Battle
             System.out.printf("Sender %d gehört nicht zu Battle %d%n", senderId, battle.getId());
             return;
         }
@@ -200,9 +199,22 @@ public class GameSocket {
         // Zwei "Votes" für den Gewinner simulieren
         List<String> votes = List.of(winnerName, winnerName);
 
-        // Direkt Ergebnis berechnen, speichern und broadcasten
+        // NEU: pending-Event nur an die beiden Spieler schicken
+        String pendingPayload = """
+    {
+      "type": "battle-pending",
+      "battleId": %d
+    }
+    """.formatted(battle.getId());
+
+        sendToPlayer(fromId, pendingPayload);
+        sendToPlayer(toId, pendingPayload);
+
+        // Ergebnis berechnen, speichern und als battle-result an alle schicken
         computeAndBroadcastResult(battle.getId(), votes);
     }
+
+
 
     // ---------------------- battle-vote ----------------------
 

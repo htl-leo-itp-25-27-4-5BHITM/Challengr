@@ -25,6 +25,12 @@ enum ActiveFullScreen {
     case lose
 }
 
+enum ActiveOverlay {
+    case none
+    case resultPending   // 2–3 Sekunden nach Voting/Surrender
+}
+
+
 
 
 struct MapView: View {
@@ -91,6 +97,7 @@ struct MapView: View {
     @State private var myVote: String? = nil
     @State private var opponentVote: String? = nil
 
+    @State private var activeOverlay: ActiveOverlay = .none
 
     let minDistance: CLLocationDistance = 200
     let maxDistance: CLLocationDistance = 5000
@@ -139,6 +146,7 @@ struct MapView: View {
         .overlay(playerPopupOverlay)
         .overlay(challengeDialogOverlay)
         .overlay(incomingChallengeOverlay)
+        .overlay(resultPendingOverlay)
         .sheet(isPresented: $showChallengeView) {
             challengeSheet
         }
@@ -165,6 +173,7 @@ struct MapView: View {
                                 // socket.sendVote(battleId: battleId, winnerName: info.playerB)
                             }
                             activeFullScreen = .none   // Battle schließen, Ergebnis kommt später über battle-result
+                            activeOverlay = .resultPending
                         },
                         onFinished: {
                             if let battleId = currentBattleId {
@@ -211,6 +220,8 @@ struct MapView: View {
                             battleId: battleId,
                             winnerName: chosen
                         )
+                        activeFullScreen = .none  
+                        activeOverlay = .resultPending
                     }
                 } else {
                     EmptyView()
@@ -506,6 +517,34 @@ struct MapView: View {
         }
     }
 
+    private var resultPendingOverlay: some View {
+        Group {
+            if activeOverlay == .resultPending {
+                ZStack {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+
+                    VStack(spacing: 12) {
+                        Text("ERGEBNIS WIRD BERECHNET")
+                            .font(.system(size: 16, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
+
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(.white)
+                    }
+                    .padding(20)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(.ultraThinMaterial)
+                    )
+                    .shadow(radius: 10)
+                }
+                .transition(.opacity)
+            }
+        }
+    }
+
     
     // MARK: - Sheets & Screens
 
@@ -666,10 +705,13 @@ struct MapView: View {
     
         
         socket.onBattleResult = { data in
+            
             resultData = data
+            activeFullScreen = .none
 
             // 5 Sekunden warten, danach Win/Lose anzeigen
-            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                activeOverlay = .none
                 if data.winnerName == ownPlayerName {
                     activeFullScreen = .win
                 } else {
@@ -682,6 +724,13 @@ struct MapView: View {
             currentBattleId = battleId
             activeFullScreen = .voting   // beide springen in Voting-Screen
         }
+        
+        socket.onBattlePending = { battleId in
+            print("🟡 onBattlePending für Battle", battleId)
+            currentBattleId = battleId
+            activeOverlay = .resultPending
+        }
+
         
         socket.onBattleUpdatedStatus = { battleId, status in
             print("Battle \(battleId) status updated to \(status)")
