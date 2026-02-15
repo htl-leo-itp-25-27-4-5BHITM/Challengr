@@ -1,7 +1,7 @@
-INSERT INTO player (name, longitude, latitude, points) VALUES
-                                                           ('EigenerSpieler', 14.251389, 48.268333, 800),
-                                                           ('ZweiterSpieler', 48.2683,  14.2514, 200),
-                                                           ('WebappSpieler', 14.251385, 48.268639, 200);
+INSERT INTO player (name, longitude, latitude, points, consecutiveConflicts) VALUES
+                                                           ('EigenerSpieler', 14.251389, 48.268333, 800,0),
+                                                           ('ZweiterSpieler', 48.2683,  14.2514, 200,0),
+                                                           ('WebappSpieler', 14.251385, 48.268639, 200,0);
 
 -- Kategorien einfügen (IDs werden automatisch generiert)
 INSERT INTO challenge_categories (name, description) VALUES

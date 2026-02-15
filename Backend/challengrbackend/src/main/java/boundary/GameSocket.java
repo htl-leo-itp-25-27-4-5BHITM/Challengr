@@ -1,8 +1,10 @@
 package boundary;
 
 import entity.Battle;
+import entity.Player;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
@@ -199,22 +201,20 @@ public class GameSocket {
         // Zwei "Votes" für den Gewinner simulieren
         List<String> votes = List.of(winnerName, winnerName);
 
-        // NEU: pending-Event nur an die beiden Spieler schicken
+        // pending-Event nur an die beiden Spieler schicken
         String pendingPayload = """
-    {
-      "type": "battle-pending",
-      "battleId": %d
-    }
-    """.formatted(battle.getId());
+        {
+          "type": "battle-pending",
+          "battleId": %d
+        }
+        """.formatted(battle.getId());
 
         sendToPlayer(fromId, pendingPayload);
         sendToPlayer(toId, pendingPayload);
 
         // Ergebnis berechnen, speichern und als battle-result an alle schicken
-        computeAndBroadcastResult(battle.getId(), votes);
+        computeAndBroadcastResult(battle, votes);
     }
-
-
 
     // ---------------------- battle-vote ----------------------
 
@@ -229,34 +229,76 @@ public class GameSocket {
         System.out.println("Received vote for battle " + battleId + ": " + winner
                 + " (total votes: " + votes.size() + ")");
 
-        // Sobald 2 Votes da sind, Ergebnis berechnen
+        // Sobald 2 Votes da sind → pending + Ergebnis/Strafe
         if (votes.size() >= 2) {
-            computeAndBroadcastResult(battleId, votes);
+            Battle battle = battleService.findById(battleId);
+
+            String pendingPayload = """
+            {
+              "type": "battle-pending",
+              "battleId": %d
+            }
+            """.formatted(battleId);
+
+            sendToPlayer(battle.getFromPlayer().getId(), pendingPayload);
+            sendToPlayer(battle.getToPlayer().getId(), pendingPayload);
+
+            computeAndBroadcastResult(battle, votes);
             BATTLE_VOTES.remove(battleId);
         }
     }
 
-    private void computeAndBroadcastResult(Long battleId, List<String> votes) {
-        String winnerName = votes.get(0);
-        String loserName  = "Unbekannt";
+    // -------------------- Ergebnis + Strafe ------------------
 
-        if (votes.size() >= 2) {
-            String second = votes.get(1);
-            if (!second.equals(winnerName)) {
-                loserName = second;
+    private void computeAndBroadcastResult(Battle battle, List<String> votes) {
+        Long battleId = battle.getId();
+
+        String winnerName = null;
+        String loserName  = null;
+        boolean isConflict = false;
+
+        if (votes != null && votes.size() >= 2) {
+            String v1 = votes.get(0);
+            String v2 = votes.get(1);
+
+            if (v1.equals(v2)) {
+                // Einigung
+                winnerName = v1;
+                loserName  = otherPlayerName(battle, winnerName);
+            } else {
+                // Konflikt
+                isConflict = true;
             }
+        } else if (votes != null && votes.size() == 1) {
+            // z.B. Surrender: ein WinnerName
+            winnerName = votes.get(0);
+            loserName  = otherPlayerName(battle, winnerName);
         }
 
-        if ("Unbekannt".equals(loserName)) {
-            loserName = "Gegner";
+        int winnerDelta = 0;
+        int loserDelta  = 0;
+        String trashTalk = "GG!";
+
+        if (!isConflict && winnerName != null && loserName != null) {
+            // normaler Sieg
+            winnerDelta = 20;
+            loserDelta  = -10;
+            trashTalk   = "GG!";
+
+            // Konfliktzähler zurücksetzen
+            resetConflictCountersForBattle(battle);
+
+        } else if (isConflict) {
+            // Konflikt → Strafe anwenden, keine direkten +/- Punkte fürs Battle
+            applyConflictPenalty(battle);
+            trashTalk = "Keine Einigung – keine Punkte.";
         }
 
-        int winnerDelta = 20;
-        int loserDelta  = -10;
-
-        // Winner + Punkte + Battle-Status in einer @Transactional-Methode speichern
+        // Ergebnis in DB finalisieren, nur wenn es einen Sieger gibt
         try {
-            battleService.finalizeResult(battleId, winnerName);
+            if (winnerName != null) {
+                battleService.finalizeResult(battleId, winnerName);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Fehler beim finalisieren von Battle " + battleId + ": " + e.getMessage());
@@ -272,14 +314,15 @@ public class GameSocket {
           "loserName": "%s",
           "loserAvatar": "ownAvatar",
           "loserPointsDelta": %d,
-          "trashTalk": "GG!"
+          "trashTalk": "%s"
         }
         """.formatted(
                 battleId,
-                escapeJson(winnerName),
+                escapeJson(winnerName != null ? winnerName : "Niemand"),
                 winnerDelta,
-                escapeJson(loserName),
-                loserDelta
+                escapeJson(loserName != null ? loserName : "Niemand"),
+                loserDelta,
+                escapeJson(trashTalk)
         );
 
         SESSIONS.values().forEach(s -> {
@@ -289,6 +332,55 @@ public class GameSocket {
         });
 
         System.out.println("Sent battle-result for battle " + battleId + ": " + payload);
+    }
+
+    private String otherPlayerName(Battle battle, String winnerName) {
+        String fromName = battle.getFromPlayer().getName();
+        String toName   = battle.getToPlayer().getName();
+        return fromName.equals(winnerName) ? toName : fromName;
+    }
+
+    private void applyConflictPenalty(Battle battle) {
+        Player fromPlayer = battle.getFromPlayer();
+        Player toPlayer   = battle.getToPlayer();
+
+        applyConflictToPlayer(fromPlayer);
+        applyConflictToPlayer(toPlayer);
+    }
+
+    private void applyConflictToPlayer(Player player) {
+        int current = player.getConsecutiveConflicts();
+        current += 1;
+        player.setConsecutiveConflicts(current);
+
+        int penalty = 0;
+        if (current >= 3) {
+            penalty = (current - 2) * 10;  // 3 -> 10, 4 -> 20, ...
+        }
+
+        if (penalty > 0) {
+            player.setPoints(player.getPoints() - penalty);
+            System.out.printf("Konflikt-Penalty für %s: -%d Punkte (Konflikte in Folge: %d)%n",
+                    player.getName(), penalty, current);
+        } else {
+            System.out.printf("Konflikt ohne Penalty für %s (Konflikte in Folge: %d)%n",
+                    player.getName(), current);
+        }
+
+        // TODO: an deine Persistenz anpassen
+        battleService.updatePlayer(player);
+    }
+
+    private void resetConflictCountersForBattle(Battle battle) {
+        Player fromPlayer = battle.getFromPlayer();
+        Player toPlayer   = battle.getToPlayer();
+
+        fromPlayer.setConsecutiveConflicts(0);
+        toPlayer.setConsecutiveConflicts(0);
+
+        // TODO: an deine Persistenz anpassen
+        battleService.updatePlayer(fromPlayer);
+        battleService.updatePlayer(toPlayer);
     }
 
     // ---------------------------------------------------------

@@ -27,8 +27,16 @@ public class BattleService {
     @Inject
     RankRepository rankRepository;
 
+    @Transactional
     public Battle findById(Long battleId) {
         return battleRepository.findById(battleId);
+    }
+
+
+    @Transactional
+    public void updatePlayer(Player player) {
+        playerRepository.save(player);
+        // oder: entityManager.merge(player);
     }
 
     // Neues Battle anlegen

@@ -27,7 +27,17 @@ public class PlayerRepository {
         return player;
     }
 
+    @Transactional
+    public Player save(Player player) {
+        if (player.getId() == null) {
+            em.persist(player);
+            return player;
+        } else {
+            return em.merge(player);
+        }
+    }
 
+    @Transactional
     public void updatePlayerPos(Player player) {
         Player existing = em.find(Player.class, player.getId());
 

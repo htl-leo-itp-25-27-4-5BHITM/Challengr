@@ -17,6 +17,8 @@ public class Player {
     // NEU: Punkte, Default 0
     private int points = 200;
 
+    private int consecutiveConflicts = 0;
+
     public Player(String name, double longitude, double latitude) {
         this.name = name;
         this.longitude = longitude;
@@ -65,5 +67,13 @@ public class Player {
 
     public void setPoints(int points) {
         this.points = points;
+    }
+
+    public int getConsecutiveConflicts() {
+        return consecutiveConflicts;
+    }
+
+    public void setConsecutiveConflicts(int consecutiveConflicts) {
+        this.consecutiveConflicts = consecutiveConflicts;
     }
 }
