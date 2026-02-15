@@ -23,6 +23,16 @@ struct BattleLoseView: View {
                     .font(.system(size: 44, weight: .black, design: .rounded))
                     .foregroundStyle(.chalengrRed)
                     .tracking(2)
+                
+                // POINTS
+                Text(data.loserPointsDelta == 0
+                     ? "0 Punkte"
+                     : "-\(abs(data.loserPointsDelta)) Punkte")
+                    .font(.system(size: 28, weight: .black))
+                    .tracking(1)
+                    .foregroundStyle(.challengrWhite)
+
+                Spacer()
 
                 // TRASH TALK PANEL
                 VStack {

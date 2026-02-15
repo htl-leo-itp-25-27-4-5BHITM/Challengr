@@ -726,7 +726,7 @@ function showBattleLose({ loserName, loserPointsDelta, trashTalk, winnerName }) 
   const closeBtn = document.getElementById("battle-lose-close");
 
   nameEl.textContent   = loserName || "Du";
-  pointsEl.textContent = `-${loserPointsDelta} Punkte`;
+  pointsEl.textContent = `${loserPointsDelta === 0 ? "0" : `-${loserPointsDelta}`} Punkte`;
   trashEl.textContent  = trashTalk || "";
   footerEl.textContent = `Sieger: ${winnerName}`;
 

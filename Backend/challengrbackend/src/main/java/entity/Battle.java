@@ -34,6 +34,10 @@ public class Battle {
     private String status;   // REQUESTED, ACCEPTED, DONE, ...
     private String type;     // NORMAL, ...
 
+    private Integer winnerPointsDelta;
+    private Integer loserPointsDelta;
+
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     // --- Getter/Setter ---
@@ -104,5 +108,21 @@ public class Battle {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Integer getWinnerPointsDelta() {
+        return winnerPointsDelta;
+    }
+
+    public void setWinnerPointsDelta(Integer winnerPointsDelta) {
+        this.winnerPointsDelta = winnerPointsDelta;
+    }
+
+    public Integer getLoserPointsDelta() {
+        return loserPointsDelta;
+    }
+
+    public void setLoserPointsDelta(Integer loserPointsDelta) {
+        this.loserPointsDelta = loserPointsDelta;
     }
 }

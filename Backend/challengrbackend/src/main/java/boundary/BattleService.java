@@ -160,6 +160,10 @@ public class BattleService {
 
         battle.setWinner(winner);
         battle.setStatus("DONE");
+
+        battle.setWinnerPointsDelta(winnerDelta);
+        battle.setLoserPointsDelta(loserDelta);
+
     }
 
 

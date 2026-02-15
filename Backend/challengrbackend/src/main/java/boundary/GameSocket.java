@@ -280,43 +280,51 @@ public class GameSocket {
         String trashTalk = "GG!";
 
         if (!isConflict && winnerName != null && loserName != null) {
-            // normaler Sieg
-            winnerDelta = 20;
-            loserDelta  = -10;
-            trashTalk   = "GG!";
+            // normaler Sieg → wie vorher, aber mit deinen BattleService-Deltas
+            try {
+                battleService.finalizeResult(battleId, winnerName);
+                Battle updated = battleService.findById(battleId);
+                winnerDelta = Optional.ofNullable(updated.getWinnerPointsDelta()).orElse(0);
+                loserDelta  = Optional.ofNullable(updated.getLoserPointsDelta()).orElse(0);
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("Fehler beim finalisieren von Battle " + battleId + ": " + e.getMessage());
+            }
 
-            // Konfliktzähler zurücksetzen
+            trashTalk = "GG!";
             resetConflictCountersForBattle(battle);
 
         } else if (isConflict) {
-            // Konflikt → Strafe anwenden, keine direkten +/- Punkte fürs Battle
-            applyConflictPenalty(battle);
-            trashTalk = "Keine Einigung – keine Punkte.";
+            // Konflikt → Strafe anwenden, Deltas als Konflikt-Penalty anzeigen
+            int[] penalties = applyConflictPenalty(battle);
+            int penaltyFrom = penalties[0];
+            int penaltyTo   = penalties[1];
+
+            winnerName = "Niemand";
+            loserName  = "Niemand";
+
+            int shownPenalty = Math.max(penaltyFrom, penaltyTo);  // z.B. 0, 10, 20 ...
+
+            winnerDelta = shownPenalty > 0 ? -shownPenalty : 0;
+            loserDelta  = shownPenalty > 0 ? -shownPenalty : 0;
+
+            trashTalk = "Keine Einigung – Konflikt-Penalty.";
         }
 
-        // Ergebnis in DB finalisieren, nur wenn es einen Sieger gibt
-        try {
-            if (winnerName != null) {
-                battleService.finalizeResult(battleId, winnerName);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Fehler beim finalisieren von Battle " + battleId + ": " + e.getMessage());
-        }
 
         String payload = """
-        {
-          "type": "battle-result",
-          "battleId": %d,
-          "winnerName": "%s",
-          "winnerAvatar": "opponentAvatar",
-          "winnerPointsDelta": %d,
-          "loserName": "%s",
-          "loserAvatar": "ownAvatar",
-          "loserPointsDelta": %d,
-          "trashTalk": "%s"
-        }
-        """.formatted(
+    {
+      "type": "battle-result",
+      "battleId": %d,
+      "winnerName": "%s",
+      "winnerAvatar": "opponentAvatar",
+      "winnerPointsDelta": %d,
+      "loserName": "%s",
+      "loserAvatar": "ownAvatar",
+      "loserPointsDelta": %d,
+      "trashTalk": "%s"
+    }
+    """.formatted(
                 battleId,
                 escapeJson(winnerName != null ? winnerName : "Niemand"),
                 winnerDelta,
@@ -340,15 +348,7 @@ public class GameSocket {
         return fromName.equals(winnerName) ? toName : fromName;
     }
 
-    private void applyConflictPenalty(Battle battle) {
-        Player fromPlayer = battle.getFromPlayer();
-        Player toPlayer   = battle.getToPlayer();
-
-        applyConflictToPlayer(fromPlayer);
-        applyConflictToPlayer(toPlayer);
-    }
-
-    private void applyConflictToPlayer(Player player) {
+    private int applyConflictToPlayer(Player player) {
         int current = player.getConsecutiveConflicts();
         current += 1;
         player.setConsecutiveConflicts(current);
@@ -367,9 +367,20 @@ public class GameSocket {
                     player.getName(), current);
         }
 
-        // TODO: an deine Persistenz anpassen
         battleService.updatePlayer(player);
+        return penalty;
     }
+
+    private int[] applyConflictPenalty(Battle battle) {
+        Player fromPlayer = battle.getFromPlayer();
+        Player toPlayer   = battle.getToPlayer();
+
+        int pFrom = applyConflictToPlayer(fromPlayer);
+        int pTo   = applyConflictToPlayer(toPlayer);
+
+        return new int[] { pFrom, pTo };
+    }
+
 
     private void resetConflictCountersForBattle(Battle battle) {
         Player fromPlayer = battle.getFromPlayer();
