@@ -35,8 +35,9 @@ const pendingOverlay = document.getElementById("battle-pending-overlay");
 
 let incomingBattleId = null;
 
-function showIncomingChallengeUI({ opponentName, challengeText, onAccept, onDecline }) {
-  incomingOpponentEl.textContent = opponentName.toUpperCase();
+function showIncomingChallengeUI({ opponentName, opponentRank, challengeText, onAccept, onDecline }) {
+  const rankText = opponentRank ? ` · ${opponentRank}` : "";
+  incomingOpponentEl.textContent = (opponentName + rankText).toUpperCase();
   incomingTextEl.textContent = challengeText;
   incomingBackdrop.classList.remove("hidden");
 
@@ -90,6 +91,7 @@ gameClient.on("battle-requested", async (msg) => {
 
     showIncomingChallengeUI({
       opponentName: fromPlayer.name,
+      opponentRank: fromPlayer.rankName,
       challengeText: currentBattleState.challengeName,
       onAccept: () => {
         gameClient.updateBattleStatus(incomingBattleId, "ACCEPTED");
@@ -247,8 +249,10 @@ let dialogState = {
   selectedChallengeId: null,
   selectedCategory: null,
   playerName: "",
+  playerRank: "",          // NEU
   targetPlayerId: null
 };
+
 
 
 // Create Leaflet map and set initial view (Vienna as fallback)
@@ -443,19 +447,20 @@ function addPin(lat, lon, player) {
 
   marker.on("click", () => {
     console.log("Pin geklickt:", player.name, lat, lon);
-    challengOtherPlayer(player.id, player.name);
+    challengOtherPlayer(player.id, player.name, player.rankName);
   });
 
   window._pins.push(marker);
   return marker;
 }
 
-function challengOtherPlayer(playerId, playerName = "Spieler") {
+function challengOtherPlayer(playerId, playerName = "Spieler", playerRank = "") {
   dialogState.isOpen = true;
   dialogState.isLoading = false;
   dialogState.selectedChallenge = null;
   dialogState.selectedChallengeId = null;
   dialogState.playerName = playerName;
+  dialogState.playerRank = playerRank; 
   dialogState.targetPlayerId = playerId;
 
   renderChallengeDialog();
@@ -475,7 +480,9 @@ function renderChallengeDialog() {
   }
 
   backdrop.classList.remove("hidden");
-  title.textContent = `Challenge ${dialogState.playerName}`;
+  const rankSuffix = dialogState.playerRank ? ` · ${dialogState.playerRank}` : "";
+  title.textContent = `Challenge ${dialogState.playerName}${rankSuffix}`;
+
 
   // Reset
   categoriesDiv.innerHTML = "";

@@ -5,5 +5,6 @@ public record PlayerDTO(
         String name,
         double latitude,
         double longitude,
-        int points          // NEU
+        int points,
+        String rankName   // NEU
 ) {}

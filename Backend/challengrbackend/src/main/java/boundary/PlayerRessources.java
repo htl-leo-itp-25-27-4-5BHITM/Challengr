@@ -21,6 +21,9 @@ public class PlayerRessources {
     PlayerRepository playerRepository;
 
     @Inject
+    BattleService battleService;
+
+    @Inject
     EntityManager em;
 
     @GET
@@ -38,7 +41,8 @@ public class PlayerRessources {
                 saved.getName(),
                 saved.getLatitude(),
                 saved.getLongitude(),
-                saved.getPoints()          // NEU
+                saved.getPoints(),
+                battleService.rankNameForPoints(saved.getPoints())
         );
     }
 
@@ -70,7 +74,8 @@ public class PlayerRessources {
                 player.getName(),
                 player.getLatitude(),
                 player.getLongitude(),
-                player.getPoints()          // NEU
+                player.getPoints(),
+                battleService.rankNameForPoints(player.getPoints())
         );
     }
 
@@ -86,7 +91,8 @@ public class PlayerRessources {
                 player.getName(),
                 player.getLatitude(),
                 player.getLongitude(),
-                player.getPoints()          // NEU
+                player.getPoints(),
+                battleService.rankNameForPoints(player.getPoints())
         );
     }
 
@@ -123,7 +129,8 @@ public class PlayerRessources {
                         p.getName(),
                         p.getLatitude(),
                         p.getLongitude(),
-                        p.getPoints()          // NEU
+                        p.getPoints(),
+                        battleService.rankNameForPoints(p.getPoints())
                 ))
                 .toList();
     }

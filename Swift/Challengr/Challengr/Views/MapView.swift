@@ -767,12 +767,12 @@ struct MapView: View {
                     PlayerAnnotation(
                         playerId: $0.id,
                         coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude),
-                        title: $0.name
+                        title: "\($0.name) · \($0.rankName)"
                     )
                 }
 
                 if let me = players.first(where: { $0.id == ownPlayerId }) {
-                    ownPlayerName = me.name
+                    ownPlayerName = "\(me.name) · \(me.rankName)"
                 }
             } catch {
                 print("Fehler beim Laden der Nearby Players", error)

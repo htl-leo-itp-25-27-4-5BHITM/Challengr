@@ -212,4 +212,15 @@ public class BattleService {
     public List<Battle> getOpenBattles(Long playerId) {
         return battleRepository.findOpen(playerId);
     }
+    @Transactional
+    public String rankNameForPoints(int points) {
+        List<Rank> ranks = rankRepository.getAllRanks()
+                .stream()
+                .sorted(Comparator.comparingInt(Rank::getMin))
+                .toList();
+
+        Rank r = rankRepository.rankForPoints(points, ranks);
+        return r != null ? r.getName() : "Unranked";
+    }
+
 }

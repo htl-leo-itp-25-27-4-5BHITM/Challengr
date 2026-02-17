@@ -24,6 +24,7 @@ struct PlayerDTO: Codable, Identifiable {
     let latitude: Double
     let longitude: Double
     let points: Int
+    let rankName: String
 }
 
 
