@@ -1,86 +1,158 @@
-//
-//  BattleVotingView.swift
-//  Challengr
-//
-//  Created by Sebastian Lehner  on 27.01.26.
-//
-
 import SwiftUI
 
 struct BattleVotingView: View {
-    let playerA: String
-    let playerB: String
+    let playerA: String          // nur Name
+    let playerB: String          // nur Name
     let onVote: (String) -> Void
 
     @State private var selected: String? = nil
 
     var body: some View {
         ZStack {
-            // Heller Hintergrund
-            Color.challengrWhite
-                .ignoresSafeArea()
+            // Cinematischer, heller Hintergrund
+            LinearGradient(
+                colors: [
+                    Color(.systemGray6),
+                    Color(.systemGray5)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
 
-            VStack(spacing: 32) {
+            VStack {
+                Spacer()
 
-                // TITLE
-                Text("WER HAT GEWONNEN?")
-                    .font(.system(size: 26, weight: .black, design: .rounded))
-                    .tracking(1.5)
-                    .foregroundStyle(.challengrBlack)
+                // Zentrale "Kinoposter"-Card
+                VStack(spacing: 28) {
 
-                // VOTING BUTTONS
-                VStack(spacing: 20) {
-                    voteButton(
-                        for: playerA,
-                        color: .challengrYellow
-                    )
+                    // Kleines Label oben
+                    Text("BATTLE VOTE")
+                        .font(.system(size: 12, weight: .black, design: .rounded))
+                        .tracking(2)
+                        .foregroundColor(.challengrRed.opacity(0.9))
 
-                    voteButton(
-                        for: playerB,
-                        color: .chalengrRed
-                    )
+                    // Titel
+                    Text("WER HAT\nGEWONNEN?")
+                        .multilineTextAlignment(.center)
+                        .font(.system(size: 26, weight: .black, design: .rounded))
+                        .tracking(1.5)
+                        .foregroundColor(.challengrBlack)
+
+                    // Player-Tiles
+                    VStack(spacing: 16) {
+                        playerTile(
+                            name: playerA,
+                            color: .challengrYellow
+                        )
+
+                        playerTile(
+                            name: playerB,
+                            color: .challengrRed
+                        )
+                    }
+
+                    // Instruction / Feedback
+                    if let selected {
+                        Text("DU HAST FÜR \(selected.uppercased()) GESTIMMT")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .tracking(1)
+                            .foregroundColor(.challengrBlack.opacity(0.8))
+                    } else {
+                        Text("TIPPE AUF EINEN SPIELER")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .tracking(1)
+                            .foregroundColor(.challengrBlack.opacity(0.5))
+                    }
                 }
+                .padding(28)
+                .frame(maxWidth: 360)
+                .background(
+                    ZStack {
+                        // leichte Spotlight-Hintergrundfläche
+                        RoundedRectangle(cornerRadius: 32)
+                            .fill(Color.white)
 
-                // FEEDBACK
-                if let selected {
-                    Text("DU HAST FÜR \(selected.uppercased()) GESTIMMT")
-                        .font(.system(size: 12, weight: .bold))
-                        .tracking(1)
-                        .foregroundStyle(.challengrBlack)
-                } else {
-                    Text("TIPPE AUF EINEN SPIELER")
-                        .font(.system(size: 12, weight: .bold))
-                        .tracking(1)
-                        .foregroundStyle(.challengrBlack.opacity(0.6))
-                }
+                        RoundedRectangle(cornerRadius: 32)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [
+                                        Color.challengrYellow.opacity(0.5),
+                                        Color.challengrRed.opacity(0.3)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 2
+                            )
+                    }
+                )
+                .shadow(color: .black.opacity(0.12), radius: 30, x: 0, y: 18)
 
                 Spacer()
             }
-            .padding()
+            .padding(.horizontal, 24)
         }
     }
 
-    // MARK: - Vote Button
-    private func voteButton(
-        for name: String,
+    // MARK: - Player Tile
+
+    private func playerTile(
+        name: String,
         color: Color
     ) -> some View {
-        Button {
-            selected = name
+        let isSelected = selected == name
+        let isDimmed = selected != nil && !isSelected
+
+        return Button {
+            guard selected == nil else { return }
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                selected = name
+            }
             onVote(name)
         } label: {
-            Text(name.uppercased())
-                .font(.system(size: 18, weight: .black))
-                .tracking(1)
-                .foregroundStyle(.challengrBlack)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 20)
-                .background(
-                    RoundedRectangle(cornerRadius: 18)
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(name.uppercased())
+                        .font(.system(size: 18, weight: .black, design: .rounded))
+                        .tracking(1)
+                        .foregroundColor(.challengrBlack)
+
+                    Text("TAP TO VOTE")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .tracking(1)
+                        .foregroundColor(.challengrBlack.opacity(0.6))
+                }
+
+                Spacer()
+
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(.challengrBlack.opacity(isSelected ? 0.9 : 0.5))
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(
+                ZStack {
+                    // Hauptfläche
+                    RoundedRectangle(cornerRadius: 22)
                         .fill(color)
-                )
+
+                    // Lichtkante oben
+                    RoundedRectangle(cornerRadius: 22)
+                        .stroke(Color.white.opacity(0.65), lineWidth: 1)
+                        .blendMode(.screen)
+                }
+            )
+            .shadow(
+                color: color.opacity(isSelected ? 0.65 : 0.35),
+                radius: isSelected ? 22 : 10,
+                x: 0,
+                y: isSelected ? 12 : 6
+            )
+            .scaleEffect(isSelected ? 1.02 : 1.0)
+            .opacity(isDimmed ? 0.35 : 1.0)
         }
-        .disabled(selected != nil)
-        .opacity(selected == nil || selected == name ? 1 : 0.5)
+        .buttonStyle(.plain)
     }
 }

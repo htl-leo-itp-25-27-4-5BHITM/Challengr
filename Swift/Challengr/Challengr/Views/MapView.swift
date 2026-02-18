@@ -7,6 +7,12 @@ import CoreLocationUI
 import Combine
 import UIKit
 
+extension Color {
+    static let challengrRed     = Color(red: 0.73, green: 0.12, blue: 0.20)   // #BA1F33
+    static let challengrDark    = Color(red: 0.12, green: 0.00, blue: 0.05)   // #1E000E
+    static let challengrSurface = Color(red: 0.98, green: 0.98, blue: 0.98)   // #F9F9F9
+}
+
 // MARK: - Models
 
 /// Simple model to represent a player as a map annotation.
@@ -212,20 +218,22 @@ struct MapView: View {
                 if let info = activeBattleInfo,
                    let battleId = currentBattleId {
                     BattleVotingView(
-                        playerA: info.playerA,  // dein Name
-                        playerB: info.playerB   // Gegner
+                        playerA: info.playerA,  // nur Name
+                        playerB: info.playerB   // nur Name
                     ) { chosen in
                         myVote = chosen
                         socket.sendVote(
                             battleId: battleId,
                             winnerName: chosen
                         )
-                        activeFullScreen = .none  
+                        activeFullScreen = .none
                         activeOverlay = .resultPending
                     }
                 } else {
                     EmptyView()
                 }
+
+
 
 
 
@@ -421,35 +429,31 @@ struct MapView: View {
                     ?? "Gegner \(challenge.fromId)"
 
                 ZStack {
-                    Color.black.opacity(0.45)
+                    Color.black.opacity(0.55)
                         .ignoresSafeArea()
 
-                    VStack(spacing: 18) {
-
+                    GameCard {
                         Text("CHALLENGE!")
                             .font(.system(size: 14, weight: .black, design: .rounded))
                             .tracking(1.4)
-                            .foregroundStyle(.challengrBlack)
+                            .foregroundColor(.challengrYellow)
 
                         Text(opponentName.uppercased())
                             .font(.system(size: 20, weight: .black, design: .rounded))
-                            .foregroundStyle(.challengrBlack)
+                            .foregroundColor(.challengrDark)
 
                         Text(challenge.name)
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .multilineTextAlignment(.center)
-                            .foregroundStyle(.challengrBlack)
+                            .foregroundColor(.challengrDark)
                             .padding(12)
                             .background(
                                 RoundedRectangle(cornerRadius: 14)
-                                    .fill(.challengrYellow)
+                                    .fill(Color.challengrYellow)
                             )
 
-                        // ACTIONS
                         HStack(spacing: 14) {
-
-                            // ACCEPT
-                            Button {
+                            GamePrimaryButton(title: "Annehmen", color: .challengrGreen) {
                                 socket.sendUpdateBattleStatus(
                                     battleId: battleId,
                                     status: "ACCEPTED"
@@ -464,21 +468,9 @@ struct MapView: View {
 
                                 incomingChallenge = nil
                                 activeFullScreen = .battle
-                            } label: {
-                                Text("ANNEHMEN")
-                                    .font(.system(size: 14, weight: .black))
-                                    .tracking(1)
-                                    .foregroundStyle(.challengrBlack)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 14)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .fill(.challengrGreen)
-                                    )
                             }
 
-                            // DECLINE
-                            Button {
+                            GamePrimaryButton(title: "Ablehnen", color: .challengrSurface) {
                                 socket.sendUpdateBattleStatus(
                                     battleId: battleId,
                                     status: "DECLINED"
@@ -486,32 +478,13 @@ struct MapView: View {
 
                                 incomingChallenge = nil
                                 currentBattleId = nil
-                            } label: {
-                                Text("ABLEHNEN")
-                                    .font(.system(size: 14, weight: .black))
-                                    .tracking(1)
-                                    .foregroundStyle(.chalengrRed)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 14)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .stroke(.chalengrRed, lineWidth: 2)
-                                    )
                             }
+                            .foregroundColor(.challengrRed)
                         }
                     }
-                    .padding(18)
-                    .frame(maxWidth: 300)
-                    .background(
-                        RoundedRectangle(cornerRadius: 22)
-                            .fill(.ultraThinMaterial)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 22)
-                            .stroke(.white.opacity(0.15), lineWidth: 1)
-                    )
-                    .shadow(radius: 25)
+                    .frame(maxWidth: 320)
                 }
+
                 .transition(.scale)
             }
         }
@@ -666,16 +639,19 @@ struct MapView: View {
             guard currentBattleId == battleId else { return }
 
             // Fall A: Wir wurden herausgefordert (incomingChallenge gesetzt)
+            // Fall A: Wir wurden herausgefordert
             if let challenge = incomingChallenge {
-                let opponentName =
+                let opponentTitle =
                     annotations.first(where: { $0.playerId == challenge.fromId })?.title
                     ?? "Gegner \(challenge.fromId)"
+
+                let opponentName = opponentTitle.components(separatedBy: " · ").first ?? opponentTitle
 
                 activeBattleInfo = (
                     challengeName: challenge.name,
                     category: challenge.category,
-                    playerA: ownPlayerName,
-                    playerB: opponentName
+                    playerA: ownPlayerName,   // schon ohne Rank
+                    playerB: opponentName     // jetzt auch ohne Rank
                 )
 
                 incomingChallenge = nil
@@ -683,11 +659,15 @@ struct MapView: View {
                 return
             }
 
+
             // Fall B: Wir sind der Angreifer (outgoingBattleInfo gesetzt)
+            // Fall B: Wir sind der Angreifer
             if let outgoing = outgoingBattleInfo {
-                let opponentName =
+                let opponentTitle =
                     annotations.first(where: { $0.playerId == outgoing.opponentId })?.title
                     ?? "Gegner \(outgoing.opponentId)"
+
+                let opponentName = opponentTitle.components(separatedBy: " · ").first ?? opponentTitle
 
                 activeBattleInfo = (
                     challengeName: outgoing.challengeName,
@@ -699,6 +679,7 @@ struct MapView: View {
                 activeFullScreen = .battle
                 return
             }
+
         }
 
 
@@ -772,7 +753,7 @@ struct MapView: View {
                 }
 
                 if let me = players.first(where: { $0.id == ownPlayerId }) {
-                    ownPlayerName = "\(me.name) · \(me.rankName)"
+                    ownPlayerName = me.name
                 }
             } catch {
                 print("Fehler beim Laden der Nearby Players", error)

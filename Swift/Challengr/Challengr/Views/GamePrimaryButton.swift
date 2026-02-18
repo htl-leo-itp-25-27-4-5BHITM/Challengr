@@ -1,3 +1,11 @@
+//
+//  GamePrimaryButton.swift
+//  Challengr
+//
+//  Created by Sebastian Lehner  on 17.02.26.
+//
+
+
 import SwiftUI
 
 struct GamePrimaryButton: View {
