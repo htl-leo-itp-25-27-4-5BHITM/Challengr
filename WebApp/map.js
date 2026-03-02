@@ -836,39 +836,130 @@ if (sheetInfoBtn) {
   };
 }
 
-
 function renderTrophyRoad() {
   const container = document.getElementById("trophy-road-list");
   container.innerHTML = "";
 
+  if (!trophyRanks || trophyRanks.length === 0) return;
+
   const current = getCurrentRank();
 
-  [...trophyRanks].reverse().forEach((rank, i) => {
+  // reversed wie in Swift
+  const reversed = [...trophyRanks].reverse();
+
+  reversed.forEach((rank, index) => {
+
+    // Rank Card
     const card = document.createElement("div");
-    card.className = `card trophy-rank`;
-    card.style.background = `linear-gradient(135deg, ${rank.color}, #000)`;
+    card.className = "trophy-rank-swift";
+    card.dataset.rankId = rank.id;
+
+    card.style.background = `
+      linear-gradient(
+        135deg,
+        ${rank.color},
+        rgba(0,0,0,0.4)
+      )
+    `;
+
+    const isCurrent = current && current.id === rank.id;
 
     card.innerHTML = `
-      <h3>${rank.name.toUpperCase()}</h3>
-      <p>${rank.min} – ${rank.max}</p>
-      ${rank === current ? `<span class="trophy-current">AKTUELL</span>` : ""}
+      <div class="trophy-rank-content">
+        <div>
+          <div class="trophy-rank-title">${rank.name.toUpperCase()}</div>
+          <div class="trophy-range">${rank.min} – ${rank.max} PUNKTE</div>
+          ${isCurrent ? `<div class="trophy-current">AKTUELLER RANG</div>` : ""}
+        </div>
+        ${isCurrent ? `<div class="trophy-points">${playerPoints}</div>` : ""}
+      </div>
     `;
 
     container.appendChild(card);
 
-    if (i < trophyRanks.length - 1) {
-      const road = document.createElement("div");
-      road.className = "trophy-connector";
-
-      for (let j = 0; j < 8; j++) {
-        road.appendChild(document.createElement("div")).className = "trophy-dot";
-      }
-
-      container.appendChild(road);
+    // Connector (wie etappenBlock in Swift)
+    if (index < reversed.length - 1) {
+      container.appendChild(createEtappenBlock(rank, isCurrent));
     }
   });
+
+  // auto scroll wie SwiftUI
+  setTimeout(() => {
+    const el = document.querySelector(".trophy-current");
+    if (el) {
+      el.closest(".trophy-rank-swift")
+        .scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, 200);
 }
 
+function createEtappenBlock(rank, isCurrentRank) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "etappen-wrapper";
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 300;
+  canvas.height = 320;
+
+  wrapper.appendChild(canvas);
+
+  const ctx = canvas.getContext("2d");
+
+  const steps = 10;
+  const stepHeight = 30;
+  const width = canvas.width;
+  const centerX = width / 2;
+
+  ctx.lineWidth = 6;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = rank.color + "80";
+
+  ctx.beginPath();
+
+  for (let i = 0; i < steps; i++) {
+    const t = i / (steps - 1);
+    const x = centerX + Math.sin(t * Math.PI * 2) * 60;
+    const y = i * stepHeight + 10;
+
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+
+  ctx.stroke();
+
+  // Steps
+  for (let i = 0; i < steps; i++) {
+    const t = i / (steps - 1);
+    const x = centerX + Math.sin(t * Math.PI * 2) * 60;
+    const y = i * stepHeight + 10;
+
+    ctx.beginPath();
+    ctx.fillStyle = rank.color;
+    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Spielerfigur animieren wenn aktueller Rank
+  if (isCurrentRank) {
+    const progress =
+      (playerPoints - rank.min) / (rank.max - rank.min || 1);
+
+    const stepIndex = Math.round(progress * (steps - 1));
+    const t = stepIndex / (steps - 1);
+
+    const x = centerX + Math.sin(t * Math.PI * 2) * 60;
+    const y = stepIndex * stepHeight + 10;
+
+    const img = new Image();
+    img.src = "playerBoy.png"; // dein Bild
+
+    img.onload = () => {
+      ctx.drawImage(img, x - 22, y - 50, 44, 44);
+    };
+  }
+
+  return wrapper;
+}
 
 
 

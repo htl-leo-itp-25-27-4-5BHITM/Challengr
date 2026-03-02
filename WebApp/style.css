@@ -744,3 +744,53 @@ h2 {
   background: rgba(255,255,255,0.9);
 }
 
+/* Swift Style Trophy Card */
+.trophy-rank-swift {
+  border-radius: 24px;
+  padding: 20px;
+  margin: 20px 0;
+  color: white;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease;
+}
+
+.trophy-rank-swift:hover {
+  transform: translateY(-4px);
+}
+
+.trophy-rank-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trophy-rank-title {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.trophy-range {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.trophy-current {
+  margin-top: 8px;
+  background: white;
+  color: black;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.trophy-points {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.etappen-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 20px;
+}
