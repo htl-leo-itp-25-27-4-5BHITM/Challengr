@@ -784,7 +784,7 @@ function showBattleLose({
     .textContent = `${loserPointsDelta > 0 ? "+" : ""}${loserPointsDelta} PUNKTE`;
 
   document.getElementById("battle-lose-avatar-loser")
-    .src = "Assets/" + loserAvatar;
+    .src = "Assets/playerBoy.png";
 
   document.getElementById("battle-lose-name-winner")
     .textContent = winnerName.toUpperCase();
@@ -793,7 +793,7 @@ function showBattleLose({
     .textContent = `+${winnerPointsDelta} PUNKTE`;
 
   document.getElementById("battle-lose-avatar-winner")
-    .src = "Assets/" + winnerAvatar;
+    .src = "Assets/playerGirl.png";
 
   document.getElementById("battle-lose-bigpoints")
     .textContent =
