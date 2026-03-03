@@ -118,6 +118,7 @@ gameClient.on("battle-requested", async (msg) => {
 
 
 
+
 // Wenn ich die Battle erstelle, bekomme ich eine Bestätigung zurück
 gameClient.on("battle-created", (msg) => {
   console.log("Battle created confirmation:", msg);
@@ -693,122 +694,64 @@ function showVotingDialog({ playerA, playerB, onVote }) {
   backdrop.classList.remove("hidden");
 }
 
-function showBattleWin({
-  winnerName,
-  winnerAvatar,
-  winnerPointsDelta,
-  loserName,
-  loserAvatar,
-  loserPointsDelta
-}) {
 
-if (1 == 1) {
-  loserName = "Gegner",
-  loserAvatar = "playerGirl.png",
-  loserPointsDelta = -50
-} else {
-  loserName = msg.loserName,
-  loserAvatar = msg.loserAvatar,
-  loserPointsDelta = msg.loserPointsDelta
-}
-  
+function showBattleWin({ winnerName, winnerAvatar, winnerPointsDelta }) {
   const backdrop = document.getElementById("battle-win-backdrop");
+  const nameEl   = document.getElementById("battle-win-name");
+  const pointsEl = document.getElementById("battle-win-points");
+  const footerEl = document.getElementById("battle-win-footer");
+  const closeBtn = document.getElementById("battle-win-close");
 
-  document.getElementById("battle-win-subtitle")
-    .textContent = `GLÜCKWUNSCH, ${winnerName.toUpperCase()}!`;
-
-  document.getElementById("battle-win-name-winner")
-    .textContent = winnerName.toUpperCase();
-
-  document.getElementById("battle-win-points-winner")
-    .textContent = `+${winnerPointsDelta} PUNKTE`;
-
-  document.getElementById("battle-win-avatar-winner")
-    .src = "Assets/" + winnerAvatar;
-
-  document.getElementById("battle-win-name-loser")
-    .textContent = loserName.toUpperCase();
-
-  document.getElementById("battle-win-points-loser")
-    .textContent = `${loserPointsDelta} PUNKTE`;
-
-  document.getElementById("battle-win-avatar-loser")
-    .src = "Assets/" + loserAvatar;
-
-  document.getElementById("battle-win-bigpoints")
-    .textContent = `+${winnerPointsDelta} PUNKTE`;
+  nameEl.textContent   = winnerName;
+  pointsEl.textContent = `+${winnerPointsDelta} Punkte`;
+  footerEl.textContent = `Sieger: ${winnerName}`;
 
   backdrop.classList.remove("hidden");
 
-  document.getElementById("battle-win-close").onclick = () => {
+  function cleanup() {
+    // Win-Overlay ausblenden
     backdrop.classList.add("hidden");
+    closeBtn.onclick = null;
 
-    const battleDialogBackdrop =
-      document.getElementById("battle-dialog-backdrop");
-
+    // NEU: verschwommenen Battle-Backdrop schließen
+    const battleDialogBackdrop = document.getElementById("battle-dialog-backdrop");
     if (battleDialogBackdrop) {
       battleDialogBackdrop.classList.add("hidden");
     }
-  };
+  }
+
+  closeBtn.onclick = cleanup;
 }
 
-function showBattleLose({
-  winnerName,
-  winnerAvatar,
-  winnerPointsDelta,
-  loserName,
-  loserAvatar,
-  loserPointsDelta,
-  trashTalk
-}) {
 
-  if (1 == 1) {
-  winnerName = "Gegner",
-  winnerAvatar = "playerBoy.png",
-  winnerPointsDelta = 50
-} else {
-  winnerName = msg.winnerName,
-  winnerAvatar = msg.winnerAvatar,
-  winnerPointsDelta = msg.winnerPointsDelta
-}
-
+function showBattleLose({ loserName, loserPointsDelta, trashTalk, winnerName }) {
   const backdrop = document.getElementById("battle-lose-backdrop");
+  const nameEl   = document.getElementById("battle-lose-name");
+  const pointsEl = document.getElementById("battle-lose-points");
+  const trashEl  = document.getElementById("battle-lose-trash");
+  const footerEl = document.getElementById("battle-lose-footer");
+  const closeBtn = document.getElementById("battle-lose-close");
 
-  document.getElementById("battle-lose-subtitle")
-    .textContent = `KOPF HOCH, ${loserName.toUpperCase()}!`;
-
-  document.getElementById("battle-lose-name-loser")
-    .textContent = loserName.toUpperCase();
-
-  document.getElementById("battle-lose-points-loser")
-    .textContent = `${loserPointsDelta > 0 ? "+" : ""}${loserPointsDelta} PUNKTE`;
-
-  document.getElementById("battle-lose-avatar-loser")
-    .src = "Assets/" + loserAvatar;
-
-  document.getElementById("battle-lose-name-winner")
-    .textContent = winnerName.toUpperCase();
-
-  document.getElementById("battle-lose-points-winner")
-    .textContent = `+${winnerPointsDelta} PUNKTE`;
-
-  document.getElementById("battle-lose-avatar-winner")
-    .src = "Assets/" + winnerAvatar;
-
-  document.getElementById("battle-lose-bigpoints")
-    .textContent =
-      loserPointsDelta === 0
-        ? "0 PUNKTE VERÄNDERT"
-        : `${loserPointsDelta > 0 ? "+" : ""}${loserPointsDelta} PUNKTE`;
-
-  document.getElementById("battle-lose-trash")
-    .textContent = trashTalk;
+  nameEl.textContent   = loserName || "Du";
+  pointsEl.textContent = `${loserPointsDelta === 0 ? "0" : `-${loserPointsDelta}`} Punkte`;
+  trashEl.textContent  = trashTalk || "";
+  footerEl.textContent = `Sieger: ${winnerName}`;
 
   backdrop.classList.remove("hidden");
 
-  document.getElementById("battle-lose-close").onclick = () => {
+  function cleanup() {
+    // Lose-Overlay ausblenden
     backdrop.classList.add("hidden");
-  };
+    closeBtn.onclick = null;
+
+    // WICHTIG: den verschwommenen Battle-Backdrop schließen
+    const battleDialogBackdrop = document.getElementById("battle-dialog-backdrop");
+    if (battleDialogBackdrop) {
+      battleDialogBackdrop.classList.add("hidden");
+    }
+  }
+
+  closeBtn.onclick = cleanup;
 }
 
 
@@ -914,8 +857,8 @@ function renderTrophyRoad() {
     card.style.background = `
       linear-gradient(
         135deg,
-        ${rank.color} 70%,
-        rgb(0, 0, 0)
+        ${rank.color},
+        rgba(0,0,0,0.4)
       )
     `;
 

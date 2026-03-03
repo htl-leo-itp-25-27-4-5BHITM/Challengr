@@ -62,89 +62,31 @@
     </div>
   </div>
 
-  <div id="battle-win-backdrop" class="battle-win-backdrop hidden">
-  <div class="battle-win-card">
-
-    <div class="battle-win-label">BATTLE ERGEBNIS</div>
-    <div class="battle-win-title">GEWONNEN!</div>
-
-    <div id="battle-win-subtitle" class="battle-win-subtitle"></div>
-
-    <div class="battle-win-players">
-
-      <!-- WINNER -->
-      <div class="result-card winner">
-        <div class="avatar-wrapper winner-border">
-          <img id="battle-win-avatar-winner" src="" />
-          <div class="crown">👑</div>
-        </div>
-        <div id="battle-win-name-winner" class="player-name winner-text"></div>
-        <div id="battle-win-points-winner" class="player-points winner-text"></div>
+  <!-- Battle Win / Lose / Voting Dialogs (gleich wie vorher) -->
+  <div id="battle-win-backdrop" class="dialog hidden">
+    <div id="battle-win-dialog" class="dialog-content">
+      <h2 id="battle-win-title">Sieg!</h2>
+      <div id="battle-win-player" style="text-align:center; margin:16px 0;">
+        <h3 id="battle-win-name"></h3>
+        <p id="battle-win-points" style="color:green; font-weight:bold;"></p>
       </div>
-
-      <!-- LOSER -->
-      <div class="result-card loser">
-        <div class="avatar-wrapper loser-border">
-          <img id="battle-win-avatar-loser" src="" />
-        </div>
-        <div id="battle-win-name-loser" class="player-name loser-text"></div>
-        <div id="battle-win-points-loser" class="player-points loser-text"></div>
-      </div>
-
+      <p id="battle-win-footer" style="font-size:0.85rem; color:gray; text-align:center;"></p>
+      <button id="battle-win-close">Schließen</button>
     </div>
-
-    <div id="battle-win-bigpoints" class="battle-win-bigpoints"></div>
-
-    <button id="battle-win-close" class="battle-win-close">
-      ZURÜCK ZUR KARTE
-    </button>
-
   </div>
-</div>
 
- <div id="battle-lose-backdrop" class="battle-backdrop hidden">
-  <div class="battle-lose-card">
-
-    <div class="battle-lose-header">
-      <div class="battle-label">BATTLE ERGEBNIS</div>
-      <div class="battle-title">NIEDERLAGE</div>
-      <div id="battle-lose-subtitle" class="battle-subtitle"></div>
-    </div>
-
-    <div class="battle-players">
-      <!-- Loser -->
-      <div class="player-card loser">
-        <div class="avatar-wrapper">
-          <img id="battle-lose-avatar-loser">
-          <div class="x-badge">✕</div>
-        </div>
-        <div id="battle-lose-name-loser" class="player-name"></div>
-        <div id="battle-lose-points-loser" class="player-points"></div>
+  <div id="battle-lose-backdrop" class="dialog hidden">
+    <div id="battle-lose-dialog" class="dialog-content" style="background-color:black; color:white;">
+      <h2 id="battle-lose-title" style="color:red;">Niederlage</h2>
+      <div id="battle-lose-player" style="text-align:center; margin:16px 0;">
+        <h3 id="battle-lose-name"></h3>
+        <p id="battle-lose-points" style="color:red; font-weight:bold;"></p>
       </div>
-
-      <!-- Winner -->
-      <div class="player-card winner">
-        <div class="avatar-wrapper">
-          <img id="battle-lose-avatar-winner">
-        </div>
-        <div id="battle-lose-name-winner" class="player-name"></div>
-        <div id="battle-lose-points-winner" class="player-points"></div>
-      </div>
+      <p id="battle-lose-trash" style="margin:16px; font-size:1rem; text-align:center;"></p>
+      <p id="battle-lose-footer" style="font-size:0.85rem; color:gray; text-align:center;"></p>
+      <button id="battle-lose-close">Schließen</button>
     </div>
-
-    <div id="battle-lose-bigpoints" class="big-points"></div>
-
-    <div class="trash-panel">
-      <div class="trash-label">TRASH TALK</div>
-      <div id="battle-lose-trash"></div>
-    </div>
-
-    <button id="battle-lose-close" class="battle-close-btn">
-      ZURÜCK ZUR KARTE
-    </button>
-
   </div>
-</div>
 
   <div id="battle-voting-backdrop" class="dialog hidden">
     <div id="battle-voting-dialog" class="dialog-content">
