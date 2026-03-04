@@ -958,6 +958,14 @@ h2 {
   text-align: center;
 }
 
+#battle-lose-name-loser {
+  color: #ef4444;
+}
+
+#battle-lose-points-loser {
+  color: #ef4444;
+}
+
 /* Große Punkte */
 
 .battle-win-bigpoints {
@@ -1106,6 +1114,7 @@ h2 {
 
 .player-card.loser .avatar-wrapper {
   border-color: #d64545;
+  color: #d64545;
 }
 
 .player-card.winner .avatar-wrapper {

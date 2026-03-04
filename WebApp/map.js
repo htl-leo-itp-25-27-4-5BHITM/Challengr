@@ -208,6 +208,7 @@ gameClient.on("battle-result", (msg) => {
       });
     }
 
+    showBattleDialog.cleanup();
     // Punkte nach dem Battle neu laden
     loadPlayerPoints(myId);
   }, 2500);  // 2 Sekunden Loading
@@ -726,7 +727,7 @@ function showBattleWin({
     .textContent = loserName.toUpperCase();
 
   document.getElementById("battle-win-points-loser")
-    .textContent = `${loserPointsDelta} PUNKTE`;
+    .textContent = `-${loserPointsDelta} PUNKTE`;
 
   document.getElementById("battle-win-avatar-loser")
     .src = "./Assets/" + loserAvatar;
@@ -768,7 +769,7 @@ function showBattleLose({
     .textContent = loserName.toUpperCase();
 
   document.getElementById("battle-lose-points-loser")
-    .textContent = `${loserPointsDelta > 0 ? "+" : ""}${loserPointsDelta} PUNKTE`;
+    .textContent = `-${loserPointsDelta > 0 ? "" : ""}${loserPointsDelta} PUNKTE`;
 
   document.getElementById("battle-lose-avatar-loser")
     .src = "./Assets/" + loserAvatar;
@@ -786,7 +787,7 @@ function showBattleLose({
     .textContent =
       loserPointsDelta === 0
         ? "0 PUNKTE VERÄNDERT"
-        : `${loserPointsDelta > 0 ? "+" : ""}${loserPointsDelta} PUNKTE`;
+        : `${loserPointsDelta > 0 ? "-" : ""}${loserPointsDelta} PUNKTE`;
 
   document.getElementById("battle-lose-trash")
     .textContent = trashTalk;
