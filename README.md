@@ -102,8 +102,21 @@ Ziele:
 
 Ziele:
 
-*  Finale Entwicklung eines Punktesystems
-
+* Finale Entwicklung eines Punktesystems
 * Speicherung der Punkte im Backend
 * Dynamisches Laden des Trophy Pfads
 * Einheitliches Styling
+
+---
+
+
+
+## Sprint (Sprint 9 – Start: 04.03.2026)
+
+Ziele:
+
+* Warnung für 3te Wiederholung einer Uneinigkeit
+* Dummy Profile implementieren
+* Triviale Statistiken einbauen/anzeigen
+* Challenge Überarbeitung
+* Streaksystem
