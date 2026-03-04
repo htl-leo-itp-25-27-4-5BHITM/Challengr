@@ -1,3 +1,11 @@
+//
+//  UserProfileView.swift
+//  Challengr
+//
+//  Created by Sebastian Lehner  on 04.03.26.
+//
+import SwiftUI
+
 struct UserProfileView: View {
     var body: some View {
         VStack(spacing: 16) {

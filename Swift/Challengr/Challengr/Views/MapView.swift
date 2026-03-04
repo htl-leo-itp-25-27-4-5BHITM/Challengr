@@ -52,6 +52,9 @@ struct MapView: View {
 
     /// static player id
     let ownPlayerId: Int64 = 1
+    
+    @State private var showProfile = false
+
 
     /// WebSocket
     @StateObject private var socket = GameSocketService(playerId: 1)
@@ -148,6 +151,7 @@ struct MapView: View {
             mapLayer
             locationButton
             trophyRoadButton
+            profileButton              // <‑ NEU
         }
         .overlay(playerPopupOverlay)
         .overlay(challengeDialogOverlay)
@@ -156,6 +160,10 @@ struct MapView: View {
         .sheet(isPresented: $showChallengeView) {
             challengeSheet
         }
+        .sheet(isPresented: $showProfile) {      // <‑ NEU
+            UserProfileView()
+        }
+
         
         .fullScreenCover(isPresented: .constant(activeFullScreen != .none)) {
             switch activeFullScreen {
@@ -343,6 +351,32 @@ struct MapView: View {
         }
         .frame(maxWidth: .infinity)
     }
+    
+    private var profileButton: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
+                Button {
+                    showProfile = true
+                } label: {
+                    Image("playerBoy")             // Avatar-Asset
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 60, height: 60)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle().stroke(Color.white, lineWidth: 3)
+                        )
+                        .shadow(color: .black.opacity(0.35),
+                                radius: 8, x: 0, y: 4)
+                }
+                .padding(.bottom, 40)              // Abstand nach unten
+                .padding(.trailing, 20)            // Abstand nach rechts
+            }
+        }
+    }
+
 
     
     
