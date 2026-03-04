@@ -67,6 +67,16 @@ final class PlayerLocationService {
         return try JSONDecoder().decode(PlayerDTO.self, from: data)
     }
 
+    func loadPlayerStreak(id: Int64) async throws -> Int {
+        guard let url = URL(string: "\(baseURL)/\(id)/streak") else {
+            throw URLError(.badURL)
+        }
+
+        let (data, _) = try await URLSession.shared.data(from: url)
+        return try JSONDecoder().decode(Int.self, from: data)
+    }
+
+
 
 }
 

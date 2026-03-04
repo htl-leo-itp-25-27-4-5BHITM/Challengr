@@ -53,7 +53,6 @@ struct MapView: View {
     /// static player id
     let ownPlayerId: Int64 = 1
     
-    @State private var showProfile = false
 
 
     /// WebSocket
@@ -88,6 +87,15 @@ struct MapView: View {
     /// Static ownPlayerName & coordinates
     @State private var ownPlayerName: String = ""
     @State private var ownCoordinate: CLLocationCoordinate2D? = nil
+    
+    @State private var ownRankName: String = "Rookie"
+    @State private var ownDailyStreak: Int = 0
+    @State private var ownTotalChallenges: Int = 42
+    @State private var ownWonChallenges: Int = 21
+    @State private var ownPoints: Int = 0
+    
+    @State private var showProfile = false
+
 
     /// Fallback (Default Map: Vienna)
     private let startCoordinate = CLLocationCoordinate2D(latitude: 48.2082, longitude: 16.3738)
@@ -147,11 +155,12 @@ struct MapView: View {
     // MARK: - Body
 
     var body: some View {
+        
         ZStack(alignment: .bottomTrailing) {
             mapLayer
             locationButton
             trophyRoadButton
-            profileButton              // <‑ NEU
+            profileButton
         }
         .overlay(playerPopupOverlay)
         .overlay(challengeDialogOverlay)
@@ -160,9 +169,22 @@ struct MapView: View {
         .sheet(isPresented: $showChallengeView) {
             challengeSheet
         }
-        .sheet(isPresented: $showProfile) {      // <‑ NEU
-            UserProfileView()
+        .sheet(isPresented: $showProfile) {
+            UserProfileView(
+                data: UserProfileData(
+                    name: ownPlayerName,
+                    avatarImageName: "playerBoy",
+                    rankName: ownRankName,
+                    dailyStreak: ownDailyStreak,   // ⬅️ kommt aus State
+                    totalChallenges: ownTotalChallenges,
+                    wonChallenges: ownWonChallenges,
+                    points: ownPoints              // ⬅️ kommt aus State
+                )
+            )
         }
+
+
+
 
         
         .fullScreenCover(isPresented: .constant(activeFullScreen != .none)) {
@@ -360,7 +382,7 @@ struct MapView: View {
                 Button {
                     showProfile = true
                 } label: {
-                    Image("playerBoy")             // Avatar-Asset
+                    Image("playerBoy") // Avatar-Asset
                         .resizable()
                         .scaledToFill()
                         .frame(width: 60, height: 60)
@@ -368,14 +390,14 @@ struct MapView: View {
                         .overlay(
                             Circle().stroke(Color.white, lineWidth: 3)
                         )
-                        .shadow(color: .black.opacity(0.35),
-                                radius: 8, x: 0, y: 4)
+                        .shadow(color: .black.opacity(0.35), radius: 8, x: 0, y: 4)
                 }
-                .padding(.bottom, 40)              // Abstand nach unten
-                .padding(.trailing, 20)            // Abstand nach rechts
+                .padding(.bottom, 40)
+                .padding(.trailing, 20)
             }
         }
     }
+
 
 
     
@@ -625,17 +647,35 @@ struct MapView: View {
             } catch {
                 print("Fehler beim Vorladen der Challenges:", error)
             }
+            
+            
         }
         
+        
         Task {
-                do {
-                    let me = try await playerService.loadPlayerById(id: ownPlayerId)
-                    ownPlayerName = me.name
-                    print("ownPlayerName aus DB:", ownPlayerName)
-                } catch {
-                    print("Konnte eigenen Spieler nicht laden:", error)
+            do {
+                let me = try await playerService.loadPlayerById(id: ownPlayerId)
+                ownPlayerName  = me.name
+                ownRankName    = me.rankName
+
+                async let pointsAsync = playerService.loadPlayerPoints(id: ownPlayerId)
+                async let streakAsync = playerService.loadPlayerStreak(id: ownPlayerId)
+
+                let (points, streak) = try await (pointsAsync, streakAsync)
+
+                print("✅ Punkte vom Server: \(points)")
+                print("✅ Streak vom Server: \(streak)")
+
+                await MainActor.run {
+                    ownPoints      = points
+                    ownDailyStreak = streak
                 }
+            } catch {
+                print("Konnte eigenen Spieler/Streak/Points nicht laden:", error)
             }
+        }
+
+
 
         socket.onChallengeReceived = { battleId, fromId, toId, challengeId in
             if toId == ownPlayerId {
