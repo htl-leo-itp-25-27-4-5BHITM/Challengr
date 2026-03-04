@@ -296,6 +296,8 @@ public class GameSocket {
 
         } else if (isConflict) {
             // Konflikt → Strafe anwenden, Deltas als Konflikt-Penalty anzeigen
+
+            battleService.updateStatus(battleId, "DONE");
             int[] penalties = applyConflictPenalty(battle);
             int penaltyFrom = penalties[0];
             int penaltyTo   = penalties[1];

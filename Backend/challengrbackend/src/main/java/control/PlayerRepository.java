@@ -1,5 +1,6 @@
 package control;
 
+import entity.Battle;
 import entity.Player;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -45,6 +46,16 @@ public class PlayerRepository {
         existing.setLongitude(player.getLongitude());
 
         em.merge(existing);
+    }
+
+    public List<Battle> findDoneBattlesForPlayer(Player player) {
+        return em.createQuery("""
+            SELECT b FROM Battle b
+            WHERE b.status = 'DONE'
+            AND (b.fromPlayer = :player OR b.toPlayer = :player)
+        """, Battle.class)
+                .setParameter("player", player)
+                .getResultList();
     }
 
     public Player findById(Long id) {

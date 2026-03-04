@@ -171,4 +171,49 @@ public class PlayerRessources {
         }
         return new PlayerPointsDTO(p.getId(), p.getPoints()); // getPoints() = Feld in deiner Player-Entity
     }
+
+    @GET
+    @Path("/{id}/log")
+    public int getBattleCount(@PathParam("id") Long id) {
+
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new NotFoundException();
+        }
+
+        var battles = playerRepository.findDoneBattlesForPlayer(player);
+
+        return battles.size();
+    }
+
+    @GET
+    @Path("/{id}/streak")
+    public int getStreak(@PathParam("id") Long id) {
+
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new NotFoundException();
+        }
+
+        var battles = playerRepository.findDoneBattlesForPlayer(player);
+
+        // Alle unterschiedlichen Tage sammeln
+        var battleDays = battles.stream()
+                .map(b -> b.getCreatedAt().toLocalDate())
+                .collect(java.util.stream.Collectors.toSet());
+
+        if (battleDays.isEmpty()) {
+            return 0;
+        }
+
+        int streak = 0;
+        java.time.LocalDate current = java.time.LocalDate.now();
+
+        while (battleDays.contains(current)) {
+            streak++;
+            current = current.minusDays(1);
+        }
+
+        return streak;
+    }
 }
