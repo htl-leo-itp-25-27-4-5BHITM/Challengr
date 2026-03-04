@@ -118,7 +118,6 @@ gameClient.on("battle-requested", async (msg) => {
 
 
 
-
 // Wenn ich die Battle erstelle, bekomme ich eine Bestätigung zurück
 gameClient.on("battle-created", (msg) => {
   console.log("Battle created confirmation:", msg);
@@ -191,15 +190,21 @@ gameClient.on("battle-result", (msg) => {
     if (iWon) {
       showBattleWin({
         winnerName: msg.winnerName,
-        winnerAvatar: msg.winnerAvatar,
-        winnerPointsDelta: msg.winnerPointsDelta
+        winnerAvatar: "playerGirl.png", 
+        winnerPointsDelta: msg.winnerPointsDelta,
+        loserName: msg.loserName,
+        loserAvatar: "playerBoy.png",
+        loserPointsDelta: Math.abs(msg.loserPointsDelta)
       });
     } else {
       showBattleLose({
         loserName: msg.loserName,
+        loserAvatar: "playerGirl.png",
         loserPointsDelta: Math.abs(msg.loserPointsDelta),
-        trashTalk: msg.trashTalk,
-        winnerName: msg.winnerName
+        winnerName: msg.winnerName, 
+        winnerAvatar: "playerBoy.png",
+        winnerPointsDelta: msg.winnerPointsDelta,
+        trashTalk: msg.trashTalk
       });
     }
 
@@ -207,8 +212,6 @@ gameClient.on("battle-result", (msg) => {
     loadPlayerPoints(myId);
   }, 2500);  // 2 Sekunden Loading
 });
-
-
 
 
 function handleBattleSuccess() {
@@ -613,43 +616,41 @@ async function loadRandomChallenge(categoryName) {
 }
 
 
-function showBattleDialog({
-  category,
-  challengeName,
-  playerLeft,
-  playerRight,
-  onClose,
-  onSurrender,
-  onSuccess
-}) {
-  const backdrop  = document.getElementById("battle-dialog-backdrop");
-  const catEl     = document.getElementById("battle-category");
-  const challEl   = document.getElementById("battle-challenge");
-  const vsEl      = document.getElementById("battle-vs");
+function showBattleDialog({ category, challengeName, playerLeft, playerRight, onClose, onSurrender, onSuccess }) {
+  const backdrop = document.getElementById("battle-dialog-backdrop");
+  const categoryEl = document.getElementById("battle-category");
+  const challengeEl = document.getElementById("battle-challenge");
+  const vsEl = document.getElementById("battle-vs");
 
-  catEl.textContent   = (category || "CHALLENGE").toUpperCase();
-  challEl.textContent = challengeName || "";
-  vsEl.textContent    = `${playerLeft.toUpperCase()} VS ${playerRight.toUpperCase()}`;
+  categoryEl.textContent = category.toUpperCase();
+  challengeEl.textContent = challengeName;
+  vsEl.textContent = `${playerLeft}  VS  ${playerRight}`;
 
   backdrop.classList.remove("hidden");
 
-  const successBtn   = document.getElementById("battle-success-btn");
+  const successBtn = document.getElementById("battle-success-btn");
   const surrenderBtn = document.getElementById("battle-surrender-btn");
-  const closeBtn     = document.getElementById("battle-close-btn");
+  const closeBtn = document.getElementById("battle-close-btn");
 
   function cleanup() {
     backdrop.classList.add("hidden");
     successBtn.onclick = null;
     surrenderBtn.onclick = null;
     closeBtn.onclick = null;
-    if (onClose) onClose();
   }
 
-  successBtn.onclick   = () => { cleanup(); if (onSuccess) onSuccess(); };
-  surrenderBtn.onclick = () => { cleanup(); if (onSurrender) onSurrender(); };
-  closeBtn.onclick     = cleanup;
-}
+  successBtn.onclick = () => {
+    cleanup();
+    if (onSuccess) onSuccess();
+  };
 
+  surrenderBtn.onclick = () => {
+    cleanup();
+    if (onSurrender) onSurrender();
+  };
+
+  closeBtn.onclick = cleanup;
+}
 
 
 function showVotingDialog({ playerA, playerB, onVote }) {
@@ -696,64 +697,105 @@ function showVotingDialog({ playerA, playerB, onVote }) {
   backdrop.classList.remove("hidden");
 }
 
+function showBattleWin({
+  winnerName,
+  winnerAvatar,
+  winnerPointsDelta,
+  loserName,
+  loserAvatar,
+  loserPointsDelta
+}) {
 
-function showBattleWin({ winnerName, winnerAvatar, winnerPointsDelta }) {
+  console.log(winnerAvatar, loserAvatar);
+  
   const backdrop = document.getElementById("battle-win-backdrop");
-  const nameEl   = document.getElementById("battle-win-name");
-  const pointsEl = document.getElementById("battle-win-points");
-  const footerEl = document.getElementById("battle-win-footer");
-  const closeBtn = document.getElementById("battle-win-close");
 
-  nameEl.textContent   = winnerName;
-  pointsEl.textContent = `+${winnerPointsDelta} Punkte`;
-  footerEl.textContent = `Sieger: ${winnerName}`;
+  document.getElementById("battle-win-subtitle")
+    .textContent = `GLÜCKWUNSCH, ${winnerName.toUpperCase()}!`;
+
+  document.getElementById("battle-win-name-winner")
+    .textContent = winnerName.toUpperCase();
+
+  document.getElementById("battle-win-points-winner")
+    .textContent = `+${winnerPointsDelta} PUNKTE`;
+
+  document.getElementById("battle-win-avatar-winner")
+    .src = "./Assets/" + winnerAvatar;
+
+  document.getElementById("battle-win-name-loser")
+    .textContent = loserName.toUpperCase();
+
+  document.getElementById("battle-win-points-loser")
+    .textContent = `${loserPointsDelta} PUNKTE`;
+
+  document.getElementById("battle-win-avatar-loser")
+    .src = "./Assets/" + loserAvatar;
+
+  document.getElementById("battle-win-bigpoints")
+    .textContent = `+${winnerPointsDelta} PUNKTE`;
 
   backdrop.classList.remove("hidden");
 
-  function cleanup() {
-    // Win-Overlay ausblenden
+  document.getElementById("battle-win-close").onclick = () => {
     backdrop.classList.add("hidden");
-    closeBtn.onclick = null;
 
-    // NEU: verschwommenen Battle-Backdrop schließen
-    const battleDialogBackdrop = document.getElementById("battle-dialog-backdrop");
+    const battleDialogBackdrop =
+      document.getElementById("battle-dialog-backdrop");
+
     if (battleDialogBackdrop) {
       battleDialogBackdrop.classList.add("hidden");
     }
-  }
-
-  closeBtn.onclick = cleanup;
+  };
 }
 
+function showBattleLose({
+  winnerName,
+  winnerAvatar,
+  winnerPointsDelta,
+  loserName,
+  loserAvatar,
+  loserPointsDelta,
+  trashTalk
+}) {
 
-function showBattleLose({ loserName, loserPointsDelta, trashTalk, winnerName }) {
+
   const backdrop = document.getElementById("battle-lose-backdrop");
-  const nameEl   = document.getElementById("battle-lose-name");
-  const pointsEl = document.getElementById("battle-lose-points");
-  const trashEl  = document.getElementById("battle-lose-trash");
-  const footerEl = document.getElementById("battle-lose-footer");
-  const closeBtn = document.getElementById("battle-lose-close");
 
-  nameEl.textContent   = loserName || "Du";
-  pointsEl.textContent = `${loserPointsDelta === 0 ? "0" : `-${loserPointsDelta}`} Punkte`;
-  trashEl.textContent  = trashTalk || "";
-  footerEl.textContent = `Sieger: ${winnerName}`;
+  document.getElementById("battle-lose-subtitle")
+    .textContent = `KOPF HOCH, ${loserName.toUpperCase()}!`;
+
+  document.getElementById("battle-lose-name-loser")
+    .textContent = loserName.toUpperCase();
+
+  document.getElementById("battle-lose-points-loser")
+    .textContent = `${loserPointsDelta > 0 ? "+" : ""}${loserPointsDelta} PUNKTE`;
+
+  document.getElementById("battle-lose-avatar-loser")
+    .src = "./Assets/" + loserAvatar;
+
+  document.getElementById("battle-lose-name-winner")
+    .textContent = winnerName.toUpperCase();
+
+  document.getElementById("battle-lose-points-winner")
+    .textContent = `+${winnerPointsDelta} PUNKTE`;
+
+  document.getElementById("battle-lose-avatar-winner")
+    .src = "./Assets/" + winnerAvatar;
+
+  document.getElementById("battle-lose-bigpoints")
+    .textContent =
+      loserPointsDelta === 0
+        ? "0 PUNKTE VERÄNDERT"
+        : `${loserPointsDelta > 0 ? "+" : ""}${loserPointsDelta} PUNKTE`;
+
+  document.getElementById("battle-lose-trash")
+    .textContent = trashTalk;
 
   backdrop.classList.remove("hidden");
 
-  function cleanup() {
-    // Lose-Overlay ausblenden
+  document.getElementById("battle-lose-close").onclick = () => {
     backdrop.classList.add("hidden");
-    closeBtn.onclick = null;
-
-    // WICHTIG: den verschwommenen Battle-Backdrop schließen
-    const battleDialogBackdrop = document.getElementById("battle-dialog-backdrop");
-    if (battleDialogBackdrop) {
-      battleDialogBackdrop.classList.add("hidden");
-    }
-  }
-
-  closeBtn.onclick = cleanup;
+  };
 }
 
 
@@ -859,8 +901,8 @@ function renderTrophyRoad() {
     card.style.background = `
       linear-gradient(
         135deg,
-        ${rank.color},
-        rgba(0,0,0,0.4)
+        ${rank.color} 70%,
+        rgb(0, 0, 0)
       )
     `;
 

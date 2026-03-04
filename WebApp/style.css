@@ -9,7 +9,6 @@ body {
   overflow: hidden;
 }
 
-/* Map */
 #map {
   height: 100vh;
   width: 100vw;
@@ -54,6 +53,7 @@ body {
   transition: bottom 0.35s ease-out;
   overflow-y: auto;
 }
+
 #challenge-sheet.visible {
   bottom: 0;
 }
@@ -66,6 +66,7 @@ body {
   position: relative;
   border-bottom: 1px solid rgba(0,0,0,0.1);
 }
+
 .drag-indicator {
   position: absolute;
   top: 8px;
@@ -74,6 +75,7 @@ body {
   border-radius: 3px;
   background: rgba(0,0,0,0.2);
 }
+
 #close-btn {
   position: absolute;
   right: 20px;
@@ -96,6 +98,7 @@ h2 {
   gap: 18px;
   padding: 18px;
 }
+
 .card {
   display: flex;
   align-items: center;
@@ -110,6 +113,7 @@ h2 {
 .card:hover {
   transform: translateY(-3px);
 }
+
 .card .icon {
   font-size: 2rem;
   background: rgba(255,255,255,0.25);
@@ -120,6 +124,7 @@ h2 {
   align-items: center;
   justify-content: center;
 }
+
 .card h3 {
   font-size: 1.4em;
   font-weight: 700;
@@ -130,14 +135,15 @@ h2 {
 
 /* Farben */
 .card-yellow { background: #FFD93D; }
-.card-red    { background: #F05454; }
-.card-green  { background: #6BCB77; }
-.card-black  { background: #222; }
+.card-red { background: #F05454; }
+.card-green { background: #6BCB77; }
+.card-black { background: #222; }
 
 /* Detailansicht */
 #detail-view {
   padding: 18px;
 }
+
 #back-btn {
   background: none;
   border: none;
@@ -146,15 +152,18 @@ h2 {
   margin-bottom: 10px;
   cursor: pointer;
 }
+
 #detail-title {
   font-size: 1.8em;
   font-weight: bold;
   margin-bottom: 6px;
 }
+
 #detail-desc {
   color: #333;
   margin-bottom: 12px;
 }
+
 #detail-tasks {
   list-style: disc;
   padding-left: 20px;
@@ -165,28 +174,38 @@ h2 {
 }
 
 .task-card {
-  margin: 10px 0;
-  padding: 12px;
-  cursor: default;
-  display: flex;
-  align-items: center;
+    margin: 10px 0;
+    padding: 12px;
+    cursor: default;
+    display: flex;
+    align-items: center;
 }
 .task-card h4 {
-  margin: 0;
-  font-size: 1.1rem;
+    margin: 0;
+    font-size: 1.1rem;
 }
 
-/* Puls-Kreis */
+
 .pulse-circle {
   animation: pulseBorder 2s infinite ease-in-out;
 }
+
 @keyframes pulseBorder {
-  0%   { stroke-width: 1; stroke-opacity: 0.8; }
-  50%  { stroke-width: 5; stroke-opacity: 0.2; }
-  100% { stroke-width: 1; stroke-opacity: 0.8; }
+  0% {
+    stroke-width: 1;
+    stroke-opacity: 0.8;
+  }
+  50% {
+    stroke-width: 5;        /* breiter → wirkt wie Puls */
+    stroke-opacity: 0.2;    /* schwächer in der Mitte */
+  }
+  100% {
+    stroke-width: 1;
+    stroke-opacity: 0.8;
+  }
 }
 
-/* GENERISCHE DIALOGE */
+
 .dialog {
   position: fixed;
   top: 0;
@@ -200,9 +219,11 @@ h2 {
   align-items: center;
   z-index: 9999;
 }
-.dialog.hidden {
+
+.hidden {
   display: none;
 }
+
 .dialog-content {
   background: rgba(255,255,255,0.75);
   backdrop-filter: blur(10px);
@@ -213,218 +234,266 @@ h2 {
   box-shadow: 0px 4px 25px rgba(0,0,0,0.25);
 }
 
-/* Challenge-Dialog (Kategorie wählen) */
+#dialog-close-btn {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: #007aff;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+
 #challenge-dialog {
   width: 100%;
   max-width: 350px;
   padding: 20px;
   border-radius: 30px;
+
   background: rgba(255,255,255,0.75);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
+
   box-shadow: 0 20px 40px rgba(0,0,0,0.25);
-  text-align: center;
 }
+
+
 #dialog-title {
   font-size: 1.3rem;
   font-weight: 700;
   text-align: center;
 }
+
 #dialog-subtitle {
   text-align: center;
   color: #666;
   font-size: 0.95rem;
 }
+
+
 #dialog-categories {
   display: flex;
   flex-direction: column;
   gap: 16px;
   margin-top: 12px;
 }
+
 #dialog-categories button {
   display: flex;
   align-items: center;
   gap: 16px;
+
   padding: 14px 18px;
   border: none;
   border-radius: 30px;
+
   color: white;
   font-size: 1.05rem;
   font-weight: 600;
+
   cursor: pointer;
+
   box-shadow: 0 6px 16px rgba(0,0,0,0.25);
 }
+
 .dialog-icon {
   font-size: 1.8rem;
   width: 50px;
   text-align: center;
 }
+
 .dialog-spacer {
   flex: 1;
 }
+
+
+
 #dialog-result {
   margin-top: 14px;
   padding: 14px;
   text-align: center;
+
   background: rgba(255, 217, 61, 0.25);
   border-radius: 16px;
+
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
+
+
 .dialog-loading {
   text-align: center;
   font-size: 0.95rem;
   color: #666;
 }
+
+
 #dialog-close {
   margin-top: 16px;
   padding: 14px;
+
   width: 100%;
   border: none;
   border-radius: 16px;
+
   background: #F05454;
   color: white;
   font-size: 1rem;
   font-weight: 600;
+
   box-shadow: 0 6px 16px rgba(0,0,0,0.25);
   cursor: pointer;
 }
 
-/* === BATTLE VIEW – iOS-Card-Style === */
+/* =========================
+   BATTLE DIALOG – SCREENSHOT STYLE
+========================= */
 
-/* Backdrop */
-#battle-dialog-backdrop {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.35);
-  backdrop-filter: blur(10px);
-  z-index: 9999;
-}
-#battle-dialog-backdrop.hidden {
-  display: none;
-}
-
-/* Hauptkarte */
-.battle-card-shell {
-  width: 360px;
-  max-width: 90vw;
-  background: #fdfdfd;
+#battle-dialog {
+  width: 90%;
+  max-width: 380px;
+  padding: 26px 22px 20px;
   border-radius: 32px;
-  padding: 26px 24px 22px;
-  box-shadow: 0 22px 44px rgba(0,0,0,0.35);
-  border: 1px solid #ffeaa7;
+
+  background: #f6f6f6;
+  border: 3px solid #f5d76e;
+
+  box-shadow: 0 25px 50px rgba(0,0,0,0.25);
   text-align: center;
 }
 
-/* Header */
-.battle-card-tag {
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 0.18em;
-  color: #f05454;
+/* Kategorie klein oben */
+#battle-category {
+  font-size: 0.8rem;
+  letter-spacing: 0.25em;
+  color: #c0392b;
   margin-bottom: 6px;
 }
-.battle-card-title {
-  font-size: 18px;
-  font-weight: 800;
-  color: #222;
-  line-height: 1.3;
-  margin-bottom: 10px;
+
+/* Challenge Frage */
+#battle-challenge {
+  font-size: 1.5rem;
+  font-weight: 900;
+  margin-bottom: 12px;
 }
-.battle-card-vs {
-  font-size: 11px;
+
+/* VS Text */
+#battle-vs {
+  font-size: 0.9rem;
+  letter-spacing: 0.15em;
+  color: #666;
+  margin-bottom: 18px;
+}
+
+
+/* =========================
+   AVATARE
+========================= */
+
+#battle-avatars {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
+  margin: 20px 0;
+}
+
+.battle-avatar {
+  width: 130px;
+  height: 150px;
+  border-radius: 22px;
+  background: white;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 12px 25px rgba(0,0,0,0.2);
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+.battle-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Linke Karte */
+.battle-avatar.left {
+  border: 4px solid #f5d76e;
+  transform: rotate(-6deg);
+}
+
+/* Rechte Karte */
+.battle-avatar.right {
+  border: 4px solid #e74c3c;
+  transform: rotate(6deg);
+}
+
+
+/* =========================
+   SUBTITLE
+========================= */
+
+#battle-subtitle {
+  margin-top: 10px;
   font-weight: 700;
-  letter-spacing: 0.16em;
-  color: #777;
+  letter-spacing: 0.1em;
   margin-bottom: 16px;
 }
 
-/* Avatarkarten */
-.battle-card-avatars {
-  display: flex;
-  justify-content: center;
-  gap: 18px;
-  margin-bottom: 18px;
-}
-.battle-card-avatar {
-  width: 130px;
-  border-radius: 26px;
-  padding: 10px;
-  background: #ffffff;
-  box-shadow: 0 10px 22px rgba(0,0,0,0.2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-.battle-card-avatar-left {
-  border: 3px solid #2ecc71;
-}
-.battle-card-avatar-right {
-  border: 3px solid #e74c3c;
-}
-.battle-card-avatar img {
-  width: 100%;
-  height: 140px;
-  object-fit: cover;
-  border-radius: 20px;
-}
-.battle-card-name {
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.14em;
-  color: #555;
+
+/* =========================
+   BUTTONS
+========================= */
+
+#battle-success-btn,
+#battle-surrender-btn {
+  padding: 14px 20px;
+  border-radius: 16px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  min-width: 130px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* Frage + Buttons */
-.battle-card-question {
-  margin-top: 4px;
-  margin-bottom: 14px;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: #555;
+/* Geschafft – Grün */
+#battle-success-btn {
+  background: #2ecc71;
+  color: white;
+  box-shadow: 0 8px 18px rgba(46,204,113,0.4);
 }
-.battle-card-actions {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 18px;
+
+/* Aufgeben – Outline Rot */
+#battle-surrender-btn {
+  background: white;
+  color: #e74c3c;
+  border: 3px solid #e74c3c;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.08);
 }
-.battle-card-btn {
-  flex: 1;
-  padding: 14px 0;
-  border-radius: 18px;
-  border: none;
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  cursor: pointer;
-  box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+
+#battle-success-btn:hover,
+#battle-surrender-btn:hover {
+  transform: translateY(-2px);
 }
-.battle-card-btn.success {
-  background: #27ae60;
-  color: #fff;
-}
-.battle-card-btn.surrender {
-  background: #e74c3c;
-  color: #fff;
-}
-.battle-card-close {
-  margin-top: 4px;
+
+
+/* Schließen Button unten */
+#battle-close-btn {
+  margin-top: 18px;
+  padding: 12px;
   width: 100%;
-  padding: 14px 0;
-  border-radius: 999px;
+  border-radius: 14px;
   border: none;
-  background: #f2f2f2;
-  color: #444;
-  font-weight: 700;
-  font-size: 14px;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+  background: #ddd;
+  font-weight: 600;
   cursor: pointer;
 }
+
+
 
 /* Voting Dialog Styling */
 .vote-btn {
@@ -432,27 +501,37 @@ h2 {
   width: 100%;
   border: none;
   border-radius: 18px;
-  background-color: #FFD93D;
   color: #222;
   font-size: 18px;
   font-weight: bold;
   cursor: pointer;
   transition: transform 0.2s, opacity 0.2s;
 }
+
+
+
 .vote-btn:hover:not(:disabled) {
   transform: scale(1.02);
 }
+
 .vote-btn:disabled {
   cursor: not-allowed;
 }
+
 #voting-feedback {
   margin-top: 12px;
   font-weight: 600;
   font-size: 0.9rem;
   text-align: center;
 }
+#vote-player-a{
+  background-color: #fcd134;
+} 
 
-/* Incoming Challenge */
+#vote-player-b{
+  background-color: #e74c3c;
+} 
+
 .incoming-backdrop {
   position: fixed;
   inset: 0;
@@ -462,9 +541,11 @@ h2 {
   justify-content: center;
   z-index: 9999;
 }
+
 .incoming-backdrop.hidden {
   display: none;
 }
+
 .incoming-card {
   width: 320px;
   max-width: 90vw;
@@ -474,8 +555,10 @@ h2 {
   backdrop-filter: blur(20px);
   box-shadow: 0 18px 40px rgba(0,0,0,0.35);
   border: 1px solid rgba(255,255,255,0.2);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   text-align: center;
 }
+
 .incoming-title {
   font-size: 14px;
   font-weight: 900;
@@ -483,12 +566,14 @@ h2 {
   color: #111;
   margin-bottom: 6px;
 }
+
 .incoming-opponent {
   font-size: 18px;
   font-weight: 900;
   color: #111;
   margin-bottom: 10px;
 }
+
 .incoming-challenge-text {
   font-size: 14px;
   font-weight: 700;
@@ -498,10 +583,12 @@ h2 {
   border-radius: 14px;
   background: #ffd93d;
 }
+
 .incoming-actions {
   display: flex;
   gap: 12px;
 }
+
 .btn-accept,
 .btn-decline {
   flex: 1;
@@ -513,55 +600,190 @@ h2 {
   letter-spacing: 0.05em;
   cursor: pointer;
 }
+
 .btn-accept {
   background: #4caf50;
   color: #111;
 }
+
 .btn-decline {
   background: transparent;
   color: #f05454;
   border: 2px solid #f05454;
 }
 
-/* Trophy Road (Kurzfassung wie vorher) */
+
+.trophy-road {
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.trophy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trophy-header h2 {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, #FFD93D, #FF9F1C, #F05454);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.trophy-rank {
+  border-radius: 28px;
+  padding: 16px;
+  margin: 16px 0;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+
+.trophy-range {
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.trophy-current {
+  margin-top: 8px;
+  display: inline-block;
+  background: white;
+  color: black;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.trophy-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.trophy-dot {
+  width: 14px;
+  height: 14px;
+  background: rgba(255,255,255,0.6);
+  border-radius: 50%;
+  margin: 10px 0;
+}
+
+.trophy-marker {
+  width: 26px;
+  height: 26px;
+  background: white;
+  border-radius: 50%;
+  border: 3px solid;
+  position: absolute;
+}
+
+.trophy-info {
+  position: sticky;
+  bottom: 16px;
+  left: 100%;
+  transform: translateX(-100%);
+  background: white;
+  border-radius: 50%;
+  border: none;
+  font-size: 24px;
+  padding: 10px;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+}
+
+/* nutzt dieselbe card-Optik */
+.trophy-rank {
+  border-radius: 20px;
+  padding: 16px;
+  margin-bottom: 12px;
+  color: white;
+  font-weight: bold;
+}
+
+.trophy-road-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.trophy-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 4px 0 12px;
+}
+
+.trophy-dot {
+  width: 12px;
+  height: 12px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 50%;
+  margin: 6px 0;
+}
+
+.trophy-current {
+  margin-top: 6px;
+  background: white;
+  color: black;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+
+/* Trophy Road Container */
 #trophy-road-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 12px;
 }
+
+/* Trophy Cards */
 .trophy-rank {
   padding: 16px;
   border-radius: 12px;
   color: white;
   font-weight: bold;
   text-align: center;
-  min-height: 80px;
+  min-height: 80px; /* Box größer */
   display: flex;
   flex-direction: column;
   justify-content: center;
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   transition: transform 0.2s;
 }
+
 .trophy-rank:hover {
   transform: translateY(-3px);
 }
-.trophy-current {
-  margin-top: 8px;
+
+/* Current Player */
+.trophy-rank .trophy-current {
   background: gold;
   color: black;
   font-size: 0.8rem;
   font-weight: bold;
   padding: 2px 6px;
   border-radius: 6px;
+  margin-top: 8px;
   align-self: center;
 }
+
+/* Trophy Road Connector */
 .trophy-connector {
   display: flex;
   justify-content: center;
   gap: 4px;
   padding: 4px 0;
 }
+
 .trophy-dot {
   width: 10px;
   height: 10px;
@@ -570,19 +792,14 @@ h2 {
   box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
-/* Pending Overlay */
 #battle-pending-overlay.hidden { display: none; }
 #battle-pending-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: fixed; inset: 0; display: flex;
+  align-items: center; justify-content: center;
   z-index: 9999;
 }
 .overlay-backdrop {
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: 0;
   background: rgba(0,0,0,0.4);
 }
 .overlay-card {
@@ -592,42 +809,366 @@ h2 {
   background: rgba(255,255,255,0.9);
 }
 
-/* Loader */
-.spinner {
-  margin-top: 10px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 3px solid #ddd;
-  border-top-color: #f05454;
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
+/* Swift Style Trophy Card */
+.trophy-rank-swift {
+  border-radius: 24px;
+  padding: 20px;
+  margin: 20px 0;
+  color: white;
+  transition: transform 0.2s ease;
 }
 
-.battle-card-question-2 {
-  margin-top: 4px;
-  margin-bottom: 10px;
+.trophy-rank-swift:hover {
+  transform: translateY(-4px);
+}
+
+.trophy-rank-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trophy-rank-title {
+  font-size: 18px;
+  font-weight: 900;
+  text-shadow: 0px 0px 3px rgba(0,0,0,0.92);
+}
+
+.trophy-range {
   font-size: 13px;
-  font-weight: 700;
-  color: #222;
+  opacity: 0.85;
+  text-shadow: 0px 0px 3px rgba(0,0,0,0.92);
 }
 
-.battle-card-vs-icon {
-  align-self: center;
-  margin-bottom: 40px;        /* nach Bedarf justieren */
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: #ffce54;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+.trophy-current {
+  margin-top: 8px;
+  background: white;
+  color: black;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.trophy-points {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.etappen-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 20px;
+}
+
+.battle-win-backdrop {
+  position: fixed;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 900;
-  font-size: 14px;
-  letter-spacing: 0.10em;
-  color: #b23a1f;
+
+  background: linear-gradient(
+    to bottom,
+    #f2f2f7,
+    #e5e5ea
+  );
+
+  z-index: 9999;
 }
 
+.hidden {
+  display: none;
+}
+
+/* Hauptkarte */
+
+.battle-win-card {
+  width: 360px;
+  padding: 28px;
+  border-radius: 32px;
+  background: white;
+  position: relative;
+
+  box-shadow: 0 18px 30px rgba(0,0,0,0.12);
+}
+
+/* Gradient Border */
+
+.battle-win-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 32px;
+  padding: 2px;
+
+  background: linear-gradient(
+    135deg,
+    rgba(255, 204, 0, 0.6),
+    rgba(0, 200, 100, 0.4)
+  );
+
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+
+  pointer-events: none;
+}
+
+/* Texte */
+
+.battle-win-label {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #ff3b30;
+}
+
+.battle-win-title {
+  text-align: center;
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  margin-top: 4px;
+}
+
+.battle-win-subtitle {
+  text-align: center;
+  font-weight: 600;
+  margin: 12px 0 20px 0;
+}
+
+/* Player Card */
+.player-name {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #22c55e;
+  text-align: center;
+}
+
+.player-points {
+  font-size: 11px;
+  font-weight: 600;
+  color: #22c55e;
+  text-align: center;
+}
+
+/* Große Punkte */
+
+.battle-win-bigpoints {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 900;
+  color: #22c55e;
+  margin-top: 10px;
+}
+
+/* Button */
+
+.battle-win-close {
+  margin-top: 18px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 20px;
+  border: none;
+  background: rgba(255,255,255,0.95);
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  transition: 0.2s;
+}
+
+.battle-win-close:hover {
+  transform: translateY(-2px);
+}
+
+.battle-win-players {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 20px 0;
+}
+
+.result-card {
+  text-align: center;
+}
+
+.avatar-wrapper {
+  width: 130px;
+  height: 190px;
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+}
+
+.winner-border {
+  border: 3px solid #22c55e;
+}
+
+.loser-border {
+  border: 3px solid #ef4444;
+}
+
+.avatar-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.winner-text {
+  color: #22c55e;
+}
+
+.loser-text {
+  color: #ef4444;
+}
+
+.crown {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0,0,0,0.75);
+  padding: 6px;
+  border-radius: 50%;
+  font-size: 14px;
+}
+
+.battle-backdrop {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(to bottom, #f2f2f2, #e5e5e5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.hidden {
+  display: none;
+}
+
+.battle-lose-card {
+  width: 360px;
+  background: white;
+  border-radius: 32px;
+  padding: 28px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  text-align: center;
+}
+
+.battle-label {
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #d64545;
+  font-weight: 900;
+}
+
+.battle-title {
+  font-size: 26px;
+  font-weight: 900;
+  color: #d64545;
+  margin-top: 4px;
+}
+
+.battle-subtitle {
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.battle-players {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 24px 0;
+}
+
+.player-card {
+  width: 130px;
+}
+
+.avatar-wrapper {
+  position: relative;
+  width: 118px;
+  height: 178px;
+  margin: auto;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 3px solid;
+}
+
+.player-card.loser .avatar-wrapper {
+  border-color: #d64545;
+}
+
+.player-card.winner .avatar-wrapper {
+  border-color: #27ae60;
+}
+
+.avatar-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.x-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #d64545;
+  color: white;
+  border-radius: 50%;
+  padding: 4px 7px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.player-name {
+  margin-top: 10px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.player-points {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.big-points {
+  margin: 12px 0;
+  font-weight: 600;
+}
+
+.trash-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 24px;
+  background: #f5f5f5;
+  border: 2px solid rgba(214,69,69,0.5);
+}
+
+.trash-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-weight: 900;
+  opacity: 0.5;
+  margin-bottom: 6px;
+}
+
+.battle-close-btn {
+  margin-top: 20px;
+  padding: 12px 20px;
+  border-radius: 20px;
+  border: none;
+  background: white;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  cursor: pointer;
+  font-weight: 600;
+}

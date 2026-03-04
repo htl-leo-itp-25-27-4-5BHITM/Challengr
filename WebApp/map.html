@@ -18,7 +18,7 @@
   <button id="challenge-btn">🏆</button>
 
   <!-- Permissions Popup -->
-  <div id="permissions-popup" class="perm-popup hidden">
+  <div id="permissions-popup" class="perm-popup">
     <div class="perm-content">
       <h2>Erlaubnis benötigt</h2>
       <p>Bitte Standort & Sounds erlauben, damit das Spiel funktioniert.</p>
@@ -26,92 +26,126 @@
     </div>
   </div>
 
-  <!-- Challenge Dialog (Kategorie wählen) -->
+  <!-- Challenge Dialog -->
   <div id="challenge-dialog-backdrop" class="dialog hidden">
-    <div id="challenge-dialog">
+    <div id="challenge-dialog" class="dialog-content">
       <h2 id="dialog-title">Challenge Spieler</h2>
-      <p id="dialog-subtitle">Wähle eine Kategorie</p>
-      <div id="dialog-categories"></div>
-      <div id="dialog-result" class="hidden"></div>
+      <div id="dialog-content">
+        <p id="dialog-subtitle">Wähle eine Kategorie</p>
+        <div id="dialog-categories"></div>
+        <div id="dialog-result" class="hidden"></div>
+      </div>
       <button id="dialog-close">Schließen</button>
     </div>
   </div>
 
-  <!-- Battle Dialog – Swift-Look -->
+  <!-- Battle Dialog -->
   <div id="battle-dialog-backdrop" class="dialog hidden">
-    <div id="battle-dialog" class="battle-card-shell">
-      <!-- Kategorie (z.B. WISSEN) -->
-      <div class="battle-card-tag" id="battle-category">WISSEN</div>
-      <!-- Spieler VS Zeile -->
-      <div class="battle-card-title" id="battle-vs">
-        EIGENERSPIELER VS WEBAPPSPIELER
-      </div>
-      <!-- Challenge-Text -->
-      <p id="battle-challenge" class="battle-card-question-2">
-        Nenne drei Planeten unseres Sonnensystems
-      </p>
+    <div id="battle-dialog" class="dialog-content">
+      <h2 id="battle-category">Kategorie</h2>
+      <h3 id="battle-challenge">Challenge Name</h3>
+      <p id="battle-vs">Spieler1 VS Spieler2</p>
 
-      <!-- Avatarkarten -->
-      <div class="battle-card-avatars">
-        <div class="battle-card-avatar battle-card-avatar-left">
-          <img id="battle-avatar-left" src="Assets/playerBoy.png" alt="Eigener Spieler">
-          <div class="battle-card-name">EIGENERSPIELER</div>
+      <div id="battle-avatars" style="display:flex; justify-content:center; gap:40px; margin:16px 0;">
+        <div class="battle-avatar left"><img src="./Assets/playerBoy.png" alt="Player B"></div>
+        <div class="battle-avatar right"><img src="./Assets/playerGirl.png" alt="Player Girl"></div>
+      </div>
+
+      <p id="battle-subtitle">Challenge geschafft?</p>
+
+      <div style="display:flex; justify-content:center; gap:24px;">
+        <button id="battle-success-btn">Geschafft ✅</button>
+        <button id="battle-surrender-btn">Aufgeben ❌</button>
+      </div>
+
+      <button id="battle-close-btn">Schließen</button>
+    </div>
+  </div>
+
+  <div id="battle-win-backdrop" class="battle-win-backdrop hidden">
+  <div class="battle-win-card">
+
+    <div class="battle-win-label">BATTLE ERGEBNIS</div>
+    <div class="battle-win-title">GEWONNEN!</div>
+
+    <div id="battle-win-subtitle" class="battle-win-subtitle"></div>
+
+    <div class="battle-win-players">
+
+      <!-- WINNER -->
+      <div class="result-card winner">
+        <div class="avatar-wrapper winner-border">
+          <img id="battle-win-avatar-winner" src="" />
+          <div class="crown">👑</div>
         </div>
+        <div id="battle-win-name-winner" class="player-name winner-text"></div>
+        <div id="battle-win-points-winner" class="player-points winner-text"></div>
+      </div>
 
-         <div class="battle-card-vs-icon">VS</div>
-
-        <div class="battle-card-avatar battle-card-avatar-right">
-          <img id="battle-avatar-right" src="Assets/playerGirl.png" alt="Webapp Spieler">
-          <div class="battle-card-name">WEBAPPSPIELER</div>
+      <!-- LOSER -->
+      <div class="result-card loser">
+        <div class="avatar-wrapper loser-border">
+          <img id="battle-win-avatar-loser" src="" />
         </div>
+        <div id="battle-win-name-loser" class="player-name loser-text"></div>
+        <div id="battle-win-points-loser" class="player-points loser-text"></div>
       </div>
 
-      <!-- Frage + Buttons -->
-      <p class="battle-card-question">CHALLENGE GESCHAFFT?</p>
-
-      <div class="battle-card-actions">
-        <button id="battle-success-btn" class="battle-card-btn success">
-          GESCHAFFT
-        </button>
-        <button id="battle-surrender-btn" class="battle-card-btn surrender">
-          AUFGEBEN
-        </button>
-      </div>
-
-      <button id="battle-close-btn" class="battle-card-close">
-        SCHLIESSEN
-      </button>
     </div>
-  </div>
 
-  <!-- Battle Win (alte IDs, damit JS passt) -->
-  <div id="battle-win-backdrop" class="dialog hidden">
-    <div id="battle-win-dialog" class="dialog-content">
-      <h2 id="battle-win-title">Sieg!</h2>
-      <div id="battle-win-player" style="text-align:center; margin:16px 0;">
-        <h3 id="battle-win-name"></h3>
-        <p id="battle-win-points" style="color:green; font-weight:bold;"></p>
-      </div>
-      <p id="battle-win-footer" style="font-size:0.85rem; color:gray; text-align:center;"></p>
-      <button id="battle-win-close">Schließen</button>
+    <div id="battle-win-bigpoints" class="battle-win-bigpoints"></div>
+
+    <button id="battle-win-close" class="battle-win-close">
+      ZURÜCK ZUR KARTE
+    </button>
+
+  </div>
+</div>
+
+ <div id="battle-lose-backdrop" class="battle-backdrop hidden">
+  <div class="battle-lose-card">
+
+    <div class="battle-lose-header">
+      <div class="battle-label">BATTLE ERGEBNIS</div>
+      <div class="battle-title">NIEDERLAGE</div>
+      <div id="battle-lose-subtitle" class="battle-subtitle"></div>
     </div>
-  </div>
 
-  <!-- Battle Lose (alte IDs, damit JS passt) -->
-  <div id="battle-lose-backdrop" class="dialog hidden">
-    <div id="battle-lose-dialog" class="dialog-content">
-      <h2 id="battle-lose-title" style="color:red;">Niederlage</h2>
-      <div id="battle-lose-player" style="text-align:center; margin:16px 0;">
-        <h3 id="battle-lose-name"></h3>
-        <p id="battle-lose-points" style="color:red; font-weight:bold;"></p>
+    <div class="battle-players">
+      <!-- Loser -->
+      <div class="player-card loser">
+        <div class="avatar-wrapper">
+          <img id="battle-lose-avatar-loser">
+          <div class="x-badge">✕</div>
+        </div>
+        <div id="battle-lose-name-loser" class="player-name"></div>
+        <div id="battle-lose-points-loser" class="player-points"></div>
       </div>
-      <p id="battle-lose-trash" style="margin:16px; font-size:1rem; text-align:center;"></p>
-      <p id="battle-lose-footer" style="font-size:0.85rem; color:gray; text-align:center;"></p>
-      <button id="battle-lose-close">Schließen</button>
-    </div>
-  </div>
 
-  <!-- Voting Dialog -->
+      <!-- Winner -->
+      <div class="player-card winner">
+        <div class="avatar-wrapper">
+          <img id="battle-lose-avatar-winner">
+        </div>
+        <div id="battle-lose-name-winner" class="player-name"></div>
+        <div id="battle-lose-points-winner" class="player-points"></div>
+      </div>
+    </div>
+
+    <div id="battle-lose-bigpoints" class="big-points"></div>
+
+    <div class="trash-panel">
+      <div class="trash-label">TRASH TALK</div>
+      <div id="battle-lose-trash"></div>
+    </div>
+
+    <button id="battle-lose-close" class="battle-close-btn">
+      ZURÜCK ZUR KARTE
+    </button>
+
+  </div>
+</div>
+
   <div id="battle-voting-backdrop" class="dialog hidden">
     <div id="battle-voting-dialog" class="dialog-content">
       <h2 id="voting-title">WER HAT GEWONNEN?</h2>
@@ -119,7 +153,7 @@
         <button id="vote-player-a" class="vote-btn">Spieler A</button>
         <button id="vote-player-b" class="vote-btn">Spieler B</button>
       </div>
-      <p id="voting-feedback">
+      <p id="voting-feedback" style="text-align:center; font-size:0.9rem; color:gray;">
         Tippe auf einen Spieler
       </p>
     </div>
@@ -162,13 +196,13 @@
     </div>
   </div>
 
-  <!-- Pending Overlay -->
   <div id="battle-pending-overlay" class="hidden">
-    <div class="overlay-backdrop"></div>
-    <div class="overlay-card">
-      <p>ERGEBNIS WIRD BERECHNET</p>
-      <div class="spinner"></div>
-    </div>
+  <div class="overlay-backdrop"></div>
+  <div class="overlay-card">
+    <p>ERGEBNIS WIRD BERECHNET</p>
+    <div class="spinner"></div>
   </div>
+</div>
+
 </body>
 </html>
