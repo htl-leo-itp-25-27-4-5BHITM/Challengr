@@ -18,7 +18,7 @@
   <button id="challenge-btn">🏆</button>
 
   <!-- Permissions Popup -->
-  <div id="permissions-popup" class="perm-popup">
+  <div id="permissions-popup" class="perm-popup hidden">
     <div class="perm-content">
       <h2>Erlaubnis benötigt</h2>
       <p>Bitte Standort & Sounds erlauben, damit das Spiel funktioniert.</p>
@@ -26,43 +26,65 @@
     </div>
   </div>
 
-  <!-- Challenge Dialog -->
+  <!-- Challenge Dialog (Kategorie wählen) -->
   <div id="challenge-dialog-backdrop" class="dialog hidden">
-    <div id="challenge-dialog" class="dialog-content">
+    <div id="challenge-dialog">
       <h2 id="dialog-title">Challenge Spieler</h2>
-      <div id="dialog-content">
-        <p id="dialog-subtitle">Wähle eine Kategorie</p>
-        <div id="dialog-categories"></div>
-        <div id="dialog-result" class="hidden"></div>
-      </div>
+      <p id="dialog-subtitle">Wähle eine Kategorie</p>
+      <div id="dialog-categories"></div>
+      <div id="dialog-result" class="hidden"></div>
       <button id="dialog-close">Schließen</button>
     </div>
   </div>
 
-  <!-- Battle Dialog -->
+  <!-- Battle Dialog – Swift-Look -->
   <div id="battle-dialog-backdrop" class="dialog hidden">
-    <div id="battle-dialog" class="dialog-content">
-      <h2 id="battle-category">Kategorie</h2>
-      <h3 id="battle-challenge">Challenge Name</h3>
-      <p id="battle-vs">Spieler1 VS Spieler2</p>
+    <div id="battle-dialog" class="battle-card-shell">
+      <!-- Kategorie (z.B. WISSEN) -->
+      <div class="battle-card-tag" id="battle-category">WISSEN</div>
+      <!-- Spieler VS Zeile -->
+      <div class="battle-card-title" id="battle-vs">
+        EIGENERSPIELER VS WEBAPPSPIELER
+      </div>
+      <!-- Challenge-Text -->
+      <p id="battle-challenge" class="battle-card-question-2">
+        Nenne drei Planeten unseres Sonnensystems
+      </p>
 
-      <div id="battle-avatars" style="display:flex; justify-content:center; gap:40px; margin:16px 0;">
-        <div class="battle-avatar left"><img src="./Assets/playerBoy.png" alt="Player B"></div>
-        <div class="battle-avatar right"><img src="./Assets/playerGirl.png" alt="Player Girl"></div>
+      <!-- Avatarkarten -->
+      <div class="battle-card-avatars">
+        <div class="battle-card-avatar battle-card-avatar-left">
+          <img id="battle-avatar-left" src="Assets/playerBoy.png" alt="Eigener Spieler">
+          <div class="battle-card-name">EIGENERSPIELER</div>
+        </div>
+
+         <div class="battle-card-vs-icon">VS</div>
+
+        <div class="battle-card-avatar battle-card-avatar-right">
+          <img id="battle-avatar-right" src="Assets/playerGirl.png" alt="Webapp Spieler">
+          <div class="battle-card-name">WEBAPPSPIELER</div>
+        </div>
       </div>
 
-      <p id="battle-subtitle">Challenge geschafft?</p>
+      <!-- Frage + Buttons -->
+      <p class="battle-card-question">CHALLENGE GESCHAFFT?</p>
 
-      <div style="display:flex; justify-content:center; gap:24px;">
-        <button id="battle-success-btn">Geschafft ✅</button>
-        <button id="battle-surrender-btn">Aufgeben ❌</button>
+      <div class="battle-card-actions">
+        <button id="battle-success-btn" class="battle-card-btn success">
+          GESCHAFFT
+        </button>
+        <button id="battle-surrender-btn" class="battle-card-btn surrender">
+          AUFGEBEN
+        </button>
       </div>
 
-      <button id="battle-close-btn">Schließen</button>
+      <button id="battle-close-btn" class="battle-card-close">
+        SCHLIESSEN
+      </button>
     </div>
   </div>
 
-  <!-- Battle Win / Lose / Voting Dialogs (gleich wie vorher) -->
+  <!-- Battle Win (alte IDs, damit JS passt) -->
   <div id="battle-win-backdrop" class="dialog hidden">
     <div id="battle-win-dialog" class="dialog-content">
       <h2 id="battle-win-title">Sieg!</h2>
@@ -75,8 +97,9 @@
     </div>
   </div>
 
+  <!-- Battle Lose (alte IDs, damit JS passt) -->
   <div id="battle-lose-backdrop" class="dialog hidden">
-    <div id="battle-lose-dialog" class="dialog-content" style="background-color:black; color:white;">
+    <div id="battle-lose-dialog" class="dialog-content">
       <h2 id="battle-lose-title" style="color:red;">Niederlage</h2>
       <div id="battle-lose-player" style="text-align:center; margin:16px 0;">
         <h3 id="battle-lose-name"></h3>
@@ -88,6 +111,7 @@
     </div>
   </div>
 
+  <!-- Voting Dialog -->
   <div id="battle-voting-backdrop" class="dialog hidden">
     <div id="battle-voting-dialog" class="dialog-content">
       <h2 id="voting-title">WER HAT GEWONNEN?</h2>
@@ -95,7 +119,7 @@
         <button id="vote-player-a" class="vote-btn">Spieler A</button>
         <button id="vote-player-b" class="vote-btn">Spieler B</button>
       </div>
-      <p id="voting-feedback" style="text-align:center; font-size:0.9rem; color:gray;">
+      <p id="voting-feedback">
         Tippe auf einen Spieler
       </p>
     </div>
@@ -138,13 +162,13 @@
     </div>
   </div>
 
+  <!-- Pending Overlay -->
   <div id="battle-pending-overlay" class="hidden">
-  <div class="overlay-backdrop"></div>
-  <div class="overlay-card">
-    <p>ERGEBNIS WIRD BERECHNET</p>
-    <div class="spinner"></div>
+    <div class="overlay-backdrop"></div>
+    <div class="overlay-card">
+      <p>ERGEBNIS WIRD BERECHNET</p>
+      <div class="spinner"></div>
+    </div>
   </div>
-</div>
-
 </body>
 </html>

@@ -613,41 +613,43 @@ async function loadRandomChallenge(categoryName) {
 }
 
 
-function showBattleDialog({ category, challengeName, playerLeft, playerRight, onClose, onSurrender, onSuccess }) {
-  const backdrop = document.getElementById("battle-dialog-backdrop");
-  const categoryEl = document.getElementById("battle-category");
-  const challengeEl = document.getElementById("battle-challenge");
-  const vsEl = document.getElementById("battle-vs");
+function showBattleDialog({
+  category,
+  challengeName,
+  playerLeft,
+  playerRight,
+  onClose,
+  onSurrender,
+  onSuccess
+}) {
+  const backdrop  = document.getElementById("battle-dialog-backdrop");
+  const catEl     = document.getElementById("battle-category");
+  const challEl   = document.getElementById("battle-challenge");
+  const vsEl      = document.getElementById("battle-vs");
 
-  categoryEl.textContent = category.toUpperCase();
-  challengeEl.textContent = challengeName;
-  vsEl.textContent = `${playerLeft}  VS  ${playerRight}`;
+  catEl.textContent   = (category || "CHALLENGE").toUpperCase();
+  challEl.textContent = challengeName || "";
+  vsEl.textContent    = `${playerLeft.toUpperCase()} VS ${playerRight.toUpperCase()}`;
 
   backdrop.classList.remove("hidden");
 
-  const successBtn = document.getElementById("battle-success-btn");
+  const successBtn   = document.getElementById("battle-success-btn");
   const surrenderBtn = document.getElementById("battle-surrender-btn");
-  const closeBtn = document.getElementById("battle-close-btn");
+  const closeBtn     = document.getElementById("battle-close-btn");
 
   function cleanup() {
     backdrop.classList.add("hidden");
     successBtn.onclick = null;
     surrenderBtn.onclick = null;
     closeBtn.onclick = null;
+    if (onClose) onClose();
   }
 
-  successBtn.onclick = () => {
-    cleanup();
-    if (onSuccess) onSuccess();
-  };
-
-  surrenderBtn.onclick = () => {
-    cleanup();
-    if (onSurrender) onSurrender();
-  };
-
-  closeBtn.onclick = cleanup;
+  successBtn.onclick   = () => { cleanup(); if (onSuccess) onSuccess(); };
+  surrenderBtn.onclick = () => { cleanup(); if (onSurrender) onSurrender(); };
+  closeBtn.onclick     = cleanup;
 }
+
 
 
 function showVotingDialog({ playerA, playerB, onVote }) {
