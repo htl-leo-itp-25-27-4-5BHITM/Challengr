@@ -24,6 +24,8 @@ let currentBattleState = {
   toPlayerId: null,
   isInitiator: false  // true wenn ich die challenge gestartet habe
 };
+let currentKnowledgeQuestion = null;
+
 
 const incomingBackdrop = document.getElementById("incoming-challenge-backdrop");
 const incomingOpponentEl = document.getElementById("incoming-opponent");
@@ -58,6 +60,44 @@ function showIncomingChallengeUI({ opponentName, opponentRank, challengeText, on
   };
 }
 
+gameClient.on("battle-question", ({ battleId, challenge }) => {
+  console.log("Knowledge question:", battleId, challenge);
+
+  if (battleId !== currentBattleState.battleId) return;
+  if (currentBattleState.category !== "Wissen") return;
+
+  currentKnowledgeQuestion = challenge;
+
+  const backdrop  = document.getElementById("knowledge-battle-backdrop");
+  const qEl       = document.getElementById("kb-question");
+  const choicesEl = document.getElementById("kb-choices");
+  const statusEl  = document.getElementById("kb-status");
+
+  if (!backdrop || !qEl || !choicesEl) return;
+  backdrop.classList.remove("hidden");
+
+  qEl.textContent = challenge.text;
+  choicesEl.innerHTML = "";
+  statusEl.textContent = "";
+
+  (challenge.choices || []).forEach((choiceText, index) => {
+    const btn = document.createElement("button");
+    btn.className = "kb-choice-btn";
+    btn.textContent = choiceText;
+    btn.onclick = () => {
+      // Buttons sperren, Status anzeigen
+      document
+        .querySelectorAll("#kb-choices .kb-choice-btn")
+        .forEach(b => b.disabled = true);
+
+      statusEl.textContent = "Antwort gesendet – warte auf Ergebnis …";
+      gameClient.sendKnowledgeAnswer(currentBattleState.battleId, index);
+    };
+    choicesEl.appendChild(btn);
+  });
+});
+
+
 
 gameClient.on("battle-requested", async (msg) => {
   console.log("➡ battle-requested:", msg);
@@ -76,36 +116,42 @@ gameClient.on("battle-requested", async (msg) => {
   incomingBattleId = msg.battleId;
 
   try {
-    const challenge = await api(`/api/challenges/${msg.challengeId}`);
+    const challenge = await api(`/api/challenges/id/${msg.challengeId}`);
     const [fromPlayer, toPlayer] = await Promise.all([
       api(`/api/players/${msg.fromPlayerId}`),
       api(`/api/players/${msg.toPlayerId}`)
     ]);
 
     Object.assign(currentBattleState, {
-      challengeName: challenge.text,
-      category: challenge.challengeCategory?.name || "Challenge",
-      playerLeft: fromPlayer.name,
-      playerRight: toPlayer.name
-    });
+  challengeName: challenge.text,
+  category: challenge.category || "Challenge",
+  playerLeft: fromPlayer.name,
+  playerRight: toPlayer.name
+});
+
 
     showIncomingChallengeUI({
       opponentName: fromPlayer.name,
       opponentRank: fromPlayer.rankName,
       challengeText: currentBattleState.challengeName,
       onAccept: () => {
-        gameClient.updateBattleStatus(incomingBattleId, "ACCEPTED");
+  gameClient.updateBattleStatus(incomingBattleId, "ACCEPTED");
 
-        showBattleDialog({
-          category: currentBattleState.category,
-          challengeName: currentBattleState.challengeName,
-          playerLeft: currentBattleState.playerLeft,
-          playerRight: currentBattleState.playerRight,
-          onSuccess: handleBattleSuccess,
-          onSurrender: handleBattleSurrender,
-          onClose: () => console.log("Battle dialog closed")
-        });
-      },
+  if (currentBattleState.category === "Wissen") {
+    showKnowledgeBattle();   // wartet auf battle-question
+  } else {
+    showBattleDialog({
+      category: currentBattleState.category,
+      challengeName: currentBattleState.challengeName,
+      playerLeft: currentBattleState.playerLeft,
+      playerRight: currentBattleState.playerRight,
+      onSuccess: handleBattleSuccess,
+      onSurrender: handleBattleSurrender,
+      onClose: () => console.log("Battle dialog closed")
+    });
+  }
+},
+
       onDecline: () => {
         gameClient.updateBattleStatus(incomingBattleId, "DECLINED");
       }
@@ -132,15 +178,19 @@ gameClient.on("battle-updated", (msg) => {
       msg.battleId === currentBattleState.battleId &&
       currentBattleState.isInitiator) {
 
-    showBattleDialog({
-      category: currentBattleState.category,
-      challengeName: currentBattleState.challengeName,
-      playerLeft: currentBattleState.playerLeft,
-      playerRight: currentBattleState.playerRight,
-      onSuccess: handleBattleSuccess,
-      onSurrender: handleBattleSurrender,
-      onClose: () => console.log("Battle dialog closed")
-    });
+    if (currentBattleState.category === "Wissen") {
+      showKnowledgeBattle();          // ⬅️ NEU
+    } else {
+      showBattleDialog({
+        category: currentBattleState.category,
+        challengeName: currentBattleState.challengeName,
+        playerLeft: currentBattleState.playerLeft,
+        playerRight: currentBattleState.playerRight,
+        onSuccess: handleBattleSuccess,
+        onSurrender: handleBattleSurrender,
+        onClose: () => console.log("Battle dialog closed")
+      });
+    }
   }
 
   if (msg.status === "READY_FOR_VOTING" &&
@@ -184,6 +234,9 @@ gameClient.on("battle-result", (msg) => {
     isResultPending = false;
     if (pendingOverlay) pendingOverlay.classList.add("hidden");
 
+    const kbBackdrop = document.getElementById("knowledge-battle-backdrop");
+    if (kbBackdrop) kbBackdrop.classList.add("hidden");
+
     const myName = window.myName || `Player_${myId}`;
     const iWon = msg.winnerName === myName;
 
@@ -208,7 +261,11 @@ gameClient.on("battle-result", (msg) => {
       });
     }
 
-    showBattleDialog.cleanup();
+    const battleDialogBackdrop =
+      document.getElementById("battle-dialog-backdrop");
+    if (battleDialogBackdrop) {
+      battleDialogBackdrop.classList.add("hidden");
+    }
     // Punkte nach dem Battle neu laden
     loadPlayerPoints(myId);
   }, 2500);  // 2 Sekunden Loading
@@ -323,25 +380,29 @@ function getCategoryColor(category) {
   switch (category) {
     case "Fitness": return "#FFD93D";
     case "Mutprobe": return "#F05454";
-    case "Wissen": return "#6BCB77";
-    case "Suchen": return "#222222";
+    case "Wissen":   return "#6BCB77";
+    case "iPhone":   return "#222222";
+    case "Customer": return "#999999";
     default: return "#3498db";
   }
 }
 
 const colorMap = {
-  "Fitness": "card-yellow",
+  "Fitness":  "card-yellow",
   "Mutprobe": "card-red",
-  "Wissen": "card-green",
-  "Suchen": "card-black"
+  "Wissen":   "card-green",
+  "iPhone":   "card-black",
+  "Customer": "card-gray"
 };
 
 const iconMap = {
-  "Fitness": "💪",
+  "Fitness":  "💪",
   "Mutprobe": "🔥",
-  "Wissen": "💡",
-  "Suchen": "🔍"
+  "Wissen":   "💡",
+  "iPhone":   "📱",
+  "Customer": "👥"
 };
+
 
 let challenges = {};
 
@@ -356,14 +417,17 @@ Promise.all([
 
     challenges = {};
 
-    categories.forEach(cat => {
-      challenges[cat.name] = {
-        description: cat.description,
-        tasks: allChallenges
-          .filter(c => c.challengeCategory && c.challengeCategory.id === cat.id)
-          .map(c => ({ id: c.id, text: c.text }))
-      };
-    });
+   challenges = {};
+
+categories.forEach(cat => {
+  challenges[cat.name] = {
+    description: cat.description,
+    tasks: allChallenges
+      .filter(c => c.category === cat.name)      // <– NEU
+      .map(c => ({ id: c.id, text: c.text }))   // id + text bleiben
+  };
+});
+
 
     renderCards();
   })
@@ -543,6 +607,7 @@ resultDiv.parentElement.appendChild(sendBtn);
 
 
 function sendChallenge() {
+  console.log("sendChallenge aufgerufen", dialogState);
   if (!dialogState.targetPlayerId || !dialogState.selectedChallengeId) return;
 
   // Battle anlegen
@@ -578,28 +643,46 @@ function sendChallenge() {
   // Kategorien anzeigen
   subtitle.textContent = "Wähle eine Kategorie";
 
-  ["Fitness", "Mutprobe", "Wissen", "Suchen"].forEach(cat => {
-    const btn = document.createElement("button");
-    btn.innerHTML = `
-      <span class="dialog-icon">${iconMap[cat]}</span>
-      <span class="dialog-text">${cat}</span>
-      <span class="dialog-spacer"></span>
-    `;
+  ["Fitness", "Mutprobe", "Wissen", "iPhone", "Customer"].forEach(cat => {
+  const btn = document.createElement("button");
+  btn.innerHTML = `
+    <span class="dialog-icon">${iconMap[cat]}</span>
+    <span class="dialog-text">${cat}</span>
+    <span class="dialog-spacer"></span>
+  `;
 
-    btn.style.background = getCategoryColor(cat);
-    btn.onclick = () => loadRandomChallenge(cat);
-    categoriesDiv.appendChild(btn);
-  });
+  btn.style.background = getCategoryColor(cat);
+  btn.onclick = () => loadRandomChallenge(cat);
+  categoriesDiv.appendChild(btn);
+});
+}
+
+function showKnowledgeBattle() {
+  const backdrop = document.getElementById("knowledge-battle-backdrop");
+  const qEl      = document.getElementById("kb-question");
+  const choicesEl = document.getElementById("kb-choices");
+  const statusEl  = document.getElementById("kb-status");
+
+  if (!backdrop || !qEl || !choicesEl) {
+    console.error("Knowledge Battle HTML fehlt");
+    return;
+  }
+
+  backdrop.classList.remove("hidden");
+  qEl.textContent = "Frage wird geladen …";
+  choicesEl.innerHTML = "";
+  statusEl.textContent = "";
 }
 
 
-
 async function loadRandomChallenge(categoryName) {
+  
   dialogState.isLoading = true;
   dialogState.selectedCategory = categoryName;  // Kategorie merken
   renderChallengeDialog();
 
   const category = challenges[categoryName];
+  console.log("loadRandomChallenge", categoryName, category);
   if (!category || !category.tasks || category.tasks.length === 0) {
     dialogState.isLoading = false;
     dialogState.selectedChallenge = "Keine Challenges in dieser Kategorie.";

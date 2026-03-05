@@ -2,17 +2,17 @@
 
 export class GameClient {
   constructor(playerId) {
-    // Spieler-ID dynamisch (z.B. aus Login)
     this.playerId = playerId;
     this.socket = null;
 
-    // Event-Callbacks (ähnlich wie Closures in Swift)
+    // Event-Callbacks
     this.handlers = {
       "battle-requested": [],
       "battle-updated": [],
       "battle-result": [],
       "battle-created": [],
-      "battle-pending": []    
+      "battle-pending": [],
+      "battle-question": []   // NEU: Wissen-Fragen
     };
   }
 
@@ -61,10 +61,6 @@ export class GameClient {
   // EVENT SYSTEM (on / emit)
   // =====================
 
-  /**
-   * Registriert einen Listener für einen bestimmten Message-Typ.
-   * type: "battle-requested" | "battle-updated" | "battle-result"
-   */
   on(type, callback) {
     if (!this.handlers[type]) {
       this.handlers[type] = [];
@@ -89,11 +85,6 @@ export class GameClient {
     this.socket.send(JSON.stringify(data));
   }
 
-  /**
-   * Battle anlegen (wir sind der Angreifer).
-   * toPlayerId: Gegner
-   * challengeId: ID der Challenge
-   */
   createBattle(toPlayerId, challengeId) {
     this.send({
       type: "create-battle",
@@ -103,10 +94,6 @@ export class GameClient {
     });
   }
 
-  /**
-   * Battle-Status updaten:
-   * z.B. "ACCEPTED", "DECLINED", "DONE_SURRENDER"
-   */
   updateBattleStatus(battleId, status) {
     this.send({
       type: "update-battle-status",
@@ -114,16 +101,21 @@ export class GameClient {
       status
     });
   }
-  
 
-  /**
-   * Vote im Voting-Screen senden.
-   */
   voteBattle(battleId, winnerName) {
     this.send({
       type: "battle-vote",
       battleId,
       winnerName
+    });
+  }
+
+  // NEU: Antwort im Wissen-Battle senden
+  sendKnowledgeAnswer(battleId, answerIndex) {
+    this.send({
+      type: "battle-answer",
+      battleId,
+      answerIndex
     });
   }
 
@@ -135,7 +127,6 @@ export class GameClient {
     const type = msg.type;
     if (!type) return;
 
-    // battle-requested
     if (type === "battle-requested") {
       this.emit("battle-requested", {
         battleId: msg.battleId,
@@ -147,16 +138,15 @@ export class GameClient {
     }
 
     if (type === "battle-created") {
-    this.emit("battle-created", {
-      battleId: msg.battleId,
-      fromPlayerId: msg.fromPlayerId,
-      toPlayerId: msg.toPlayerId,
-      challengeId: msg.challengeId,
-      status: msg.status
-    });
-  }
+      this.emit("battle-created", {
+        battleId: msg.battleId,
+        fromPlayerId: msg.fromPlayerId,
+        toPlayerId: msg.toPlayerId,
+        challengeId: msg.challengeId,
+        status: msg.status
+      });
+    }
 
-    // battle-updated
     if (type === "battle-updated") {
       this.emit("battle-updated", {
         battleId: msg.battleId,
@@ -170,8 +160,6 @@ export class GameClient {
       });
     }
 
-
-    // battle-result
     if (type === "battle-result") {
       this.emit("battle-result", {
         battleId: msg.battleId,
@@ -183,7 +171,15 @@ export class GameClient {
       });
     }
 
-    // optional: error-handling
+    // NEU: Wissen-Frage
+    if (type === "battle-question") {
+      this.emit("battle-question", {
+        battleId: msg.battleId,
+        challenge: msg.challenge
+        // challenge: { id, text, category, choices: [..], correctIndex }
+      });
+    }
+
     if (type === "error") {
       console.error("Server error:", msg.message);
     }

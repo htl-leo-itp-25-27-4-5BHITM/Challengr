@@ -19,7 +19,12 @@ final class GameSocketService: ObservableObject {
     
     var onBattlePending: ((Int64) -> Void)?
 
+    // im GameSocketService
+    var onKnowledgeQuestion: ((Int64, ChallengeDTO) -> Void)?
 
+
+
+    
     init(playerId: Int64) {
         self.playerId = playerId
     }
@@ -199,6 +204,32 @@ final class GameSocketService: ObservableObject {
                     self.onBattleResult?(result)
                 }
             }
+            
+            if type == "battle-question" {
+                let battleId = (json["battleId"] as? NSNumber)?.int64Value ?? 0
+
+                guard let challengeJson = json["challenge"] as? [String: Any] else { return }
+
+                let id       = (challengeJson["id"] as? NSNumber)?.int64Value ?? 0
+                let text     = challengeJson["text"] as? String ?? ""
+                let category = challengeJson["category"] as? String ?? ""
+                let choices  = challengeJson["choices"] as? [String]
+                let correct  = challengeJson["correctIndex"] as? Int
+
+                let dto = ChallengeDTO(
+                    id: id,
+                    text: text,
+                    category: category,
+                    choices: choices,
+                    correctIndex: correct
+                )
+
+                DispatchQueue.main.async {
+                    self.onKnowledgeQuestion?(battleId, dto)
+                }
+            }
+
+
 
         } catch {
             print("Error parsing WS JSON:", error)

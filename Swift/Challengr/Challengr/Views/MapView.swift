@@ -97,6 +97,8 @@ struct MapView: View {
     
     @State private var showProfile = false
 
+    @State private var lastKnowledgeQuestion: (battleId: Int64, text: String, choices: [String])?
+
 
     /// Fallback (Default Map: Vienna)
     private let startCoordinate = CLLocationCoordinate2D(latitude: 48.2082, longitude: 16.3738)
@@ -189,40 +191,51 @@ struct MapView: View {
         .fullScreenCover(isPresented: .constant(activeFullScreen != .none)) {
             switch activeFullScreen {
             case .battle:
-                if let info = activeBattleInfo {
-                    BattleView(
-                        challengeName: info.challengeName,
-                        category: info.category,
-                        playerLeft: info.playerA,
-                        playerRight: info.playerB,
-                        onClose: {
-                            activeFullScreen = .none
-                        },
-                        onSurrender: {
-                            if let battleId = currentBattleId {
-                                socket.sendUpdateBattleStatus(
-                                    battleId: battleId,
-                                    status: "DONE_SURRENDER"
-                                )
-                                // optional, wenn du wie im Web auch noch einen Vote schicken willst:
-                                // socket.sendVote(battleId: battleId, winnerName: info.playerB)
-                            }
-                            activeFullScreen = .none   // Battle schließen, Ergebnis kommt später über battle-result
-                            activeOverlay = .resultPending
-                        },
-                        onFinished: {
-                            if let battleId = currentBattleId {
-                                socket.sendUpdateBattleStatus(
-                                    battleId: battleId,
-                                    status: "READY_FOR_VOTING"
-                                )
-                            }
-                        }
+                if let info = activeBattleInfo,
+                   let battleId = currentBattleId {
 
-                    )
+                    if info.category == "Wissen" {
+                        KnowledgeBattleView(
+                            battleId: battleId,
+                            socket: socket,
+                            initialQuestion: lastKnowledgeQuestion,
+                            onClose: {
+                                activeFullScreen = .none
+                            }
+                        )
+                    } else {
+                        BattleView(
+                            challengeName: info.challengeName,
+                            category: info.category,
+                            playerLeft: info.playerA,
+                            playerRight: info.playerB,
+                            onClose: {
+                                activeFullScreen = .none
+                            },
+                            onSurrender: {
+                                if let battleId = currentBattleId {
+                                    socket.sendUpdateBattleStatus(
+                                        battleId: battleId,
+                                        status: "DONE_SURRENDER"
+                                    )
+                                }
+                                activeFullScreen = .none
+                                activeOverlay = .resultPending
+                            },
+                            onFinished: {
+                                if let battleId = currentBattleId {
+                                    socket.sendUpdateBattleStatus(
+                                        battleId: battleId,
+                                        status: "READY_FOR_VOTING"
+                                    )
+                                }
+                            }
+                        )
+                    }
                 } else {
                     EmptyView()
                 }
+
 
 
             case .win:
@@ -789,6 +802,33 @@ struct MapView: View {
         socket.onBattleUpdatedStatus = { battleId, status in
             print("Battle \(battleId) status updated to \(status)")
         }
+        
+        socket.onKnowledgeQuestion = { battleId, challenge in
+            print("📩 Knowledge question erhalten:", battleId, challenge.text)
+
+            guard battleId == currentBattleId else { return }
+
+            let payload = (
+                battleId: battleId,
+                text: challenge.text,
+                choices: challenge.choices ?? []
+            )
+
+            // 1) State merken
+            lastKnowledgeQuestion = payload
+
+            // 2) Notification feuern (für bereits offenen View)
+            NotificationCenter.default.post(
+                name: .knowledgeQuestionReceived,
+                object: nil,
+                userInfo: [
+                    "battleId": battleId,
+                    "text": payload.text,
+                    "choices": payload.choices
+                ]
+            )
+        }
+
 
 
     }

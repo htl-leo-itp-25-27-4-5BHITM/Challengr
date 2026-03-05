@@ -26,6 +26,17 @@ public class ChallengeRessources {
     }
 
     @GET
+    @Path("/id/{id}")
+    public ChallengeDTO findChallengeById(@PathParam("id") long id) {
+        Challenges ch = challengeRepository.findById(id);
+        if (ch == null) {
+            throw new NotFoundException("challenge not found");
+        }
+        return toDTO(ch); // deine bestehende Mapping-Methode
+    }
+
+
+    @GET
     @Path("/{kategorie}")
     public List<ChallengeDTO> findChallengesByKat(@PathParam("kategorie") String kategorie) {
         return challengeRepository.findChallengesByKat(kategorie)

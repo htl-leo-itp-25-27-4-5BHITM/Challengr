@@ -485,49 +485,45 @@ public class GameSocket {
             return;
         }
 
-        BATTLE_ANSWERS
-                .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
-                .put(playerId, answerIndex);
-
-        Map<Long, Integer> answers = BATTLE_ANSWERS.get(battleId);
-        System.out.printf("battle-answer: battle %d, player %d -> %d (total %d answers)%n",
-                battleId, playerId, answerIndex, answers.size());
-
-        Long fromId = battle.getFromPlayer().getId();
-        Long toId   = battle.getToPlayer().getId();
-
-        // Warten, bis beide geantwortet haben
-        if (!answers.containsKey(fromId) || !answers.containsKey(toId)) {
-            return;
-        }
-
-        int fromAnswer = answers.get(fromId);
-        int toAnswer   = answers.get(toId);
-
         Integer correctIndex = battle.getChallenge().getCorrectIndex();
         if (correctIndex == null) {
             System.out.println("battle-answer: correctIndex null, breche ab");
             return;
         }
 
-        boolean fromCorrect = (fromAnswer == correctIndex);
-        boolean toCorrect   = (toAnswer == correctIndex);
-
-        if (fromCorrect && !toCorrect) {
-            // from gewinnt
-            endKnowledgeBattleWithWinner(battle, battle.getFromPlayer().getName());
-        } else if (!fromCorrect && toCorrect) {
-            // to gewinnt
-            endKnowledgeBattleWithWinner(battle, battle.getToPlayer().getName());
-        } else {
-            // beide richtig ODER beide falsch → neue Frage schicken
-            System.out.println("battle-answer: beide gleich (beide richtig oder beide falsch) -> nächste Frage");
-            sendKnowledgeQuestion(battle);
+        // Wenn Battle schon DONE, keine Antworten mehr akzeptieren
+        if ("DONE".equalsIgnoreCase(battle.getStatus())) {
+            System.out.println("battle-answer: Battle " + battleId + " schon DONE, ignoriere");
+            return;
         }
 
-        // Antworten für dieses Battle zurücksetzen
-        BATTLE_ANSWERS.remove(battleId);
+        boolean isCorrect = (answerIndex == correctIndex);
+
+        // Antwort speichern (falls du später Stats brauchst)
+        BATTLE_ANSWERS
+                .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
+                .put(playerId, answerIndex);
+
+        System.out.printf("battle-answer: battle %d, player %d -> %d (korrekt=%s)%n",
+                battleId, playerId, answerIndex, isCorrect);
+
+        if (isCorrect) {
+            // Der erste, der korrekt ist, gewinnt sofort
+            String winnerName = battle.getFromPlayer().getId().equals(playerId)
+                    ? battle.getFromPlayer().getName()
+                    : battle.getToPlayer().getName();
+
+            endKnowledgeBattleWithWinner(battle, winnerName);
+
+            // Antworten für dieses Battle zurücksetzen
+            BATTLE_ANSWERS.remove(battleId);
+        } else {
+            // Falsche Antwort: einfach ignorieren, anderer kann noch gewinnen
+            // (Optional: Du könntest hier Feedback "falsch" schicken)
+            System.out.println("battle-answer: falsche Antwort, Battle läuft weiter");
+        }
     }
+
 
 
     private int extractInt(String json, String key) {
@@ -547,11 +543,21 @@ public class GameSocket {
         System.out.printf("endKnowledgeBattleWithWinner: battle %d, winner=%s%n", battleId, winnerName);
 
         try {
+            // pending-Event an beide Spieler schicken
+            String pendingPayload = """
+        {
+          "type": "battle-pending",
+          "battleId": %d
+        }
+        """.formatted(battleId);
+
+            sendToPlayer(battle.getFromPlayer().getId(), pendingPayload);
+            sendToPlayer(battle.getToPlayer().getId(), pendingPayload);
+
             // battleService berechnet Punkte und setzt Winner/Status DONE
             battleService.finalizeResult(battleId, winnerName);
             Battle updated = battleService.findById(battleId);
 
-            // hier brauchen wir keine Votes, aber computeAndBroadcastResult erwartet eine Liste
             List<String> votes = List.of(winnerName);
             computeAndBroadcastResult(updated, votes);
 
@@ -560,6 +566,7 @@ public class GameSocket {
             System.out.println("Fehler beim finalisieren von Wissen-Battle " + battleId + ": " + e.getMessage());
         }
     }
+
 
     private void sendKnowledgeQuestion(Battle battle) {
         var challenge = battle.getChallenge();

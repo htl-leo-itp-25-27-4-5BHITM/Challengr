@@ -51,5 +51,11 @@ struct ChallengeDTO: Codable, Identifiable {
     let correctIndex: Int?    // bei Wissen (0–3)
 }
 
+struct KnowledgeQuestionDTO: Codable {
+    let text: String
+    let choices: [String]
+}
+
+
 
 
