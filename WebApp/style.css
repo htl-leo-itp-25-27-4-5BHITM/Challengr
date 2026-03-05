@@ -1181,3 +1181,145 @@ h2 {
   cursor: pointer;
   font-weight: 600;
 }
+
+/* ================================
+   KNOWLEDGE BATTLE (SwiftUI Style)
+================================ */
+
+.knowledge-battle {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: radial-gradient(
+    circle at top,
+    #1c1c1e,
+    #000
+  );
+
+  z-index: 9999;
+}
+
+.knowledge-container {
+  width: 100%;
+  max-width: 420px;
+  padding: 24px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: center;
+}
+
+/* Header */
+
+.knowledge-label {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #FFD93D;
+}
+
+.knowledge-subtitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.8);
+}
+
+/* Frage */
+
+.knowledge-question {
+  font-size: 20px;
+  font-weight: 800;
+  color: white;
+
+  padding: 18px;
+
+  background: rgba(255,255,255,0.06);
+  border-radius: 20px;
+}
+
+/* Antworten */
+
+.knowledge-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kb-choice-btn {
+  width: 100%;
+  padding: 18px;
+  border-radius: 18px;
+  border: none;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(10px);
+
+  color: white;
+  text-align: left;
+
+  transition: all 0.18s ease;
+}
+
+.kb-choice-btn:hover {
+  transform: scale(1.02);
+  background: rgba(255,255,255,0.14);
+}
+
+.kb-choice-btn.selected {
+  background: #FFD93D;
+  color: black;
+  border: 2px solid white;
+}
+
+/* Confirm Button */
+
+#knowledge-confirm {
+  padding: 16px;
+  border-radius: 18px;
+  border: none;
+
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 1px;
+
+  background: gray;
+  color: white;
+
+  transition: 0.15s;
+}
+
+#knowledge-confirm.active {
+  background: #22c55e;
+}
+
+/* Waiting Text */
+
+.knowledge-wait {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+}
+
+/* Close */
+
+.knowledge-close {
+  margin-top: 10px;
+
+  background: none;
+  border: none;
+
+  color: rgba(255,255,255,0.7);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.hidden {
+  display: none;
+}

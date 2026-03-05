@@ -204,16 +204,22 @@
   </div>
 </div>
   <!-- Knowledge Battle (Wissen) -->
-  <div id="knowledge-battle-backdrop" class="dialog hidden">
-    <div class="dialog-content">
-      <h2 id="kb-title">WISSENS-BATTLE</h2>
-      <p id="kb-question" class="kb-question">Frage wird geladen …</p>
-      <div id="kb-choices" class="kb-choices">
-        <!-- Buttons werden per JS eingefügt -->
-      </div>
-      <p id="kb-status" class="kb-status"></p>
-    </div>
+  <div id="knowledge-battle-backdrop" class="knowledge-battle hidden">
+
+  <div class="knowledge-container">
+
+    <div class="knowledge-label">KNOWLEDGE BATTLE</div>
+    <div class="knowledge-subtitle">Beantworte die Frage schneller</div>
+
+    <div id="kb-question" class="knowledge-question"></div>
+
+    <div id="kb-choices" class="knowledge-answers"></div>
+
+    <div id="kb-status" class="knowledge-wait"></div>
+
   </div>
+
+</div>
 
 </body>
 </html>

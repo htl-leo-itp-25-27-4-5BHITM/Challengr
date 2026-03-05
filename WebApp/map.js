@@ -1268,3 +1268,34 @@ document.getElementById("dialog-close").addEventListener("click", () => {
   document.getElementById("challenge-dialog-backdrop").classList.add("hidden");
   dialogState.isOpen = false;
 });
+
+
+let selectedIndex = null;
+
+function renderKnowledgeAnswers(choices) {
+  const container = document.getElementById("knowledge-answers");
+  container.innerHTML = "";
+
+  choices.forEach((choice, index) => {
+    const btn = document.createElement("button");
+    btn.className = "answer-btn";
+    btn.textContent = choice;
+
+    btn.onclick = () => {
+
+      document.querySelectorAll(".answer-btn")
+        .forEach(b => b.classList.remove("selected"));
+
+      btn.classList.add("selected");
+
+      selectedIndex = index;
+
+      const confirm = document.getElementById("knowledge-confirm");
+      confirm.disabled = false;
+      confirm.classList.add("active");
+      confirm.textContent = "Antwort bestätigen";
+    };
+
+    container.appendChild(btn);
+  });
+}
