@@ -54,6 +54,7 @@ struct MapView: View {
     let ownPlayerId: Int64 = 1
     
 
+    @State private var allChallenges: [ChallengeDTO] = []
 
     /// WebSocket
     @StateObject private var socket = GameSocketService(playerId: 1)
@@ -133,18 +134,16 @@ struct MapView: View {
     @State private var showPlayerChallengeDialog = false
 
     
-    /// Cache of all challenges loaded from the backend (for all categories)
-    @State private var allChallenges: [ChallengesService.Challenge] = []
-    
     
     /// Resolves a challenge text and category name for a given challenge ID
     private func challengeInfo(for id: Int64) -> (name: String, category: String) {
-        if let ch = allChallenges.first(where: { Int64($0.id) == id }) {
-            return (ch.text, ch.challengeCategory.name)
+        if let ch = allChallenges.first(where: { $0.id == id }) {
+            return (ch.text, ch.category)
         } else {
             return ("Challenge \(id)", "Unbekannt")
         }
     }
+
 
     /// Triggers a success haptic feedback.
     private func vibrate() {
@@ -637,19 +636,19 @@ struct MapView: View {
         // Preload challenges for all categories once at startup.
         Task {
             do {
-                let fitness = try await challengesService.loadCategoryChallenges(category: "Fitness")
+                let fitness  = try await challengesService.loadCategoryChallenges(category: "Fitness")
                 let mutprobe = try await challengesService.loadCategoryChallenges(category: "Mutprobe")
-                let wissen  = try await challengesService.loadCategoryChallenges(category: "Wissen")
-                let suchen  = try await challengesService.loadCategoryChallenges(category: "Suchen")
+                let wissen   = try await challengesService.loadCategoryChallenges(category: "Wissen")
+                let iphone   = try await challengesService.loadCategoryChallenges(category: "iPhone")
+                let customer = try await challengesService.loadCategoryChallenges(category: "Customer")
 
-                allChallenges = fitness + mutprobe + wissen + suchen
+                allChallenges = fitness + mutprobe + wissen + iphone + customer
                 print("AllChallenges geladen, Anzahl:", allChallenges.count)
             } catch {
                 print("Fehler beim Vorladen der Challenges:", error)
             }
-            
-            
         }
+
         
         
         Task {

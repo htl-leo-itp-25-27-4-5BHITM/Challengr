@@ -97,6 +97,16 @@ final class GameSocketService: ObservableObject {
         ]
         send(json: payload)
     }
+    
+    func sendKnowledgeAnswer(battleId: Int64, answerIndex: Int) {
+        let payload: [String: Any] = [
+            "type": "battle-answer",
+            "battleId": battleId,
+            "answerIndex": answerIndex
+        ]
+        send(json: payload)
+    }
+
 
 
     // MARK: - Empfangen

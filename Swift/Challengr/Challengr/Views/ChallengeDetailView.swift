@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-
 struct ChallengeDetailView: View {
     let category: String
     let color: Color
@@ -30,10 +29,12 @@ struct ChallengeDetailView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.white)
 
-                    Text(description)
-                        .font(.headline)
-                        .foregroundColor(.white.opacity(0.9))
-                        .padding(.bottom, 10)
+                    if !description.isEmpty {
+                        Text(description)
+                            .font(.headline)
+                            .foregroundColor(.white.opacity(0.9))
+                            .padding(.bottom, 10)
+                    }
 
                     List(tasks, id: \.self) { task in
                         Text(task)
@@ -54,15 +55,28 @@ struct ChallengeDetailView: View {
             let challenges = try await ChallengesService()
                 .loadCategoryChallenges(category: category)
 
-            description = challenges.first?.challengeCategory.description ?? ""
+            // Beschreibung: aus der ChallengeCategory kommt nichts mehr,
+            // daher einfach einen festen Text pro Kategorie wählen:
+            switch category {
+            case "Fitness":
+                description = "Beweise deine Kraft und bleib in Bewegung!"
+            case "Mutprobe":
+                description = "Zeig Mut – verlasse deine Komfortzone!"
+            case "Wissen":
+                description = "Teste dein Wissen über die Welt!"
+            case "iPhone":
+                description = "Kreative Challenges mit deinem iPhone!"
+            case "Customer":
+                description = "Von der Community erstellte Challenges."
+            default:
+                description = ""
+            }
+
+            // Texte der Challenges
             tasks = challenges.map { $0.text }
         } catch {
             print("Fehler beim Laden der Kategorie:", error)
         }
         isLoading = false
     }
-
-
-
-
 }

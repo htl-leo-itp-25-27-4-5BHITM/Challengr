@@ -43,5 +43,13 @@ struct PlayerMarker: Identifiable {
     let coordinate: CLLocationCoordinate2D
 }
 
+struct ChallengeDTO: Codable, Identifiable {
+    let id: Int64
+    let text: String
+    let category: String
+    let choices: [String]?    // bei Wissen gefüllt
+    let correctIndex: Int?    // bei Wissen (0–3)
+}
+
 
 

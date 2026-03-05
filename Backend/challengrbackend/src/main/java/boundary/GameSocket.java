@@ -84,6 +84,9 @@ public class GameSocket {
             } else if (message.contains("\"type\":\"battle-vote\"")) {
                 handleBattleVote(message);
 
+            } else if (message.contains("\"type\":\"battle-answer\"")) {
+                handleBattleAnswer(message, playerId);   // ⬅️ HINZUFÜGEN
+
             } else {
                 sendError(session, "Unknown type");
             }
@@ -92,6 +95,7 @@ public class GameSocket {
             sendError(session, e.getMessage());
         }
     }
+
 
     // -------------------- create-battle ----------------------
 
@@ -165,6 +169,10 @@ public class GameSocket {
         // Sonderfall: Surrender → direkt Sieger/Verlierer bestimmen
         if ("DONE_SURRENDER".equals(status)) {
             handleSurrender(battle, senderId);
+        }
+
+        if ("ACCEPTED".equals(status) && isKnowledgeBattle(battle)) {
+            sendKnowledgeQuestion(battle);
         }
     }
 
@@ -453,4 +461,136 @@ public class GameSocket {
         int end   = json.indexOf('"', start + 1);
         return json.substring(start + 1, end);
     }
+
+    private static final Map<Long, Map<Long, Integer>> BATTLE_ANSWERS = new ConcurrentHashMap<>();
+
+    private void handleBattleAnswer(String message, Long playerId) {
+        Long battleId    = extractLong(message, "battleId");
+        int answerIndex  = extractInt(message, "answerIndex");
+
+        if (playerId == null) {
+            System.out.println("battle-answer ohne playerId, ignoriere");
+            return;
+        }
+
+        Battle battle = battleService.findById(battleId);
+        if (battle == null) {
+            System.out.println("battle-answer: battle " + battleId + " nicht gefunden");
+            return;
+        }
+
+        // Nur für Wissen-Battles nutzen wir diese Logik
+        if (!isKnowledgeBattle(battle)) {
+            System.out.println("battle-answer ignoriert, kein Wissen-Battle");
+            return;
+        }
+
+        BATTLE_ANSWERS
+                .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
+                .put(playerId, answerIndex);
+
+        Map<Long, Integer> answers = BATTLE_ANSWERS.get(battleId);
+        System.out.printf("battle-answer: battle %d, player %d -> %d (total %d answers)%n",
+                battleId, playerId, answerIndex, answers.size());
+
+        Long fromId = battle.getFromPlayer().getId();
+        Long toId   = battle.getToPlayer().getId();
+
+        // Warten, bis beide geantwortet haben
+        if (!answers.containsKey(fromId) || !answers.containsKey(toId)) {
+            return;
+        }
+
+        int fromAnswer = answers.get(fromId);
+        int toAnswer   = answers.get(toId);
+
+        Integer correctIndex = battle.getChallenge().getCorrectIndex();
+        if (correctIndex == null) {
+            System.out.println("battle-answer: correctIndex null, breche ab");
+            return;
+        }
+
+        boolean fromCorrect = (fromAnswer == correctIndex);
+        boolean toCorrect   = (toAnswer == correctIndex);
+
+        if (fromCorrect && !toCorrect) {
+            // from gewinnt
+            endKnowledgeBattleWithWinner(battle, battle.getFromPlayer().getName());
+        } else if (!fromCorrect && toCorrect) {
+            // to gewinnt
+            endKnowledgeBattleWithWinner(battle, battle.getToPlayer().getName());
+        } else {
+            // beide richtig ODER beide falsch → neue Frage schicken
+            System.out.println("battle-answer: beide gleich (beide richtig oder beide falsch) -> nächste Frage");
+            sendKnowledgeQuestion(battle);
+        }
+
+        // Antworten für dieses Battle zurücksetzen
+        BATTLE_ANSWERS.remove(battleId);
+    }
+
+
+    private int extractInt(String json, String key) {
+        return extractLong(json, key).intValue();
+    }
+
+    private boolean isKnowledgeBattle(Battle battle) {
+        if (battle == null || battle.getChallenge() == null || battle.getChallenge().getChallengeCategory() == null) {
+            return false;
+        }
+        String name = battle.getChallenge().getChallengeCategory().getName();
+        return "Wissen".equalsIgnoreCase(name);
+    }
+
+    private void endKnowledgeBattleWithWinner(Battle battle, String winnerName) {
+        Long battleId = battle.getId();
+        System.out.printf("endKnowledgeBattleWithWinner: battle %d, winner=%s%n", battleId, winnerName);
+
+        try {
+            // battleService berechnet Punkte und setzt Winner/Status DONE
+            battleService.finalizeResult(battleId, winnerName);
+            Battle updated = battleService.findById(battleId);
+
+            // hier brauchen wir keine Votes, aber computeAndBroadcastResult erwartet eine Liste
+            List<String> votes = List.of(winnerName);
+            computeAndBroadcastResult(updated, votes);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Fehler beim finalisieren von Wissen-Battle " + battleId + ": " + e.getMessage());
+        }
+    }
+
+    private void sendKnowledgeQuestion(Battle battle) {
+        var challenge = battle.getChallenge();
+
+        String json = """
+    {
+      "type": "battle-question",
+      "battleId": %d,
+      "challenge": {
+        "id": %d,
+        "text": "%s",
+        "category": "%s",
+        "choices": ["%s","%s","%s","%s"],
+        "correctIndex": %d
+      }
+    }
+    """.formatted(
+                battle.getId(),
+                challenge.getId(),
+                escapeJson(challenge.getText()),
+                escapeJson(challenge.getChallengeCategory().getName()),
+                escapeJson(challenge.getOptionA()),
+                escapeJson(challenge.getOptionB()),
+                escapeJson(challenge.getOptionC()),
+                escapeJson(challenge.getOptionD()),
+                challenge.getCorrectIndex()
+        );
+
+        sendToPlayer(battle.getFromPlayer().getId(), json);
+        sendToPlayer(battle.getToPlayer().getId(), json);
+    }
+
+
 }

@@ -8,35 +8,41 @@
 import SwiftUI
 
 struct ChallengeView: View {
-    @State private var challenges: ChallengeData = [:]
+
     
     let items = [
-            CardItem(
-                image: Image(systemName: "sportscourt"),
-                title: "Fitness",
-                subtitle: "Verschiedene sportliche Challanges!",
-                color: .challengrYellow
-            ),
-            CardItem(
-                image: Image(systemName: "flame"),
-                title: "Mutprobe",
-                subtitle: "Wer traut sich mehr?",
-                color: .chalengrRed
+        CardItem(
+            image: Image(systemName: "sportscourt"),
+            title: "Fitness",
+            subtitle: "Verschiedene sportliche Challenges!",
+            color: .challengrYellow
+        ),
+        CardItem(
+            image: Image(systemName: "flame"),
+            title: "Mutprobe",
+            subtitle: "Wer traut sich mehr?",
+            color: .chalengrRed
+        ),
+        CardItem(
+            image: Image(systemName: "lightbulb"),
+            title: "Wissen",
+            subtitle: "Teste dein Wissen!",
+            color: .challengrGreen
+        ),
+        CardItem(
+            image: Image(systemName: "iphone.gen3"),
+            title: "iPhone",
+            subtitle: "Kreative Challenges mit deinem iPhone!",
+            color: .challengrBlack
+        ),
+        CardItem(
+            image: Image(systemName: "person.3"),
+            title: "Customer",
+            subtitle: "Von der Community erstellt.",
+            color: .gray
+        )
+    ]
 
-            ),
-            CardItem(
-                image: Image(systemName: "lightbulb"),
-                title: "Wissen",
-                subtitle: "Teste dein Wissen!",
-                color: .challengrGreen
-            ),
-            CardItem(
-                image: Image(systemName: "magnifyingglass"),
-                title: "Suchen",
-                subtitle: "Wer findet etwas zuerst?",
-                color: .challengrBlack
-            )
-        ]
 
     var body: some View {
             NavigationStack {
