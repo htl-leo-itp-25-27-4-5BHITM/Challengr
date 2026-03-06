@@ -476,6 +476,7 @@ struct MapView: View {
                         otherPlayerId: player.playerId,
                         otherPlayerName: player.title,
                         ownPlayerId: ownPlayerId,
+                        allChallenges: allChallenges,
                         socket: socket
                     ) {
                         showPlayerChallengeDialog = false

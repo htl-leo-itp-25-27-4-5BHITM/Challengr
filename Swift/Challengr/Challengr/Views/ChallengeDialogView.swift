@@ -7,17 +7,18 @@ struct ChallengeDialogView: View {
     let otherPlayerName: String
     let ownPlayerId: Int64
 
+    let allChallenges: [ChallengeDTO]      // ⬅️ alle vom MapView vorab geladen
     let socket: GameSocketService
     let onClose: () -> Void
-
-    private let challengesService = ChallengesService()
 
     // MARK: - State
     @State private var isLoading = false
     @State private var selectedChallenge: String? = nil
     @State private var selectedChallengeId: Int64? = nil
+    @State private var selectedCategory: String? = nil
 
-    private let categories: [String] = ["Fitness", "Mutprobe", "Wissen", "Suchen"]
+    // Kategorien wie in der Webapp / Backend
+    private let categories: [String] = ["Fitness", "Mutprobe", "Wissen", "iPhone", "Customer"]
 
     var body: some View {
         ZStack {
@@ -69,7 +70,7 @@ struct ChallengeDialogView: View {
                         .scaleEffect(0.9)
                 }
 
-                // CATEGORY BUTTONS
+                // CATEGORY BUTTONS (nur sichtbar, solange keine Challenge gewählt & nicht loading)
                 if selectedChallenge == nil && !isLoading {
                     VStack(spacing: 10) {
                         ForEach(categories, id: \.self) { category in
@@ -156,45 +157,47 @@ struct ChallengeDialogView: View {
     }
 
     // MARK: - Logic
+
     private func loadRandomChallenge(for category: String) async {
         isLoading = true
         selectedChallenge = nil
         selectedChallengeId = nil
+        selectedCategory = category
 
-        do {
-            let challenges = try await challengesService.loadCategoryChallenges(category: category)
-            if let random = challenges.randomElement() {
-                selectedChallenge = random.text
-                selectedChallengeId = Int64(random.id)
-            } else {
-                selectedChallenge = "KEINE CHALLENGE"
-            }
-        } catch {
-            selectedChallenge = "FEHLER"
-            print(error)
+        // hier kein Netzwerk – wir benutzen die vom MapView gelieferten Challenges
+        let filtered = allChallenges.filter { $0.category == category }
+
+        if let random = filtered.randomElement() {
+            selectedChallenge = random.text
+            selectedChallengeId = Int64(random.id)
+        } else {
+            selectedChallenge = "KEINE CHALLENGE IN DIESER KATEGORIE"
         }
 
         isLoading = false
     }
 
     // MARK: - Design Helper
+
     private func color(for category: String) -> Color {
         switch category {
-        case "Fitness": return .challengrYellow
+        case "Fitness":  return .challengrYellow
         case "Mutprobe": return .chalengrRed
-        case "Wissen": return .challengrGreen
-        case "Suchen": return .challengrBlack
-        default: return .challengrWhite
+        case "Wissen":   return .challengrGreen
+        case "iPhone":   return .black
+        case "Customer": return .gray
+        default:         return .challengrYellow
         }
     }
 
     private func icon(for category: String) -> String {
         switch category {
-        case "Fitness": return "sportscourt"
+        case "Fitness":  return "sportscourt"
         case "Mutprobe": return "flame"
-        case "Wissen": return "lightbulb"
-        case "Suchen": return "magnifyingglass"
-        default: return "questionmark"
+        case "Wissen":   return "lightbulb"
+        case "iPhone":   return "iphone"
+        case "Customer": return "person.2"
+        default:         return "questionmark"
         }
     }
 }
