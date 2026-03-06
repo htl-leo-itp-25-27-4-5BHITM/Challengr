@@ -552,7 +552,6 @@ public class GameSocket {
         System.out.printf("endKnowledgeBattleWithWinner: battle %d, winner=%s%n", battleId, winnerName);
 
         try {
-            // pending-Event an beide Spieler schicken
             String pendingPayload = """
         {
           "type": "battle-pending",
@@ -563,18 +562,16 @@ public class GameSocket {
             sendToPlayer(battle.getFromPlayer().getId(), pendingPayload);
             sendToPlayer(battle.getToPlayer().getId(), pendingPayload);
 
-            // battleService berechnet Punkte und setzt Winner/Status DONE
-            battleService.finalizeResult(battleId, winnerName);
-            Battle updated = battleService.findById(battleId);
-
+            // Nur noch computeAndBroadcastResult → dort wird finalizeResult EINMAL aufgerufen
             List<String> votes = List.of(winnerName);
-            computeAndBroadcastResult(updated, votes);
+            computeAndBroadcastResult(battle, votes);
 
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Fehler beim finalisieren von Wissen-Battle " + battleId + ": " + e.getMessage());
         }
     }
+
 
 
     private void sendKnowledgeQuestion(Battle battle) {

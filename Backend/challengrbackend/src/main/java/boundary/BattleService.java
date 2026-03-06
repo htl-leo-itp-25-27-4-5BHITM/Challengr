@@ -186,44 +186,18 @@ public class BattleService {
 
         battle.setWinnerPointsDelta(winnerDelta);
         battle.setLoserPointsDelta(loserDelta);
+
+        System.out.printf(
+                "finalizeResult: winner=%s (%d -> %d, delta=%d), loser=%s (%d -> %d, delta=%d)%n",
+                winner.getName(),
+                winner.getPoints() - winnerDelta, winner.getPoints(), winnerDelta,
+                loser.getName(),
+                loser.getPoints() - loserDelta, loser.getPoints(), loserDelta
+        );
+
     }
 
-    // Winner setzen, Punkte vergeben und Battle abschließen (per ID)
-    @Transactional
-    public Battle finishBattle(Long battleId, Long winnerPlayerId) {
-        System.out.println("finishBattle called: battleId=" + battleId +
-                ", winnerPlayerId=" + winnerPlayerId);
 
-        Battle battle = battleRepository.findById(battleId);
-        if (battle == null) {
-            throw new IllegalArgumentException("battle not found");
-        }
-
-        Player winner = playerRepository.findById(winnerPlayerId);
-        if (winner == null) {
-            throw new IllegalArgumentException("winner not found");
-        }
-
-        Player from = battle.getFromPlayer();
-        Player to   = battle.getToPlayer();
-
-        Player loser;
-        if (from.getId().equals(winnerPlayerId)) {
-            loser = to;
-        } else if (to.getId().equals(winnerPlayerId)) {
-            loser = from;
-        } else {
-            throw new IllegalArgumentException("winner is not part of this battle");
-        }
-
-        winner.setPoints(winner.getPoints() + 20);
-        loser.setPoints(loser.getPoints() - 10);
-
-        battle.setWinner(winner);
-        battle.setStatus("DONE");
-
-        return battle;
-    }
 
     public List<Battle> getIncomingBattles(Long playerId) {
         return battleRepository.findIncoming(playerId);
