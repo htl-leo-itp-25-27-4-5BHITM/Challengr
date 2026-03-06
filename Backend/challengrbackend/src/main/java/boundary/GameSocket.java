@@ -107,21 +107,26 @@ public class GameSocket {
         Battle battle = battleService.createRequestedBattle(fromId, toId, challengeId);
 
         String payload = """
-            {
-              "type": "battle-requested",
-              "battleId": %d,
-              "fromPlayerId": %d,
-              "toPlayerId": %d,
-              "challengeId": %d,
-              "status": "%s"
-            }
-            """.formatted(
+    {
+      "type": "battle-requested",
+      "battleId": %d,
+      "fromPlayerId": %d,
+      "toPlayerId": %d,
+      "challengeId": %d,
+      "status": "%s",
+      "targetLatitude": %s,
+      "targetLongitude": %s
+    }
+    """.formatted(
                 battle.getId(),
                 battle.getFromPlayer().getId(),
                 battle.getToPlayer().getId(),
                 battle.getChallenge().getId(),
-                battle.getStatus()
+                battle.getStatus(),
+                battle.getTargetLatitude() != null ? battle.getTargetLatitude().toString() : "null",
+                battle.getTargetLongitude() != null ? battle.getTargetLongitude().toString() : "null"
         );
+
 
         // an Herausgeforderten und Initiator schicken
         sendToPlayer(toId, payload);
@@ -173,6 +178,10 @@ public class GameSocket {
 
         if ("ACCEPTED".equals(status) && isKnowledgeBattle(battle)) {
             sendKnowledgeQuestion(battle);
+        }
+
+        if ("CHECKIN_DONE".equals(status)) {
+            handleCheckinDone(battle, senderId);
         }
     }
 
@@ -597,6 +606,39 @@ public class GameSocket {
 
         sendToPlayer(battle.getFromPlayer().getId(), json);
         sendToPlayer(battle.getToPlayer().getId(), json);
+    }
+
+    private void handleCheckinDone(Battle battle, Long senderId) {
+        if (senderId == null) return;
+
+        Long fromId = battle.getFromPlayer().getId();
+        Long toId   = battle.getToPlayer().getId();
+
+        String winnerName;
+        if (Objects.equals(senderId, fromId)) {
+            winnerName = battle.getFromPlayer().getName();
+        } else if (Objects.equals(senderId, toId)) {
+            winnerName = battle.getToPlayer().getName();
+        } else {
+            System.out.printf("CHECKIN_DONE: sender %d gehört nicht zu Battle %d%n",
+                    senderId, battle.getId());
+            return;
+        }
+
+        // pending-Overlay wie bei anderen
+        String pendingPayload = """
+    {
+      "type": "battle-pending",
+      "battleId": %d
+    }
+    """.formatted(battle.getId());
+
+        sendToPlayer(fromId, pendingPayload);
+        sendToPlayer(toId, pendingPayload);
+
+        // Punkte berechnen + Ergebnis rausschicken (wie Wissen)
+        List<String> votes = List.of(winnerName);
+        computeAndBroadcastResult(battle, votes);
     }
 
 

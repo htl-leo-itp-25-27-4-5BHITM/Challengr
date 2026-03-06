@@ -45,19 +45,37 @@ INSERT INTO challenges (text, category_id) VALUES
 ---------------------------------------------------------
 -- iPHONE (klar sichtbares Ergebnis)
 ---------------------------------------------------------
+-- Zusätzliche iPhone-Challenges mit Sensorspielereien
 INSERT INTO challenges (text, category_id) VALUES
-                                               ('Wer macht das kreativste Foto von einem zufälligen Gegenstand in der Nähe?',
-                                                (SELECT id FROM challenge_categories WHERE name = 'iPhone')),
-                                               ('Wer tippt eine kurze Nachricht an sich selbst schneller (Stoppuhr)?',
-                                                (SELECT id FROM challenge_categories WHERE name = 'iPhone')),
-                                               ('Wer findet in 30 Sekunden mehr blaue Apps auf seinem Homescreen?',
-                                                (SELECT id FROM challenge_categories WHERE name = 'iPhone')),
-                                               ('Wer macht das lustigste Selfie mit einem zufälligen Objekt im Hintergrund?',
-                                                (SELECT id FROM challenge_categories WHERE name = 'iPhone')),
-                                               ('Wer erstellt in 60 Sekunden die kreativste Notiz in seiner Notizen-App?',
-                                                (SELECT id FROM challenge_categories WHERE name = 'iPhone'));
-
----------------------------------------------------------
+                                               (
+                                                   'Sprint-Challenge: Laufe in 15 Sekunden so weit wie möglich.',
+                                                   (SELECT id FROM challenge_categories WHERE name = 'iPhone')
+                                               ),
+                                               (
+                                                   'Check-In-Spot: Erreiche den Zielpunkt auf der Karte.',
+                                                   (SELECT id FROM challenge_categories WHERE name = 'iPhone')
+                                               ),
+                                               (
+                                                   'Kompass-Präzision: Richte dich auf einen zufälligen Zielwinkel aus.',
+                                                   (SELECT id FROM challenge_categories WHERE name = 'iPhone')
+                                               ),
+                                               (
+                                                   'Shake-Challenge: Schüttle das iPhone 5 Sekunden lang maximal.',
+                                                   (SELECT id FROM challenge_categories WHERE name = 'iPhone')
+                                               ),
+                                               (
+                                                   'Schrei-Challenge: Sei in 3 Sekunden so laut wie möglich.',
+                                                   (SELECT id FROM challenge_categories WHERE name = 'iPhone')
+                                               ),
+                                               (
+                                                   'Foto-Beweis: Finde ein rotes Auto und fotografiere es.',
+                                                   (SELECT id FROM challenge_categories WHERE name = 'iPhone')
+                                               ),
+                                               (
+                                                   'Liegestütz-Zähler: Zähle deine Push-Ups mit der Nase auf dem Screen.',
+                                                   (SELECT id FROM challenge_categories WHERE name = 'iPhone')
+                                               );
+--------------------------------------------------
 -- WISSEN (Multiple Choice: option_a–d + correct_index)
 -- Achtung: Tabelle braucht die Spalten option_a, option_b, option_c, option_d, correct_index
 ---------------------------------------------------------

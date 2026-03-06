@@ -34,6 +34,9 @@ public class Battle {
     private String status;   // REQUESTED, ACCEPTED, DONE, ...
     private String type;     // NORMAL, ...
 
+    private Double targetLatitude;
+    private Double targetLongitude;
+
     private Integer winnerPointsDelta;
     private Integer loserPointsDelta;
 
@@ -124,5 +127,21 @@ public class Battle {
 
     public void setLoserPointsDelta(Integer loserPointsDelta) {
         this.loserPointsDelta = loserPointsDelta;
+    }
+
+    public Double getTargetLatitude() {
+        return targetLatitude;
+    }
+
+    public void setTargetLatitude(Double targetLatitude) {
+        this.targetLatitude = targetLatitude;
+    }
+
+    public Double getTargetLongitude() {
+        return targetLongitude;
+    }
+
+    public void setTargetLongitude(Double targetLongitude) {
+        this.targetLongitude = targetLongitude;
     }
 }

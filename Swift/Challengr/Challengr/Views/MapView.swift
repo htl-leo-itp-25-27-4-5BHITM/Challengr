@@ -96,7 +96,9 @@ struct MapView: View {
     @State private var ownPoints: Int = 0
     
     @State private var showProfile = false
+    @State private var currentTargetCoordinate: CLLocationCoordinate2D? = nil
 
+    
     @State private var lastKnowledgeQuestion: (battleId: Int64, text: String, choices: [String])?
 
 
@@ -199,10 +201,23 @@ struct MapView: View {
                             battleId: battleId,
                             socket: socket,
                             initialQuestion: lastKnowledgeQuestion,
+                            onClose: { activeFullScreen = .none }
+                        )
+
+                    } else if info.category == "iPhone",
+                              info.challengeName.contains("Check-In-Spot"),
+                              let target = currentTargetCoordinate {
+
+                        CheckInSpotView(
+                            battleId: battleId,
+                            socket: socket,
+                            targetCoordinate: target,
+                            radius: 30,
                             onClose: {
                                 activeFullScreen = .none
                             }
                         )
+
                     } else {
                         BattleView(
                             challengeName: info.challengeName,
@@ -232,9 +247,12 @@ struct MapView: View {
                             }
                         )
                     }
+
                 } else {
                     EmptyView()
                 }
+
+
 
 
 
@@ -690,9 +708,9 @@ struct MapView: View {
 
 
 
-        socket.onChallengeReceived = { battleId, fromId, toId, challengeId in
+        socket.onChallengeReceived = { battleId, fromId, toId, challengeId, targetLat, targetLon in
             if toId == ownPlayerId {
-                // wie bisher: eingehende Challenge
+                // Eingehende Challenge
                 let info = challengeInfo(for: challengeId)
                 incomingChallenge = (
                     battleId: battleId,
@@ -702,8 +720,9 @@ struct MapView: View {
                     category: info.category
                 )
                 currentBattleId = battleId
+
             } else if fromId == ownPlayerId {
-                // NEU: wir sind der Angreifer
+                // Wir sind der Angreifer
                 let info = challengeInfo(for: challengeId)
                 outgoingBattleInfo = (
                     battleId: battleId,
@@ -713,7 +732,15 @@ struct MapView: View {
                 )
                 currentBattleId = battleId
             }
+
+            // Zielkoordinate (für Check-In-Spot)
+            if let lat = targetLat, let lon = targetLon {
+                currentTargetCoordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+            } else {
+                currentTargetCoordinate = nil
+            }
         }
+
 
         
         socket.onBattleAccepted = { battleId in

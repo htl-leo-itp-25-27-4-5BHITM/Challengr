@@ -32,11 +32,9 @@ public class BattleService {
         return battleRepository.findById(battleId);
     }
 
-
     @Transactional
     public void updatePlayer(Player player) {
         playerRepository.save(player);
-        // oder: entityManager.merge(player);
     }
 
     // Neues Battle anlegen
@@ -69,6 +67,31 @@ public class BattleService {
         battle.setCategory(category);
         battle.setStatus("REQUESTED");
         battle.setType("NORMAL");
+
+        // ⬇️ Zielpunkt für iPhone-Check-In-Spot-Challenge setzen
+        if ("iPhone".equalsIgnoreCase(category.getName())
+                && challenge.getText() != null
+                && challenge.getText().contains("Check-In-Spot")) {
+
+            Double playerLat = from.getLatitude();
+            Double playerLon = from.getLongitude();
+
+            if (playerLat != null && playerLon != null) {
+                double radius = 500.0; // 500 m
+
+                double angle = Math.random() * 2 * Math.PI;
+                double r = radius * Math.sqrt(Math.random());
+
+                double dLat = (r * Math.cos(angle)) / 111_320.0;
+                double dLon = (r * Math.sin(angle)) / (111_320.0 * Math.cos(Math.toRadians(playerLat)));
+
+                double targetLat = playerLat + dLat;
+                double targetLon = playerLon + dLon;
+
+                battle.setTargetLatitude(targetLat);
+                battle.setTargetLongitude(targetLon);
+            }
+        }
 
         battleRepository.persist(battle);
         return battle;
@@ -163,10 +186,7 @@ public class BattleService {
 
         battle.setWinnerPointsDelta(winnerDelta);
         battle.setLoserPointsDelta(loserDelta);
-
     }
-
-
 
     // Winner setzen, Punkte vergeben und Battle abschließen (per ID)
     @Transactional
@@ -212,6 +232,7 @@ public class BattleService {
     public List<Battle> getOpenBattles(Long playerId) {
         return battleRepository.findOpen(playerId);
     }
+
     @Transactional
     public String rankNameForPoints(int points) {
         List<Rank> ranks = rankRepository.getAllRanks()

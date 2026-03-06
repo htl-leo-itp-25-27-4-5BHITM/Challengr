@@ -9,7 +9,7 @@ final class GameSocketService: ObservableObject {
 
     // Wird aufgerufen, wenn eine Battle-Anfrage reinkommt
     // battleId, fromId, toId, challengeId
-    var onChallengeReceived: ((Int64, Int64, Int64, Int64) -> Void)?
+    var onChallengeReceived: ((Int64, Int64, Int64, Int64, Double?, Double?) -> Void)?
     // Wird aufgerufen, wenn ein Battle den Status ACCEPTED erreicht
     var onBattleAccepted: ((Int64) -> Void)?
     
@@ -149,12 +149,19 @@ final class GameSocketService: ObservableObject {
             
 
             if type == "battle-requested" {
-                let battleId = (json["battleId"] as? NSNumber)?.int64Value ?? 0
-                let fromId   = (json["fromPlayerId"] as? NSNumber)?.int64Value ?? 0
-                let toId     = (json["toPlayerId"] as? NSNumber)?.int64Value ?? 0
+                let battleId    = (json["battleId"] as? NSNumber)?.int64Value ?? 0
+                let fromId      = (json["fromPlayerId"] as? NSNumber)?.int64Value ?? 0
+                let toId        = (json["toPlayerId"] as? NSNumber)?.int64Value ?? 0
                 let challengeId = (json["challengeId"] as? NSNumber)?.int64Value ?? 0
-                onChallengeReceived?(battleId, fromId, toId, challengeId)
+
+                let targetLat   = json["targetLatitude"] as? Double
+                let targetLon   = json["targetLongitude"] as? Double
+
+                print("🔹 battle-requested targetLat=\(targetLat as Any), targetLon=\(targetLon as Any)")
+
+                onChallengeReceived?(battleId, fromId, toId, challengeId, targetLat, targetLon)
             }
+
             
             if type == "battle-updated" {
                 let battleId = (json["battleId"] as? NSNumber)?.int64Value ?? 0
