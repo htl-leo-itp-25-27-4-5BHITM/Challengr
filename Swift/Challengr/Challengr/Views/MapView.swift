@@ -178,12 +178,17 @@ struct MapView: View {
                     name: ownPlayerName,
                     avatarImageName: "playerBoy",
                     rankName: ownRankName,
-                    dailyStreak: ownDailyStreak,   // ⬅️ kommt aus State
+                    dailyStreak: ownDailyStreak,
                     totalChallenges: ownTotalChallenges,
                     wonChallenges: ownWonChallenges,
-                    points: ownPoints              // ⬅️ kommt aus State
+                    points: ownPoints
                 )
             )
+        }
+        .onChange(of: showProfile) { isShown in
+            if isShown {
+                reloadOwnPlayerData()
+            }
         }
 
 
@@ -661,6 +666,29 @@ struct MapView: View {
 
     // MARK: - Logik
 
+    private func reloadOwnPlayerData() {
+        Task {
+            do {
+                let me = try await playerService.loadPlayerById(id: ownPlayerId)
+                let name = me.name
+                let rank = me.rankName
+
+                async let pointsAsync = playerService.loadPlayerPoints(id: ownPlayerId)
+                async let streakAsync = playerService.loadPlayerStreak(id: ownPlayerId)
+
+                let (points, streak) = try await (pointsAsync, streakAsync)
+                await MainActor.run {
+                    ownPlayerName  = name
+                    ownRankName    = rank
+                    ownPoints      = points
+                    ownDailyStreak = streak
+                }
+            } catch {
+                print("Fehler beim Reload der eigenen Daten:", error)
+            }
+        }
+    }
+
     /// Sets up the WebSocket connection and preloads all challenges.
     private func setupSocket() {
         socket.connect()
@@ -683,28 +711,7 @@ struct MapView: View {
 
         
         
-        Task {
-            do {
-                let me = try await playerService.loadPlayerById(id: ownPlayerId)
-                ownPlayerName  = me.name
-                ownRankName    = me.rankName
-
-                async let pointsAsync = playerService.loadPlayerPoints(id: ownPlayerId)
-                async let streakAsync = playerService.loadPlayerStreak(id: ownPlayerId)
-
-                let (points, streak) = try await (pointsAsync, streakAsync)
-
-                print("✅ Punkte vom Server: \(points)")
-                print("✅ Streak vom Server: \(streak)")
-
-                await MainActor.run {
-                    ownPoints      = points
-                    ownDailyStreak = streak
-                }
-            } catch {
-                print("Konnte eigenen Spieler/Streak/Points nicht laden:", error)
-            }
-        }
+        reloadOwnPlayerData()
 
 
 
@@ -800,11 +807,12 @@ struct MapView: View {
     
         
         socket.onBattleResult = { data in
-            
+            // NEU: Punkte/Streak nach Battle neu laden
+            reloadOwnPlayerData()
+
             resultData = data
             activeFullScreen = .none
 
-            // 5 Sekunden warten, danach Win/Lose anzeigen
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 activeOverlay = .none
                 if data.winnerName == ownPlayerName {
@@ -814,6 +822,7 @@ struct MapView: View {
                 }
             }
         }
+
         
         socket.onReadyForVoting = { battleId in
             currentBattleId = battleId
