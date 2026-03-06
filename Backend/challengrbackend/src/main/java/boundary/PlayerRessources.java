@@ -162,6 +162,37 @@ public class PlayerRessources {
         }
     }
 
+    public static class PlayerStatsDTO {
+        public int totalChallenges;
+        public int wonChallenges;
+
+        public PlayerStatsDTO() {}
+
+        public PlayerStatsDTO(int totalChallenges, int wonChallenges) {
+            this.totalChallenges = totalChallenges;
+            this.wonChallenges = wonChallenges;
+        }
+    }
+
+    @GET
+    @Path("/{id}/stats")
+    public PlayerStatsDTO getStats(@PathParam("id") Long id) {
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new NotFoundException();
+        }
+
+        var battles = playerRepository.findDoneBattlesForPlayer(player);
+
+        int total = battles.size();
+        int won   = (int) battles.stream()
+                .filter(b -> b.getWinner() != null && b.getWinner().getId().equals(id))
+                .count();
+
+        return new PlayerStatsDTO(total, won);
+    }
+
+
     @GET
     @Path("/{id}/points")
     public PlayerPointsDTO getPlayerPoints(@PathParam("id") Long id) {
@@ -216,4 +247,6 @@ public class PlayerRessources {
 
         return streak;
     }
+
+
 }

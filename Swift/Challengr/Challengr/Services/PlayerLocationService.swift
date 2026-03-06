@@ -95,5 +95,19 @@ extension PlayerLocationService {
         let dto = try JSONDecoder().decode(PlayerPointsDTO.self, from: data)
         return dto.points
     }
+    
+    func loadPlayerStats(id: Int64) async throws -> PlayerStatsDTO {
+        let url = URL(string: "http://localhost:8080/api/players/\(id)/stats")!
+        let (data, _) = try await URLSession.shared.data(from: url)
+        return try JSONDecoder().decode(PlayerStatsDTO.self, from: data)
+    }
 }
+
+struct PlayerStatsDTO: Decodable {
+    let totalChallenges: Int
+    let wonChallenges: Int
+}
+
+
+
 

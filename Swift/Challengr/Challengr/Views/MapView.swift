@@ -675,19 +675,24 @@ struct MapView: View {
 
                 async let pointsAsync = playerService.loadPlayerPoints(id: ownPlayerId)
                 async let streakAsync = playerService.loadPlayerStreak(id: ownPlayerId)
+                async let statsAsync  = playerService.loadPlayerStats(id: ownPlayerId)
 
-                let (points, streak) = try await (pointsAsync, streakAsync)
+                let (points, streak, stats) = try await (pointsAsync, streakAsync, statsAsync)
+
                 await MainActor.run {
-                    ownPlayerName  = name
-                    ownRankName    = rank
-                    ownPoints      = points
-                    ownDailyStreak = streak
+                    ownPlayerName      = name
+                    ownRankName        = rank
+                    ownPoints          = points
+                    ownDailyStreak     = streak
+                    ownTotalChallenges = stats.totalChallenges
+                    ownWonChallenges   = stats.wonChallenges
                 }
             } catch {
                 print("Fehler beim Reload der eigenen Daten:", error)
             }
         }
     }
+
 
     /// Sets up the WebSocket connection and preloads all challenges.
     private func setupSocket() {
