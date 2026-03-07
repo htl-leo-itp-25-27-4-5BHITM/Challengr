@@ -137,7 +137,8 @@ struct MapView: View {
     @State private var showPlayerPopup = false
     @State private var showPlayerChallengeDialog = false
 
-    
+    @State private var showNearbyText = true
+
     
     /// Resolves a challenge text and category name for a given challenge ID
     private func challengeInfo(for id: Int64) -> (name: String, category: String) {
@@ -157,37 +158,40 @@ struct MapView: View {
 
     // MARK: - Body
 
+    @State private var compassAngle: Angle = .zero
+    
     var body: some View {
         
         ZStack {
-                // Map-Ebene
-                mapLayer
+            // Map-Ebene
+            mapLayer
 
-                // Location-Capsule oben links
-                VStack {
-                    HStack {
-                        HStack(spacing: 8) {
-                            Button {
-                                position = .userLocation(
-                                    followsHeading: false,
-                                    fallback: .camera(
-                                        MapCamera(
-                                            centerCoordinate: startCoordinate,
-                                            distance: 1000,
-                                            heading: 0,
-                                            pitch: 0
-                                        )
+            VStack {
+                HStack {
+                    // LINKS: Capsule "Spieler in meiner Nähe" (ausklappbar)
+                    HStack(spacing: 8) {
+                        Button {
+                            position = .userLocation(
+                                followsHeading: false,
+                                fallback: .camera(
+                                    MapCamera(
+                                        centerCoordinate: startCoordinate,
+                                        distance: 1000,
+                                        heading: 0,
+                                        pitch: 0
                                     )
                                 )
-                            } label: {
-                                Image(systemName: "location.fill")
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundColor(.challengrDark)
-                                    .padding(7)
-                                    .background(Color.challengrYellow)
-                                    .clipShape(Circle())
-                            }
-                            
+                            )
+                        } label: {
+                            Image(systemName: "location.fill")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.challengrDark)
+                                .padding(7)
+                                .background(Color.challengrYellow)
+                                .clipShape(Circle())
+                        }
+
+                        if showNearbyText {
                             let count = annotations.count
                             let text: String = {
                                 switch count {
@@ -196,29 +200,68 @@ struct MapView: View {
                                 }
                             }()
 
-
-                            Text("\(text)")
+                            Text(text)
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(.challengrDark)
+                                .transition(.move(edge: .trailing).combined(with: .opacity))
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.9))
-                        .clipShape(Capsule())
-                        .shadow(color: .black.opacity(0.18), radius: 5, x: 0, y: 3)
 
-                        Spacer()
+                        // Chevron zum Ein-/Ausklappen
+                        Button {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                showNearbyText.toggle()
+                            }
+                        } label: {
+                            Image(systemName: showNearbyText ? "chevron.left" : "chevron.right")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.challengrDark.opacity(0.7))
+                        }
                     }
-                    .padding(.top, 18)
-                    .padding(.leading, 18)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.9))
+                    .clipShape(Capsule())
+                    .shadow(color: .black.opacity(0.18), radius: 5, x: 0, y: 3)
 
                     Spacer()
+
+                    // RECHTS: Settings OBEN, Kompass UNTEN
+                    VStack(spacing: 8) {
+                        Button {
+                            // TODO: Settings öffnen
+                        } label: {
+                            HudCircleButton(systemName: "gearshape.fill")
+                                .frame(width: 36, height: 36)
+                        }
+
+                        CompassView(angle: compassAngle) {
+                            withAnimation(.easeOut(duration: 0.35)) {
+                                guard let cam = position.camera else { return }
+
+                                let newCam = MapCamera(
+                                    centerCoordinate: cam.centerCoordinate,
+                                    distance: cam.distance,
+                                    heading: 0,
+                                    pitch: cam.pitch
+                                )
+                                position = .camera(newCam)
+                            }
+                        }
+                        .frame(width: 36, height: 36)
+                    }
                 }
+                .padding(.top, 28)
+                .padding(.horizontal, 18)
 
 
-                trophyRoadButton
-                profileButton
+                Spacer()
             }
+
+
+                    // 3) UNTERER BEREICH: Trophy mittig, Profil rechts
+                    trophyRoadButton
+                    profileButton
+                }
         .overlay(playerPopupOverlay)
         .overlay(challengeDialogOverlay)
         .overlay(incomingChallengeOverlay)
@@ -415,6 +458,10 @@ struct MapView: View {
         .onAppear(perform: setupSocket)
         /// React to location updates
         .onReceive(locationHelper.$userLocation, perform: handleLocation)
+        .onMapCameraChange { ctx in
+                let heading = ctx.camera.heading    // 0 = Norden
+                compassAngle = .degrees(heading)
+            }
     }
 
     /// Floating button that centers the map on the current user location.
