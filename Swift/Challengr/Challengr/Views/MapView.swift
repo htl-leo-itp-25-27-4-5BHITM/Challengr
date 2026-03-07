@@ -159,12 +159,66 @@ struct MapView: View {
 
     var body: some View {
         
-        ZStack(alignment: .bottomTrailing) {
-            mapLayer
-            locationButton
-            trophyRoadButton
-            profileButton
-        }
+        ZStack {
+                // Map-Ebene
+                mapLayer
+
+                // Location-Capsule oben links
+                VStack {
+                    HStack {
+                        HStack(spacing: 8) {
+                            Button {
+                                position = .userLocation(
+                                    followsHeading: false,
+                                    fallback: .camera(
+                                        MapCamera(
+                                            centerCoordinate: startCoordinate,
+                                            distance: 1000,
+                                            heading: 0,
+                                            pitch: 0
+                                        )
+                                    )
+                                )
+                            } label: {
+                                Image(systemName: "location.fill")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(.challengrDark)
+                                    .padding(7)
+                                    .background(Color.challengrYellow)
+                                    .clipShape(Circle())
+                            }
+                            
+                            let count = annotations.count
+                            let text: String = {
+                                switch count {
+                                case 0:  return "Noch keine Spieler in deiner Nähe"
+                                default: return "\(count) Spieler in meiner Nähe"
+                                }
+                            }()
+
+
+                            Text("\(text)")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.challengrDark)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.white.opacity(0.9))
+                        .clipShape(Capsule())
+                        .shadow(color: .black.opacity(0.18), radius: 5, x: 0, y: 3)
+
+                        Spacer()
+                    }
+                    .padding(.top, 18)
+                    .padding(.leading, 18)
+
+                    Spacer()
+                }
+
+
+                trophyRoadButton
+                profileButton
+            }
         .overlay(playerPopupOverlay)
         .overlay(challengeDialogOverlay)
         .overlay(incomingChallengeOverlay)
@@ -386,20 +440,19 @@ struct MapView: View {
     }
 
     /// Trophy button at the bottom that opens the global ChallengeView.
-    /// Trophy Road / Challenge Button
     private var trophyRoadButton: some View {
         VStack {
             Spacer()
             Button {
-                showTrophyRoad = true // neues Binding für Trophy Road
+                showTrophyRoad = true
             } label: {
                 Image(systemName: "trophy.fill")
-                    .font(.system(size: 48, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 100, height: 100)
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundColor(.challengrDark)
+                    .frame(width: 64, height: 64)
                     .background(Color.challengrYellow)
                     .clipShape(Circle())
-                    .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 4)
+                    .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 3)
             }
             .sheet(isPresented: $showTrophyRoad) {
                 TrophyRoadView(playerId: ownPlayerId)
@@ -408,7 +461,10 @@ struct MapView: View {
         }
         .frame(maxWidth: .infinity)
     }
+
+
     
+    // Profil
     private var profileButton: some View {
         VStack {
             Spacer()
@@ -417,17 +473,17 @@ struct MapView: View {
                 Button {
                     showProfile = true
                 } label: {
-                    Image("playerBoy") // Avatar-Asset
+                    Image("playerBoy")
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 60, height: 60)
+                        .frame(width: 64, height: 64)
                         .clipShape(Circle())
                         .overlay(
                             Circle().stroke(Color.white, lineWidth: 3)
                         )
-                        .shadow(color: .black.opacity(0.35), radius: 8, x: 0, y: 4)
+                        .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 3)
                 }
-                .padding(.bottom, 40)
+                .padding(.bottom, 32)
                 .padding(.trailing, 20)
             }
         }
