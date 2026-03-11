@@ -1312,8 +1312,9 @@ profileBtn.onclick = async () => {
   const streak = await api(`/api/players/${myId}/streak`);
   const points = await api(`/api/players/${myId}/points`);
   const stats = await api(`/api/players/${myId}/stats`);
-  const wins = stats.totalwins || 0;
-  const battles = stats.totalchallenges || 0;
+  console.log("Player Data:", {player, streak, points, stats});
+  const wins = stats.wonChallenges || 0;
+  const battles = stats.totalChallenges || 0;
 
   console.log("Player Profile:", {player, streak, stats, points, wins, battles});
 
