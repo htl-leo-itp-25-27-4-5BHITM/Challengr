@@ -1323,3 +1323,173 @@ h2 {
 .hidden {
   display: none;
 }
+
+/* BUTTON PROFIL */
+
+#profile-btn{
+  position:fixed;
+  bottom:24px;
+  right:24px;
+
+  width:60px;
+  height:60px;
+
+  border-radius:50%;
+  border:none;
+
+  background:white;
+  box-shadow:0 4px 12px rgba(0,0,0,0.25);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  z-index:1000;
+}
+
+#profile-btn img{
+  width:48px;
+  height:48px;
+  border-radius:50%;
+}
+
+/* POP UP PROFIL */
+/* Hintergrund */
+.profile-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.25);
+  display:flex;
+  justify-content:center;
+  align-items:flex-end;
+  z-index:2000;
+}
+
+/* Bottom Sheet */
+.profile-sheet{
+  width:100%;
+  max-width:420px;
+  height:70vh;
+
+  background:#f6f6f6;
+
+  border-top-left-radius:28px;
+  border-top-right-radius:28px;
+
+  padding:24px;
+
+  text-align:center;
+
+  box-shadow:0 -10px 40px rgba(0,0,0,0.2);
+
+  animation:sheetSlide 0.35s ease;
+}
+
+@keyframes sheetSlide{
+  from{
+    transform:translateY(100%);
+  }
+  to{
+    transform:translateY(0);
+  }
+}
+
+/* Drag handle */
+.profile-handle{
+  width:40px;
+  height:5px;
+  background:#cfcfcf;
+  border-radius:4px;
+  margin:0 auto 16px auto;
+}
+
+/* Avatar */
+.profile-avatar-wrapper{
+  width:110px;
+  height:110px;
+  margin:auto;
+  border-radius:50%;
+  padding:5px;
+  background:#FFC400;
+}
+
+#profile-avatar{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  background:white;
+}
+
+/* Name */
+#profile-name{
+  margin-top:14px;
+  font-size:26px;
+  font-weight:700;
+}
+
+/* Punkte */
+#profile-points{
+  color:#9a9a9a;
+  font-size:18px;
+  margin-bottom:24px;
+}
+
+/* Stats Grid */
+.profile-stats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+
+/* Cards */
+.profile-card{
+  background:white;
+  border-radius:18px;
+  padding:20px;
+
+  box-shadow:
+  0 8px 20px rgba(0,0,0,0.05);
+}
+
+.profile-value{
+  font-size:22px;
+  font-weight:700;
+}
+
+.profile-label{
+  margin-top:6px;
+  font-size:12px;
+  color:#8b8b8b;
+  letter-spacing:1px;
+}
+
+.hidden{
+  display:none !important;
+}
+
+/* SLIDE */
+@keyframes sheetSlideUp{
+  from{
+    transform:translateY(100%);
+  }
+  to{
+    transform:translateY(0);
+  }
+}
+
+@keyframes sheetSlideDown{
+  from{
+    transform:translateY(0);
+  }
+  to{
+    transform:translateY(100%);
+  }
+}
+
+.profile-sheet{
+  animation:sheetSlideUp 0.35s ease;
+}
+
+.profile-sheet.closing{
+  animation:sheetSlideDown 0.35s ease;
+}

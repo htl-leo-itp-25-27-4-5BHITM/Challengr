@@ -1299,3 +1299,39 @@ function renderKnowledgeAnswers(choices) {
     container.appendChild(btn);
   });
 }
+
+
+// BUTTON PROFIL
+const profileBtn = document.getElementById("profile-btn");
+const profileBackdrop = document.getElementById("profile-dialog-backdrop");
+const profileSheet = document.querySelector(".profile-sheet");
+
+profileBtn.onclick = async () => {
+
+  const player = await api(`/api/players/${myId}`);
+
+  document.getElementById("profile-name").textContent = player.name;
+  document.getElementById("profile-points").textContent = player.points + " Punkte";
+
+  document.getElementById("profile-wins").textContent = player.wins || 0;
+  document.getElementById("profile-challenges").textContent = player.battles || 0;
+  document.getElementById("profile-rank").textContent = player.rankName || "Rookie";
+
+  profileBackdrop.classList.remove("hidden");
+  profileSheet.classList.remove("closing");
+};
+
+profileBackdrop.addEventListener("click", (e) => {
+
+  if(e.target === profileBackdrop){
+
+    profileSheet.classList.add("closing");
+
+    setTimeout(()=>{
+      profileBackdrop.classList.add("hidden");
+      profileSheet.classList.remove("closing");
+    },350);
+
+  }
+
+});
