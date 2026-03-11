@@ -1309,12 +1309,20 @@ const profileSheet = document.querySelector(".profile-sheet");
 profileBtn.onclick = async () => {
 
   const player = await api(`/api/players/${myId}`);
+  const streak = await api(`/api/players/${myId}/streak`);
+  const points = await api(`/api/players/${myId}/points`);
+  const stats = await api(`/api/players/${myId}/stats`);
+  const wins = stats.totalwins || 0;
+  const battles = stats.totalchallenges || 0;
+
+  console.log("Player Profile:", {player, streak, stats, points, wins, battles});
 
   document.getElementById("profile-name").textContent = player.name;
+  document.getElementById("profile-streak").textContent = streak + "🔥" || 0 + "🔥";
   document.getElementById("profile-points").textContent = player.points + " Punkte";
 
-  document.getElementById("profile-wins").textContent = player.wins || 0;
-  document.getElementById("profile-challenges").textContent = player.battles || 0;
+  document.getElementById("profile-wins").textContent = wins || 0;
+  document.getElementById("profile-challenges").textContent = battles || 0;
   document.getElementById("profile-rank").textContent = player.rankName || "Rookie";
 
   profileBackdrop.classList.remove("hidden");
