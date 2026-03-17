@@ -32,6 +32,8 @@ public class GameSocket {
     // Votes pro Battle: battleId -> Liste der Gewinner-Namen
     private static final Map<Long, List<String>> BATTLE_VOTES = new ConcurrentHashMap<>();
 
+    private static final Map<Long, Map<Long, Double>> SPRINT_RESULTS = new ConcurrentHashMap<>();
+
     @Inject
     BattleService battleService;
 
@@ -86,6 +88,9 @@ public class GameSocket {
 
             } else if (message.contains("\"type\":\"battle-answer\"")) {
                 handleBattleAnswer(message, playerId);   // ⬅️ HINZUFÜGEN
+
+            } else if (message.contains("\"type\":\"sprint-result\"")) { // NEU
+                handleSprintResult(message, playerId);
 
             } else {
                 sendError(session, "Unknown type");
@@ -461,6 +466,26 @@ public class GameSocket {
         return Long.valueOf(numberPart);
     }
 
+    private double extractDouble(String json, String key) {
+        String pattern = "\"" + key + "\":";
+        int idx = json.indexOf(pattern);
+        if (idx < 0) throw new IllegalArgumentException("Missing field: " + key);
+
+        int start = idx + pattern.length();
+        while (start < json.length() && Character.isWhitespace(json.charAt(start))) start++;
+
+        int end = start;
+        while (end < json.length()
+                && json.charAt(end) != ','
+                && json.charAt(end) != '}') {
+            end++;
+        }
+
+        String numberPart = json.substring(start, end).trim();
+        return Double.parseDouble(numberPart);
+    }
+
+
     // Mini-Parser für: "key": "value"
     private String extractString(String json, String key) {
         String pattern = "\"" + key + "\":";
@@ -637,6 +662,61 @@ public class GameSocket {
         List<String> votes = List.of(winnerName);
         computeAndBroadcastResult(battle, votes);
     }
+
+    private void handleSprintResult(String message, Long playerId) {
+        Long battleId = extractLong(message, "battleId");
+        double distance = extractDouble(message, "distance");
+
+        System.out.println("➡️ sprint-result parsed: battleId=" + battleId + ", distance=" + distance);
+        if (playerId == null) {
+            System.out.println("sprint-result ohne playerId, ignoriere");
+            return;
+        }
+
+        Battle battle = battleService.findById(battleId);
+        if (battle == null) {
+            System.out.println("sprint-result: battle " + battleId + " nicht gefunden");
+            return;
+        }
+
+        SPRINT_RESULTS
+                .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
+                .put(playerId, distance);
+
+        Map<Long, Double> map = SPRINT_RESULTS.get(battleId);
+        Long fromId = battle.getFromPlayer().getId();
+        Long toId   = battle.getToPlayer().getId();
+
+        // Wenn der andere Spieler noch nichts geschickt hat → 0 m annehmen
+        double distFrom = map.getOrDefault(fromId, 0.0);
+        double distTo   = map.getOrDefault(toId,   0.0);
+
+        String winnerName;
+        if (distFrom > distTo) {
+            winnerName = battle.getFromPlayer().getName();
+        } else if (distTo > distFrom) {
+            winnerName = battle.getToPlayer().getName();
+        } else {
+            winnerName = "Niemand"; // Unentschieden
+        }
+
+        String pendingPayload = """
+    {
+      "type": "battle-pending",
+      "battleId": %d
+    }
+    """.formatted(battleId);
+
+        sendToPlayer(fromId, pendingPayload);
+        sendToPlayer(toId,   pendingPayload);
+
+        System.out.println("✅ Sprint ausgewertet, from=" + distFrom + ", to=" + distTo
+                + ", winner=" + winnerName);
+
+        computeAndBroadcastResult(battle, List.of(winnerName));
+        SPRINT_RESULTS.remove(battleId);
+    }
+
 
 
 }

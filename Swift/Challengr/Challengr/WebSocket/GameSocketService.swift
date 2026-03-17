@@ -111,6 +111,18 @@ final class GameSocketService: ObservableObject {
         ]
         send(json: payload)
     }
+    
+    func sendSprintResult(battleId: Int64, distance: Double) {
+        let payload: [String: Any] = [
+            "type": "sprint-result",
+            "battleId": battleId,
+            "distance": distance
+        ]
+        print("📤 sendSprintResult:", payload)    // Debug
+        send(json: payload)
+    }
+
+
 
 
 

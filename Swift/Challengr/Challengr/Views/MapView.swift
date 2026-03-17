@@ -320,6 +320,13 @@ struct MapView: View {
                             }
                         )
 
+                    } else if info.category == "iPhone",
+                              info.challengeName.contains("Sprint-Challenge") {
+                        SprintChallengeView(
+                            battleId: battleId,
+                            socket: socket,
+                            onClose: { activeFullScreen = .none }
+                        )
                     } else {
                         BattleView(
                             challengeName: info.challengeName,
