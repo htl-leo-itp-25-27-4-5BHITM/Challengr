@@ -33,6 +33,8 @@ public class GameSocket {
     private static final Map<Long, List<String>> BATTLE_VOTES = new ConcurrentHashMap<>();
 
     private static final Map<Long, Map<Long, Double>> SPRINT_RESULTS = new ConcurrentHashMap<>();
+    
+    private static final Map<Long, Map<Long, Double>> LOUDNESS_RESULTS = new ConcurrentHashMap<>();
 
     @Inject
     BattleService battleService;
@@ -91,6 +93,9 @@ public class GameSocket {
 
             } else if (message.contains("\"type\":\"sprint-result\"")) { // NEU
                 handleSprintResult(message, playerId);
+
+            } else if (message.contains("\"type\":\"loudness-result\"")) { // NEU
+                handleLoudnessResult(message, playerId);
 
             } else {
                 sendError(session, "Unknown type");
@@ -715,6 +720,60 @@ public class GameSocket {
 
         computeAndBroadcastResult(battle, List.of(winnerName));
         SPRINT_RESULTS.remove(battleId);
+    }
+
+    private void handleLoudnessResult(String message, Long playerId) {
+        Long battleId = extractLong(message, "battleId");
+        double loudness = extractDouble(message, "loudness");
+
+        System.out.println("➡️ loudness-result parsed: battleId=" + battleId + ", loudness=" + loudness);
+        if (playerId == null) {
+            System.out.println("loudness-result ohne playerId, ignoriere");
+            return;
+        }
+
+        Battle battle = battleService.findById(battleId);
+        if (battle == null) {
+            System.out.println("loudness-result: battle " + battleId + " nicht gefunden");
+            return;
+        }
+
+        LOUDNESS_RESULTS
+                .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
+                .put(playerId, loudness);
+
+        Map<Long, Double> map = LOUDNESS_RESULTS.get(battleId);
+        Long fromId = battle.getFromPlayer().getId();
+        Long toId   = battle.getToPlayer().getId();
+
+        // Wenn der andere Spieler noch nichts geschickt hat → -60 dB annehmen (Minimum)
+        double loudnessFrom = map.getOrDefault(fromId, -60.0);
+        double loudnessTo   = map.getOrDefault(toId,   -60.0);
+
+        String winnerName;
+        if (loudnessFrom > loudnessTo) {
+            winnerName = battle.getFromPlayer().getName();
+        } else if (loudnessTo > loudnessFrom) {
+            winnerName = battle.getToPlayer().getName();
+        } else {
+            winnerName = "Niemand"; // Unentschieden
+        }
+
+        String pendingPayload = """
+    {
+      "type": "battle-pending",
+      "battleId": %d
+    }
+    """.formatted(battleId);
+
+        sendToPlayer(fromId, pendingPayload);
+        sendToPlayer(toId,   pendingPayload);
+
+        System.out.println("✅ Loudness ausgewertet, from=" + loudnessFrom + " dB, to=" + loudnessTo + " dB"
+                + ", winner=" + winnerName);
+
+        computeAndBroadcastResult(battle, List.of(winnerName));
+        LOUDNESS_RESULTS.remove(battleId);
     }
 
 

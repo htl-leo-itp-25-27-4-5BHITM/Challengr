@@ -121,6 +121,16 @@ final class GameSocketService: ObservableObject {
         print("📤 sendSprintResult:", payload)    // Debug
         send(json: payload)
     }
+    
+    func sendLoudnessResult(battleId: Int64, loudness: Double) {
+        let payload: [String: Any] = [
+            "type": "loudness-result",
+            "battleId": battleId,
+            "loudness": loudness
+        ]
+        print("📤 sendLoudnessResult:", payload)    // Debug
+        send(json: payload)
+    }
 
 
 

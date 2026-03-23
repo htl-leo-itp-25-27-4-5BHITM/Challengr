@@ -327,6 +327,15 @@ struct MapView: View {
                             socket: socket,
                             onClose: { activeFullScreen = .none }
                         )
+
+                    } else if info.category == "iPhone",
+                              info.challengeName.contains("Schrei-Challenge") {
+                        LoudnessChallengeView(
+                            battleId: battleId,
+                            socket: socket,
+                            onClose: { activeFullScreen = .none }
+                        )
+
                     } else {
                         BattleView(
                             challengeName: info.challengeName,
