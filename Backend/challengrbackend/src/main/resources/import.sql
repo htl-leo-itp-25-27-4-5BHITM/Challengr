@@ -64,7 +64,7 @@ INSERT INTO challenges (text, category_id) VALUES
                                                    (SELECT id FROM challenge_categories WHERE name = 'iPhone')
                                                ),
                                                (
-                                                   'Schrei-Challenge: Sei in 3 Sekunden so laut wie möglich.',
+                                                   'Schrei-Challenge: Sei in 10 Sekunden so laut wie möglich.',
                                                    (SELECT id FROM challenge_categories WHERE name = 'iPhone')
                                                ),
                                                (
