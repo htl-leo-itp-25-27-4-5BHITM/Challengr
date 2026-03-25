@@ -23,7 +23,8 @@ export class GameClient {
   connect() {
     if (this.socket) return;
 
-    const url = `ws://localhost:8080/ws/game?playerId=${this.playerId}`;
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const url = `${protocol}//${window.location.host}/ws/game?playerId=${this.playerId}`;
     this.socket = new WebSocket(url);
 
     this.socket.onopen = () => {

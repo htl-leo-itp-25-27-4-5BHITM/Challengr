@@ -49,6 +49,7 @@ public class GameSocket {
         var params = session.getRequestParameterMap().get("playerId");
         if (params == null || params.isEmpty()) {
             try {
+                System.out.println("WebSocket rejected: missing playerId for session " + session.getId());
                 session.close();
             } catch (IOException ignored) {}
             return;
@@ -56,7 +57,7 @@ public class GameSocket {
         Long playerId = Long.valueOf(params.get(0));
         SESSIONS.put(playerId, session);
         SESSION_TO_PLAYER.put(session.getId(), playerId);
-        System.out.println("WebSocket open for player " + playerId);
+        System.out.println("WebSocket open for player " + playerId + " (session=" + session.getId() + ")");
     }
 
     @OnClose
@@ -70,6 +71,7 @@ public class GameSocket {
     @OnMessage
     public void onMessage(String message, Session session) {
         Long playerId = SESSION_TO_PLAYER.get(session.getId());
+        System.out.println("WebSocket message from player " + playerId + ": " + message);
         CompletableFuture.runAsync(() -> handleMessage(message, session, playerId));
     }
 
@@ -114,7 +116,14 @@ public class GameSocket {
         Long toId        = extractLong(message, "toId");
         Long challengeId = extractLong(message, "challengeId");
 
+    System.out.printf("create-battle received: from=%d, to=%d, challenge=%d%n",
+        fromId, toId, challengeId);
+
         Battle battle = battleService.createRequestedBattle(fromId, toId, challengeId);
+
+    System.out.printf("battle created: id=%d, status=%s, from=%d, to=%d%n",
+        battle.getId(), battle.getStatus(),
+        battle.getFromPlayer().getId(), battle.getToPlayer().getId());
 
         String payload = """
     {
@@ -430,12 +439,16 @@ public class GameSocket {
     private void sendToPlayer(Long playerId, String jsonPayload) {
         Session s = SESSIONS.get(playerId);
         if (s != null && s.isOpen()) {
+            System.out.println("Sending WS payload to player " + playerId + ": " + jsonPayload);
             s.getAsyncRemote().sendText(jsonPayload);
+        } else {
+            System.out.println("No active WebSocket session for player " + playerId + ". Payload not delivered: " + jsonPayload);
         }
     }
 
     private void sendError(Session session, String msg) {
         if (session != null && session.isOpen()) {
+            System.out.println("Sending WS error to session " + session.getId() + ": " + msg);
             session.getAsyncRemote().sendText("""
                 { "type": "error", "message": "%s" }
                 """.formatted(escapeJson(msg == null ? "Unknown error" : msg)));

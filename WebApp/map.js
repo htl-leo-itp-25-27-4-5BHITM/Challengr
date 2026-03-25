@@ -38,6 +38,20 @@ const pendingOverlay = document.getElementById("battle-pending-overlay");
 
 let incomingBattleId = null;
 
+function hideKnowledgeBattle() {
+  const backdrop = document.getElementById("knowledge-battle-backdrop");
+  const statusEl = document.getElementById("kb-status");
+  const choicesEl = document.getElementById("kb-choices");
+  const qEl = document.getElementById("kb-question");
+
+  if (backdrop) backdrop.classList.add("hidden");
+  if (statusEl) statusEl.textContent = "";
+  if (choicesEl) choicesEl.innerHTML = "";
+  if (qEl) qEl.textContent = "";
+
+  currentKnowledgeQuestion = null;
+}
+
 function showIncomingChallengeUI({ opponentName, opponentRank, challengeText, onAccept, onDecline }) {
   const rankText = opponentRank ? ` · ${opponentRank}` : "";
   incomingOpponentEl.textContent = (opponentName + rankText).toUpperCase();
@@ -139,8 +153,9 @@ gameClient.on("battle-requested", async (msg) => {
   gameClient.updateBattleStatus(incomingBattleId, "ACCEPTED");
 
   if (currentBattleState.category === "Wissen") {
-    showKnowledgeBattle();   // wartet auf battle-question
+    hideKnowledgeBattle();
   } else {
+    hideKnowledgeBattle();
     showBattleDialog({
       category: currentBattleState.category,
       challengeName: currentBattleState.challengeName,
@@ -180,8 +195,9 @@ gameClient.on("battle-updated", (msg) => {
       currentBattleState.isInitiator) {
 
     if (currentBattleState.category === "Wissen") {
-      showKnowledgeBattle();          // ⬅️ NEU
+      hideKnowledgeBattle();
     } else {
+      hideKnowledgeBattle();
       showBattleDialog({
         category: currentBattleState.category,
         challengeName: currentBattleState.challengeName,

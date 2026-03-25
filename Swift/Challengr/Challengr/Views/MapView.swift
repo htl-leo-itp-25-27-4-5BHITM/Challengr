@@ -840,9 +840,10 @@ struct MapView: View {
 
 
         socket.onChallengeReceived = { battleId, fromId, toId, challengeId, targetLat, targetLon in
+            let info = challengeInfo(for: challengeId)
+
             if toId == ownPlayerId {
                 // Eingehende Challenge
-                let info = challengeInfo(for: challengeId)
                 incomingChallenge = (
                     battleId: battleId,
                     fromId: fromId,
@@ -854,7 +855,6 @@ struct MapView: View {
 
             } else if fromId == ownPlayerId {
                 // Wir sind der Angreifer
-                let info = challengeInfo(for: challengeId)
                 outgoingBattleInfo = (
                     battleId: battleId,
                     opponentId: toId,
@@ -862,6 +862,10 @@ struct MapView: View {
                     category: info.category
                 )
                 currentBattleId = battleId
+            }
+
+            if info.category != "Wissen" {
+                lastKnowledgeQuestion = nil
             }
 
             // Zielkoordinate (für Check-In-Spot)
