@@ -109,8 +109,6 @@ Ziele:
 
 ---
 
-
-
 ## Sprint (Sprint 9 – Start: 04.03.2026)
 
 Ziele:
@@ -120,3 +118,13 @@ Ziele:
 * Triviale Statistiken einbauen/anzeigen
 * Challenge Überarbeitung
 * Streaksystem
+
+---
+
+
+
+## Sprint (Sprint 10 – Start: 18.03.2026)
+
+Ziele:
+
+* Verbindung von Projekt mit LeoCloud
