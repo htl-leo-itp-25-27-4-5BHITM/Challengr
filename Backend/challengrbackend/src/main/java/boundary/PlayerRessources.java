@@ -2,7 +2,9 @@ package boundary;
 
 import boundary.dto.NearbyRequest;
 import boundary.dto.PlayerDTO;
+import boundary.dto.PlayerPointsHistoryDTO;
 import control.PlayerRepository;
+import entity.Battle;
 import entity.Player;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -246,6 +248,49 @@ public class PlayerRessources {
         }
 
         return streak;
+    }
+
+
+    @GET
+    @Path("/{id}/points-history")
+    public List<PlayerPointsHistoryDTO> getPointsHistory(@PathParam("id") Long id) {
+
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new NotFoundException();
+        }
+
+        var battles = playerRepository.findDoneBattlesForPlayer(player);
+
+        // nach datum sortieren (alt → neu)
+        battles.sort((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()));
+
+        List<PlayerPointsHistoryDTO> history = new java.util.ArrayList<>();
+
+        int currentPoints = player.getPoints(); // 🔥 aktueller stand!
+
+        // rückwärts durchgehen
+        for (int i = battles.size() - 1; i >= 0; i--) {
+            Battle b = battles.get(i);
+
+            // aktuellen stand speichern
+            history.add(0, new PlayerPointsHistoryDTO(
+                    b.getCreatedAt().toLocalDate().toString(),
+                    currentPoints
+            ));
+
+            int delta;
+
+            if (b.getWinner() != null && b.getWinner().getId().equals(player.getId())) {
+                delta = b.getWinnerPointsDelta();
+            } else {
+                delta = b.getLoserPointsDelta();
+            }
+
+            currentPoints -= delta; // 🔥 rückwärts rechnen!
+        }
+
+        return history;
     }
 
 

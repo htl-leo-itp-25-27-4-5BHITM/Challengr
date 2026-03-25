@@ -124,3 +124,5 @@ INSERT INTO rank (name, min, max, color) VALUES
                                              ('Brawler', 950, 1399, 'red'),
                                              ('Dueler', 1400, 1999, 'purple'),
                                              ('Challengr', 2000, 2800, 'yellow');
+
+

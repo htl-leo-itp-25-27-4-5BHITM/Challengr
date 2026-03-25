@@ -1,4 +1,13 @@
 package boundary.dto;
 
-public record PlayerPointsHistoryDTO() {
+public class PlayerPointsHistoryDTO {
+    public String date;
+    public int points;
+
+    public PlayerPointsHistoryDTO() {}
+
+    public PlayerPointsHistoryDTO(String date, int points) {
+        this.date = date;
+        this.points = points;
+    }
 }

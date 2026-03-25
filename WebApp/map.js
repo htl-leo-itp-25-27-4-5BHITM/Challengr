@@ -4,6 +4,7 @@ window.myName = "WebappSpieler";
 let myId = 3;
 const gameClient = new GameClient(myId);
 gameClient.connect();
+let chartInstance = null;
 
 let sheetMode = "challenges"; // oder "trophy"
 let isResultPending = false;
@@ -1305,42 +1306,61 @@ function renderKnowledgeAnswers(choices) {
 const profileBtn = document.getElementById("profile-btn");
 const profileBackdrop = document.getElementById("profile-dialog-backdrop");
 const profileSheet = document.querySelector(".profile-sheet");
-
 profileBtn.onclick = async () => {
 
   const player = await api(`/api/players/${myId}`);
   const streak = await api(`/api/players/${myId}/streak`);
   const points = await api(`/api/players/${myId}/points`);
   const stats = await api(`/api/players/${myId}/stats`);
-  console.log("Player Data:", {player, streak, points, stats});
+  const history = await api(`/api/players/${myId}/points-history`);
+
   const wins = stats.wonChallenges || 0;
   const battles = stats.totalChallenges || 0;
 
-  console.log("Player Profile:", {player, streak, stats, points, wins, battles});
-
   document.getElementById("profile-name").textContent = player.name;
-  document.getElementById("profile-streak").textContent = streak + "🔥" || 0 + "🔥";
+  document.getElementById("profile-streak").textContent = streak + "🔥";
   document.getElementById("profile-points").textContent = player.points + " Punkte";
-
-  document.getElementById("profile-wins").textContent = wins || 0;
-  document.getElementById("profile-challenges").textContent = battles || 0;
+  document.getElementById("profile-wins").textContent = wins;
+  document.getElementById("profile-challenges").textContent = battles;
   document.getElementById("profile-rank").textContent = player.rankName || "Rookie";
 
-  profileBackdrop.classList.remove("hidden");
-  profileSheet.classList.remove("closing");
-};
+  // 🔥 CHART DATEN
+  const labels = history.map(h => h.date);
+  const data = history.map(h => h.points);
 
-profileBackdrop.addEventListener("click", (e) => {
+  const ctx = document.getElementById("profile-chart").getContext("2d");
 
-  if(e.target === profileBackdrop){
-
-    profileSheet.classList.add("closing");
-
-    setTimeout(()=>{
-      profileBackdrop.classList.add("hidden");
-      profileSheet.classList.remove("closing");
-    },350);
-
+  // alten chart zerstören
+  if (chartInstance) {
+    chartInstance.destroy();
   }
 
-});
+  chartInstance = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Trophäen",
+        data: data,
+        tension: 0.35,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          ticks: { display: false }
+        },
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  profileBackdrop.classList.remove("hidden");
+};

@@ -1493,3 +1493,13 @@ h2 {
 .profile-sheet.closing{
   animation:sheetSlideDown 0.35s ease;
 }
+
+.profile-chart {
+  margin-top: 20px;
+  padding: 10px;
+}
+
+#profile-chart {
+  width: 100%;
+  height: 150px;
+}
