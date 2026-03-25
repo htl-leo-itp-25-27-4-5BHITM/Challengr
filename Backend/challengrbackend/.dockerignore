@@ -1,5 +1,4 @@
-*
-!target/*-runner
-!target/*-runner.jar
-!target/lib/*
-!target/quarkus-app/*
+# Ignore build output directory but include source files for Docker build
+target/
+.mvn/
+/.git
