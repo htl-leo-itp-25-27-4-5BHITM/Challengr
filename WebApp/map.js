@@ -1306,8 +1306,8 @@ function renderKnowledgeAnswers(choices) {
 const profileBtn = document.getElementById("profile-btn");
 const profileBackdrop = document.getElementById("profile-dialog-backdrop");
 const profileSheet = document.querySelector(".profile-sheet");
-profileBtn.onclick = async () => {
 
+profileBtn.onclick = async () => {
   const player = await api(`/api/players/${myId}`);
   const streak = await api(`/api/players/${myId}/streak`);
   const points = await api(`/api/players/${myId}/points`);
@@ -1324,43 +1324,53 @@ profileBtn.onclick = async () => {
   document.getElementById("profile-challenges").textContent = battles;
   document.getElementById("profile-rank").textContent = player.rankName || "Rookie";
 
-  // 🔥 CHART DATEN
-  const labels = history.map(h => h.date);
-  const data = history.map(h => h.points);
+  // Chart
+let labels, data;
 
-  const ctx = document.getElementById("profile-chart").getContext("2d");
+if (history.length === 0) {
+  // kein Battle gespielt → Anfangswerte
+  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  labels = [today];
+  data = [points.points]; // Startwert
+} else {
+  labels = history.map(h => h.date);
+  data = history.map(h => h.points);
+}
 
-  // alten chart zerstören
-  if (chartInstance) {
-    chartInstance.destroy();
-  }
+const ctx = document.getElementById("profile-chart").getContext("2d");
 
-  chartInstance = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: [{
-        label: "Trophäen",
-        data: data,
-        tension: 0.35,
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        x: {
-          ticks: { display: false }
-        },
-        y: {
-          beginAtZero: true
-        }
-      }
+if (chartInstance) chartInstance.destroy();
+
+chartInstance = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels,
+    datasets: [{
+      label: "Trophäen",
+      data,
+      tension: 0.35,
+      fill: true
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { display: false } },
+      y: { beginAtZero: true }
     }
-  });
+  }
+});
 
+  // Sheet zeigen
   profileBackdrop.classList.remove("hidden");
+  profileSheet.classList.remove("closing");
 };
+
+// schließen bei Klick auf Backdrop
+profileBackdrop.addEventListener("click", () => {
+  profileSheet.classList.add("closing");
+  profileSheet.addEventListener("animationend", () => {
+    profileBackdrop.classList.add("hidden");
+  }, { once: true });
+});
