@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: challengr-backend
+  labels:
+    app: challengr-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: challengr-backend
+  template:
+    metadata:
+      labels:
+        app: challengr-backend
+    spec:
+      containers:
+        - name: challengr-backend
+          # Image built and pushed to GitHub Container Registry for user basti010203
+          image: ghcr.io/basti010203/challengr-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: QUARKUS_DATASOURCE_JDBC_URL
+              value: "jdbc:postgresql://postgres:5432/postgres"
+            - name: QUARKUS_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: QUARKUS_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+            - name: QUARKUS_HTTP_CORS_ORIGINS
+              value: "https://it220257.cloud.htl-leonding.ac.at"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: challengr-backend
+spec:
+  selector:
+    app: challengr-backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
