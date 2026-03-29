@@ -1,2 +1,21 @@
-.idea
+.idea/
 .DS_Store
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Node / frontend
+**/node_modules/
+**/dist/
+
+# Java / Maven / Quarkus
+**/target/
+
+# Xcode user data
+**/xcuserdata/
+**/*.xcuserstate
+
+# Logs
+*.log

@@ -3,8 +3,7 @@ import CoreLocation
 
 final class PlayerLocationService {
 
-    // Im Simulator: Backend läuft auf dem Mac
-    private let baseURL = "http://localhost:8080/api/players"
+    private let baseURL = BackendConfig.apiURL("api/players")
 
 
     /// Aktualisiert einen existierenden Spieler in der DB
@@ -15,7 +14,7 @@ final class PlayerLocationService {
         latitude: Double,
         longitude: Double
     ) async throws {
-        guard let url = URL(string: "\(baseURL)/\(id)") else { return }
+        let url = baseURL.appendingPathComponent("\(id)")
 
         let dto = PlayerRequestDTO(id: id, name: name, latitude: latitude, longitude: longitude)
 
@@ -37,7 +36,7 @@ final class PlayerLocationService {
         radius: Double
     ) async throws -> [PlayerDTO] {
 
-        var components = URLComponents(string: "\(baseURL)/nearby")!
+        var components = URLComponents(url: baseURL.appendingPathComponent("nearby"), resolvingAgainstBaseURL: false)!
         components.queryItems = [
             URLQueryItem(name: "playerId", value: String(currentPlayerId)),
             URLQueryItem(name: "latitude", value: String(latitude)),
@@ -56,9 +55,7 @@ final class PlayerLocationService {
     
 
     func loadPlayerById(id: Int64) async throws -> PlayerDTO {
-        guard let url = URL(string: "\(baseURL)/\(id)") else {
-            throw URLError(.badURL)
-        }
+        let url = baseURL.appendingPathComponent("\(id)")
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
@@ -68,9 +65,9 @@ final class PlayerLocationService {
     }
 
     func loadPlayerStreak(id: Int64) async throws -> Int {
-        guard let url = URL(string: "\(baseURL)/\(id)/streak") else {
-            throw URLError(.badURL)
-        }
+        let url = baseURL
+            .appendingPathComponent("\(id)")
+            .appendingPathComponent("streak")
 
         let (data, _) = try await URLSession.shared.data(from: url)
         return try JSONDecoder().decode(Int.self, from: data)
@@ -87,9 +84,9 @@ struct PlayerPointsDTO: Codable {
 
 extension PlayerLocationService {
     func loadPlayerPoints(id: Int64) async throws -> Int {
-        guard let url = URL(string: "\(baseURL)/\(id)/points") else {
-            throw URLError(.badURL)
-        }
+        let url = baseURL
+            .appendingPathComponent("\(id)")
+            .appendingPathComponent("points")
 
         let (data, _) = try await URLSession.shared.data(from: url)
         let dto = try JSONDecoder().decode(PlayerPointsDTO.self, from: data)
@@ -97,7 +94,9 @@ extension PlayerLocationService {
     }
     
     func loadPlayerStats(id: Int64) async throws -> PlayerStatsDTO {
-        let url = URL(string: "http://localhost:8080/api/players/\(id)/stats")!
+        let url = baseURL
+            .appendingPathComponent("\(id)")
+            .appendingPathComponent("stats")
         let (data, _) = try await URLSession.shared.data(from: url)
         return try JSONDecoder().decode(PlayerStatsDTO.self, from: data)
     }

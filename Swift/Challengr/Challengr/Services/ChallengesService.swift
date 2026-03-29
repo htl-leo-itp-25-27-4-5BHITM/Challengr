@@ -7,7 +7,7 @@
 import Foundation
 final class ChallengesService {
 
-    private let baseURL = URL(string: "http://localhost:8080/api/challenges")!
+    private let baseURL = BackendConfig.apiURL("api/challenges")
 
     // Optional: Falls du wirklich noch alle Challenges brauchst
     func loadChallenges() async throws -> [ChallengeDTO] {

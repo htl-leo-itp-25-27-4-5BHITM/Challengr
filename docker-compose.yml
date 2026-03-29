@@ -1,7 +1,6 @@
-version: '3.8'
-
 services:
   postgres:
+    profiles: ["local-stack"]
     image: postgres:17-alpine
     container_name: challengr-postgres
     environment:
@@ -21,6 +20,7 @@ services:
       - challengr-network
 
   backend:
+    profiles: ["local-stack"]
     build:
       context: ./Backend/challengrbackend
       dockerfile: src/main/docker/Dockerfile.txt
@@ -44,16 +44,19 @@ services:
     working_dir: /app
     volumes:
       - ./WebApp:/app
+      - webapp_node_modules:/app/node_modules
     ports:
       - "5173:5173"
     command: sh -c "npm install && npm run dev"
     environment:
-      VITE_API_URL: http://localhost:8080
+      VITE_PROXY_TARGET: ${VITE_PROXY_TARGET:-https://it220257.cloud.htl-leonding.ac.at}
+      VITE_WS_PROXY_TARGET: ${VITE_WS_PROXY_TARGET:-wss://it220257.cloud.htl-leonding.ac.at}
     networks:
       - challengr-network
 
 volumes:
   postgres_data:
+  webapp_node_modules:
 
 networks:
   challengr-network:

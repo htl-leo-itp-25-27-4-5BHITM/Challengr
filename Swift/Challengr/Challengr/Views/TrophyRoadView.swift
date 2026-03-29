@@ -27,10 +27,10 @@ struct TrophyRank: Identifiable, Codable {
 // MARK: - Service
 
 final class RankService {
-    private let baseURL = URL(string: "http://localhost:8080")!
+    private let baseURL = BackendConfig.baseURL
 
     func loadRanks() async throws -> [TrophyRank] {
-        let url = baseURL.appendingPathComponent("/api/ranks")
+        let url = baseURL.appendingPathComponent("api/ranks")
         let (data, _) = try await URLSession.shared.data(from: url)
         return try JSONDecoder().decode([TrophyRank].self, from: data)
     }

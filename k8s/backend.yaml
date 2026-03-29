@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: challengr-backend
+  namespace: student-it220257
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: challengr-backend
+  template:
+    metadata:
+      labels:
+        app: challengr-backend
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: backend
+          image: ghcr.io/htl-leo-itp-25-27-4-5bhitm/challengr-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: QUARKUS_PROFILE
+              value: prod
+            - name: QUARKUS_DATASOURCE_JDBC_URL
+              value: jdbc:postgresql://challengr-postgres-service:5432/postgres
+            - name: QUARKUS_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: challengr-secrets
+                  key: POSTGRES_USER
+            - name: QUARKUS_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: challengr-secrets
+                  key: POSTGRES_PASSWORD
+            - name: QUARKUS_CORS_ORIGINS
+              value: https://it220257.cloud.htl-leonding.ac.at
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: challengr-backend-service
+  namespace: student-it220257
+spec:
+  selector:
+    app: challengr-backend
+  ports:
+    - port: 8080
+      targetPort: 8080

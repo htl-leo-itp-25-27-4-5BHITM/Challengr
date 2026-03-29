@@ -6,6 +6,8 @@ final class GameSocketService: ObservableObject {
     private let playerId: Int64
     private var webSocketTask: URLSessionWebSocketTask?
     private let urlSession = URLSession(configuration: .default)
+    private var reconnectWorkItem: DispatchWorkItem?
+    private var isManualDisconnect = false
 
     // Wird aufgerufen, wenn eine Battle-Anfrage reinkommt
     // battleId, fromId, toId, challengeId
@@ -35,12 +37,11 @@ final class GameSocketService: ObservableObject {
     // MARK: - Connect / Disconnect
 
     func connect() {
+        isManualDisconnect = false
+        reconnectWorkItem?.cancel()
         guard webSocketTask == nil else { return }
 
-        guard let url = URL(string: "ws://localhost:8080/ws/game?playerId=\(playerId)") else {
-            print("❌ Ungültige WebSocket-URL")
-            return
-        }
+        let url = BackendConfig.gameWebSocketURL(playerId: playerId)
 
         let task = urlSession.webSocketTask(with: url)
         webSocketTask = task
@@ -51,8 +52,26 @@ final class GameSocketService: ObservableObject {
     }
 
     func disconnect() {
+        isManualDisconnect = true
+        reconnectWorkItem?.cancel()
         webSocketTask?.cancel(with: .goingAway, reason: nil)
         webSocketTask = nil
+    }
+
+    private func scheduleReconnect() {
+        guard !isManualDisconnect else { return }
+        guard reconnectWorkItem == nil else { return }
+
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.reconnectWorkItem = nil
+            self.webSocketTask = nil
+            self.connect()
+        }
+
+        reconnectWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: work)
+        print("🔁 WS reconnect scheduled for player \(playerId)")
     }
 
     // MARK: - Senden
@@ -144,6 +163,8 @@ final class GameSocketService: ObservableObject {
             switch result {
             case .failure(let error):
                 print("WS receive error:", error)
+                self.webSocketTask = nil
+                self.scheduleReconnect()
             case .success(let message):
                 switch message {
                 case .string(let text):

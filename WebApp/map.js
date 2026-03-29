@@ -499,9 +499,7 @@ function showDetail(categoryName) {
   const category = categoriesRaw.find(c => c.name === categoryName);
   if (!category) return;
 
-  const filtered = allChallenges.filter(ch =>
-    ch.challengeCategory && ch.challengeCategory.id === category.id
-  );
+  const filtered = allChallenges.filter(ch => ch.category === category.name);
 
   filtered.forEach(ch => {
     const card = document.createElement("div");
@@ -621,6 +619,23 @@ resultDiv.parentElement.appendChild(sendBtn);
   return;
 }
 
+  // Kategorien anzeigen
+  subtitle.textContent = "Wähle eine Kategorie";
+
+  ["Fitness", "Mutprobe", "Wissen", "iPhone", "Customer"].forEach(cat => {
+    const btn = document.createElement("button");
+    btn.innerHTML = `
+      <span class="dialog-icon">${iconMap[cat]}</span>
+      <span class="dialog-text">${cat}</span>
+      <span class="dialog-spacer"></span>
+    `;
+
+    btn.style.background = getCategoryColor(cat);
+    btn.onclick = () => loadRandomChallenge(cat);
+    categoriesDiv.appendChild(btn);
+  });
+}
+
 
 
 function sendChallenge() {
@@ -653,26 +668,6 @@ function sendChallenge() {
   // Optional: „Warte bis Gegner annimmt…“ anzeigen, aber NICHT die Challenge selbst.
 }
 
-
-
-
-
-  // Kategorien anzeigen
-  subtitle.textContent = "Wähle eine Kategorie";
-
-  ["Fitness", "Mutprobe", "Wissen", "iPhone", "Customer"].forEach(cat => {
-  const btn = document.createElement("button");
-  btn.innerHTML = `
-    <span class="dialog-icon">${iconMap[cat]}</span>
-    <span class="dialog-text">${cat}</span>
-    <span class="dialog-spacer"></span>
-  `;
-
-  btn.style.background = getCategoryColor(cat);
-  btn.onclick = () => loadRandomChallenge(cat);
-  categoriesDiv.appendChild(btn);
-});
-}
 
 function showKnowledgeBattle() {
   const backdrop = document.getElementById("knowledge-battle-backdrop");

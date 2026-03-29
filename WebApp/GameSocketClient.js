@@ -4,6 +4,12 @@ export class GameClient {
   constructor(playerId) {
     this.playerId = playerId;
     this.socket = null;
+    this.shouldReconnect = true;
+    this.reconnectTimer = null;
+    this.reconnectDelayMs = 1000;
+    this.maxReconnectDelayMs = 10000;
+    this.pendingMessages = [];
+    this.maxPendingMessages = 30;
 
     // Event-Callbacks
     this.handlers = {
@@ -21,7 +27,20 @@ export class GameClient {
   // =====================
 
   connect() {
-    if (this.socket) return;
+    this.shouldReconnect = true;
+
+    if (
+      this.socket &&
+      (this.socket.readyState === WebSocket.OPEN ||
+        this.socket.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const url = `${protocol}//${window.location.host}/ws/game?playerId=${this.playerId}`;
@@ -29,6 +48,8 @@ export class GameClient {
 
     this.socket.onopen = () => {
       console.log("🔌 WS connected (player", this.playerId, ")");
+      this.reconnectDelayMs = 1000;
+      this.flushPendingMessages();
     };
 
     this.socket.onmessage = (event) => {
@@ -44,6 +65,9 @@ export class GameClient {
     this.socket.onclose = () => {
       console.log("🔌 WS disconnected");
       this.socket = null;
+      if (this.shouldReconnect) {
+        this.scheduleReconnect();
+      }
     };
 
     this.socket.onerror = (err) => {
@@ -52,9 +76,40 @@ export class GameClient {
   }
 
   disconnect() {
+    this.shouldReconnect = false;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.socket) {
       this.socket.close();
       this.socket = null;
+    }
+  }
+
+  scheduleReconnect() {
+    if (this.reconnectTimer || !this.shouldReconnect) return;
+
+    const delay = this.reconnectDelayMs;
+    console.log(`🔁 WS reconnect in ${delay}ms`);
+
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect();
+    }, delay);
+
+    this.reconnectDelayMs = Math.min(
+      Math.floor(this.reconnectDelayMs * 1.8),
+      this.maxReconnectDelayMs
+    );
+  }
+
+  flushPendingMessages() {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+
+    while (this.pendingMessages.length > 0) {
+      const msg = this.pendingMessages.shift();
+      this.socket.send(msg);
     }
   }
 
@@ -79,11 +134,20 @@ export class GameClient {
   // =====================
 
   send(data) {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      console.warn("❌ WS not connected");
+    const payload = JSON.stringify(data);
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(payload);
       return;
     }
-    this.socket.send(JSON.stringify(data));
+
+    if (this.pendingMessages.length >= this.maxPendingMessages) {
+      this.pendingMessages.shift();
+    }
+    this.pendingMessages.push(payload);
+
+    console.warn("⚠️ WS not connected yet, message queued");
+    this.connect();
   }
 
   createBattle(toPlayerId, challengeId) {

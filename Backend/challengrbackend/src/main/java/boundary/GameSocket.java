@@ -55,7 +55,18 @@ public class GameSocket {
             return;
         }
         Long playerId = Long.valueOf(params.get(0));
-        SESSIONS.put(playerId, session);
+        Session previousSession = SESSIONS.put(playerId, session);
+        if (previousSession != null && !previousSession.getId().equals(session.getId())) {
+            SESSION_TO_PLAYER.remove(previousSession.getId());
+            try {
+                if (previousSession.isOpen()) {
+                    previousSession.close();
+                }
+            } catch (IOException ignored) {
+            }
+            System.out.println("Replaced existing WebSocket session for player " + playerId
+                    + " (old=" + previousSession.getId() + ", new=" + session.getId() + ")");
+        }
         SESSION_TO_PLAYER.put(session.getId(), playerId);
         System.out.println("WebSocket open for player " + playerId + " (session=" + session.getId() + ")");
     }

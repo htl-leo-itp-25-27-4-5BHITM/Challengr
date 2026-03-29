@@ -128,3 +128,58 @@ Ziele:
 Ziele:
 
 * Verbindung von Projekt mit LeoCloud
+
+---
+
+## Lokaler Schnellstart (WebApp + Cloud Backend)
+
+Im Projekt-Root reicht jetzt **ein Befehl**:
+
+```bash
+./scripts/dev-cloud.sh
+```
+
+Der Befehl macht automatisch:
+
+- lokale WebApp auf `http://localhost:5173` starten
+- Proxy auf Cloud-Backend (`https://it220257.cloud.htl-leonding.ac.at`) setzen
+- DB-Tunnel für IntelliJ auf `localhost:15432` starten
+
+IntelliJ-DB-Verbindung:
+
+- Host: `localhost`
+- Port: `15432`
+- Database/User/Passwort: `postgres/postgres/postgres`
+
+DB-Tunnel stoppen:
+
+```bash
+./scripts/db-tunnel-stop.sh
+```
+
+Optional: kompletten lokalen Stack (Postgres + Backend + WebApp) starten:
+
+```bash
+docker compose --profile local-stack up --build
+```
+
+---
+
+## LeoCloud Deployment
+
+Für LeoCloud gibt es ein separates Setup im Ordner `k8s/`.
+
+Die genaue Anleitung findest du in:
+
+- `k8s/README.md`
+
+Kurz gesagt:
+
+1. Backend-Image bauen und pushen
+2. WebApp-Image bauen und pushen
+3. Secret anlegen
+4. Kubernetes-Manifeste aus `k8s/` deployen
+
+Ziel-URL:
+
+- `https://it220257.cloud.htl-leonding.ac.at`

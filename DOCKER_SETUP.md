@@ -1,22 +1,40 @@
 # Challengr Docker Setup
 
-## Schnellstart mit Docker Compose
+## Schnellstart (ein Befehl)
 
 ```bash
-# Alle Services starten (PostgreSQL + Backend + WebApp)
-docker-compose up -d
-
-# Logs anschauen
-docker-compose logs -f
-
-# Services stoppen
-docker-compose down
+./scripts/dev-cloud.sh
 ```
 
-### URLs nach dem Start:
-- **Backend API**: http://localhost:8080
-- **WebApp**: http://localhost:5173
-- **PostgreSQL**: localhost:5432
+Was der Befehl automatisch startet:
+
+- lokale WebApp (`http://localhost:5173`)
+- Proxy auf Cloud-Backend + Cloud-WebSocket
+- stabilen DB-Tunnel nach Kubernetes auf `localhost:15432`
+
+### DB-Verbindung in IntelliJ/DataGrip
+
+- Host: `localhost`
+- Port: `15432`
+- Database: `postgres`
+- User: `postgres`
+- Password: `postgres`
+
+Tunnel stoppen:
+
+```bash
+./scripts/db-tunnel-stop.sh
+```
+
+---
+
+## Optional: kompletter lokaler Stack
+
+```bash
+docker compose --profile local-stack up --build
+```
+
+Dann laufen PostgreSQL + Backend + WebApp lokal.
 
 ---
 
