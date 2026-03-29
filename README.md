@@ -183,3 +183,15 @@ Kurz gesagt:
 Ziel-URL:
 
 - `https://it220257.cloud.htl-leonding.ac.at`
+
+### Einfacher Deploy-Befehl (für alle im Team)
+
+Im Projekt-Root:
+
+```bash
+./scripts/deploy-cloud.sh backend
+./scripts/deploy-cloud.sh webapp
+./scripts/deploy-cloud.sh both
+```
+
+Damit werden Images gebaut/zu GHCR gepusht und die passenden Kubernetes Deployments automatisch neu gestartet.
