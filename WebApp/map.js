@@ -1,7 +1,20 @@
 import { GameClient } from "./GameSocketClient.js";
 
-window.myName = "WebappSpieler"; 
-let myId = 3;
+const urlParams = new URLSearchParams(window.location.search);
+const playerIdParam = Number.parseInt(urlParams.get("playerId") || "", 10);
+const playerNameParam = (urlParams.get("name") || "").trim();
+
+window.myName = playerNameParam || "WebappSpieler";
+let myId = Number.isInteger(playerIdParam) && playerIdParam > 0 ? playerIdParam : 3;
+window.myId = myId;
+console.log(
+  "WebApp active playerId:",
+  myId,
+  "name:",
+  window.myName,
+  "(URL:",
+  window.location.href + ")"
+);
 const gameClient = new GameClient(myId);
 gameClient.connect();
 let chartInstance = null;

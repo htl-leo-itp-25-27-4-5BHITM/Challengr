@@ -37,7 +37,7 @@ spec:
                   name: challengr-secrets
                   key: POSTGRES_PASSWORD
             - name: QUARKUS_CORS_ORIGINS
-              value: https://it220257.cloud.htl-leonding.ac.at
+              value: https://it220257.cloud.htl-leonding.ac.at,http://localhost:5173,http://127.0.0.1:5173
 ---
 apiVersion: v1
 kind: Service

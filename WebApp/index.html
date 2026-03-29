@@ -8,9 +8,17 @@
   </head>
   <body>
     <iframe
+      id="map-frame"
       src="/map.html"
       style="border:0; width:100vw; height:100vh;"
     ></iframe>
+
+    <script>
+      const frame = document.getElementById("map-frame");
+      if (frame && window.location.search) {
+        frame.src = `/map.html${window.location.search}`;
+      }
+    </script>
   </body>
 </html>
 
