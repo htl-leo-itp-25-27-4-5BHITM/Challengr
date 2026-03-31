@@ -56,6 +56,24 @@ struct KnowledgeQuestionDTO: Codable {
     let choices: [String]
 }
 
+struct PlayerPointsHistoryDTO: Codable, Identifiable {
+    let id = UUID()
+    let date: String
+    let points: Int
+}
+
+struct BattleHistoryDTO: Codable, Identifiable {
+    let id: Int64
+    let createdAt: String
+    let challengeText: String
+    let category: String
+    let opponentName: String
+    let winnerName: String?
+    let status: String
+    let pointsDelta: Int
+    let won: Bool
+}
+
 enum BackendEnvironment: String {
     case cloud
     case local

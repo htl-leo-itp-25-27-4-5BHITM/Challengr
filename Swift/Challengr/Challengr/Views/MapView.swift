@@ -89,11 +89,13 @@ struct MapView: View {
     @State private var ownPlayerName: String = ""
     @State private var ownCoordinate: CLLocationCoordinate2D? = nil
     
-    @State private var ownRankName: String = "Rookie"
+    @State private var ownRankName: String = "-"
     @State private var ownDailyStreak: Int = 0
-    @State private var ownTotalChallenges: Int = 42
-    @State private var ownWonChallenges: Int = 21
+    @State private var ownTotalChallenges: Int = 0
+    @State private var ownWonChallenges: Int = 0
     @State private var ownPoints: Int = 0
+    @State private var pointsHistory: [PlayerPointsHistoryDTO] = []
+    @State private var battleHistory: [BattleHistoryDTO] = []
     
     @State private var showProfile = false
     @State private var currentTargetCoordinate: CLLocationCoordinate2D? = nil
@@ -279,7 +281,9 @@ struct MapView: View {
                     totalChallenges: ownTotalChallenges,
                     wonChallenges: ownWonChallenges,
                     points: ownPoints
-                )
+                ),
+                pointsHistory: pointsHistory,
+                battleHistory: battleHistory
             )
         }
         .onChange(of: showProfile) { isShown in
@@ -534,6 +538,7 @@ struct MapView: View {
             HStack {
                 Spacer()
                 Button {
+                    reloadOwnPlayerData()
                     showProfile = true
                 } label: {
                     Image("playerBoy")
@@ -795,8 +800,14 @@ struct MapView: View {
                 async let pointsAsync = playerService.loadPlayerPoints(id: ownPlayerId)
                 async let streakAsync = playerService.loadPlayerStreak(id: ownPlayerId)
                 async let statsAsync  = playerService.loadPlayerStats(id: ownPlayerId)
+                async let historyAsync = playerService.loadPlayerPointsHistory(id: ownPlayerId)
+                async let battlesAsync = playerService.loadPlayerBattles(id: ownPlayerId)
 
-                let (points, streak, stats) = try await (pointsAsync, streakAsync, statsAsync)
+                let points = try await pointsAsync
+                let streak = try await streakAsync
+                let stats  = try await statsAsync
+                let history = (try? await historyAsync) ?? []
+                let battles = (try? await battlesAsync) ?? []
 
                 await MainActor.run {
                     ownPlayerName      = name
@@ -805,6 +816,8 @@ struct MapView: View {
                     ownDailyStreak     = streak
                     ownTotalChallenges = stats.totalChallenges
                     ownWonChallenges   = stats.wonChallenges
+                    pointsHistory      = history
+                    battleHistory      = battles
                 }
             } catch {
                 print("Fehler beim Reload der eigenen Daten:", error)

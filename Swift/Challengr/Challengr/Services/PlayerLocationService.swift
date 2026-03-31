@@ -100,6 +100,44 @@ extension PlayerLocationService {
         let (data, _) = try await URLSession.shared.data(from: url)
         return try JSONDecoder().decode(PlayerStatsDTO.self, from: data)
     }
+
+    func loadPlayerPointsHistory(id: Int64) async throws -> [PlayerPointsHistoryDTO] {
+        let url = baseURL
+            .appendingPathComponent("\(id)")
+            .appendingPathComponent("points-history")
+        let (data, _) = try await URLSession.shared.data(from: url)
+        return try JSONDecoder().decode([PlayerPointsHistoryDTO].self, from: data)
+    }
+
+    func loadPlayerBattles(id: Int64) async throws -> [BattleHistoryDTO] {
+        let url = baseURL
+            .appendingPathComponent("\(id)")
+            .appendingPathComponent("battles")
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        if let httpResponse = response as? HTTPURLResponse {
+            if httpResponse.statusCode == 404 {
+                print("Battle history not available (404):", url.absoluteString)
+                return []
+            }
+
+            if httpResponse.statusCode < 200 || httpResponse.statusCode >= 300 {
+                let snippet = String(data: data, encoding: .utf8) ?? "<no body>"
+                print("Battle history failed (\(httpResponse.statusCode)):", url.absoluteString)
+                print("Response snippet:", snippet.prefix(200))
+                return []
+            }
+        }
+
+        do {
+            return try JSONDecoder().decode([BattleHistoryDTO].self, from: data)
+        } catch {
+            let snippet = String(data: data, encoding: .utf8) ?? "<no body>"
+            print("Battle history decode failed:", url.absoluteString)
+            print("Response snippet:", snippet.prefix(200))
+            return []
+        }
+    }
 }
 
 struct PlayerStatsDTO: Decodable {

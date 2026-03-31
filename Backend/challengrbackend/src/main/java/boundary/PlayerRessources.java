@@ -176,6 +176,40 @@ public class PlayerRessources {
         }
     }
 
+    public static class BattleHistoryDTO {
+        public Long id;
+        public String createdAt;
+        public String challengeText;
+        public String category;
+        public String opponentName;
+        public String winnerName;
+        public String status;
+        public int pointsDelta;
+        public boolean won;
+
+        public BattleHistoryDTO() {}
+
+        public BattleHistoryDTO(Long id,
+                                String createdAt,
+                                String challengeText,
+                                String category,
+                                String opponentName,
+                                String winnerName,
+                                String status,
+                                int pointsDelta,
+                                boolean won) {
+            this.id = id;
+            this.createdAt = createdAt;
+            this.challengeText = challengeText;
+            this.category = category;
+            this.opponentName = opponentName;
+            this.winnerName = winnerName;
+            this.status = status;
+            this.pointsDelta = pointsDelta;
+            this.won = won;
+        }
+    }
+
     @GET
     @Path("/{id}/stats")
     public PlayerStatsDTO getStats(@PathParam("id") Long id) {
@@ -203,6 +237,51 @@ public class PlayerRessources {
             throw new NotFoundException();
         }
         return new PlayerPointsDTO(p.getId(), p.getPoints()); // getPoints() = Feld in deiner Player-Entity
+    }
+
+    @GET
+    @Path("/{id}/battles")
+    public List<BattleHistoryDTO> getBattleHistory(@PathParam("id") Long id) {
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new NotFoundException();
+        }
+
+        var battles = playerRepository.findDoneBattlesForPlayer(player);
+        battles.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+
+        List<BattleHistoryDTO> history = new java.util.ArrayList<>();
+
+        for (Battle b : battles) {
+            boolean isFrom = b.getFromPlayer().getId().equals(player.getId());
+            Player opponent = isFrom ? b.getToPlayer() : b.getFromPlayer();
+            boolean won = b.getWinner() != null && b.getWinner().getId().equals(player.getId());
+
+            int delta;
+            if (won) {
+                delta = b.getWinnerPointsDelta() != null ? b.getWinnerPointsDelta() : 0;
+            } else {
+                delta = b.getLoserPointsDelta() != null ? b.getLoserPointsDelta() : 0;
+            }
+
+            String category = b.getCategory() != null ? b.getCategory().getName() : "";
+            String challengeText = b.getChallenge() != null ? b.getChallenge().getText() : "";
+            String winnerName = b.getWinner() != null ? b.getWinner().getName() : null;
+
+            history.add(new BattleHistoryDTO(
+                    b.getId(),
+                    b.getCreatedAt().toString(),
+                    challengeText,
+                    category,
+                    opponent != null ? opponent.getName() : "",
+                    winnerName,
+                    b.getStatus(),
+                    delta,
+                    won
+            ));
+        }
+
+        return history;
     }
 
     @GET
