@@ -17,10 +17,12 @@ enum SprintPhase {
 }
 
 struct SprintChallengeView: View {
+    // MARK: - Input (Eingaben)
     let battleId: Int64
     let socket: GameSocketService
     let onClose: () -> Void
 
+    // MARK: - State (State)
     @StateObject private var locationHelper = LocationHelper()
 
     @State private var phase: SprintPhase = .ready
@@ -28,6 +30,8 @@ struct SprintChallengeView: View {
     @State private var startLocation: CLLocationCoordinate2D?
     @State private var maxDistance: CLLocationDistance = 0
     @State private var timer: Timer?
+
+    // MARK: - Derived values (Abgeleitete Werte)
 
     private var phaseTitle: String {
         switch phase {
@@ -41,6 +45,8 @@ struct SprintChallengeView: View {
     private var distanceText: String {
         String(format: "%.1f m", maxDistance)
     }
+
+    // MARK: - Body (UI-Aufbau)
 
     var body: some View {
         ZStack {
@@ -114,6 +120,8 @@ struct SprintChallengeView: View {
         }
     }
 }
+
+// MARK: - Actions (Aktionen)
 
 private extension SprintChallengeView {
     func startReadyPhase() {

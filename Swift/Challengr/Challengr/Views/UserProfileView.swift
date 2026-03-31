@@ -7,6 +7,8 @@
 import SwiftUI
 import Charts
 
+// MARK: - Models (Modelle)
+
 struct UserProfileData {
     let name: String
     let avatarImageName: String
@@ -30,6 +32,8 @@ private extension String {
     }
 }
 
+// MARK: - View (UI)
+
 struct UserProfileView: View {
     let data: UserProfileData
     let pointsHistory: [PlayerPointsHistoryDTO]
@@ -40,6 +44,8 @@ struct UserProfileView: View {
     @State private var selectedDate: String? = nil
     @State private var selectedPoints: Int? = nil
     @State private var isChartExpanded: Bool = true
+
+    // MARK: - Body (Aufbau)
 
     var body: some View {
         ScrollView {
@@ -96,6 +102,8 @@ struct UserProfileView: View {
         }
         .background(Color(.systemGroupedBackground))
     }
+
+    // MARK: - Points chart (Punkte-Chart)
 
     private var pointsChart: some View {
         let aggregatedHistory = startOfDayHistory(pointsHistory, battleHistory: battleHistory)
@@ -221,6 +229,8 @@ struct UserProfileView: View {
         .padding(.top, 12)
     }
 
+    // MARK: - Status & badges (Status & Badges)
+
     private var statusChip: some View {
         let status = profileStatus
         return HStack(spacing: 6) {
@@ -286,6 +296,8 @@ struct UserProfileView: View {
                 .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
         )
     }
+
+    // MARK: - Battle list (Battle-Liste)
 
     private func battleDetailList(for date: String?) -> some View {
         let filtered = battleHistory.filter { battle in
@@ -377,6 +389,8 @@ struct UserProfileView: View {
         )
         .padding(.top, 8)
     }
+
+    // MARK: - Helpers (Hilfsfunktionen)
 
     private func filteredTitle(for date: String?) -> String {
         if let date {

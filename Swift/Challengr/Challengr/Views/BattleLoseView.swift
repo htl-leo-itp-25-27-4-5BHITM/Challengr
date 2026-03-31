@@ -7,9 +7,11 @@
 import SwiftUI
 
 struct BattleLoseView: View {
+    // MARK: - Input (Eingaben)
     let data: BattleResultData
     let onClose: () -> Void
 
+    // MARK: - Body (UI-Aufbau)
     var body: some View {
         ZStack {
             // heller App-Hintergrund
@@ -142,7 +144,8 @@ struct BattleLoseView: View {
         }
     }
 
-    // MARK: - Result Player Card
+    // MARK: - Subviews (Unteransichten)
+    // MARK: - Result Player Card (Ergebnis-Karte)
 
     private func resultPlayerCard(
         name: String,

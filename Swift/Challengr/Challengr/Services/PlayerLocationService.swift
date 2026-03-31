@@ -3,11 +3,14 @@ import CoreLocation
 
 final class PlayerLocationService {
 
+    // MARK: - Configuration (Konfiguration)
+
     private let baseURL = BackendConfig.apiURL("api/players")
 
+    // MARK: - Player updates (Spieler-Updates)
 
-    /// Aktualisiert einen existierenden Spieler in der DB
-    // PUT: nur Position/Name schicken, keine Punkte
+    /// Updates an existing player (Aktualisiert einen existierenden Spieler)
+    /// PUT: send position/name only, no points (PUT: nur Position/Name schicken, keine Punkte)
     func updatePlayer(
         id: Int64,
         name: String,
@@ -27,8 +30,10 @@ final class PlayerLocationService {
     }
 
 
-    /// Holt Spieler in der Nähe (inkl. eigenem Spieler)
-    /// Holt Spieler in der Nähe (inkl. eigenem Spieler, falls Backend ihn zurückgibt)
+    // MARK: - Player fetch (Spieler laden)
+
+    /// Loads nearby players (inkl. ggf. eigenem Spieler)
+    /// (Holt Spieler in der Nähe, falls Backend ihn zurückgibt)
     func loadNearbyPlayers(
         currentPlayerId: Int64,
         latitude: Double,
@@ -54,6 +59,7 @@ final class PlayerLocationService {
     }
     
 
+    /// Loads a player by id (Spieler per ID laden)
     func loadPlayerById(id: Int64) async throws -> PlayerDTO {
         let url = baseURL.appendingPathComponent("\(id)")
 
@@ -64,6 +70,7 @@ final class PlayerLocationService {
         return try JSONDecoder().decode(PlayerDTO.self, from: data)
     }
 
+    /// Loads daily streak (Tagesstreak laden)
     func loadPlayerStreak(id: Int64) async throws -> Int {
         let url = baseURL
             .appendingPathComponent("\(id)")
@@ -77,12 +84,15 @@ final class PlayerLocationService {
 
 }
 
+// MARK: - Points & stats (Punkte & Statistiken)
+
 struct PlayerPointsDTO: Codable {
     let playerId: Int64
     let points: Int
 }
 
 extension PlayerLocationService {
+    /// Loads total points (Gesamtpunkte laden)
     func loadPlayerPoints(id: Int64) async throws -> Int {
         let url = baseURL
             .appendingPathComponent("\(id)")
@@ -93,6 +103,7 @@ extension PlayerLocationService {
         return dto.points
     }
     
+    /// Loads total/won challenges (Gesamt/Gewonnen laden)
     func loadPlayerStats(id: Int64) async throws -> PlayerStatsDTO {
         let url = baseURL
             .appendingPathComponent("\(id)")
@@ -101,6 +112,7 @@ extension PlayerLocationService {
         return try JSONDecoder().decode(PlayerStatsDTO.self, from: data)
     }
 
+    /// Loads points history (Punkteverlauf laden)
     func loadPlayerPointsHistory(id: Int64) async throws -> [PlayerPointsHistoryDTO] {
         let url = baseURL
             .appendingPathComponent("\(id)")
@@ -109,6 +121,9 @@ extension PlayerLocationService {
         return try JSONDecoder().decode([PlayerPointsHistoryDTO].self, from: data)
     }
 
+    // MARK: - Battles & profile (Battles & Profil)
+
+    /// Loads battle history (Battle-Verlauf laden)
     func loadPlayerBattles(id: Int64) async throws -> [BattleHistoryDTO] {
         let url = baseURL
             .appendingPathComponent("\(id)")
@@ -139,6 +154,7 @@ extension PlayerLocationService {
         }
     }
 
+    /// Loads profile status/badges (Profil-Status/Badges laden)
     func loadPlayerProfile(id: Int64) async throws -> PlayerProfileDTO {
         let url = baseURL
             .appendingPathComponent("\(id)")

@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Model
+// MARK: - Model (Modell)
 
 struct TrophyRank: Identifiable, Codable {
     let id = UUID()
@@ -24,7 +24,7 @@ struct TrophyRank: Identifiable, Codable {
     }
 }
 
-// MARK: - Service
+// MARK: - Service (Service)
 
 final class RankService {
     private let baseURL = BackendConfig.baseURL
@@ -36,21 +36,26 @@ final class RankService {
     }
 }
 
-// MARK: - Trophy Road View
+// MARK: - Trophy Road View (Ansicht)
 
 struct TrophyRoadView: View {
+    // MARK: - Input (Eingaben)
     let playerId: Int64
 
+    // MARK: - State (State)
     @State private var trophyRanks: [TrophyRank] = []
     @State private var playerPoints: Int = 0
 
+    // MARK: - Services (Services)
     private let rankService = RankService()
     private let playerService = PlayerLocationService()
 
+    // MARK: - Derived values (Abgeleitete Werte)
     private var currentRank: TrophyRank? {
         trophyRanks.first { $0.range.contains(playerPoints) }
     }
 
+    // MARK: - Body (UI-Aufbau)
     var body: some View {
         NavigationStack {
             ZStack {
@@ -72,7 +77,7 @@ struct TrophyRoadView: View {
         .task { await loadData() }
     }
 
-    // MARK: - Background
+    // MARK: - Background (Hintergrund)
 
     private var background: some View {
         LinearGradient(
@@ -83,7 +88,7 @@ struct TrophyRoadView: View {
         .ignoresSafeArea()
     }
 
-    // MARK: - Header
+    // MARK: - Header (Kopfbereich)
 
     private var header: some View {
         VStack(spacing: 12) {
@@ -108,7 +113,7 @@ struct TrophyRoadView: View {
         }
     }
 
-    // MARK: - Main Card
+    // MARK: - Main Card (Hauptkarte)
 
     private var mainCard: some View {
         ZStack {
@@ -168,7 +173,7 @@ struct TrophyRoadView: View {
         .padding(.horizontal, 24)
     }
 
-    // MARK: - Info Button
+    // MARK: - Info Button (Info-Button)
 
     private var infoButton: some View {
         VStack {
@@ -192,7 +197,7 @@ struct TrophyRoadView: View {
         }
     }
 
-    // MARK: - Logic
+    // MARK: - Actions (Aktionen)
 
     private func scrollToCurrentRank(with proxy: ScrollViewProxy) {
         if let current = currentRank {
@@ -218,8 +223,6 @@ struct TrophyRoadView: View {
         }
     }
 }
-
-// MARK: - Rank Section (Pfad + Card + Figur)
 
 // MARK: - Rank Section (Pfad + Card + Figur)
 

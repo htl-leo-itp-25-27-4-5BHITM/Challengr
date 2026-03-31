@@ -7,8 +7,10 @@
 import SwiftUI
 
 struct HudCircleButton: View {
+    // MARK: - Input (Eingaben)
     let systemName: String
 
+    // MARK: - Body (UI-Aufbau)
     var body: some View {
         ZStack {
             Circle()
@@ -33,9 +35,11 @@ struct HudCircleButton: View {
 }
 
 struct CompassView: View {
+    // MARK: - Input (Eingaben)
     let angle: Angle
     let onTap: () -> Void
 
+    // MARK: - Body (UI-Aufbau)
     var body: some View {
         Button(action: onTap) {
             ZStack {
@@ -79,6 +83,7 @@ struct CompassView: View {
 }
 
 struct Triangle: Shape {
+    // MARK: - Drawing (Zeichnen)
     func path(in rect: CGRect) -> Path {
         Path { p in
             p.move(to: CGPoint(x: rect.midX, y: rect.minY))

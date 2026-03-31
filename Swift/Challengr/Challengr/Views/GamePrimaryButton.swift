@@ -9,10 +9,12 @@
 import SwiftUI
 
 struct GamePrimaryButton: View {
+    // MARK: - Input (Eingaben)
     let title: String
     let color: Color
     let action: () -> Void
 
+    // MARK: - Body (UI-Aufbau)
     var body: some View {
         Button(action: action) {
             Text(title.uppercased())
@@ -31,12 +33,15 @@ struct GamePrimaryButton: View {
 }
 
 struct GameCard<Content: View>: View {
+    // MARK: - Input (Eingaben)
     let content: Content
 
+    // MARK: - Init (Initialisierung)
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
 
+    // MARK: - Body (UI-Aufbau)
     var body: some View {
         VStack(spacing: 12) {
             content

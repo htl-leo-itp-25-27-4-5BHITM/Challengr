@@ -6,14 +6,18 @@
 //
 
 import SwiftUI
+
 struct ChallengeDetailView: View {
+    // MARK: - Input (Eingaben)
     let category: String
     let color: Color
 
+    // MARK: - State (State)
     @State private var description: String = ""
     @State private var tasks: [String] = []
     @State private var isLoading = true
 
+    // MARK: - Body (UI-Aufbau)
     var body: some View {
         ZStack {
             color.ignoresSafeArea()
@@ -49,6 +53,8 @@ struct ChallengeDetailView: View {
             await loadCategory()
         }
     }
+
+    // MARK: - Actions (Aktionen)
 
     func loadCategory() async {
         do {

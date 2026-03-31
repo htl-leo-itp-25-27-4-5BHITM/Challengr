@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ChallengeView: View {
-
+    // MARK: - Data (Daten)
     
     let items = [
         CardItem(
@@ -42,7 +42,7 @@ struct ChallengeView: View {
             color: .gray
         )
     ]
-
+    // MARK: - Body (UI-Aufbau)
 
     var body: some View {
             NavigationStack {
@@ -66,9 +66,13 @@ struct ChallengeView: View {
         }
     }
 
+// MARK: - Subviews (Unteransichten)
+
 struct CardView: View {
 
     let item: CardItem
+
+    // MARK: - Body (UI-Aufbau)
 
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
@@ -98,7 +102,7 @@ struct CardView: View {
         .shadow(color: item.color.opacity(0.4), radius: 6, x: 0, y: 4)
     }
 }
-
+// MARK: - Models (Modelle)
 
     struct CardItem: Identifiable {
         let id = UUID()

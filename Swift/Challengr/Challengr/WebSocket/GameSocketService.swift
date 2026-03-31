@@ -3,25 +3,28 @@ import Combine
 
 final class GameSocketService: ObservableObject {
 
+    // MARK: - Configuration (Konfiguration)
+
     private let playerId: Int64
     private var webSocketTask: URLSessionWebSocketTask?
     private let urlSession = URLSession(configuration: .default)
     private var reconnectWorkItem: DispatchWorkItem?
     private var isManualDisconnect = false
 
-    // Wird aufgerufen, wenn eine Battle-Anfrage reinkommt
-    // battleId, fromId, toId, challengeId
-    var onChallengeReceived: ((Int64, Int64, Int64, Int64, Double?, Double?) -> Void)?
-    // Wird aufgerufen, wenn ein Battle den Status ACCEPTED erreicht
-    var onBattleAccepted: ((Int64) -> Void)?
-    
-    var onReadyForVoting: ((Int64) -> Void)?
-    
-    var onBattleUpdatedStatus: ((Int64, String) -> Void)?
-    
-    var onBattlePending: ((Int64) -> Void)?
+    // MARK: - Event callbacks (Event-Callbacks)
 
-    // im GameSocketService
+    /// Called when a battle request arrives (Aufgerufen bei Battle-Anfrage)
+    /// Parameters: battleId, fromId, toId, challengeId, targetLat, targetLon
+    var onChallengeReceived: ((Int64, Int64, Int64, Int64, Double?, Double?) -> Void)?
+    /// Called when a battle reaches ACCEPTED (Aufgerufen bei Status ACCEPTED)
+    var onBattleAccepted: ((Int64) -> Void)?
+    /// Called when the battle is ready for voting (Bereit fürs Voting)
+    var onReadyForVoting: ((Int64) -> Void)?
+    /// Called on generic status updates (Generische Status-Updates)
+    var onBattleUpdatedStatus: ((Int64, String) -> Void)?
+    /// Called when battle is pending (Battle pending)
+    var onBattlePending: ((Int64) -> Void)?
+    /// Called when a knowledge question arrives (Wissensfrage empfangen)
     var onKnowledgeQuestion: ((Int64, ChallengeDTO) -> Void)?
 
 
@@ -33,8 +36,7 @@ final class GameSocketService: ObservableObject {
     
     var onBattleResult: ((BattleResultData) -> Void)?
 
-
-    // MARK: - Connect / Disconnect
+    // MARK: - Connect / Disconnect (Verbinden / Trennen)
 
     func connect() {
         isManualDisconnect = false
@@ -74,7 +76,7 @@ final class GameSocketService: ObservableObject {
         print("🔁 WS reconnect scheduled for player \(playerId)")
     }
 
-    // MARK: - Senden
+    // MARK: - Send messages (Senden)
 
     func sendCreateBattle(fromId: Int64, toId: Int64, challengeId: Int64) {
         let payload: [String: Any] = [
@@ -155,7 +157,7 @@ final class GameSocketService: ObservableObject {
 
 
 
-    // MARK: - Empfangen
+    // MARK: - Receive messages (Empfangen)
 
     private func receive() {
         webSocketTask?.receive { [weak self] result in
@@ -232,7 +234,7 @@ final class GameSocketService: ObservableObject {
             }
 
 
-            // NEU: Ergebnis nach Voting
+            // Result after voting (Ergebnis nach Voting)
             if type == "battle-result" {
                 let winnerName = json["winnerName"] as? String ?? ""
                 let loserName  = json["loserName"]  as? String ?? ""

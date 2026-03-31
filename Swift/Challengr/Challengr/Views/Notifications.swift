@@ -6,6 +6,8 @@
 //
 import Foundation
 
+// MARK: - Notification names (Notification-Namen)
+
 extension Notification.Name {
     static let knowledgeQuestionReceived = Notification.Name("knowledgeQuestionReceived")
 }

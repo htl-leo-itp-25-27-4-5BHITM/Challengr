@@ -1,12 +1,15 @@
 import SwiftUI
 
 struct BattleVotingView: View {
+    // MARK: - Input (Eingaben)
     let playerA: String          // nur Name
     let playerB: String          // nur Name
     let onVote: (String) -> Void
 
+    // MARK: - State (State)
     @State private var selected: String? = nil
 
+    // MARK: - Body (UI-Aufbau)
     var body: some View {
         ZStack {
             // Cinematischer, heller Hintergrund
@@ -95,7 +98,8 @@ struct BattleVotingView: View {
         }
     }
 
-    // MARK: - Player Tile
+    // MARK: - Subviews (Unteransichten)
+    // MARK: - Player Tile (Spieler-Kachel)
 
     private func playerTile(
         name: String,

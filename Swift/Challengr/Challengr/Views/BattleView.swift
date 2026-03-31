@@ -12,7 +12,10 @@ struct BattleResultData {
     let trashTalk: String      // nur im Lose-Screen angezeigt
 }
 
+// MARK: - View (UI)
+
 struct BattleView: View {
+    // MARK: - Input (Eingaben)
     let challengeName: String
     let category: String
     let playerLeft: String
@@ -21,6 +24,7 @@ struct BattleView: View {
     let onSurrender: () -> Void
     let onFinished: () -> Void
 
+    // MARK: - Body (UI-Aufbau)
     var body: some View {
         ZStack {
             // Hintergrund wie VotingView
@@ -200,7 +204,8 @@ struct BattleView: View {
         }
     }
 
-    // MARK: - Player Panel
+    // MARK: - Subviews (Unteransichten)
+    // MARK: - Player Panel (Spieler-Panel)
 
     private func playerPanel(
         name: String,

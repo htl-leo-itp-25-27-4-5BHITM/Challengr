@@ -11,16 +11,19 @@ import CoreLocation
 import MapKit
 
 struct CheckInSpotView: View {
+    // MARK: - Input (Eingaben)
     let battleId: Int64
     let socket: GameSocketService
     let targetCoordinate: CLLocationCoordinate2D
     let radius: CLLocationDistance
     let onClose: () -> Void
 
+    // MARK: - State (State)
     @StateObject private var locationHelper = LocationHelper()  // nutzt du ja schon
     @State private var currentLocation: CLLocationCoordinate2D?
     @State private var hasCompleted = false
 
+    // MARK: - Derived values (Abgeleitete Werte)
     private var distanceText: String {
         guard let currentLocation else { return "Position wird bestimmt …" }
         let loc1 = CLLocation(latitude: currentLocation.latitude, longitude: currentLocation.longitude)
@@ -34,6 +37,8 @@ struct CheckInSpotView: View {
             return String(format: "%.2f km bis zum Ziel", d / 1000.0)
         }
     }
+
+    // MARK: - Body (UI-Aufbau)
 
     var body: some View {
         ZStack {
@@ -107,6 +112,8 @@ struct CheckInSpotView: View {
             // Falls nicht, müsstest du hier z.B. locationHelper.request() aufrufen.
         }
     }
+
+    // MARK: - Actions (Aktionen)
 
     private func checkDistance() {
         guard !hasCompleted, let currentLocation else { return }

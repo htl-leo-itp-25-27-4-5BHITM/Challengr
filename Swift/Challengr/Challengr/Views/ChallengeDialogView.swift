@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ChallengeDialogView: View {
 
-    // MARK: - Input
+    // MARK: - Input (Eingaben)
     let otherPlayerId: Int64
     let otherPlayerName: String
     let ownPlayerId: Int64
@@ -11,7 +11,7 @@ struct ChallengeDialogView: View {
     let socket: GameSocketService
     let onClose: () -> Void
 
-    // MARK: - State
+    // MARK: - State (State)
     @State private var isLoading = false
     @State private var selectedChallenge: String? = nil
     @State private var selectedChallengeId: Int64? = nil
@@ -156,7 +156,7 @@ struct ChallengeDialogView: View {
         }
     }
 
-    // MARK: - Logic
+    // MARK: - Actions (Aktionen)
 
     private func loadRandomChallenge(for category: String) async {
         isLoading = true
@@ -177,7 +177,7 @@ struct ChallengeDialogView: View {
         isLoading = false
     }
 
-    // MARK: - Design Helper
+    // MARK: - Helpers (Hilfsfunktionen)
 
     private func color(for category: String) -> Color {
         switch category {

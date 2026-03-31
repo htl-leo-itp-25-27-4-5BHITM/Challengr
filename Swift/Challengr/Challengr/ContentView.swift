@@ -12,6 +12,7 @@ import CoreLocationUI
 import Combine
 
 struct ContentView: View {
+    // MARK: - Body (UI-Aufbau)
     var body: some View {
             MapView()
     }

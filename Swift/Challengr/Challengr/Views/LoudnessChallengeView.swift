@@ -21,10 +21,12 @@ struct LoudnessSample: Identifiable {
 }
 
 struct LoudnessChallengeView: View {
+    // MARK: - Input (Eingaben)
     let battleId: Int64
     let socket: GameSocketService
     let onClose: () -> Void
 
+    // MARK: - State (State)
     @StateObject private var meter = SoundMeter()
 
     @State private var phase: LoudnessPhase = .ready
@@ -35,6 +37,8 @@ struct LoudnessChallengeView: View {
     @State private var startDate: Date?
     @State private var samples: [LoudnessSample] = []
     @State private var sampleTimer: Timer?
+
+    // MARK: - Derived values (Abgeleitete Werte)
 
     private var phaseTitle: String {
         switch phase {
@@ -53,6 +57,8 @@ struct LoudnessChallengeView: View {
         let value = computeLoudnessIntegral()
         return String(format: "%.1f dB·s", value)
     }
+
+    // MARK: - Body (UI-Aufbau)
 
     var body: some View {
         ZStack {
@@ -178,7 +184,7 @@ struct LoudnessChallengeView: View {
         }
     }
 
-    // MARK: - Challenge Flow
+    // MARK: - Challenge flow (Ablauf)
 
     private func startChallenge() {
         phase = .ready
@@ -243,7 +249,7 @@ struct LoudnessChallengeView: View {
         }
     }
 
-    // MARK: - Sampling & Integral
+    // MARK: - Sampling & Integral (Sampling & Integral)
 
     private func startSampleTimer() {
         sampleTimer?.invalidate()

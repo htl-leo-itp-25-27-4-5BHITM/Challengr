@@ -8,8 +8,9 @@
 import Foundation
 import CoreLocation
 
-// Spieler, so wie er vom Backend kommt
-// Nur für Requests (Client → Backend), ohne Punkte
+// MARK: - Player DTOs (Spieler-DTOs)
+
+// Player payload for write operations (Spieler-Request ohne Punkte)
 struct PlayerRequestDTO: Codable {
     let id: Int64?
     let name: String
@@ -17,7 +18,7 @@ struct PlayerRequestDTO: Codable {
     let longitude: Double
 }
 
-// Für Responses (Backend → Client), inkl. Punkte
+// Player payload for read operations (Spieler-Response mit Punkten)
 struct PlayerDTO: Codable, Identifiable {
     let id: Int64
     let name: String
@@ -27,21 +28,7 @@ struct PlayerDTO: Codable, Identifiable {
     let rankName: String
 }
 
-
-// Request für /players/nearby
-struct NearbyRequest: Codable {
-    let playerId: Int64
-    let latitude: Double
-    let longitude: Double
-    let radius: Double
-}
-
-// Optional: Wrapper für Marker auf der Map
-struct PlayerMarker: Identifiable {
-    let id: Int64
-    let name: String
-    let coordinate: CLLocationCoordinate2D
-}
+// MARK: - Challenge DTOs (Challenge-DTOs)
 
 struct ChallengeDTO: Codable, Identifiable {
     let id: Int64
@@ -51,10 +38,7 @@ struct ChallengeDTO: Codable, Identifiable {
     let correctIndex: Int?    // bei Wissen (0–3)
 }
 
-struct KnowledgeQuestionDTO: Codable {
-    let text: String
-    let choices: [String]
-}
+// MARK: - Profile & History DTOs (Profil & Verlauf DTOs)
 
 struct PlayerPointsHistoryDTO: Codable, Identifiable {
     let id = UUID()
@@ -78,6 +62,8 @@ struct PlayerProfileDTO: Codable {
     let status: String?
     let badges: [String]
 }
+
+// MARK: - Backend config (Backend-Konfiguration)
 
 enum BackendEnvironment: String {
     case cloud

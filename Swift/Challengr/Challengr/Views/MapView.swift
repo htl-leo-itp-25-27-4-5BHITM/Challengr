@@ -1,4 +1,4 @@
-// MARK: - Imports
+// MARK: - Imports (Importe)
 
 import SwiftUI
 import MapKit
@@ -13,7 +13,7 @@ extension Color {
     static let challengrSurface = Color(red: 0.98, green: 0.98, blue: 0.98)   // #F9F9F9
 }
 
-// MARK: - Models
+// MARK: - Models (Modelle)
 
 /// Simple model to represent a player as a map annotation.
 struct PlayerAnnotation: Identifiable {
@@ -41,7 +41,7 @@ enum ActiveOverlay {
 
 struct MapView: View {
     
-    // MARK: - State & Services + Helpers
+    // MARK: - State & Services + Helpers (State & Services + Helfer)
     
     /// Helper that provides the current user location
     @StateObject private var locationHelper = LocationHelper()
@@ -144,7 +144,7 @@ struct MapView: View {
     @State private var showNearbyText = true
 
     
-    /// Resolves a challenge text and category name for a given challenge ID
+    /// Resolves a challenge text + category for a given ID (Challenge-Infos für ID)
     private func challengeInfo(for id: Int64) -> (name: String, category: String) {
         if let ch = allChallenges.first(where: { $0.id == id }) {
             return (ch.text, ch.category)
@@ -154,13 +154,13 @@ struct MapView: View {
     }
 
 
-    /// Triggers a success haptic feedback.
+    /// Triggers a success haptic feedback (Haptisches Feedback)
     private func vibrate() {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
     }
 
-    // MARK: - Body
+    // MARK: - Body (UI-Aufbau)
 
     @State private var compassAngle: Angle = .zero
     
@@ -792,8 +792,9 @@ struct MapView: View {
 
 
 
-    // MARK: - Logik
+    // MARK: - Data loading & flow (Daten laden & Ablauf)
 
+    /// Reloads profile-related data for the current player (Profildaten neu laden)
     private func reloadOwnPlayerData() {
         Task {
             do {
@@ -834,7 +835,7 @@ struct MapView: View {
     }
 
 
-    /// Sets up the WebSocket connection and preloads all challenges.
+    /// Sets up WebSocket and preloads challenges (WebSocket starten & Challenges vorladen)
     private func setupSocket() {
         socket.connect()
 

@@ -1,16 +1,19 @@
 import SwiftUI
 
 struct KnowledgeBattleView: View {
+    // MARK: - Input (Eingaben)
     let battleId: Int64
     let socket: GameSocketService
     let initialQuestion: (battleId: Int64, text: String, choices: [String])?
     let onClose: () -> Void
 
+    // MARK: - State (State)
     @State private var questionText: String = "Frage wird geladen …"
     @State private var choices: [String] = []
     @State private var selectedIndex: Int? = nil
     @State private var isSending = false
 
+    // MARK: - Body (UI-Aufbau)
     var body: some View {
         ZStack {
             LinearGradient(
