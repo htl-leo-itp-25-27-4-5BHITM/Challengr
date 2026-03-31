@@ -74,6 +74,11 @@ struct BattleHistoryDTO: Codable, Identifiable {
     let won: Bool
 }
 
+struct PlayerProfileDTO: Codable {
+    let status: String?
+    let badges: [String]
+}
+
 enum BackendEnvironment: String {
     case cloud
     case local

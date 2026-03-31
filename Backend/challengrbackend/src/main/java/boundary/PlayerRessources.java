@@ -3,9 +3,12 @@ package boundary;
 import boundary.dto.NearbyRequest;
 import boundary.dto.PlayerDTO;
 import boundary.dto.PlayerPointsHistoryDTO;
+import boundary.dto.PlayerProfileDTO;
 import control.PlayerRepository;
 import entity.Battle;
 import entity.Player;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -18,6 +21,8 @@ import java.util.List;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class PlayerRessources {
+
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     @Inject
     PlayerRepository playerRepository;
@@ -95,6 +100,58 @@ public class PlayerRessources {
                 player.getLongitude(),
                 player.getPoints(),
                 battleService.rankNameForPoints(player.getPoints())
+        );
+    }
+
+    @GET
+    @Path("/{id}/profile")
+    @Transactional
+    public PlayerProfileDTO getProfile(@PathParam("id") Long id) {
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new WebApplicationException("Player not found", 404);
+        }
+
+        PlayerProfileDTO computed = computeProfile(player);
+        List<String> existingBadges = parseBadges(player.getBadgesJson());
+        String existingStatus = player.getProfileStatus();
+
+        boolean badgesChanged = !areBadgeListsEqual(existingBadges, computed.badges());
+        boolean statusChanged = existingStatus == null || !existingStatus.equals(computed.status());
+
+        if (badgesChanged) {
+            player.setBadgesJson(writeBadges(computed.badges()));
+        }
+        if (statusChanged) {
+            player.setProfileStatus(computed.status());
+        }
+
+        if (badgesChanged || statusChanged) {
+            playerRepository.save(player);
+        }
+
+        return new PlayerProfileDTO(
+                player.getProfileStatus(),
+                parseBadges(player.getBadgesJson())
+        );
+    }
+
+    @PUT
+    @Path("/{id}/profile")
+    @Transactional
+    public PlayerProfileDTO updateProfile(@PathParam("id") Long id, PlayerProfileDTO dto) {
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new WebApplicationException("Player not found", 404);
+        }
+
+        player.setProfileStatus(dto.status());
+        player.setBadgesJson(writeBadges(dto.badges()));
+        playerRepository.save(player);
+
+        return new PlayerProfileDTO(
+                player.getProfileStatus(),
+                parseBadges(player.getBadgesJson())
         );
     }
 
@@ -370,6 +427,96 @@ public class PlayerRessources {
         }
 
         return history;
+    }
+
+    private List<String> parseBadges(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return mapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    private String writeBadges(List<String> badges) {
+        if (badges == null || badges.isEmpty()) {
+            return null;
+        }
+        try {
+            return mapper.writeValueAsString(badges);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private boolean areBadgeListsEqual(List<String> left, List<String> right) {
+        if (left == null) {
+            return right == null || right.isEmpty();
+        }
+        if (right == null) {
+            return left.isEmpty();
+        }
+        return left.equals(right);
+    }
+
+    private PlayerProfileDTO computeProfile(Player player) {
+        var battles = playerRepository.findDoneBattlesForPlayer(player);
+        int totalBattles = battles.size();
+        int wins = (int) battles.stream()
+                .filter(b -> b.getWinner() != null && b.getWinner().getId().equals(player.getId()))
+                .count();
+
+        int winStreak = calculateWinStreak(player, battles);
+
+        List<String> badges = new java.util.ArrayList<>();
+        if (wins >= 1) {
+            badges.add("first_win");
+        }
+        if (wins >= 3) {
+            badges.add("wins_3");
+        }
+        if (totalBattles >= 5) {
+            badges.add("battles_5");
+        }
+        if (winStreak >= 3) {
+            badges.add("win_streak_3");
+        }
+
+        String statusText = computeStatusText(battles);
+        return new PlayerProfileDTO(statusText, badges);
+    }
+
+    private int calculateWinStreak(Player player, List<Battle> battles) {
+        return battles.stream()
+                .filter(b -> b.getWinner() != null)
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .map(b -> b.getWinner().getId().equals(player.getId()))
+                .takeWhile(won -> won)
+                .mapToInt(won -> 1)
+                .sum();
+    }
+
+    private String computeStatusText(List<Battle> battles) {
+        if (battles.isEmpty()) {
+            return "Noch keine Aktivität";
+        }
+
+        Battle latest = battles.stream()
+                .max((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()))
+                .orElse(null);
+        if (latest == null) {
+            return "Noch keine Aktivität";
+        }
+
+        java.time.LocalDate lastDate = latest.getCreatedAt().toLocalDate();
+        java.time.LocalDate today = java.time.LocalDate.now();
+        if (lastDate.isEqual(today)) {
+            return "Online";
+        }
+
+        return "Zuletzt aktiv: " + lastDate;
     }
 
 

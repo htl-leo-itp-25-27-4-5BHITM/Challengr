@@ -17,10 +17,25 @@ struct UserProfileData {
     let points: Int
 }
 
+struct ProfileBadge {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let color: Color
+}
+
+private extension String {
+    var isBlank: Bool {
+        trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
 struct UserProfileView: View {
     let data: UserProfileData
     let pointsHistory: [PlayerPointsHistoryDTO]
     let battleHistory: [BattleHistoryDTO]
+    let profileStatusText: String?
+    let profileBadges: [String]
 
     @State private var selectedDate: String? = nil
     @State private var selectedPoints: Int? = nil
@@ -47,6 +62,8 @@ struct UserProfileView: View {
                 Text(data.name)
                     .font(.system(size: 24, weight: .bold))
 
+                statusChip
+
                 Text("\(data.points) Punkte")
                     .font(.headline)
                     .foregroundColor(.secondary)
@@ -69,6 +86,8 @@ struct UserProfileView: View {
                 .padding(.top, 8)
 
                 pointsChart
+
+                badgesSection
 
                 battleDetailList(for: selectedDate)
             }
@@ -202,6 +221,72 @@ struct UserProfileView: View {
         .padding(.top, 12)
     }
 
+    private var statusChip: some View {
+        let status = profileStatus
+        return HStack(spacing: 6) {
+            Circle()
+                .fill(status.isOnline ? Color.challengrGreen : Color.gray)
+                .frame(width: 8, height: 8)
+            Text(status.text)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            Capsule()
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
+        )
+    }
+
+    private var badgesSection: some View {
+        let badges = resolvedBadges
+
+        return VStack(alignment: .leading, spacing: 10) {
+            Text("Badges")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(.secondary)
+
+            if badges.isEmpty {
+                Text("Noch keine Badges")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+            } else {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    ForEach(badges, id: \.title) { badge in
+                        HStack(spacing: 8) {
+                            Image(systemName: badge.icon)
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(badge.color)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(badge.title)
+                                    .font(.caption.weight(.semibold))
+                                Text(badge.subtitle)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(.systemBackground))
+                                .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+                        )
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
+        )
+    }
+
     private func battleDetailList(for date: String?) -> some View {
         let filtered = battleHistory.filter { battle in
             guard let date else { return true }
@@ -332,6 +417,101 @@ struct UserProfileView: View {
         default:
             return .secondary
         }
+    }
+
+    private var profileStatus: (text: String, isOnline: Bool) {
+        if let statusText = profileStatusText, !statusText.isBlank {
+            let isOnline = statusText.lowercased() == "online"
+            return (statusText, isOnline)
+        }
+        guard let lastBattleDate = battleHistory
+            .compactMap({ parseDate($0.createdAt) })
+            .sorted()
+            .last else {
+            return ("Noch keine Aktivität", false)
+        }
+
+        let calendar = Calendar.current
+        if calendar.isDateInToday(lastBattleDate) {
+            return ("Online", true)
+        }
+
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .none
+        return ("Zuletzt aktiv: \(formatter.string(from: lastBattleDate))", false)
+    }
+
+    private var resolvedBadges: [ProfileBadge] {
+        if !profileBadges.isEmpty {
+            return profileBadges.compactMap { badgeForCode($0) }
+        }
+
+        let totalBattles = battleHistory.count
+        let wins = battleHistory.filter { $0.won }.count
+        let winStreak = currentWinStreak
+
+        var badges: [ProfileBadge] = []
+
+        if wins >= 1 {
+            badges.append(ProfileBadge(title: "Erster Sieg", subtitle: "1 Battle gewonnen", icon: "star.fill", color: .challengrYellow))
+        }
+        if wins >= 3 {
+            badges.append(ProfileBadge(title: "Siegeszug", subtitle: "3 Siege", icon: "flame.fill", color: .challengrRed))
+        }
+        if totalBattles >= 5 {
+            badges.append(ProfileBadge(title: "Aktiv", subtitle: "5 Battles gespielt", icon: "bolt.fill", color: .blue))
+        }
+        if winStreak >= 3 {
+            badges.append(ProfileBadge(title: "Streak", subtitle: "3 Wins in Folge", icon: "crown.fill", color: .purple))
+        }
+
+        return badges
+    }
+
+    private func badgeForCode(_ code: String) -> ProfileBadge? {
+        switch code.lowercased() {
+        case "first_win":
+            return ProfileBadge(title: "Erster Sieg", subtitle: "1 Battle gewonnen", icon: "star.fill", color: .challengrYellow)
+        case "win_streak_3":
+            return ProfileBadge(title: "Streak", subtitle: "3 Wins in Folge", icon: "crown.fill", color: .purple)
+        case "wins_3":
+            return ProfileBadge(title: "Siegeszug", subtitle: "3 Siege", icon: "flame.fill", color: .challengrRed)
+        case "battles_5":
+            return ProfileBadge(title: "Aktiv", subtitle: "5 Battles gespielt", icon: "bolt.fill", color: .blue)
+        default:
+            return nil
+        }
+    }
+
+    private var currentWinStreak: Int {
+        let ordered = battleHistory
+            .compactMap { battle -> (Date, Bool)? in
+                guard let date = parseDate(battle.createdAt) else { return nil }
+                return (date, battle.won)
+            }
+            .sorted { $0.0 > $1.0 }
+
+        var streak = 0
+        for (_, won) in ordered {
+            if won {
+                streak += 1
+            } else {
+                break
+            }
+        }
+        return streak
+    }
+
+    private func parseDate(_ value: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        if let date = formatter.date(from: value) {
+            return date
+        }
+
+        let plainFormatter = DateFormatter()
+        plainFormatter.dateFormat = "yyyy-MM-dd"
+        return plainFormatter.date(from: String(value.prefix(10)))
     }
 
     private var legendView: some View {

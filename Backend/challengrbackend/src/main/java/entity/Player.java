@@ -19,6 +19,12 @@ public class Player {
 
     private int consecutiveConflicts = 0;
 
+    @Column(length = 255)
+    private String profileStatus;
+
+    @Column(columnDefinition = "TEXT")
+    private String badgesJson;
+
     public Player(String name, double longitude, double latitude) {
         this.name = name;
         this.longitude = longitude;
@@ -75,5 +81,21 @@ public class Player {
 
     public void setConsecutiveConflicts(int consecutiveConflicts) {
         this.consecutiveConflicts = consecutiveConflicts;
+    }
+
+    public String getProfileStatus() {
+        return profileStatus;
+    }
+
+    public void setProfileStatus(String profileStatus) {
+        this.profileStatus = profileStatus;
+    }
+
+    public String getBadgesJson() {
+        return badgesJson;
+    }
+
+    public void setBadgesJson(String badgesJson) {
+        this.badgesJson = badgesJson;
     }
 }

@@ -96,6 +96,8 @@ struct MapView: View {
     @State private var ownPoints: Int = 0
     @State private var pointsHistory: [PlayerPointsHistoryDTO] = []
     @State private var battleHistory: [BattleHistoryDTO] = []
+    @State private var profileStatusText: String? = nil
+    @State private var profileBadges: [String] = []
     
     @State private var showProfile = false
     @State private var currentTargetCoordinate: CLLocationCoordinate2D? = nil
@@ -283,7 +285,9 @@ struct MapView: View {
                     points: ownPoints
                 ),
                 pointsHistory: pointsHistory,
-                battleHistory: battleHistory
+                battleHistory: battleHistory,
+                profileStatusText: profileStatusText,
+                profileBadges: profileBadges
             )
         }
         .onChange(of: showProfile) { isShown in
@@ -802,12 +806,14 @@ struct MapView: View {
                 async let statsAsync  = playerService.loadPlayerStats(id: ownPlayerId)
                 async let historyAsync = playerService.loadPlayerPointsHistory(id: ownPlayerId)
                 async let battlesAsync = playerService.loadPlayerBattles(id: ownPlayerId)
+                async let profileAsync = playerService.loadPlayerProfile(id: ownPlayerId)
 
                 let points = try await pointsAsync
                 let streak = try await streakAsync
                 let stats  = try await statsAsync
                 let history = (try? await historyAsync) ?? []
                 let battles = (try? await battlesAsync) ?? []
+                let profile = (try? await profileAsync) ?? PlayerProfileDTO(status: nil, badges: [])
 
                 await MainActor.run {
                     ownPlayerName      = name
@@ -818,6 +824,8 @@ struct MapView: View {
                     ownWonChallenges   = stats.wonChallenges
                     pointsHistory      = history
                     battleHistory      = battles
+                    profileStatusText  = profile.status
+                    profileBadges      = profile.badges
                 }
             } catch {
                 print("Fehler beim Reload der eigenen Daten:", error)

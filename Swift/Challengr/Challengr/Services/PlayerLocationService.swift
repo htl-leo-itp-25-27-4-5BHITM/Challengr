@@ -138,6 +138,14 @@ extension PlayerLocationService {
             return []
         }
     }
+
+    func loadPlayerProfile(id: Int64) async throws -> PlayerProfileDTO {
+        let url = baseURL
+            .appendingPathComponent("\(id)")
+            .appendingPathComponent("profile")
+        let (data, _) = try await URLSession.shared.data(from: url)
+        return try JSONDecoder().decode(PlayerProfileDTO.self, from: data)
+    }
 }
 
 struct PlayerStatsDTO: Decodable {
