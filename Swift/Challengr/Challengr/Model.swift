@@ -63,6 +63,10 @@ struct PlayerProfileDTO: Codable {
     let badges: [String]
 }
 
+struct PlayerLoudnessBestDTO: Codable {
+    let bestLoudness: Double?
+}
+
 // MARK: - Backend config (Backend-Konfiguration)
 
 enum BackendEnvironment: String {

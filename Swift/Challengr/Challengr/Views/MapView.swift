@@ -340,6 +340,7 @@ struct MapView: View {
                               info.challengeName.contains("Schrei-Challenge") {
                         LoudnessChallengeView(
                             battleId: battleId,
+                            playerId: ownPlayerId,
                             socket: socket,
                             onClose: { activeFullScreen = .none }
                         )

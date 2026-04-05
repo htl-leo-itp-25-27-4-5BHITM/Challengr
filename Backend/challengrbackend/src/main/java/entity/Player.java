@@ -25,6 +25,8 @@ public class Player {
     @Column(columnDefinition = "TEXT")
     private String badgesJson;
 
+    private Double bestLoudness;
+
     public Player(String name, double longitude, double latitude) {
         this.name = name;
         this.longitude = longitude;
@@ -97,5 +99,13 @@ public class Player {
 
     public void setBadgesJson(String badgesJson) {
         this.badgesJson = badgesJson;
+    }
+
+    public Double getBestLoudness() {
+        return bestLoudness;
+    }
+
+    public void setBestLoudness(Double bestLoudness) {
+        this.bestLoudness = bestLoudness;
     }
 }

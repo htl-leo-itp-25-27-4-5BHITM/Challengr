@@ -3,6 +3,7 @@ package boundary;
 import boundary.dto.NearbyRequest;
 import boundary.dto.PlayerDTO;
 import boundary.dto.PlayerPointsHistoryDTO;
+import boundary.dto.PlayerLoudnessBestDTO;
 import boundary.dto.PlayerProfileDTO;
 import control.PlayerRepository;
 import entity.Battle;
@@ -153,6 +154,42 @@ public class PlayerRessources {
                 player.getProfileStatus(),
                 parseBadges(player.getBadgesJson())
         );
+    }
+
+    @GET
+    @Path("/{id}/loudness-best")
+    public PlayerLoudnessBestDTO getBestLoudness(@PathParam("id") Long id) {
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new WebApplicationException("Player not found", 404);
+        }
+
+        return new PlayerLoudnessBestDTO(player.getBestLoudness());
+    }
+
+    @PUT
+    @Path("/{id}/loudness-best")
+    @Transactional
+    public PlayerLoudnessBestDTO updateBestLoudness(
+            @PathParam("id") Long id,
+            PlayerLoudnessBestDTO dto
+    ) {
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new WebApplicationException("Player not found", 404);
+        }
+
+        Double currentBest = player.getBestLoudness();
+        Double incoming = dto != null ? dto.bestLoudness() : null;
+
+        if (incoming != null) {
+            if (currentBest == null || incoming > currentBest) {
+                player.setBestLoudness(incoming);
+                playerRepository.save(player);
+            }
+        }
+
+        return new PlayerLoudnessBestDTO(player.getBestLoudness());
     }
 
     @GET

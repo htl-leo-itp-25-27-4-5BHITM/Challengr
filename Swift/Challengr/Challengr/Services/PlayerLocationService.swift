@@ -162,6 +162,32 @@ extension PlayerLocationService {
         let (data, _) = try await URLSession.shared.data(from: url)
         return try JSONDecoder().decode(PlayerProfileDTO.self, from: data)
     }
+
+    // MARK: - Loudness best (Loudness-Bestwert)
+
+    func loadPlayerBestLoudness(id: Int64) async throws -> Double? {
+        let url = baseURL
+            .appendingPathComponent("\(id)")
+            .appendingPathComponent("loudness-best")
+        let (data, _) = try await URLSession.shared.data(from: url)
+        let dto = try JSONDecoder().decode(PlayerLoudnessBestDTO.self, from: data)
+        return dto.bestLoudness
+    }
+
+    func updatePlayerBestLoudness(id: Int64, best: Double) async throws -> Double? {
+        let url = baseURL
+            .appendingPathComponent("\(id)")
+            .appendingPathComponent("loudness-best")
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(PlayerLoudnessBestDTO(bestLoudness: best))
+
+        let (data, _) = try await URLSession.shared.data(for: request)
+        let dto = try JSONDecoder().decode(PlayerLoudnessBestDTO.self, from: data)
+        return dto.bestLoudness
+    }
 }
 
 struct PlayerStatsDTO: Decodable {
