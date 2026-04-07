@@ -345,6 +345,15 @@ struct MapView: View {
                             onClose: { activeFullScreen = .none }
                         )
 
+                    } else if info.category == "iPhone",
+                              info.challengeName.lowercased().contains("shake")
+                              || info.challengeName.lowercased().contains("schüttel") {
+                        ShakeChallengeView(
+                            battleId: battleId,
+                            socket: socket,
+                            onClose: { activeFullScreen = .none }
+                        )
+
                     } else {
                         BattleView(
                             challengeName: info.challengeName,

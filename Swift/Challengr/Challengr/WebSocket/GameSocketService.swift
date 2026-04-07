@@ -153,6 +153,16 @@ final class GameSocketService: ObservableObject {
         send(json: payload)
     }
 
+    func sendShakeResult(battleId: Int64, shakes: Int) {
+        let payload: [String: Any] = [
+            "type": "shake-result",
+            "battleId": battleId,
+            "shakes": shakes
+        ]
+        print("📤 sendShakeResult:", payload)
+        send(json: payload)
+    }
+
 
 
 

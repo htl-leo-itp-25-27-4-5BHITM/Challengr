@@ -36,6 +36,8 @@ public class GameSocket {
     
     private static final Map<Long, Map<Long, Double>> LOUDNESS_RESULTS = new ConcurrentHashMap<>();
 
+    private static final Map<Long, Map<Long, Integer>> SHAKE_RESULTS = new ConcurrentHashMap<>();
+
     @Inject
     BattleService battleService;
 
@@ -109,6 +111,9 @@ public class GameSocket {
 
             } else if (message.contains("\"type\":\"loudness-result\"")) { // NEU
                 handleLoudnessResult(message, playerId);
+
+            } else if (message.contains("\"type\":\"shake-result\"")) {
+                handleShakeResult(message, playerId);
 
             } else {
                 sendError(session, "Unknown type");
@@ -798,6 +803,59 @@ public class GameSocket {
 
         computeAndBroadcastResult(battle, List.of(winnerName));
         LOUDNESS_RESULTS.remove(battleId);
+    }
+
+    private void handleShakeResult(String message, Long playerId) {
+        Long battleId = extractLong(message, "battleId");
+        int shakes = (int) extractDouble(message, "shakes");
+
+        System.out.println("➡️ shake-result parsed: battleId=" + battleId + ", shakes=" + shakes);
+        if (playerId == null) {
+            System.out.println("shake-result ohne playerId, ignoriere");
+            return;
+        }
+
+        Battle battle = battleService.findById(battleId);
+        if (battle == null) {
+            System.out.println("shake-result: battle " + battleId + " nicht gefunden");
+            return;
+        }
+
+        SHAKE_RESULTS
+                .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
+                .put(playerId, shakes);
+
+        Map<Long, Integer> map = SHAKE_RESULTS.get(battleId);
+        Long fromId = battle.getFromPlayer().getId();
+        Long toId   = battle.getToPlayer().getId();
+
+        int shakesFrom = map.getOrDefault(fromId, 0);
+        int shakesTo   = map.getOrDefault(toId, 0);
+
+        String winnerName;
+        if (shakesFrom > shakesTo) {
+            winnerName = battle.getFromPlayer().getName();
+        } else if (shakesTo > shakesFrom) {
+            winnerName = battle.getToPlayer().getName();
+        } else {
+            winnerName = "Niemand";
+        }
+
+        String pendingPayload = """
+    {
+      "type": "battle-pending",
+      "battleId": %d
+    }
+    """.formatted(battleId);
+
+        sendToPlayer(fromId, pendingPayload);
+        sendToPlayer(toId,   pendingPayload);
+
+        System.out.println("✅ Shake ausgewertet, from=" + shakesFrom + ", to=" + shakesTo
+                + ", winner=" + winnerName);
+
+        computeAndBroadcastResult(battle, List.of(winnerName));
+        SHAKE_RESULTS.remove(battleId);
     }
 
 
