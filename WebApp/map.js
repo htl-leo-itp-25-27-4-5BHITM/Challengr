@@ -1348,53 +1348,118 @@ profileBtn.onclick = async () => {
   document.getElementById("profile-challenges").textContent = battles;
   document.getElementById("profile-rank").textContent = player.rankName || "Rookie";
 
-  // Chart
-let labels, data;
-
-if (history.length === 0) {
-  // kein Battle gespielt → Anfangswerte
-  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-  labels = [today];
-  data = [points.points]; // Startwert
-} else {
-  labels = history.map(h => h.date);
-  data = history.map(h => h.points);
-}
-
-const ctx = document.getElementById("profile-chart").getContext("2d");
-
-if (chartInstance) chartInstance.destroy();
-
-chartInstance = new Chart(ctx, {
-  type: "line",
-  data: {
-    labels,
-    datasets: [{
-      label: "Trophäen",
-      data,
-      tension: 0.35,
-      fill: true
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { ticks: { display: false } },
-      y: { beginAtZero: true }
-    }
+   // Chart
+  let labels, data;
+  if (history.length === 0) {
+    const today = new Date().toISOString().split("T")[0];
+    labels = [today];
+    data = [points.points];
+  } else {
+    const daily = new Map();
+    history.forEach(h => { if (h?.date) daily.set(h.date, h.points); });
+    labels = Array.from(daily.keys()).sort();
+    data = labels.map(d => daily.get(d));
   }
-});
+
+  const canvas = document.getElementById("profile-chart");
+  const w = canvas.parentElement.offsetWidth || 340;
+  canvas.width = w;
+  canvas.height = 150;
+  const ctx = canvas.getContext("2d");
+
+  const grad = ctx.createLinearGradient(0, 0, w, 0);
+  grad.addColorStop(0, "#4facfe");
+  grad.addColorStop(1, "#ffd93d");
+
+  const fillGrad = ctx.createLinearGradient(0, 0, 0, 150);
+  fillGrad.addColorStop(0, "rgba(79,172,254,0.28)");
+  fillGrad.addColorStop(1, "rgba(255,217,61,0.04)");
+
+  if (chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: "Punkte",
+        data,
+        tension: 0.35,
+        fill: true,
+        borderColor: grad,
+        backgroundColor: fillGrad,
+        borderWidth: 3,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: "#ffd93d",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 2
+      }]
+    },
+    options: {
+      responsive: false,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "rgba(20,20,20,0.85)",
+          titleColor: "#fff",
+          bodyColor: "#fff",
+          padding: 8,
+          displayColors: false
+        }
+      },
+      scales: {
+        x: {
+          ticks: { maxTicksLimit: 4, font: { size: 10 }, color: "#aaa" },
+          grid: { display: false }
+        },
+        y: {
+          ticks: { maxTicksLimit: 4, font: { size: 10 }, color: "#aaa" },
+          grid: { color: "rgba(0,0,0,0.05)" }
+        }
+      }
+    }
+  });
+
+  // Battle-Liste laden
+  const battleList = document.getElementById("profile-battle-list");
+  if (battleList) {
+    battleList.innerHTML = "<p style='color:#aaa;font-size:12px;text-align:center'>Lädt…</p>";
+    fetch(`/api/players/${myId}/battles`)
+      .then(r => r.ok ? r.json() : [])
+      .catch(() => [])
+      .then(blist => {
+        if (!blist || blist.length === 0) {
+          battleList.innerHTML = "<p style='color:#aaa;font-size:12px;text-align:center'>Noch keine Battles</p>";
+          return;
+        }
+                battleList.innerHTML = blist.slice(0, 10).map(b => {
+          const won = b.won;
+          const delta = won ? `+${b.pointsDelta}` : `-${b.pointsDelta}`;
+          const color = won ? "#22c55e" : "#ef4444";
+          const opponent = b.opponentName || "?";
+          return `<div class="profile-battle-row">
+            <span class="profile-battle-opponent">${opponent}</span>
+            <span class="profile-battle-challenge">${b.challengeText || ""}</span>
+            <span class="profile-battle-delta" style="color:${color}">${delta} P</span>
+          </div>`;
+        }).join("");
+      });
+  }
 
   // Sheet zeigen
   profileBackdrop.classList.remove("hidden");
   profileSheet.classList.remove("closing");
 };
 
-// schließen bei Klick auf Backdrop
-profileBackdrop.addEventListener("click", () => {
+// schließen bei Klick auf Backdrop (nur wenn Backdrop selbst geklickt)
+profileBackdrop.addEventListener("click", (e) => {
+  if (e.target !== profileBackdrop) return;
   profileSheet.classList.add("closing");
   profileSheet.addEventListener("animationend", () => {
     profileBackdrop.classList.add("hidden");
+    profileSheet.classList.remove("closing");
   }, { once: true });
 });
+
+console.log("App initialized");
