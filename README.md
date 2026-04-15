@@ -121,13 +121,22 @@ Ziele:
 
 ---
 
-
-
 ## Sprint (Sprint 10 – Start: 18.03.2026)
 
 Ziele:
 
 * Verbindung von Projekt mit LeoCloud
+
+---
+
+
+
+## Sprint (Sprint 11 – Start: 08.04.2026)
+
+Ziele:
+
+* Teilweise Einbindung von Keycloack (Aufteilung auf 2 Sprints)
+* Präsentation über Keycloack inklusive Erklärung von Einbindung in Projekt
 
 ---
 
