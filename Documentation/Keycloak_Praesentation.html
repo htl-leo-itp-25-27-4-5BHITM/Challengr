@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title>Keycloak-Integration Präsentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/dracula.min.css" id="theme">
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <section data-markdown>
+                <textarea data-template>
+                    # Keycloak
+                    ### Identity & Access Management 
+                    **Challengr Projekt**
+                    ---
+                    ## 1. Einführung
+                    * **Keycloak** als zentraler Identity-Provider (IAM)
+                    * Ziel: Sicherheit, Skalierbarkeit und Nutzerverwaltung
+                    * Übernimmt Login der iOS-App & Autorisierung für das Quarkus-Backend
+                    ---
+                    ## 2. Architektur
+                    * Basiert auf **OpenID Connect (OIDC)**
+                    * Nutzt den **OAuth 2.0 Authorization Code Flow mit PKCE**
+                    * Sicherer Standard für mobile Anwendungen 
+                    *(App benötigt keine fest einprogrammierten Secrets)*
+                    ---
+                    ## Ablauf der Authentifizierung
+                    1. **Login:** Redirect in der iOS App zu Keycloak
+                    2. **Auth:** Nutzer gibt Credentials im Browserfenster ein
+                    3. **Tokens:** App erhält Access-, Refresh- & ID-Token
+                    4. **Request:** Access-Token wird im Bearer-Header ans Backend gesendet
+                    5. **Validierung:** Quarkus prüft die Signatur und erlaubt den Zugriff
+                    ---
+                    ## 3. Setup in Keycloak
+                    * **Realm:** `challengr` (Isolierte Umgebung)
+                    * **Client 1:** `challengr-ios` (Public, PKCE Flow für Swift App)
+                    * **Client 2:** `challengr-backend` (Confidential, Bearer-Only, verifiziert Tokens)
+                    ---
+                    ## Infrastruktur
+                    * **Datenbank:** PostgreSQL im Kubernetes-Cluster (ersetzte die flüchtige H2)
+                    * **Router:** Nginx Ingress mit HTTPS-Terminierung (Proxy-Modus: `edge`)
+                    * User-Daten werden dadurch sicher und persistent im Cluster gespeichert
+                    ---
+                    ## 4. Komponenten-Integration
+                    **📱 iOS (Swift):** 
+                    `KeycloakAuthService` für Login. Extrahiert die User-ID und registriert/lädt den Spieler via Backend-API (`/api/players`).
+                    
+                    **⚙️ Backend (Quarkus):** 
+                    Nutzt die `quarkus-oidc` Extension. Blockiert API-Aufrufe ohne gültiges Bearer-Token automatisch.
+                    ---
+                    ## 5. Zukünftige Möglichkeiten
+                    * **RBAC:** Rollenbasierte Rechte (z.B. Admin-Rollen für bestimmte Endpunkte)
+                    * **Web-App:** Einbau des Keycloak-Logins in die JavaScript-Map
+                    * **Social Login:** Apple & Google Sign-In (direkt via Keycloak, ohne Code-Änderung am Backend nutzbar!)
+                </textarea>
+            </section>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/markdown/markdown.js"></script>
+    <script>
+        Reveal.initialize({
+            plugins: [ RevealMarkdown ],
+            slideNumber: true,
+            hash: true,
+            controls: true,
+            progress: true
+        });
+    </script>
+</body>
+</html>

@@ -29,6 +29,23 @@ final class PlayerLocationService {
         _ = try await URLSession.shared.data(for: request)
     }
 
+    /// Creates a new player (Erstellt neuen Spieler)
+    func createPlayer(
+        name: String,
+        latitude: Double = 0,
+        longitude: Double = 0
+    ) async throws -> PlayerDTO {
+        var request = URLRequest(url: baseURL)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(
+            PlayerRequestDTO(id: nil, name: name, latitude: latitude, longitude: longitude)
+        )
+
+        let (data, _) = try await URLSession.shared.data(for: request)
+        return try JSONDecoder().decode(PlayerDTO.self, from: data)
+    }
+
 
     // MARK: - Player fetch (Spieler laden)
 

@@ -40,24 +40,22 @@ enum ActiveOverlay {
 
 
 struct MapView: View {
-    
+
     // MARK: - State & Services + Helpers (State & Services + Helfer)
-    
-    /// Helper that provides the current user location
-    @StateObject private var locationHelper = LocationHelper()
-    
-    /// Services to load from the backend
+
+    let ownPlayerId: Int64
+    let auth: KeycloakAuthService
+
+    @StateObject private var locationHelper: LocationHelper
+
     private let playerService = PlayerLocationService()
     private let challengesService = ChallengesService()
-
-    /// static player id
-    let ownPlayerId: Int64 = 1
-    
 
     @State private var allChallenges: [ChallengeDTO] = []
 
     /// WebSocket
-    @StateObject private var socket = GameSocketService(playerId: 1)
+    @StateObject private var socket: GameSocketService
+
     
     /// Information about an incoming challenge from another player.
     @State private var incomingChallenge: (
@@ -86,7 +84,7 @@ struct MapView: View {
     @State private var resultData: BattleResultData? = nil
 
     /// Static ownPlayerName & coordinates
-    @State private var ownPlayerName: String = ""
+    @State var ownPlayerName: String
     @State private var ownCoordinate: CLLocationCoordinate2D? = nil
     
     @State private var ownRankName: String = "-"
@@ -119,6 +117,15 @@ struct MapView: View {
             pitch: 0
         )
     )
+
+    // MARK: - Init
+    init(ownPlayerId: Int64, ownPlayerName: String, auth: KeycloakAuthService) {
+        self.ownPlayerId = ownPlayerId
+        self.auth = auth
+        _ownPlayerName = State(initialValue: ownPlayerName)
+        _socket = StateObject(wrappedValue: GameSocketService(playerId: ownPlayerId))
+        _locationHelper = StateObject(wrappedValue: LocationHelper(playerId: ownPlayerId, playerName: ownPlayerName))
+    }
     
     @State private var myVote: String? = nil
     @State private var opponentVote: String? = nil
@@ -261,11 +268,10 @@ struct MapView: View {
                 Spacer()
             }
 
-
-                    // 3) UNTERER BEREICH: Trophy mittig, Profil rechts
-                    trophyRoadButton
-                    profileButton
-                }
+            // UNTERER BEREICH: Trophy mittig, Profil rechts
+            trophyRoadButton
+            profileButton
+        }
         .overlay(playerPopupOverlay)
         .overlay(challengeDialogOverlay)
         .overlay(incomingChallengeOverlay)
@@ -320,6 +326,8 @@ struct MapView: View {
 
                         CheckInSpotView(
                             battleId: battleId,
+                            playerId: ownPlayerId,
+                            playerName: ownPlayerName,
                             socket: socket,
                             targetCoordinate: target,
                             radius: 30,
@@ -332,6 +340,8 @@ struct MapView: View {
                               info.challengeName.contains("Sprint-Challenge") {
                         SprintChallengeView(
                             battleId: battleId,
+                            playerId: ownPlayerId,
+                            playerName: ownPlayerName,
                             socket: socket,
                             onClose: { activeFullScreen = .none }
                         )

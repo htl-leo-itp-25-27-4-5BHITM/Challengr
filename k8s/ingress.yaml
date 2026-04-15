@@ -13,6 +13,13 @@ spec:
     - host: it220257.cloud.htl-leonding.ac.at
       http:
         paths:
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: challengr-keycloak-service
+                port:
+                  number: 8080
           - path: /
             pathType: Prefix
             backend:

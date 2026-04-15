@@ -38,6 +38,13 @@ spec:
                   key: POSTGRES_PASSWORD
             - name: QUARKUS_CORS_ORIGINS
               value: https://it220257.cloud.htl-leonding.ac.at,http://localhost:5173,http://127.0.0.1:5173
+            - name: KEYCLOAK_URL
+              value: https://it220257.cloud.htl-leonding.ac.at/auth
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: challengr-secrets
+                  key: KEYCLOAK_CLIENT_SECRET
 ---
 apiVersion: v1
 kind: Service

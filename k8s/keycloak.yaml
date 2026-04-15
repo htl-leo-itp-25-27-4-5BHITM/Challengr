@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: challengr-keycloak
+  namespace: student-it220257
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: challengr-keycloak
+  template:
+    metadata:
+      labels:
+        app: challengr-keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:24.0
+          args: ["start-dev"]
+          env:
+            - name: KEYCLOAK_ADMIN
+              value: "admin"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: challengr-secrets
+                  key: KEYCLOAK_ADMIN_PASSWORD
+            - name: KC_DB
+              value: "postgres"
+            - name: KC_DB_URL_HOST
+              value: "challengr-postgres-service"
+            - name: KC_DB_URL_DATABASE
+              value: "postgres"
+            - name: KC_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: challengr-secrets
+                  key: POSTGRES_USER
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: challengr-secrets
+                  key: POSTGRES_PASSWORD
+            - name: KC_HTTP_RELATIVE_PATH
+              value: "/auth"
+            - name: KC_PROXY
+              value: "edge"
+            - name: KC_HOSTNAME
+              value: "it220257.cloud.htl-leonding.ac.at"
+            - name: KC_HOSTNAME_STRICT
+              value: "false"
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: challengr-keycloak-service
+  namespace: student-it220257
+spec:
+  selector:
+    app: challengr-keycloak
+  ports:
+    - port: 8080
+      targetPort: 8080

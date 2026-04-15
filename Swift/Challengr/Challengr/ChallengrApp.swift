@@ -10,6 +10,8 @@ import SwiftUI
 
 @main
 struct ChallengrApp: App {
+    @StateObject private var auth = KeycloakAuthService()
+
     init() {
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
@@ -24,7 +26,26 @@ struct ChallengrApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            Group {
+                if auth.isAuthenticated {
+                    if let playerId = auth.playerId {
+                        MapView(
+                            ownPlayerId: playerId,
+                            ownPlayerName: auth.playerName,
+                            auth: auth
+                        )
+                    } else {
+                        VStack(spacing: 12) {
+                            ProgressView()
+                            Text("Profil wird geladen…")
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                        }
+                    }
+                } else {
+                    LoginView(auth: auth)
+                }
+            }
+            .animation(.easeInOut(duration: 0.4), value: auth.isAuthenticated)
         }
     }
 }

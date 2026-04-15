@@ -19,11 +19,13 @@ enum SprintPhase {
 struct SprintChallengeView: View {
     // MARK: - Input (Eingaben)
     let battleId: Int64
+    let playerId: Int64
+    let playerName: String
     let socket: GameSocketService
     let onClose: () -> Void
 
     // MARK: - State (State)
-    @StateObject private var locationHelper = LocationHelper()
+    @StateObject private var locationHelper: LocationHelper
 
     @State private var phase: SprintPhase = .ready
     @State private var countdown: Int = 10        // Start mit 10s Vorbereitung
@@ -44,6 +46,16 @@ struct SprintChallengeView: View {
 
     private var distanceText: String {
         String(format: "%.1f m", maxDistance)
+    }
+
+    // MARK: - Init
+    init(battleId: Int64, playerId: Int64, playerName: String, socket: GameSocketService, onClose: @escaping () -> Void) {
+        self.battleId = battleId
+        self.playerId = playerId
+        self.playerName = playerName
+        self.socket = socket
+        self.onClose = onClose
+        _locationHelper = StateObject(wrappedValue: LocationHelper(playerId: playerId, playerName: playerName))
     }
 
     // MARK: - Body (UI-Aufbau)

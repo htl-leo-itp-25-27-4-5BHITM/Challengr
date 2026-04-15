@@ -1210,8 +1210,16 @@ async function loadNearbyPlayersWeb(currentPlayerId, lat, lon, radiusMeters) {
     clearPins();
     players.forEach(p => {
       if (p.id === currentPlayerId) return;
-      const plat = parseFloat(p.latitude);
-      const plon = parseFloat(p.longitude);
+      
+      let plat = parseFloat(p.latitude);
+      let plon = parseFloat(p.longitude);
+
+      // Kleiner Offset, damit Pins am selben Ort nicht direkt übereinander liegen
+      const offsetLat = (Math.random() - 0.5) * 0.0001;
+      const offsetLon = (Math.random() - 0.5) * 0.0001;
+      plat += offsetLat;
+      plon += offsetLon;
+
       if (!isNaN(plat) && !isNaN(plon)) addPin(plat, plon, p);
     });
 

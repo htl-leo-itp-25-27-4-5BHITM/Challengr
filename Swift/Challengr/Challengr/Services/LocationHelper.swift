@@ -16,16 +16,22 @@ class LocationHelper: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private let playerService = PlayerLocationService()
 
-    // Später z.B. aus Login laden
-    let currentPlayerId: Int64 = 1
-    let currentPlayerName: String = "EigenerSpieler"
+    private var currentPlayerId: Int64
+    private var currentPlayerName: String
 
-    override init() {
+    init(playerId: Int64, playerName: String) {
+        self.currentPlayerId = playerId
+        self.currentPlayerName = playerName
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBest
         manager.requestWhenInUseAuthorization()
         manager.startUpdatingLocation()
+    }
+
+    func updatePlayerIdentity(playerId: Int64, playerName: String) {
+        currentPlayerId = playerId
+        currentPlayerName = playerName
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {

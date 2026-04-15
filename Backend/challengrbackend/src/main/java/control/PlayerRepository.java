@@ -62,5 +62,27 @@ public class PlayerRepository {
         return em.find(Player.class, id);
     }
 
+    public List<Player> findNearbyPlayers(long currentPlayerId, double latitude, double longitude, double radius) {
+        List<Player> allPlayers = em.createQuery("SELECT p FROM Player p", Player.class).getResultList();
+
+        return allPlayers.stream()
+                .filter(p -> {
+                    if (p.getId() == null || p.getId().equals(currentPlayerId)) return false;
+                    if (p.getLatitude() == 0 || p.getLongitude() == 0) return false;
+                    double dist = distance(latitude, longitude, p.getLatitude(), p.getLongitude());
+                    return dist <= radius;
+                })
+                .toList();
+    }
+
+    private double distance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371000;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
 
 }

@@ -69,6 +69,11 @@ build_webapp() {
   kubectl -n "$NAMESPACE" rollout status deployment/challengr-webapp
 }
 
+deploy_keycloak() {
+  echo "\n[keycloak] Deploying Keycloak..."
+  kubectl apply -f "$ROOT_DIR/k8s/keycloak.yaml"
+}
+
 TARGET="${1:-both}"
 
 if [[ "$TARGET" == "-h" || "$TARGET" == "--help" ]]; then
@@ -91,6 +96,11 @@ fi
 
 if [[ "$TARGET" == "webapp" || "$TARGET" == "both" ]]; then
   build_webapp
+fi
+
+# Keycloak bei "both" mit deployen
+if [[ "$TARGET" == "both" ]]; then
+  deploy_keycloak
 fi
 
 echo "\n✅ Deploy finished ($TARGET)"

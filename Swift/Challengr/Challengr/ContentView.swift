@@ -12,9 +12,15 @@ import CoreLocationUI
 import Combine
 
 struct ContentView: View {
+    @StateObject private var auth = KeycloakAuthService()
+
     // MARK: - Body (UI-Aufbau)
     var body: some View {
-            MapView()
+        MapView(
+            ownPlayerId: 1,
+            ownPlayerName: "Preview",
+            auth: auth
+        )
     }
 }
 

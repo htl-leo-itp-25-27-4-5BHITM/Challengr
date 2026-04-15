@@ -177,6 +177,54 @@ kubectl -n student-it220257 rollout restart deployment/challengr-webapp
 
 ---
 
+## 11. Keycloak
+
+Keycloak wird als Identity Provider für Authentifizierung verwendet.
+
+### Realm & Client einrichten (einmalig nach Deploy)
+
+1. Keycloak-URL aufrufen: `http://challengr-keycloak-service:8080` (intern) oder per Port-Forward:
+   ```bash
+   kubectl -n student-it220257 port-forward svc/challengr-keycloak-service 9090:8080
+   ```
+2. Admin-UI öffnen: `http://localhost:9090`
+3. Login: `admin` / Passwort aus Secret (`KEYCLOAK_ADMIN_PASSWORD`)
+4. Neuen **Realm** erstellen: `challengr`
+5. Neuen **Client** erstellen (Backend):
+   - Client ID: `challengr-backend`
+   - Client authentication: **ON**
+   - Service accounts: **ON**
+6. Client Secret aus dem Client-Tab kopieren → in Secret `KEYCLOAK_CLIENT_SECRET` speichern
+
+### iOS Client (Login in der App)
+
+1. Neuen **Client** erstellen (iOS):
+   - Client ID: `challengr-ios`
+   - Client authentication: **OFF**
+   - Standard Flow: **ON**
+2. **Valid Redirect URIs**:
+   - `challengr://callback`
+3. **Web Origins**:
+   - `*`
+4. Optional: **User Registration** aktivieren
+   - Realm → Login → `User registration` = **ON**
+
+### Keycloak deployen
+
+```bash
+kubectl apply -f k8s/keycloak.yaml
+```
+
+### Lokal (docker-compose)
+
+```bash
+docker compose --profile local-stack up keycloak
+```
+
+Keycloak läuft dann auf: `http://localhost:9090`
+
+---
+
 ## Dateien
 
 - `WebApp/Dockerfile` – Production-WebApp mit nginx

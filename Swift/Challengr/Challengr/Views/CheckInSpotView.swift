@@ -13,13 +13,15 @@ import MapKit
 struct CheckInSpotView: View {
     // MARK: - Input (Eingaben)
     let battleId: Int64
+    let playerId: Int64
+    let playerName: String
     let socket: GameSocketService
     let targetCoordinate: CLLocationCoordinate2D
     let radius: CLLocationDistance
     let onClose: () -> Void
 
     // MARK: - State (State)
-    @StateObject private var locationHelper = LocationHelper()  // nutzt du ja schon
+    @StateObject private var locationHelper: LocationHelper
     @State private var currentLocation: CLLocationCoordinate2D?
     @State private var hasCompleted = false
 
@@ -36,6 +38,26 @@ struct CheckInSpotView: View {
         } else {
             return String(format: "%.2f km bis zum Ziel", d / 1000.0)
         }
+    }
+
+    // MARK: - Init
+    init(
+        battleId: Int64,
+        playerId: Int64,
+        playerName: String,
+        socket: GameSocketService,
+        targetCoordinate: CLLocationCoordinate2D,
+        radius: CLLocationDistance,
+        onClose: @escaping () -> Void
+    ) {
+        self.battleId = battleId
+        self.playerId = playerId
+        self.playerName = playerName
+        self.socket = socket
+        self.targetCoordinate = targetCoordinate
+        self.radius = radius
+        self.onClose = onClose
+        _locationHelper = StateObject(wrappedValue: LocationHelper(playerId: playerId, playerName: playerName))
     }
 
     // MARK: - Body (UI-Aufbau)

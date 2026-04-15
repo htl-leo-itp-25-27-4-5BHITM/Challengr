@@ -54,6 +54,18 @@ services:
     networks:
       - challengr-network
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: dev-mem
+    ports:
+      - "9090:8080"
+    profiles:
+      - local-stack
+
 volumes:
   postgres_data:
   webapp_node_modules:
