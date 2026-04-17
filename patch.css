@@ -1,0 +1,57 @@
+    /* Password Group Fix */
+    .pf-v5-c-input-group {
+        background-color: #2c2c2e !important;
+        border-radius: 14px !important;
+        border: 1px solid #444 !important;
+        display: flex !important;
+        align-items: center !important;
+        overflow: hidden !important;
+    }
+    .pf-v5-c-input-group:focus-within {
+        border-color: #ffcc00 !important;
+        box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.2) !important;
+    }
+    .pf-v5-c-input-group input.pf-v5-c-form-control {
+        border: none !important;
+        box-shadow: none !important;
+        background-color: transparent !important;
+        margin: 0 !important;
+    }
+    .pf-v5-c-input-group .pf-v5-c-button.pf-m-control {
+        background-color: transparent !important;
+        border: none !important;
+        color: #aaaaaa !important;
+    }
+
+    /* Social Logins */
+    #kc-social-providers ul { 
+        padding: 0 !important; 
+        margin: 0 !important; 
+        list-style: none !important; 
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+    }
+    #kc-social-providers a, .kc-social-provider-logo {
+        background-color: #2c2c2e !important;
+        color: #ffffff !important;
+        border-radius: 16px !important;
+        padding: 14px !important;
+        font-weight: 600 !important;
+        border: 1px solid #444 !important;
+        font-size: 16px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    #kc-social-providers a:hover {
+        background-color: #38383a !important;
+        text-decoration: none !important;
+    }
+    #kc-social-providers .kc-social-icon-text {
+        margin-left: 10px !important;
+        color: #fff !important;
+        font-weight: 700 !important;
+    }

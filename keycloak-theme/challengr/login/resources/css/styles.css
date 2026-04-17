@@ -1,0 +1,82 @@
+/* Basic modern styling for Challengr Keycloak Theme */
+body {
+    background-color: #f7f7f7 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+}
+
+#kc-header {
+    display: none !important; /* Hide old logo */
+}
+
+.login-pf body {
+    background-color: #f7f7f7 !important;
+}
+
+.card-pf {
+    border-radius: 20px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+    padding: 30px !important;
+    max-width: 400px !important;
+    margin: 50px auto !important;
+}
+
+#kc-page-title {
+    color: #333 !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    font-size: 24px !important;
+    margin-bottom: 20px !important;
+}
+
+#kc-page-title::before {
+    content: "CHALLENGR";
+    display: block;
+    margin-bottom: 10px;
+    font-size: 16px;
+    letter-spacing: 2px;
+    color: #ff9500;
+}
+
+.form-control {
+    border-radius: 12px !important;
+    padding: 12px 15px !important;
+    height: auto !important;
+    border: 1px solid #ccc !important;
+    background-color: #fff !important;
+}
+
+.form-control:focus {
+    border-color: #ff9500 !important;
+    box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.2) !important;
+}
+
+.btn-primary {
+    background-color: #ff9500 !important;
+    border-color: #ff9500 !important;
+    border-radius: 12px !important;
+    padding: 12px 20px !important;
+    font-weight: 600 !important;
+    height: auto !important;
+    width: 100% !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+}
+
+.btn-primary:hover {
+    background-color: #e68600 !important;
+    border-color: #e68600 !important;
+}
+
+#kc-registration span a {
+    color: #ff9500 !important;
+    font-weight: 600 !important;
+}
+
+#kc-registration span a:hover {
+    text-decoration: underline !important;
+}
+
+.pf-c-form__label-text {
+    font-weight: 500 !important;
+}

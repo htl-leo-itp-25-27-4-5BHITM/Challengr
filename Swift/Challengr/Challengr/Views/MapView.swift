@@ -140,6 +140,7 @@ struct MapView: View {
     @State private var annotations: [PlayerAnnotation] = []
     
     /// Challenge Infos Window
+    @State private var showSettings = false
     @State private var showChallengeView = false
     @State private var showTrophyRoad = false
 
@@ -239,7 +240,7 @@ struct MapView: View {
                     // RECHTS: Settings OBEN, Kompass UNTEN
                     VStack(spacing: 8) {
                         Button {
-                            // TODO: Settings öffnen
+                            showSettings = true
                         } label: {
                             HudCircleButton(systemName: "gearshape.fill")
                                 .frame(width: 36, height: 36)
@@ -547,6 +548,9 @@ struct MapView: View {
             }
             .sheet(isPresented: $showTrophyRoad) {
                 TrophyRoadView(playerId: ownPlayerId)
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView(auth: auth)
             }
             .padding(.bottom, 40)
         }

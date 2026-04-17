@@ -51,6 +51,20 @@ spec:
               value: "false"
           ports:
             - containerPort: 8080
+          volumeMounts:
+            - name: theme-properties
+              mountPath: /opt/keycloak/themes/challengr/login/theme.properties
+              subPath: theme.properties
+            - name: theme-css
+              mountPath: /opt/keycloak/themes/challengr/login/resources/css/styles.css
+              subPath: styles.css
+      volumes:
+        - name: theme-properties
+          configMap:
+            name: challengr-theme-properties
+        - name: theme-css
+          configMap:
+            name: challengr-theme-css
 ---
 apiVersion: v1
 kind: Service
