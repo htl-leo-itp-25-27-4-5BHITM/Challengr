@@ -307,7 +307,10 @@ struct MapView: View {
 
 
         
-        .fullScreenCover(isPresented: .constant(activeFullScreen != .none)) {
+        .fullScreenCover(isPresented: Binding(
+            get: { activeFullScreen != .none },
+            set: { if !$0 { activeFullScreen = .none } }
+        )) {
             switch activeFullScreen {
             case .battle:
                 if let info = activeBattleInfo,
@@ -702,16 +705,9 @@ struct MapView: View {
                                     battleId: battleId,
                                     status: "ACCEPTED"
                                 )
-
-                                activeBattleInfo = (
-                                    challengeName: challenge.name,
-                                    category: challenge.category,
-                                    playerA: ownPlayerName,
-                                    playerB: opponentName
-                                )
-
-                                incomingChallenge = nil
-                                activeFullScreen = .battle
+                                // We don't set activeFullScreen = .battle here.
+                                // Instead, we wait for the server to reply with "ACCEPTED",
+                                // which triggers `onBattleAccepted` seamlessly for BOTH clients.
                             }
 
                             GamePrimaryButton(title: "Ablehnen", color: .challengrSurface) {

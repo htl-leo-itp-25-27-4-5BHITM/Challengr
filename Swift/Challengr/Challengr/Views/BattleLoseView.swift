@@ -11,6 +11,11 @@ struct BattleLoseView: View {
     let data: BattleResultData
     let onClose: () -> Void
 
+    // MARK: - Animation States
+    @State private var appearScale: CGFloat = 1.3
+    @State private var appearOpacity: Double = 0.0
+    @State private var shakeOffset: CGFloat = 0.0
+
     // MARK: - Body (UI-Aufbau)
     var body: some View {
         ZStack {
@@ -121,6 +126,9 @@ struct BattleLoseView: View {
                     }
                 )
                 .shadow(color: .black.opacity(0.12), radius: 30, x: 0, y: 18)
+                .scaleEffect(appearScale)
+                .opacity(appearOpacity)
+                .offset(x: shakeOffset)
 
                 // Button zurück zur Karte
                 Button(action: onClose) {
@@ -137,10 +145,27 @@ struct BattleLoseView: View {
                         .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
                 }
                 .padding(.top, 18)
+                .opacity(appearOpacity)
 
                 Spacer()
             }
             .padding(.horizontal, 24)
+            .onAppear {
+                // Hefty drop-in slam animation
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    appearScale = 1.0
+                    appearOpacity = 1.0
+                }
+                // Shake effect milliseconds after slamming down
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(Animation.default.speed(2).repeatCount(4, autoreverses: true)) {
+                        shakeOffset = -8
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        withAnimation { shakeOffset = 0 }
+                    }
+                }
+            }
         }
     }
 

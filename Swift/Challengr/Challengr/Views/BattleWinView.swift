@@ -5,6 +5,12 @@ struct BattleWinView: View {
     let data: BattleResultData
     let onClose: () -> Void
 
+    // MARK: - Animation States
+    @State private var appearScale: CGFloat = 0.6
+    @State private var appearOpacity: Double = 0.0
+    @State private var titleScale: CGFloat = 1.0
+    @State private var rotateWinnerCards = false
+
     // MARK: - Body (UI-Aufbau)
     var body: some View {
         ZStack {
@@ -18,6 +24,8 @@ struct BattleWinView: View {
                 endPoint: .bottom
             )
             .ignoresSafeArea()
+
+            ConfettiView()
 
             VStack {
                 Spacer()
@@ -36,6 +44,7 @@ struct BattleWinView: View {
                         .font(.system(size: 30, weight: .black, design: .rounded))
                         .tracking(3)
                         .foregroundColor(.challengrBlack)
+                        .scaleEffect(titleScale)
 
                     // Glückwunsch-Zeile
                     Text("GLÜCKWUNSCH, \(data.winnerName.uppercased())!")
@@ -88,6 +97,8 @@ struct BattleWinView: View {
                     }
                 )
                 .shadow(color: .black.opacity(0.12), radius: 30, x: 0, y: 18)
+                .scaleEffect(appearScale)
+                .opacity(appearOpacity)
 
                 // Button zurück zur Karte
                 Button(action: onClose) {
@@ -104,10 +115,20 @@ struct BattleWinView: View {
                         .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
                 }
                 .padding(.top, 18)
+                .opacity(appearOpacity)
 
                 Spacer()
             }
             .padding(.horizontal, 24)
+            .onAppear {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
+                    appearScale = 1.0
+                    appearOpacity = 1.0
+                }
+                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                    titleScale = 1.1
+                }
+            }
         }
     }
 

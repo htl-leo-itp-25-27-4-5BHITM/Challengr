@@ -24,6 +24,12 @@ struct BattleView: View {
     let onSurrender: () -> Void
     let onFinished: () -> Void
 
+    // MARK: - Animation States
+    @State private var vsScale: CGFloat = 1.0
+    @State private var cardOffset: CGFloat = 50
+    @State private var cardOpacity: Double = 0.0
+    @State private var playerPanelsOffset: CGFloat = 150
+
     // MARK: - Body (UI-Aufbau)
     var body: some View {
         ZStack {
@@ -90,6 +96,7 @@ struct BattleView: View {
                                 flip: false
                             )
                             .rotationEffect(.degrees(-6))
+                            .offset(x: -playerPanelsOffset)
 
                             playerPanel(
                                 name: playerRight,
@@ -98,6 +105,7 @@ struct BattleView: View {
                                 flip: true
                             )
                             .rotationEffect(.degrees(6))
+                            .offset(x: playerPanelsOffset)
                         }
                         .padding(.horizontal, 8)
 
@@ -122,6 +130,7 @@ struct BattleView: View {
                                     )
                             )
                             .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 6)
+                            .scaleEffect(vsScale)
                     }
                     .padding(.top, 8)
 
@@ -181,6 +190,8 @@ struct BattleView: View {
                     }
                 )
                 .shadow(color: .black.opacity(0.12), radius: 30, x: 0, y: 18)
+                .offset(y: cardOffset)
+                .opacity(cardOpacity)
 
                 // Schließen-Button
                 Button(action: onClose) {
@@ -197,10 +208,26 @@ struct BattleView: View {
                         .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
                 }
                 .padding(.top, 18)
+                .opacity(cardOpacity)
 
                 Spacer()
             }
             .padding(.horizontal, 24)
+            .onAppear {
+                // Card Entrance Animation
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                    cardOffset = 0
+                    cardOpacity = 1.0
+                }
+                // Player Slide in Drama
+                withAnimation(.spring(response: 0.8, dampingFraction: 0.6).delay(0.2)) {
+                    playerPanelsOffset = 0
+                }
+                // Pulsing VS badge
+                withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true).delay(0.5)) {
+                    vsScale = 1.15
+                }
+            }
         }
     }
 
