@@ -17,6 +17,10 @@ console.log(
 );
 const gameClient = new GameClient(myId);
 gameClient.connect();
+
+// Make it globally available for testing in the browser console
+window.gameClient = gameClient;
+
 let chartInstance = null;
 
 let sheetMode = "challenges"; // oder "trophy"
@@ -27,7 +31,7 @@ let isResultPending = false;
 const api = (url) => fetch(url).then(r => r.json());
 
 
-// Battle State
+// window.currentBattleState can be used for testing
 let currentBattleState = {
   battleId: null,
   challengeName: "",
@@ -38,6 +42,7 @@ let currentBattleState = {
   toPlayerId: null,
   isInitiator: false  // true wenn ich die challenge gestartet habe
 };
+window.currentBattleState = currentBattleState;
 let currentKnowledgeQuestion = null;
 
 
@@ -740,12 +745,28 @@ function showBattleDialog({ category, challengeName, playerLeft, playerRight, on
   const successBtn = document.getElementById("battle-success-btn");
   const surrenderBtn = document.getElementById("battle-surrender-btn");
   const closeBtn = document.getElementById("battle-close-btn");
+  
+  const fakeBtn = document.getElementById("battle-fake-pushup-btn");
+  const fakeContainer = document.getElementById("battle-fake-pushup-container");
+
+  if (fakeContainer && fakeBtn) {
+    if (category.toLowerCase() === "iphone" || challengeName.toLowerCase().includes("liegestütz")) {
+      fakeContainer.style.display = "flex";
+      fakeBtn.onclick = () => {
+        gameClient.socket.send(JSON.stringify({ type: "pushup-result", battleId: currentBattleState.battleId, reps: 15 }));
+        alert("15 Pushups heimlich gesendet!");
+      };
+    } else {
+      fakeContainer.style.display = "none";
+    }
+  }
 
   function cleanup() {
     backdrop.classList.add("hidden");
     successBtn.onclick = null;
     surrenderBtn.onclick = null;
     closeBtn.onclick = null;
+    if (fakeBtn) fakeBtn.onclick = null;
   }
 
   successBtn.onclick = () => {

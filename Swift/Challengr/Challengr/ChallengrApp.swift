@@ -36,10 +36,26 @@ struct ChallengrApp: App {
                         )
                     } else {
                         VStack(spacing: 12) {
-                            ProgressView()
-                            Text("Profil wird geladen…")
-                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                            if let error = auth.errorMessage {
+                                Text("Fehler beim Laden:")
+                                    .font(.headline)
+                                    .foregroundColor(.red)
+                                Text(error)
+                                    .font(.system(size: 14, design: .rounded))
+                                    .foregroundColor(.red)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                                Button("Abmelden & Neu starten") {
+                                    auth.logout()
+                                }
+                                .padding(.top, 10)
+                            } else {
+                                ProgressView()
+                                Text("Profil wird geladen…")
+                                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                            }
                         }
+                        .padding()
                     }
                 } else {
                     LoginView(auth: auth)

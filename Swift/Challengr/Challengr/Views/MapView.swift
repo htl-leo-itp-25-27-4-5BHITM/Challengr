@@ -360,6 +360,14 @@ struct MapView: View {
                         )
 
                     } else if info.category == "iPhone",
+                              info.challengeName.lowercased().contains("liegestütz") {
+                        PushupChallengeView(
+                            battleId: battleId,
+                            socket: socket,
+                            onClose: { activeFullScreen = .none }
+                        )
+
+                    } else if info.category == "iPhone",
                               info.challengeName.lowercased().contains("shake")
                               || info.challengeName.lowercased().contains("schüttel") {
                         ShakeChallengeView(

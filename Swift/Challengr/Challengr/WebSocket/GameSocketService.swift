@@ -163,9 +163,15 @@ final class GameSocketService: ObservableObject {
         send(json: payload)
     }
 
-
-
-
+    func sendPushupResult(battleId: Int64, reps: Int) {
+        let payload: [String: Any] = [
+            "type": "pushup-result",
+            "battleId": battleId,
+            "reps": reps
+        ]
+        print("📤 sendPushupResult:", payload)
+        send(json: payload)
+    }
 
     // MARK: - Receive messages (Empfangen)
 
