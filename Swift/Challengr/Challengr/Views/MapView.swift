@@ -40,22 +40,27 @@ enum ActiveOverlay {
 
 
 struct MapView: View {
-
+    
     // MARK: - State & Services + Helpers (State & Services + Helfer)
-
-    let ownPlayerId: Int64
-    let auth: KeycloakAuthService
-
+    
+    /// Helper that provides the current user location
     @StateObject private var locationHelper: LocationHelper
-
+    
+    /// Services to load from the backend
     private let playerService = PlayerLocationService()
     private let challengesService = ChallengesService()
+
+    /// static player id
+    let ownPlayerId: Int64
+
+    /// Auth is needed for Settings/Logout. Optional for preview/default init.
+    private let auth: KeycloakAuthService?
+    
 
     @State private var allChallenges: [ChallengeDTO] = []
 
     /// WebSocket
     @StateObject private var socket: GameSocketService
-
     
     /// Information about an incoming challenge from another player.
     @State private var incomingChallenge: (
@@ -84,7 +89,7 @@ struct MapView: View {
     @State private var resultData: BattleResultData? = nil
 
     /// Static ownPlayerName & coordinates
-    @State var ownPlayerName: String
+    @State private var ownPlayerName: String
     @State private var ownCoordinate: CLLocationCoordinate2D? = nil
     
     @State private var ownRankName: String = "-"
@@ -98,6 +103,7 @@ struct MapView: View {
     @State private var profileBadges: [String] = []
     
     @State private var showProfile = false
+    @State private var showSettings = false
     @State private var currentTargetCoordinate: CLLocationCoordinate2D? = nil
 
     
@@ -106,6 +112,27 @@ struct MapView: View {
 
     /// Fallback (Default Map: Vienna)
     private let startCoordinate = CLLocationCoordinate2D(latitude: 48.2082, longitude: 16.3738)
+
+    init() {
+        let defaultPlayerId: Int64 = 1
+        let defaultPlayerName = "Player"
+
+        self.ownPlayerId = defaultPlayerId
+        self.auth = nil
+        _ownPlayerName = State(initialValue: defaultPlayerName)
+        _locationHelper = StateObject(wrappedValue: LocationHelper(playerId: defaultPlayerId, playerName: defaultPlayerName))
+        _socket = StateObject(wrappedValue: GameSocketService(playerId: defaultPlayerId))
+    }
+
+    init(ownPlayerId: Int64, ownPlayerName: String, auth: KeycloakAuthService) {
+        let resolvedPlayerName = ownPlayerName.isEmpty ? "Player" : ownPlayerName
+
+        self.ownPlayerId = ownPlayerId
+        self.auth = auth
+        _ownPlayerName = State(initialValue: resolvedPlayerName)
+        _locationHelper = StateObject(wrappedValue: LocationHelper(playerId: ownPlayerId, playerName: resolvedPlayerName))
+        _socket = StateObject(wrappedValue: GameSocketService(playerId: ownPlayerId))
+    }
 
     
     /// Current map camera position and Zoom
@@ -117,15 +144,6 @@ struct MapView: View {
             pitch: 0
         )
     )
-
-    // MARK: - Init
-    init(ownPlayerId: Int64, ownPlayerName: String, auth: KeycloakAuthService) {
-        self.ownPlayerId = ownPlayerId
-        self.auth = auth
-        _ownPlayerName = State(initialValue: ownPlayerName)
-        _socket = StateObject(wrappedValue: GameSocketService(playerId: ownPlayerId))
-        _locationHelper = StateObject(wrappedValue: LocationHelper(playerId: ownPlayerId, playerName: ownPlayerName))
-    }
     
     @State private var myVote: String? = nil
     @State private var opponentVote: String? = nil
@@ -140,7 +158,6 @@ struct MapView: View {
     @State private var annotations: [PlayerAnnotation] = []
     
     /// Challenge Infos Window
-    @State private var showSettings = false
     @State private var showChallengeView = false
     @State private var showTrophyRoad = false
 
@@ -269,10 +286,11 @@ struct MapView: View {
                 Spacer()
             }
 
-            // UNTERER BEREICH: Trophy mittig, Profil rechts
-            trophyRoadButton
-            profileButton
-        }
+
+                    // 3) UNTERER BEREICH: Trophy mittig, Profil rechts
+                    trophyRoadButton
+                    profileButton
+                }
         .overlay(playerPopupOverlay)
         .overlay(challengeDialogOverlay)
         .overlay(incomingChallengeOverlay)
@@ -280,8 +298,17 @@ struct MapView: View {
         .sheet(isPresented: $showChallengeView) {
             challengeSheet
         }
+        .sheet(isPresented: $showSettings) {
+            if let auth {
+                SettingsView(auth: auth)
+            } else {
+                // Fallback for previews / default init
+                Text("Einstellungen sind erst nach dem Login verfügbar")
+                    .padding()
+            }
+        }
         .sheet(isPresented: $showProfile) {
-            UserProfileView(
+            ProfileContainerView(
                 data: UserProfileData(
                     name: ownPlayerName,
                     avatarImageName: "playerBoy",
@@ -307,10 +334,7 @@ struct MapView: View {
 
 
         
-        .fullScreenCover(isPresented: Binding(
-            get: { activeFullScreen != .none },
-            set: { if !$0 { activeFullScreen = .none } }
-        )) {
+        .fullScreenCover(isPresented: .constant(activeFullScreen != .none)) {
             switch activeFullScreen {
             case .battle:
                 if let info = activeBattleInfo,
@@ -355,14 +379,6 @@ struct MapView: View {
                         LoudnessChallengeView(
                             battleId: battleId,
                             playerId: ownPlayerId,
-                            socket: socket,
-                            onClose: { activeFullScreen = .none }
-                        )
-
-                    } else if info.category == "iPhone",
-                              info.challengeName.lowercased().contains("liegestütz") {
-                        PushupChallengeView(
-                            battleId: battleId,
                             socket: socket,
                             onClose: { activeFullScreen = .none }
                         )
@@ -560,9 +576,6 @@ struct MapView: View {
             .sheet(isPresented: $showTrophyRoad) {
                 TrophyRoadView(playerId: ownPlayerId)
             }
-            .sheet(isPresented: $showSettings) {
-                SettingsView(auth: auth)
-            }
             .padding(.bottom, 40)
         }
         .frame(maxWidth: .infinity)
@@ -713,9 +726,16 @@ struct MapView: View {
                                     battleId: battleId,
                                     status: "ACCEPTED"
                                 )
-                                // We don't set activeFullScreen = .battle here.
-                                // Instead, we wait for the server to reply with "ACCEPTED",
-                                // which triggers `onBattleAccepted` seamlessly for BOTH clients.
+
+                                activeBattleInfo = (
+                                    challengeName: challenge.name,
+                                    category: challenge.category,
+                                    playerA: ownPlayerName,
+                                    playerB: opponentName
+                                )
+
+                                incomingChallenge = nil
+                                activeFullScreen = .battle
                             }
 
                             GamePrimaryButton(title: "Ablehnen", color: .challengrSurface) {

@@ -14,6 +14,7 @@ import CoreLocation
 struct PlayerRequestDTO: Codable {
     let id: Int64?
     let name: String
+    let keycloakId: String?
     let latitude: Double
     let longitude: Double
 }
@@ -71,24 +72,13 @@ struct PlayerLoudnessBestDTO: Codable {
 
 enum BackendEnvironment: String {
     case cloud
-    case local
 }
 
 struct BackendConfig {
     private static let cloudBaseURL = URL(string: "https://it220257.cloud.htl-leonding.ac.at")!
-    private static let localBaseURL = URL(string: "http://localhost:8080")!
-    static let useLocalBackendKey = "useLocalBackend"
-
-    static var environment: BackendEnvironment {
-        #if DEBUG
-        return UserDefaults.standard.bool(forKey: useLocalBackendKey) ? .local : .cloud
-        #else
-        return .cloud
-        #endif
-    }
 
     static var baseURL: URL {
-        environment == .local ? localBaseURL : cloudBaseURL
+        cloudBaseURL
     }
 
     static func apiURL(_ path: String) -> URL {

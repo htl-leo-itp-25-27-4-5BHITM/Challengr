@@ -11,6 +11,8 @@ public class Player {
     private Long id;
 
     private String name;
+    @Column(unique = true, length = 128)
+    private String keycloakId;
     private double longitude;
     private double latitude;
 
@@ -49,6 +51,14 @@ public class Player {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getKeycloakId() {
+        return keycloakId;
+    }
+
+    public void setKeycloakId(String keycloakId) {
+        this.keycloakId = keycloakId;
     }
 
     public double getLongitude() {

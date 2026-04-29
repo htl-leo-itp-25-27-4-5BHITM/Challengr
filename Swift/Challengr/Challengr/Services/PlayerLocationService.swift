@@ -19,7 +19,7 @@ final class PlayerLocationService {
     ) async throws {
         let url = baseURL.appendingPathComponent("\(id)")
 
-        let dto = PlayerRequestDTO(id: id, name: name, latitude: latitude, longitude: longitude)
+    let dto = PlayerRequestDTO(id: id, name: name, keycloakId: nil, latitude: latitude, longitude: longitude)
 
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
@@ -32,6 +32,7 @@ final class PlayerLocationService {
     /// Creates a new player (Erstellt neuen Spieler)
     func createPlayer(
         name: String,
+        keycloakId: String? = nil,
         latitude: Double = 0,
         longitude: Double = 0
     ) async throws -> PlayerDTO {
@@ -39,7 +40,7 @@ final class PlayerLocationService {
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(
-            PlayerRequestDTO(id: nil, name: name, latitude: latitude, longitude: longitude)
+            PlayerRequestDTO(id: nil, name: name, keycloakId: keycloakId, latitude: latitude, longitude: longitude)
         )
 
         let (data, _) = try await URLSession.shared.data(for: request)

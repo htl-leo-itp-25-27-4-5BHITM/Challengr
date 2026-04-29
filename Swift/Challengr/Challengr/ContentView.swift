@@ -16,11 +16,32 @@ struct ContentView: View {
 
     // MARK: - Body (UI-Aufbau)
     var body: some View {
-        MapView(
-            ownPlayerId: 1,
-            ownPlayerName: "Preview",
-            auth: auth
-        )
+        Group {
+            if auth.isAuthenticated {
+                if let playerId = auth.playerId {
+                    MapView(
+                        ownPlayerId: playerId,
+                        ownPlayerName: auth.playerName,
+                        auth: auth
+                    )
+                } else {
+                    VStack(spacing: 12) {
+                        if let error = auth.errorMessage {
+                            Text("Fehler beim Laden:")
+                                .font(.headline)
+                                .foregroundColor(.red)
+                            Text(error)
+                                .foregroundColor(.secondary)
+                        } else {
+                            ProgressView("Lade Profil …")
+                        }
+                    }
+                    .padding()
+                }
+            } else {
+                LoginView(auth: auth)
+            }
+        }
     }
 }
 

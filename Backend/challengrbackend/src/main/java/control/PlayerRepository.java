@@ -5,6 +5,7 @@ import entity.Player;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceException;
 import jakarta.transaction.Transactional;
 
 import java.util.List;
@@ -23,9 +24,138 @@ public class PlayerRepository {
 
     @Transactional
     public Player createPlayer(Player player) {
-        em.persist(player);
-        em.flush(); // damit die ID sofort erzeugt wird
-        return player;
+        if (player == null) {
+            throw new IllegalArgumentException("player must not be null");
+        }
+
+        // Client darf bei create keine ID vorgeben.
+        player.setId(null);
+
+        String normalizedName = normalize(player.getName());
+        String normalizedKeycloakId = normalize(player.getKeycloakId());
+        player.setName(normalizedName);
+        player.setKeycloakId(normalizedKeycloakId);
+
+        if (normalizedKeycloakId != null) {
+            Player existingByKeycloakId = findByKeycloakId(normalizedKeycloakId);
+            if (existingByKeycloakId != null) {
+                if (normalizedName != null && !normalizedName.equals(existingByKeycloakId.getName())) {
+                    existingByKeycloakId.setName(normalizedName);
+                    save(existingByKeycloakId);
+                }
+                return existingByKeycloakId;
+            }
+        }
+
+        if (normalizedName != null) {
+            // Fallback für Alt-Daten ohne keycloakId.
+            Player existing = findByNameIgnoreCase(normalizedName);
+            if (existing != null) {
+                if (existing.getKeycloakId() == null && normalizedKeycloakId != null) {
+                    existing.setKeycloakId(normalizedKeycloakId);
+                    save(existing);
+                }
+                return existing;
+            }
+        }
+
+        try {
+            em.persist(player);
+            em.flush(); // damit die ID sofort erzeugt wird
+            return player;
+        } catch (PersistenceException ex) {
+            if (!isDuplicatePlayerPrimaryKey(ex)) {
+                if (normalizedKeycloakId != null) {
+                    Player existingByKeycloakId = findByKeycloakId(normalizedKeycloakId);
+                    if (existingByKeycloakId != null) {
+                        return existingByKeycloakId;
+                    }
+                }
+                throw ex;
+            }
+
+            // Cloud-DB kann eine verschobene Sequence haben (z.B. nach manuellen Inserts).
+            realignPlayerIdSequence();
+
+            em.clear();
+            player.setId(null);
+            em.persist(player);
+            em.flush();
+            return player;
+        }
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private Player findByKeycloakId(String keycloakId) {
+        if (keycloakId == null || keycloakId.isBlank()) {
+            return null;
+        }
+
+        return em.createQuery(
+                        "SELECT p FROM Player p WHERE p.keycloakId = :keycloakId",
+                        Player.class
+                )
+                .setParameter("keycloakId", keycloakId)
+                .setMaxResults(1)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    private Player findByNameIgnoreCase(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+
+        return em.createQuery(
+                        "SELECT p FROM Player p WHERE LOWER(p.name) = :name",
+                        Player.class
+                )
+                .setParameter("name", name.toLowerCase())
+                .setMaxResults(1)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    private boolean isDuplicatePlayerPrimaryKey(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            String msg = current.getMessage();
+            if (msg != null
+                    && msg.contains("duplicate key value")
+                    && msg.contains("player_pkey")) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private void realignPlayerIdSequence() {
+        Object sequenceNameObj = em.createNativeQuery(
+                        "SELECT pg_get_serial_sequence('player', 'id')"
+                )
+                .getSingleResult();
+
+        if (sequenceNameObj == null) {
+            return;
+        }
+
+        String sequenceName = sequenceNameObj.toString();
+        em.createNativeQuery(
+                        "SELECT setval(CAST(:seqName AS regclass), COALESCE((SELECT MAX(id) FROM player), 0) + 1, false)"
+                )
+                .setParameter("seqName", sequenceName)
+                .getSingleResult();
     }
 
     @Transactional

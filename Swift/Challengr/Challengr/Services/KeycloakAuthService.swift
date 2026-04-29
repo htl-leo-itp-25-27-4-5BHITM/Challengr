@@ -22,6 +22,7 @@ final class KeycloakAuthService: NSObject, ObservableObject {
     @Published var idToken:      String? = nil
     @Published var playerId:     Int64?  = nil
     @Published var playerName:   String  = ""
+    @Published var keycloakUserId: String? = nil
 
     // MARK: - PKCE helpers
     private var codeVerifier: String = ""
@@ -140,6 +141,8 @@ final class KeycloakAuthService: NSObject, ObservableObject {
                   ?? payload["name"] as? String
                   ?? ""
 
+    keycloakUserId = payload["sub"] as? String
+
         // Keycloak-Claim: "player_id" (wird im Backend gesetzt)
         if let pid = payload["player_id"] as? Int64 {
             playerId = pid
@@ -151,6 +154,22 @@ final class KeycloakAuthService: NSObject, ObservableObject {
     private func ensurePlayerId() async {
         let trimmedName = playerName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return }
+
+        if let keycloakUserId, !keycloakUserId.isEmpty {
+            do {
+                let dto = try await playerService.createPlayer(
+                    name: trimmedName,
+                    keycloakId: keycloakUserId
+                )
+                playerId = dto.id
+                UserDefaults.standard.set(Int(dto.id), forKey: "playerId.\(keycloakUserId)")
+                UserDefaults.standard.set(Int(dto.id), forKey: "playerId.\(trimmedName)")
+                return
+            } catch {
+                errorMessage = "Spieler konnte nicht erstellt werden: \(error.localizedDescription)"
+                return
+            }
+        }
 
         let key = "playerId.\(trimmedName)"
         let storedId = UserDefaults.standard.integer(forKey: key)
@@ -205,6 +224,7 @@ final class KeycloakAuthService: NSObject, ObservableObject {
         idToken         = nil
         playerId        = nil
         playerName      = ""
+        keycloakUserId  = nil
         isAuthenticated = false
     }
 }
