@@ -1,0 +1,33 @@
+<div class="section">
+  <div class="grid">
+    <div class="card stat">
+      <div class="label">Total Users</div>
+      <div class="value">120</div>
+    </div>
+
+    <div class="card stat">
+      <div class="label">Active</div>
+      <div class="value green">98</div>
+    </div>
+
+    <div class="card stat">
+      <div class="label">Inactive</div>
+      <div class="value red">22</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="card">
+    <div class="list">
+      <div class="row" *ngFor="let user of users">
+        <div>{{ user.name }}</div>
+        <div
+          class="badge"
+          [class.active]="user.status === 'active'">
+          {{ user.status }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

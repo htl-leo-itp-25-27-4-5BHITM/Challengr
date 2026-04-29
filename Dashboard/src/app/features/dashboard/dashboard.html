@@ -1,0 +1,22 @@
+<div class="topbar">
+  <h1>Dashboard</h1>
+
+  <div class="tabs">
+    <button
+      [class.active]="activeTab === 'users'"
+      (click)="activeTab = 'users'">
+      Users
+    </button>
+
+    <button
+      [class.active]="activeTab === 'challenges'"
+      (click)="activeTab = 'challenges'">
+      Challenges
+    </button>
+  </div>
+</div>
+
+<div class="view">
+  <app-users *ngIf="activeTab === 'users'"></app-users>
+  <app-challenges *ngIf="activeTab === 'challenges'"></app-challenges>
+</div>

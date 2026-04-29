@@ -1,0 +1,35 @@
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+h1 {
+  font-size: 24px;
+  margin: 0;
+}
+
+.tabs {
+  background: var(--white);
+  padding: 4px;
+  border-radius: 12px;
+  display: flex;
+  gap: 4px;
+  border: 1px solid var(--gray);
+}
+
+.tabs button {
+  border: none;
+  background: transparent;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-light);
+}
+
+.tabs button.active {
+  background: var(--yellow);
+  color: var(--black);
+}

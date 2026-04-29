@@ -1,0 +1,43 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.stat .label {
+  font-size: 14px;
+  color: var(--text-light);
+}
+
+.stat .value {
+  font-size: 24px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.value.green {
+  color: #16a34a;
+}
+
+.value.red {
+  color: var(--red);
+}
+
+.list .row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--gray);
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eee;
+  font-size: 12px;
+}
+
+.badge.active {
+  background: rgba(253, 208, 6, 0.2);
+  color: var(--black);
+}
