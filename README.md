@@ -129,8 +129,6 @@ Ziele:
 
 ---
 
-
-
 ## Sprint (Sprint 11 – Start: 08.04.2026)
 
 Ziele:
@@ -139,6 +137,25 @@ Ziele:
 * Präsentation über Keycloack inklusive Erklärung von Einbindung in Projekt
 
 ---
+
+
+
+## Sprint (Sprint 12 – Start: 29.04.2026)
+
+Ziele:
+
+* Einführung einer einheitlichen USER-ID für Keycloack und Datenbank
+* Verknüpfung jedes Keycloack-USERS mit genau einem Datenbank-USER
+* Vermeidung von Duplikaten zwischen Auth-System und DB
+* Fehler bei der Abmeldung (Logout) identifizieren und vollständig beheben
+* Test-User durch realistischere „Alibi-Spieler:innen“ ersetzen
+* Webapp ausschließlich für Testzwecke weiterführen
+* Einführung von Sub-Issues für User Stories in GitHub zur besseren Nachverfolgung
+* Grundlegende Implementierung einer Dashboard-Ansicht
+* Anzeige von User-Informationen und Challenges vorbereiten
+
+---
+
 
 ## Lokaler Schnellstart (WebApp + Cloud Backend)
 
