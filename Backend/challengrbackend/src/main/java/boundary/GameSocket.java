@@ -36,6 +36,8 @@ public class GameSocket {
     
     private static final Map<Long, Map<Long, Double>> LOUDNESS_RESULTS = new ConcurrentHashMap<>();
 
+    private static final Map<Long, Map<Long, Double>> COMPASS_RESULTS = new ConcurrentHashMap<>();
+
     private static final Map<Long, Map<Long, Integer>> SHAKE_RESULTS = new ConcurrentHashMap<>();
 
     @Inject
@@ -111,6 +113,9 @@ public class GameSocket {
 
             } else if (message.contains("\"type\":\"loudness-result\"")) { // NEU
                 handleLoudnessResult(message, playerId);
+
+            } else if (message.contains("\"type\":\"compass-result\"")) {
+                handleCompassResult(message, playerId);
 
             } else if (message.contains("\"type\":\"shake-result\"")) {
                 handleShakeResult(message, playerId);
@@ -806,6 +811,65 @@ public class GameSocket {
 
         computeAndBroadcastResult(battle, List.of(winnerName));
         LOUDNESS_RESULTS.remove(battleId);
+    }
+
+    private void handleCompassResult(String message, Long playerId) {
+        Long battleId = extractLong(message, "battleId");
+        double distance = extractDouble(message, "distance");
+
+        System.out.println("➡️ compass-result parsed: battleId=" + battleId + ", distance=" + distance);
+        if (playerId == null) {
+            System.out.println("compass-result ohne playerId, ignoriere");
+            return;
+        }
+
+        Battle battle = battleService.findById(battleId);
+        if (battle == null) {
+            System.out.println("compass-result: battle " + battleId + " nicht gefunden");
+            return;
+        }
+
+        COMPASS_RESULTS
+                .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
+                .put(playerId, distance);
+
+        Map<Long, Double> map = COMPASS_RESULTS.get(battleId);
+        Long fromId = battle.getFromPlayer().getId();
+        Long toId   = battle.getToPlayer().getId();
+
+        // Wait until both players submitted a distance
+        if (map == null || !(map.containsKey(fromId) && map.containsKey(toId))) {
+            System.out.println("Compass result stored for battle " + battleId + ", waiting for opponent...");
+            return;
+        }
+
+        double distFrom = map.get(fromId);
+        double distTo   = map.get(toId);
+
+        String winnerName;
+        if (distFrom < distTo) {
+            winnerName = battle.getFromPlayer().getName();
+        } else if (distTo < distFrom) {
+            winnerName = battle.getToPlayer().getName();
+        } else {
+            winnerName = "Niemand"; // Unentschieden
+        }
+
+        String pendingPayload = """
+    {
+      "type": "battle-pending",
+      "battleId": %d
+    }
+    """.formatted(battleId);
+
+        sendToPlayer(fromId, pendingPayload);
+        sendToPlayer(toId,   pendingPayload);
+
+        System.out.println("✅ Compass ausgewertet, from=" + distFrom + ", to=" + distTo
+                + ", winner=" + winnerName);
+
+        computeAndBroadcastResult(battle, List.of(winnerName));
+        COMPASS_RESULTS.remove(battleId);
     }
 
     private static final Map<Long, Map<Long, Integer>> PUSHUP_RESULTS = new ConcurrentHashMap<>();

@@ -750,14 +750,79 @@ function showBattleDialog({ category, challengeName, playerLeft, playerRight, on
   const fakeContainer = document.getElementById("battle-fake-pushup-container");
 
   if (fakeContainer && fakeBtn) {
-    if (category.toLowerCase() === "iphone" || challengeName.toLowerCase().includes("liegestütz")) {
+    // Show the fake dev button for pushups OR compass (dev/testing).
+    const isPushup = challengeName.toLowerCase().includes("liegestütz") || challengeName.toLowerCase().includes("pushup");
+    const isCompass = category.toLowerCase() === "iphone" && (challengeName.toLowerCase().includes("kompass") || challengeName.toLowerCase().includes("compass"));
+
+    if (isPushup) {
       fakeContainer.style.display = "flex";
+      fakeBtn.textContent = "Send 15 Pushups 🛠️";
       fakeBtn.onclick = () => {
         gameClient.socket.send(JSON.stringify({ type: "pushup-result", battleId: currentBattleState.battleId, reps: 15 }));
         alert("15 Pushups heimlich gesendet!");
       };
+
+    } else if (isCompass) {
+      // Reuse the fake container for a compass test button that shows the result for 3s,
+      // then sends a 10° result to the server and shows the pending overlay.
+      fakeContainer.style.display = "flex";
+      fakeBtn.textContent = "Send 10° (dev) 🛠️";
+      fakeBtn.onclick = () => {
+        if (!currentBattleState.battleId) {
+          alert("Kein aktives Battle gefunden");
+          return;
+        }
+
+        // Prevent double clicks
+        fakeBtn.disabled = true;
+
+        // Create a small preview card inside the battle dialog to show the user's result
+        const dialogContent = document.getElementById("battle-dialog");
+        let preview = document.getElementById("compass-result-preview");
+        if (!preview) {
+          preview = document.createElement("div");
+          preview.id = "compass-result-preview";
+          preview.style.cssText = `
+            margin:12px auto; padding:12px 16px; border-radius:12px; background:rgba(255,255,255,0.95);
+            box-shadow:0 6px 18px rgba(0,0,0,0.12); width:80%; text-align:center; font-weight:600; color:#111;
+          `;
+        }
+
+        const angle = 10; // dev test value
+        const distance = Math.abs(angle); // for fake data distance == angle in deg for display
+        preview.textContent = `Dein Ergebnis: ${angle}°  ·  Abstand: ${distance}°`;
+
+        // Insert preview into dialog (replace existing)
+        const existing = document.getElementById("compass-result-preview");
+        if (existing) existing.remove();
+        dialogContent.insertBefore(preview, dialogContent.querySelector("#battle-close-btn"));
+
+        // After 3s remove preview and send the result
+        setTimeout(() => {
+          try {
+            // send compass-result via GameClient helper
+            gameClient.sendCompassResult(currentBattleState.battleId, angle);
+
+            // Show pending overlay to indicate server-side calculation
+            const pending = document.getElementById("battle-pending-overlay");
+            if (pending) pending.classList.remove("hidden");
+
+          } catch (e) {
+            console.error("Fehler beim Senden des Compass-Testwerts:", e);
+            alert("Fehler beim Senden");
+          }
+
+          // cleanup preview after sending
+          const p = document.getElementById("compass-result-preview");
+          if (p) p.remove();
+
+          // keep the fake button disabled to avoid multiple sends
+        }, 3000);
+      };
+
     } else {
       fakeContainer.style.display = "none";
+      if (fakeBtn) fakeBtn.onclick = null;
     }
   }
 
@@ -766,7 +831,14 @@ function showBattleDialog({ category, challengeName, playerLeft, playerRight, on
     successBtn.onclick = null;
     surrenderBtn.onclick = null;
     closeBtn.onclick = null;
-    if (fakeBtn) fakeBtn.onclick = null;
+    if (fakeBtn) {
+      fakeBtn.onclick = null;
+      fakeBtn.disabled = false;
+    }
+
+    // Remove any compass preview left behind
+    const p = document.getElementById("compass-result-preview");
+    if (p) p.remove();
   }
 
   successBtn.onclick = () => {

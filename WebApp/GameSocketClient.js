@@ -175,6 +175,15 @@ export class GameClient {
     });
   }
 
+  // Send compass result (for testing/fake data from webapp)
+  sendCompassResult(battleId, distance) {
+    this.send({
+      type: "compass-result",
+      battleId,
+      distance
+    });
+  }
+
   // NEU: Antwort im Wissen-Battle senden
   sendKnowledgeAnswer(battleId, answerIndex) {
     this.send({

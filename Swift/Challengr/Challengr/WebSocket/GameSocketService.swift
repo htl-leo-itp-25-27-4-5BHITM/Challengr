@@ -102,12 +102,18 @@ final class GameSocketService: ObservableObject {
             print("❌ send() ohne aktive WebSocket-Verbindung")
             return
         }
+        // Ensure the underlying task is running (at least resumed)
+        // URLSessionWebSocketTask doesn't expose a public readyState, but we can
+        // still try-catch send errors and log the task description for debugging.
         do {
             let data = try JSONSerialization.data(withJSONObject: json, options: [])
             let text = String(data: data, encoding: .utf8) ?? ""
             task.send(.string(text)) { error in
                 if let error = error {
                     print("❌ WS send error:", error)
+                    // If send failed due to disconnected socket, nil out and schedule reconnect
+                    self.webSocketTask = nil
+                    self.scheduleReconnect()
                 }
             }
         } catch {
@@ -170,6 +176,16 @@ final class GameSocketService: ObservableObject {
             "reps": reps
         ]
         print("📤 sendPushupResult:", payload)
+        send(json: payload)
+    }
+
+    func sendCompassResult(battleId: Int64, distance: Double) {
+        let payload: [String: Any] = [
+            "type": "compass-result",
+            "battleId": battleId,
+            "distance": distance
+        ]
+        print("📤 sendCompassResult:", payload)
         send(json: payload)
     }
 

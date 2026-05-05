@@ -335,6 +335,20 @@ struct MapView: View {
 
         
         .fullScreenCover(isPresented: .constant(activeFullScreen != .none)) {
+            // Debug: print active battle info so we can see which challenge name arrives
+            if activeFullScreen == .battle {
+                if let info = activeBattleInfo {
+                    // Use an EmptyView with onAppear to perform side effects inside a ViewBuilder
+                    EmptyView().onAppear {
+                        print("DEBUG: activeBattleInfo category=\(info.category) name=\(info.challengeName)")
+                    }
+                } else {
+                    EmptyView().onAppear {
+                        print("DEBUG: activeFullScreen==.battle but activeBattleInfo is nil")
+                    }
+                }
+            }
+
             switch activeFullScreen {
             case .battle:
                 if let info = activeBattleInfo,
@@ -382,6 +396,10 @@ struct MapView: View {
                             socket: socket,
                             onClose: { activeFullScreen = .none }
                         )
+
+              } else if info.category == "iPhone",
+                    (info.challengeName.lowercased().contains("compass") || info.challengeName.lowercased().contains("kompass")) {
+                CompassChallengeView(battleId: battleId, playerId: ownPlayerId, socket: socket, onClose: { activeFullScreen = .none })
 
                     } else if info.category == "iPhone",
                               info.challengeName.lowercased().contains("shake")
