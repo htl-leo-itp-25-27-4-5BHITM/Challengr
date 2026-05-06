@@ -1,11 +1,11 @@
 import { GameClient } from "./GameSocketClient.js";
 
 const urlParams = new URLSearchParams(window.location.search);
-const playerIdParam = Number.parseInt(urlParams.get("playerId") || "", 10);
+const playerIdParam = (urlParams.get("playerId") || "").trim();
 const playerNameParam = (urlParams.get("name") || "").trim();
 
 window.myName = playerNameParam || "WebappSpieler";
-let myId = Number.isInteger(playerIdParam) && playerIdParam > 0 ? playerIdParam : 3;
+let myId = playerIdParam || "3";
 window.myId = myId;
 console.log(
   "WebApp active playerId:",
@@ -29,6 +29,7 @@ let isResultPending = false;
 
 
 const api = (url) => fetch(url).then(r => r.json());
+const normalizeId = (value) => (value == null ? "" : String(value));
 
 
 // window.currentBattleState can be used for testing
@@ -135,15 +136,15 @@ gameClient.on("battle-question", ({ battleId, challenge }) => {
 gameClient.on("battle-requested", async (msg) => {
   console.log("➡ battle-requested:", msg);
 
-  if (msg.toPlayerId !== myId) {
+  if (normalizeId(msg.toPlayerId) !== myId) {
     // Kopie für Angreifer, nichts anzeigen
     return;
   }
 
   Object.assign(currentBattleState, {
     battleId: msg.battleId,
-    fromPlayerId: msg.fromPlayerId,
-    toPlayerId: msg.toPlayerId,
+  fromPlayerId: normalizeId(msg.fromPlayerId),
+  toPlayerId: normalizeId(msg.toPlayerId),
     isInitiator: false
   });
   incomingBattleId = msg.battleId;
@@ -151,8 +152,8 @@ gameClient.on("battle-requested", async (msg) => {
   try {
     const challenge = await api(`/api/challenges/id/${msg.challengeId}`);
     const [fromPlayer, toPlayer] = await Promise.all([
-      api(`/api/players/${msg.fromPlayerId}`),
-      api(`/api/players/${msg.toPlayerId}`)
+  api(`/api/players/${normalizeId(msg.fromPlayerId)}`),
+  api(`/api/players/${normalizeId(msg.toPlayerId)}`)
     ]);
 
     Object.assign(currentBattleState, {
@@ -1290,7 +1291,7 @@ async function loadNearbyPlayersWeb(currentPlayerId, lat, lon, radiusMeters) {
 
     console.log("Nearby Players:", players);
 
-    const currentCount = players.filter(p => p.id !== currentPlayerId).length;
+  const currentCount = players.filter(p => normalizeId(p.id) !== currentPlayerId).length;
 
     if (currentCount > lastPlayerCount) {
       playerCountSound.currentTime = 0;
@@ -1302,7 +1303,7 @@ async function loadNearbyPlayersWeb(currentPlayerId, lat, lon, radiusMeters) {
 
     clearPins();
     players.forEach(p => {
-      if (p.id === currentPlayerId) return;
+  if (normalizeId(p.id) === currentPlayerId) return;
       
       let plat = parseFloat(p.latitude);
       let plon = parseFloat(p.longitude);

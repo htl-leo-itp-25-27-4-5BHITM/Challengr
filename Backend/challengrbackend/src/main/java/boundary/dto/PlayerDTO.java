@@ -1,7 +1,7 @@
 package boundary.dto;
 
 public record PlayerDTO(
-        Long id,
+        String id,
         String name,
         double latitude,
         double longitude,

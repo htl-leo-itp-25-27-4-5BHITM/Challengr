@@ -12,7 +12,7 @@ final class PlayerLocationService {
     /// Updates an existing player (Aktualisiert einen existierenden Spieler)
     /// PUT: send position/name only, no points (PUT: nur Position/Name schicken, keine Punkte)
     func updatePlayer(
-        id: Int64,
+        id: String,
         name: String,
         latitude: Double,
         longitude: Double
@@ -53,7 +53,7 @@ final class PlayerLocationService {
     /// Loads nearby players (inkl. ggf. eigenem Spieler)
     /// (Holt Spieler in der Nähe, falls Backend ihn zurückgibt)
     func loadNearbyPlayers(
-        currentPlayerId: Int64,
+        currentPlayerId: String,
         latitude: Double,
         longitude: Double,
         radius: Double
@@ -78,8 +78,8 @@ final class PlayerLocationService {
     
 
     /// Loads a player by id (Spieler per ID laden)
-    func loadPlayerById(id: Int64) async throws -> PlayerDTO {
-        let url = baseURL.appendingPathComponent("\(id)")
+    func loadPlayerById(id: String) async throws -> PlayerDTO {
+        let url = baseURL.appendingPathComponent(id)
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
@@ -89,9 +89,9 @@ final class PlayerLocationService {
     }
 
     /// Loads daily streak (Tagesstreak laden)
-    func loadPlayerStreak(id: Int64) async throws -> Int {
+    func loadPlayerStreak(id: String) async throws -> Int {
         let url = baseURL
-            .appendingPathComponent("\(id)")
+            .appendingPathComponent(id)
             .appendingPathComponent("streak")
 
         let (data, _) = try await URLSession.shared.data(from: url)
@@ -105,15 +105,15 @@ final class PlayerLocationService {
 // MARK: - Points & stats (Punkte & Statistiken)
 
 struct PlayerPointsDTO: Codable {
-    let playerId: Int64
+    let playerId: String
     let points: Int
 }
 
 extension PlayerLocationService {
     /// Loads total points (Gesamtpunkte laden)
-    func loadPlayerPoints(id: Int64) async throws -> Int {
+    func loadPlayerPoints(id: String) async throws -> Int {
         let url = baseURL
-            .appendingPathComponent("\(id)")
+            .appendingPathComponent(id)
             .appendingPathComponent("points")
 
         let (data, _) = try await URLSession.shared.data(from: url)
@@ -122,18 +122,18 @@ extension PlayerLocationService {
     }
     
     /// Loads total/won challenges (Gesamt/Gewonnen laden)
-    func loadPlayerStats(id: Int64) async throws -> PlayerStatsDTO {
+    func loadPlayerStats(id: String) async throws -> PlayerStatsDTO {
         let url = baseURL
-            .appendingPathComponent("\(id)")
+            .appendingPathComponent(id)
             .appendingPathComponent("stats")
         let (data, _) = try await URLSession.shared.data(from: url)
         return try JSONDecoder().decode(PlayerStatsDTO.self, from: data)
     }
 
     /// Loads points history (Punkteverlauf laden)
-    func loadPlayerPointsHistory(id: Int64) async throws -> [PlayerPointsHistoryDTO] {
+    func loadPlayerPointsHistory(id: String) async throws -> [PlayerPointsHistoryDTO] {
         let url = baseURL
-            .appendingPathComponent("\(id)")
+            .appendingPathComponent(id)
             .appendingPathComponent("points-history")
         let (data, _) = try await URLSession.shared.data(from: url)
         return try JSONDecoder().decode([PlayerPointsHistoryDTO].self, from: data)
@@ -142,9 +142,9 @@ extension PlayerLocationService {
     // MARK: - Battles & profile (Battles & Profil)
 
     /// Loads battle history (Battle-Verlauf laden)
-    func loadPlayerBattles(id: Int64) async throws -> [BattleHistoryDTO] {
+    func loadPlayerBattles(id: String) async throws -> [BattleHistoryDTO] {
         let url = baseURL
-            .appendingPathComponent("\(id)")
+            .appendingPathComponent(id)
             .appendingPathComponent("battles")
         let (data, response) = try await URLSession.shared.data(from: url)
 
@@ -173,9 +173,9 @@ extension PlayerLocationService {
     }
 
     /// Loads profile status/badges (Profil-Status/Badges laden)
-    func loadPlayerProfile(id: Int64) async throws -> PlayerProfileDTO {
+    func loadPlayerProfile(id: String) async throws -> PlayerProfileDTO {
         let url = baseURL
-            .appendingPathComponent("\(id)")
+            .appendingPathComponent(id)
             .appendingPathComponent("profile")
         let (data, _) = try await URLSession.shared.data(from: url)
         return try JSONDecoder().decode(PlayerProfileDTO.self, from: data)
@@ -183,18 +183,18 @@ extension PlayerLocationService {
 
     // MARK: - Loudness best (Loudness-Bestwert)
 
-    func loadPlayerBestLoudness(id: Int64) async throws -> Double? {
+    func loadPlayerBestLoudness(id: String) async throws -> Double? {
         let url = baseURL
-            .appendingPathComponent("\(id)")
+            .appendingPathComponent(id)
             .appendingPathComponent("loudness-best")
         let (data, _) = try await URLSession.shared.data(from: url)
         let dto = try JSONDecoder().decode(PlayerLoudnessBestDTO.self, from: data)
         return dto.bestLoudness
     }
 
-    func updatePlayerBestLoudness(id: Int64, best: Double) async throws -> Double? {
+    func updatePlayerBestLoudness(id: String, best: Double) async throws -> Double? {
         let url = baseURL
-            .appendingPathComponent("\(id)")
+            .appendingPathComponent(id)
             .appendingPathComponent("loudness-best")
 
         var request = URLRequest(url: url)

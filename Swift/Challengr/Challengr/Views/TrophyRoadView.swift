@@ -40,7 +40,7 @@ final class RankService {
 
 struct TrophyRoadView: View {
     // MARK: - Input (Eingaben)
-    let playerId: Int64
+    let playerId: String
 
     // MARK: - State (State)
     @State private var trophyRanks: [TrophyRank] = []

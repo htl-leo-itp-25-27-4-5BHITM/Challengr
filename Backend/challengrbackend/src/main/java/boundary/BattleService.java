@@ -39,8 +39,8 @@ public class BattleService {
 
     // Neues Battle anlegen
     @Transactional
-    public Battle createRequestedBattle(Long fromPlayerId,
-                                        Long toPlayerId,
+    public Battle createRequestedBattle(String fromPlayerId,
+                                        String toPlayerId,
                                         Long challengeId) {
 
         Player from = playerRepository.findById(fromPlayerId);
@@ -199,11 +199,11 @@ public class BattleService {
 
 
 
-    public List<Battle> getIncomingBattles(Long playerId) {
+    public List<Battle> getIncomingBattles(String playerId) {
         return battleRepository.findIncoming(playerId);
     }
 
-    public List<Battle> getOpenBattles(Long playerId) {
+    public List<Battle> getOpenBattles(String playerId) {
         return battleRepository.findOpen(playerId);
     }
 

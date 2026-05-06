@@ -18,7 +18,7 @@ extension Color {
 /// Simple model to represent a player as a map annotation.
 struct PlayerAnnotation: Identifiable {
     let id = UUID()
-    let playerId: Int64
+    let playerId: String
     let coordinate: CLLocationCoordinate2D
     let title: String
 }
@@ -51,7 +51,7 @@ struct MapView: View {
     private let challengesService = ChallengesService()
 
     /// static player id
-    let ownPlayerId: Int64
+    let ownPlayerId: String
 
     /// Auth is needed for Settings/Logout. Optional for preview/default init.
     private let auth: KeycloakAuthService?
@@ -65,7 +65,7 @@ struct MapView: View {
     /// Information about an incoming challenge from another player.
     @State private var incomingChallenge: (
         battleId: Int64,
-        fromId: Int64,
+        fromId: String,
         challengeId: Int64,
         name: String,
         category: String
@@ -73,7 +73,7 @@ struct MapView: View {
     
     @State private var outgoingBattleInfo: (
         battleId: Int64,
-        opponentId: Int64,
+        opponentId: String,
         challengeName: String,
         category: String
     )? = nil
@@ -114,7 +114,7 @@ struct MapView: View {
     private let startCoordinate = CLLocationCoordinate2D(latitude: 48.2082, longitude: 16.3738)
 
     init() {
-        let defaultPlayerId: Int64 = 1
+        let defaultPlayerId = "1"
         let defaultPlayerName = "Player"
 
         self.ownPlayerId = defaultPlayerId
@@ -125,6 +125,17 @@ struct MapView: View {
     }
 
     init(ownPlayerId: Int64, ownPlayerName: String, auth: KeycloakAuthService) {
+        let resolvedPlayerName = ownPlayerName.isEmpty ? "Player" : ownPlayerName
+        let resolvedPlayerId = String(ownPlayerId)
+
+        self.ownPlayerId = resolvedPlayerId
+        self.auth = auth
+        _ownPlayerName = State(initialValue: resolvedPlayerName)
+        _locationHelper = StateObject(wrappedValue: LocationHelper(playerId: resolvedPlayerId, playerName: resolvedPlayerName))
+        _socket = StateObject(wrappedValue: GameSocketService(playerId: resolvedPlayerId))
+    }
+
+    init(ownPlayerId: String, ownPlayerName: String, auth: KeycloakAuthService) {
         let resolvedPlayerName = ownPlayerName.isEmpty ? "Player" : ownPlayerName
 
         self.ownPlayerId = ownPlayerId

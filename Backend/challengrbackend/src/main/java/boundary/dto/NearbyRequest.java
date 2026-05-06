@@ -1,7 +1,7 @@
 package boundary.dto;
 
 public record NearbyRequest(
-        Long playerId,
+        String playerId,
         double latitude,
         double longitude,
         double radius // in Metern

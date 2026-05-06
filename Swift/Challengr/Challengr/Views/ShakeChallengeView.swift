@@ -152,5 +152,5 @@ struct ShakeChallengeView: View {
 }
 
 #Preview {
-    ShakeChallengeView(battleId: 1, socket: GameSocketService(playerId: 1), onClose: {})
+    ShakeChallengeView(battleId: 1, socket: GameSocketService(playerId: "1"), onClose: {})
 }

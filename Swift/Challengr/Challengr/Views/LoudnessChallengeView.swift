@@ -23,7 +23,7 @@ struct LoudnessSample: Identifiable {
 struct LoudnessChallengeView: View {
     // MARK: - Input (Eingaben)
     let battleId: Int64
-    let playerId: Int64
+    let playerId: String
     let socket: GameSocketService
     let onClose: () -> Void
 
@@ -485,8 +485,8 @@ struct LoudnessGraphView: View {
 #Preview {
     LoudnessChallengeView(
         battleId: 1,
-        playerId: 1,
-        socket: GameSocketService(playerId: 1),
+    playerId: "1",
+    socket: GameSocketService(playerId: "1"),
         onClose: {}
     )
 }

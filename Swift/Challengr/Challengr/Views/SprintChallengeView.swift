@@ -19,7 +19,7 @@ enum SprintPhase {
 struct SprintChallengeView: View {
     // MARK: - Input (Eingaben)
     let battleId: Int64
-    let playerId: Int64
+    let playerId: String
     let playerName: String
     let socket: GameSocketService
     let onClose: () -> Void
@@ -49,7 +49,7 @@ struct SprintChallengeView: View {
     }
 
     // MARK: - Init
-    init(battleId: Int64, playerId: Int64, playerName: String, socket: GameSocketService, onClose: @escaping () -> Void) {
+    init(battleId: Int64, playerId: String, playerName: String, socket: GameSocketService, onClose: @escaping () -> Void) {
         self.battleId = battleId
         self.playerId = playerId
         self.playerName = playerName

@@ -12,7 +12,7 @@ import CoreLocation
 
 // Player payload for write operations (Spieler-Request ohne Punkte)
 struct PlayerRequestDTO: Codable {
-    let id: Int64?
+    let id: String?
     let name: String
     let keycloakId: String?
     let latitude: Double
@@ -21,7 +21,7 @@ struct PlayerRequestDTO: Codable {
 
 // Player payload for read operations (Spieler-Response mit Punkten)
 struct PlayerDTO: Codable, Identifiable {
-    let id: Int64
+    let id: String
     let name: String
     let latitude: Double
     let longitude: Double
@@ -86,7 +86,7 @@ struct BackendConfig {
         return baseURL.appendingPathComponent(normalized)
     }
 
-    static func gameWebSocketURL(playerId: Int64) -> URL {
+    static func gameWebSocketURL(playerId: String) -> URL {
         var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
         components.scheme = baseURL.scheme == "https" ? "wss" : "ws"
         components.path = "/ws/game"

@@ -20,7 +20,7 @@ final class KeycloakAuthService: NSObject, ObservableObject {
 
     @Published var accessToken:  String? = nil
     @Published var idToken:      String? = nil
-    @Published var playerId:     Int64?  = nil
+    @Published var playerId:     String?  = nil
     @Published var playerName:   String  = ""
     @Published var keycloakUserId: String? = nil
 
@@ -144,10 +144,12 @@ final class KeycloakAuthService: NSObject, ObservableObject {
     keycloakUserId = payload["sub"] as? String
 
         // Keycloak-Claim: "player_id" (wird im Backend gesetzt)
-        if let pid = payload["player_id"] as? Int64 {
+        if let pid = payload["player_id"] as? String {
             playerId = pid
+        } else if let pid = payload["player_id"] as? Int64 {
+            playerId = String(pid)
         } else if let pid = payload["player_id"] as? Int {
-            playerId = Int64(pid)
+            playerId = String(pid)
         }
     }
 
@@ -162,8 +164,8 @@ final class KeycloakAuthService: NSObject, ObservableObject {
                     keycloakId: keycloakUserId
                 )
                 playerId = dto.id
-                UserDefaults.standard.set(Int(dto.id), forKey: "playerId.\(keycloakUserId)")
-                UserDefaults.standard.set(Int(dto.id), forKey: "playerId.\(trimmedName)")
+                UserDefaults.standard.set(dto.id, forKey: "playerId.\(keycloakUserId)")
+                UserDefaults.standard.set(dto.id, forKey: "playerId.\(trimmedName)")
                 return
             } catch {
                 errorMessage = "Spieler konnte nicht erstellt werden: \(error.localizedDescription)"
@@ -172,16 +174,15 @@ final class KeycloakAuthService: NSObject, ObservableObject {
         }
 
         let key = "playerId.\(trimmedName)"
-        let storedId = UserDefaults.standard.integer(forKey: key)
-        if storedId > 0 {
-            playerId = Int64(storedId)
+        if let storedId = UserDefaults.standard.string(forKey: key), !storedId.isEmpty {
+            playerId = storedId
             return
         }
 
         do {
             let dto = try await playerService.createPlayer(name: trimmedName)
             playerId = dto.id
-            UserDefaults.standard.set(Int(dto.id), forKey: key)
+            UserDefaults.standard.set(dto.id, forKey: key)
         } catch {
             errorMessage = "Spieler konnte nicht erstellt werden: \(error.localizedDescription)"
         }

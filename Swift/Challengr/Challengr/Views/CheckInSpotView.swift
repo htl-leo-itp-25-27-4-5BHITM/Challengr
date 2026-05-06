@@ -13,7 +13,7 @@ import MapKit
 struct CheckInSpotView: View {
     // MARK: - Input (Eingaben)
     let battleId: Int64
-    let playerId: Int64
+    let playerId: String
     let playerName: String
     let socket: GameSocketService
     let targetCoordinate: CLLocationCoordinate2D
@@ -43,7 +43,7 @@ struct CheckInSpotView: View {
     // MARK: - Init
     init(
         battleId: Int64,
-        playerId: Int64,
+    playerId: String,
         playerName: String,
         socket: GameSocketService,
         targetCoordinate: CLLocationCoordinate2D,

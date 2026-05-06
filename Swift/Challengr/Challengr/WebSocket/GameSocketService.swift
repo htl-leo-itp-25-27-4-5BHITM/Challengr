@@ -5,7 +5,7 @@ final class GameSocketService: ObservableObject {
 
     // MARK: - Configuration (Konfiguration)
 
-    private let playerId: Int64
+    private let playerId: String
     private var webSocketTask: URLSessionWebSocketTask?
     private let urlSession = URLSession(configuration: .default)
     private var reconnectWorkItem: DispatchWorkItem?
@@ -15,7 +15,7 @@ final class GameSocketService: ObservableObject {
 
     /// Called when a battle request arrives (Aufgerufen bei Battle-Anfrage)
     /// Parameters: battleId, fromId, toId, challengeId, targetLat, targetLon
-    var onChallengeReceived: ((Int64, Int64, Int64, Int64, Double?, Double?) -> Void)?
+    var onChallengeReceived: ((Int64, String, String, Int64, Double?, Double?) -> Void)?
     /// Called when a battle reaches ACCEPTED (Aufgerufen bei Status ACCEPTED)
     var onBattleAccepted: ((Int64) -> Void)?
     /// Called when the battle is ready for voting (Bereit fürs Voting)
@@ -30,7 +30,7 @@ final class GameSocketService: ObservableObject {
 
 
     
-    init(playerId: Int64) {
+    init(playerId: String) {
         self.playerId = playerId
     }
     
@@ -78,7 +78,7 @@ final class GameSocketService: ObservableObject {
 
     // MARK: - Send messages (Senden)
 
-    func sendCreateBattle(fromId: Int64, toId: Int64, challengeId: Int64) {
+    func sendCreateBattle(fromId: String, toId: String, challengeId: Int64) {
         let payload: [String: Any] = [
             "type": "create-battle",
             "fromId": fromId,
@@ -227,8 +227,8 @@ final class GameSocketService: ObservableObject {
 
             if type == "battle-requested" {
                 let battleId    = (json["battleId"] as? NSNumber)?.int64Value ?? 0
-                let fromId      = (json["fromPlayerId"] as? NSNumber)?.int64Value ?? 0
-                let toId        = (json["toPlayerId"] as? NSNumber)?.int64Value ?? 0
+                let fromId      = parsePlayerId(json["fromPlayerId"])
+                let toId        = parsePlayerId(json["toPlayerId"])
                 let challengeId = (json["challengeId"] as? NSNumber)?.int64Value ?? 0
 
                 let targetLat   = json["targetLatitude"] as? Double
@@ -323,5 +323,11 @@ final class GameSocketService: ObservableObject {
 
     deinit {
         disconnect()
+    }
+
+    private func parsePlayerId(_ value: Any?) -> String {
+        if let str = value as? String { return str }
+        if let num = value as? NSNumber { return num.stringValue }
+        return ""
     }
 }

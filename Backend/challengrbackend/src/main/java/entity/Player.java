@@ -1,5 +1,6 @@
 package entity;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.persistence.*;
 
 @Entity
@@ -7,12 +8,11 @@ import jakarta.persistence.*;
 public class Player {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @JsonAlias("keycloakId")
+    @Column(length = 128)
+    private String id;
 
     private String name;
-    @Column(unique = true, length = 128)
-    private String keycloakId;
     private double longitude;
     private double latitude;
 
@@ -37,11 +37,11 @@ public class Player {
 
     public Player() {}
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -51,14 +51,6 @@ public class Player {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getKeycloakId() {
-        return keycloakId;
-    }
-
-    public void setKeycloakId(String keycloakId) {
-        this.keycloakId = keycloakId;
     }
 
     public double getLongitude() {

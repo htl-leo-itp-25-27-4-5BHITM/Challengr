@@ -16,10 +16,10 @@ class LocationHelper: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private let playerService = PlayerLocationService()
 
-    private var currentPlayerId: Int64
+    private var currentPlayerId: String
     private var currentPlayerName: String
 
-    init(playerId: Int64, playerName: String) {
+    init(playerId: String, playerName: String) {
         self.currentPlayerId = playerId
         self.currentPlayerName = playerName
         super.init()
@@ -29,7 +29,7 @@ class LocationHelper: NSObject, ObservableObject, CLLocationManagerDelegate {
         manager.startUpdatingLocation()
     }
 
-    func updatePlayerIdentity(playerId: Int64, playerName: String) {
+    func updatePlayerIdentity(playerId: String, playerName: String) {
         currentPlayerId = playerId
         currentPlayerName = playerName
     }

@@ -25,20 +25,20 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GameSocket {
 
     // Merkt sich, welche Session zu welchem Player gehört
-    private static final Map<Long, Session> SESSIONS = new ConcurrentHashMap<>();
+    private static final Map<String, Session> SESSIONS = new ConcurrentHashMap<>();
     // Mapping Session-ID -> Player-ID, damit wir beim Status-Update wissen, wer gesendet hat
-    private static final Map<String, Long> SESSION_TO_PLAYER = new ConcurrentHashMap<>();
+    private static final Map<String, String> SESSION_TO_PLAYER = new ConcurrentHashMap<>();
 
     // Votes pro Battle: battleId -> Liste der Gewinner-Namen
     private static final Map<Long, List<String>> BATTLE_VOTES = new ConcurrentHashMap<>();
 
-    private static final Map<Long, Map<Long, Double>> SPRINT_RESULTS = new ConcurrentHashMap<>();
+    private static final Map<Long, Map<String, Double>> SPRINT_RESULTS = new ConcurrentHashMap<>();
     
-    private static final Map<Long, Map<Long, Double>> LOUDNESS_RESULTS = new ConcurrentHashMap<>();
+    private static final Map<Long, Map<String, Double>> LOUDNESS_RESULTS = new ConcurrentHashMap<>();
 
-    private static final Map<Long, Map<Long, Double>> COMPASS_RESULTS = new ConcurrentHashMap<>();
+    private static final Map<Long, Map<String, Double>> COMPASS_RESULTS = new ConcurrentHashMap<>();
 
-    private static final Map<Long, Map<Long, Integer>> SHAKE_RESULTS = new ConcurrentHashMap<>();
+    private static final Map<Long, Map<String, Integer>> SHAKE_RESULTS = new ConcurrentHashMap<>();
 
     @Inject
     BattleService battleService;
@@ -58,7 +58,7 @@ public class GameSocket {
             } catch (IOException ignored) {}
             return;
         }
-        Long playerId = Long.valueOf(params.get(0));
+    String playerId = params.get(0);
         Session previousSession = SESSIONS.put(playerId, session);
         if (previousSession != null && !previousSession.getId().equals(session.getId())) {
             SESSION_TO_PLAYER.remove(previousSession.getId());
@@ -85,7 +85,7 @@ public class GameSocket {
 
     @OnMessage
     public void onMessage(String message, Session session) {
-        Long playerId = SESSION_TO_PLAYER.get(session.getId());
+    String playerId = SESSION_TO_PLAYER.get(session.getId());
         System.out.println("WebSocket message from player " + playerId + ": " + message);
         CompletableFuture.runAsync(() -> handleMessage(message, session, playerId));
     }
@@ -94,7 +94,7 @@ public class GameSocket {
     // Message Handling
     // ---------------------------------------------------------
 
-    private void handleMessage(String message, Session session, Long playerId) {
+    private void handleMessage(String message, Session session, String playerId) {
         try {
             if (message.contains("\"type\":\"create-battle\"")) {
                 handleCreateBattle(message);
@@ -136,16 +136,16 @@ public class GameSocket {
     // -------------------- create-battle ----------------------
 
     private void handleCreateBattle(String message) {
-        Long fromId      = extractLong(message, "fromId");
-        Long toId        = extractLong(message, "toId");
+    String fromId      = extractPlayerId(message, "fromId");
+    String toId        = extractPlayerId(message, "toId");
         Long challengeId = extractLong(message, "challengeId");
 
-    System.out.printf("create-battle received: from=%d, to=%d, challenge=%d%n",
+    System.out.printf("create-battle received: from=%s, to=%s, challenge=%d%n",
         fromId, toId, challengeId);
 
         Battle battle = battleService.createRequestedBattle(fromId, toId, challengeId);
 
-    System.out.printf("battle created: id=%d, status=%s, from=%d, to=%d%n",
+    System.out.printf("battle created: id=%d, status=%s, from=%s, to=%s%n",
         battle.getId(), battle.getStatus(),
         battle.getFromPlayer().getId(), battle.getToPlayer().getId());
 
@@ -153,8 +153,8 @@ public class GameSocket {
     {
       "type": "battle-requested",
       "battleId": %d,
-      "fromPlayerId": %d,
-      "toPlayerId": %d,
+    "fromPlayerId": "%s",
+    "toPlayerId": "%s",
       "challengeId": %d,
       "status": "%s",
       "targetLatitude": %s,
@@ -180,8 +180,8 @@ public class GameSocket {
             {
               "type": "battle-created",
               "battleId": %d,
-              "fromPlayerId": %d,
-              "toPlayerId": %d,
+              "fromPlayerId": "%s",
+              "toPlayerId": "%s",
               "challengeId": %d,
               "status": "%s"
             }
@@ -197,7 +197,7 @@ public class GameSocket {
 
     // ---------------- update-battle-status -------------------
 
-    private void handleUpdateBattleStatus(String message, Long senderId) {
+    private void handleUpdateBattleStatus(String message, String senderId) {
         Long battleId = extractLong(message, "battleId");
         String status = extractString(message, "status");
 
@@ -232,14 +232,14 @@ public class GameSocket {
      * Wird aufgerufen, wenn einer der beiden Spieler DONE_SURRENDER sendet.
      * senderId ist der Spieler, der aufgegeben hat → der andere gewinnt.
      */
-    private void handleSurrender(Battle battle, Long senderId) {
+    private void handleSurrender(Battle battle, String senderId) {
         if (senderId == null) {
             System.out.println("handleSurrender: senderId null, ignoriere.");
             return;
         }
 
-        Long fromId = battle.getFromPlayer().getId();
-        Long toId   = battle.getToPlayer().getId();
+        String fromId = battle.getFromPlayer().getId();
+        String toId   = battle.getToPlayer().getId();
 
         String winnerName;
         String loserName;
@@ -254,7 +254,7 @@ public class GameSocket {
             winnerName = battle.getFromPlayer().getName();
             loserName  = battle.getToPlayer().getName();
         } else {
-            System.out.printf("Sender %d gehört nicht zu Battle %d%n", senderId, battle.getId());
+            System.out.printf("Sender %s gehört nicht zu Battle %d%n", senderId, battle.getId());
             return;
         }
 
@@ -460,7 +460,7 @@ public class GameSocket {
     // Hilfsfunktionen
     // ---------------------------------------------------------
 
-    private void sendToPlayer(Long playerId, String jsonPayload) {
+    private void sendToPlayer(String playerId, String jsonPayload) {
         Session s = SESSIONS.get(playerId);
         if (s != null && s.isOpen()) {
             System.out.println("Sending WS payload to player " + playerId + ": " + jsonPayload);
@@ -508,6 +508,19 @@ public class GameSocket {
         return Long.valueOf(numberPart);
     }
 
+    private String extractPlayerId(String json, String key) {
+        try {
+            return extractString(json, key);
+        } catch (IllegalArgumentException ignored) {
+            try {
+                Long numeric = extractLong(json, key);
+                return numeric != null ? numeric.toString() : null;
+            } catch (IllegalArgumentException ignoredAgain) {
+                return null;
+            }
+        }
+    }
+
     private double extractDouble(String json, String key) {
         String pattern = "\"" + key + "\":";
         int idx = json.indexOf(pattern);
@@ -538,9 +551,9 @@ public class GameSocket {
         return json.substring(start + 1, end);
     }
 
-    private static final Map<Long, Map<Long, Integer>> BATTLE_ANSWERS = new ConcurrentHashMap<>();
+    private static final Map<Long, Map<String, Integer>> BATTLE_ANSWERS = new ConcurrentHashMap<>();
 
-    private void handleBattleAnswer(String message, Long playerId) {
+    private void handleBattleAnswer(String message, String playerId) {
         Long battleId    = extractLong(message, "battleId");
         int answerIndex  = extractInt(message, "answerIndex");
 
@@ -580,8 +593,8 @@ public class GameSocket {
                 .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
                 .put(playerId, answerIndex);
 
-        System.out.printf("battle-answer: battle %d, player %d -> %d (korrekt=%s)%n",
-                battleId, playerId, answerIndex, isCorrect);
+    System.out.printf("battle-answer: battle %d, player %s -> %d (korrekt=%s)%n",
+        battleId, playerId, answerIndex, isCorrect);
 
         if (isCorrect) {
             // Der erste, der korrekt ist, gewinnt sofort
@@ -672,11 +685,11 @@ public class GameSocket {
         sendToPlayer(battle.getToPlayer().getId(), json);
     }
 
-    private void handleCheckinDone(Battle battle, Long senderId) {
+    private void handleCheckinDone(Battle battle, String senderId) {
         if (senderId == null) return;
 
-        Long fromId = battle.getFromPlayer().getId();
-        Long toId   = battle.getToPlayer().getId();
+    String fromId = battle.getFromPlayer().getId();
+    String toId   = battle.getToPlayer().getId();
 
         String winnerName;
         if (Objects.equals(senderId, fromId)) {
@@ -684,7 +697,7 @@ public class GameSocket {
         } else if (Objects.equals(senderId, toId)) {
             winnerName = battle.getToPlayer().getName();
         } else {
-            System.out.printf("CHECKIN_DONE: sender %d gehört nicht zu Battle %d%n",
+        System.out.printf("CHECKIN_DONE: sender %s gehört nicht zu Battle %d%n",
                     senderId, battle.getId());
             return;
         }
@@ -705,7 +718,7 @@ public class GameSocket {
         computeAndBroadcastResult(battle, votes);
     }
 
-    private void handleSprintResult(String message, Long playerId) {
+    private void handleSprintResult(String message, String playerId) {
         Long battleId = extractLong(message, "battleId");
         double distance = extractDouble(message, "distance");
 
@@ -725,9 +738,9 @@ public class GameSocket {
                 .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
                 .put(playerId, distance);
 
-        Map<Long, Double> map = SPRINT_RESULTS.get(battleId);
-        Long fromId = battle.getFromPlayer().getId();
-        Long toId   = battle.getToPlayer().getId();
+    Map<String, Double> map = SPRINT_RESULTS.get(battleId);
+    String fromId = battle.getFromPlayer().getId();
+    String toId   = battle.getToPlayer().getId();
 
         // Wenn der andere Spieler noch nichts geschickt hat → 0 m annehmen
         double distFrom = map.getOrDefault(fromId, 0.0);
@@ -759,7 +772,7 @@ public class GameSocket {
         SPRINT_RESULTS.remove(battleId);
     }
 
-    private void handleLoudnessResult(String message, Long playerId) {
+    private void handleLoudnessResult(String message, String playerId) {
         Long battleId = extractLong(message, "battleId");
         double loudness = extractDouble(message, "loudness");
 
@@ -779,9 +792,9 @@ public class GameSocket {
                 .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
                 .put(playerId, loudness);
 
-        Map<Long, Double> map = LOUDNESS_RESULTS.get(battleId);
-        Long fromId = battle.getFromPlayer().getId();
-        Long toId   = battle.getToPlayer().getId();
+    Map<String, Double> map = LOUDNESS_RESULTS.get(battleId);
+    String fromId = battle.getFromPlayer().getId();
+    String toId   = battle.getToPlayer().getId();
 
         // Wenn der andere Spieler noch nichts geschickt hat → -60 dB annehmen (Minimum)
         double loudnessFrom = map.getOrDefault(fromId, -60.0);
@@ -813,7 +826,7 @@ public class GameSocket {
         LOUDNESS_RESULTS.remove(battleId);
     }
 
-    private void handleCompassResult(String message, Long playerId) {
+    private void handleCompassResult(String message, String playerId) {
         Long battleId = extractLong(message, "battleId");
         double distance = extractDouble(message, "distance");
 
@@ -833,9 +846,9 @@ public class GameSocket {
                 .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
                 .put(playerId, distance);
 
-        Map<Long, Double> map = COMPASS_RESULTS.get(battleId);
-        Long fromId = battle.getFromPlayer().getId();
-        Long toId   = battle.getToPlayer().getId();
+    Map<String, Double> map = COMPASS_RESULTS.get(battleId);
+    String fromId = battle.getFromPlayer().getId();
+    String toId   = battle.getToPlayer().getId();
 
         // Wait until both players submitted a distance
         if (map == null || !(map.containsKey(fromId) && map.containsKey(toId))) {
@@ -872,9 +885,9 @@ public class GameSocket {
         COMPASS_RESULTS.remove(battleId);
     }
 
-    private static final Map<Long, Map<Long, Integer>> PUSHUP_RESULTS = new ConcurrentHashMap<>();
+    private static final Map<Long, Map<String, Integer>> PUSHUP_RESULTS = new ConcurrentHashMap<>();
 
-    private void handlePushupResult(String message, Long playerId) {
+    private void handlePushupResult(String message, String playerId) {
         Long battleId = extractLong(message, "battleId");
         int reps = (int) extractDouble(message, "reps"); // reps usually int
 
@@ -894,9 +907,9 @@ public class GameSocket {
                 .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
                 .put(playerId, reps);
 
-        Map<Long, Integer> map = PUSHUP_RESULTS.get(battleId);
-        Long fromId = battle.getFromPlayer().getId();
-        Long toId   = battle.getToPlayer().getId();
+    Map<String, Integer> map = PUSHUP_RESULTS.get(battleId);
+    String fromId = battle.getFromPlayer().getId();
+    String toId   = battle.getToPlayer().getId();
 
         if (map.containsKey(fromId) && map.containsKey(toId)) {
             System.out.println("Beide Pushup-Records empfangen -> Werten wir aus!");
@@ -927,7 +940,7 @@ public class GameSocket {
             sendToPlayer(playerId, pendingPayload);
         }
     }
-    private void handleShakeResult(String message, Long playerId) {
+    private void handleShakeResult(String message, String playerId) {
         Long battleId = extractLong(message, "battleId");
         int shakes = (int) extractDouble(message, "shakes");
 
@@ -947,9 +960,9 @@ public class GameSocket {
                 .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
                 .put(playerId, shakes);
 
-        Map<Long, Integer> map = SHAKE_RESULTS.get(battleId);
-        Long fromId = battle.getFromPlayer().getId();
-        Long toId   = battle.getToPlayer().getId();
+    Map<String, Integer> map = SHAKE_RESULTS.get(battleId);
+    String fromId = battle.getFromPlayer().getId();
+    String toId   = battle.getToPlayer().getId();
 
         int shakesFrom = map.getOrDefault(fromId, 0);
         int shakesTo   = map.getOrDefault(toId, 0);

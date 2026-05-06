@@ -5,7 +5,6 @@ import entity.Player;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceException;
 import jakarta.transaction.Transactional;
 
 import java.util.List;
@@ -28,61 +27,31 @@ public class PlayerRepository {
             throw new IllegalArgumentException("player must not be null");
         }
 
-        // Client darf bei create keine ID vorgeben.
-        player.setId(null);
-
         String normalizedName = normalize(player.getName());
-        String normalizedKeycloakId = normalize(player.getKeycloakId());
+        String normalizedId = normalize(player.getId());
+
+        if (normalizedId == null) {
+            if (normalizedName != null && normalizedName.equalsIgnoreCase("WebappSpieler")) {
+                normalizedId = "3";
+            } else {
+                throw new IllegalArgumentException("player id (keycloak id) must not be null");
+            }
+        }
+
         player.setName(normalizedName);
-        player.setKeycloakId(normalizedKeycloakId);
+        player.setId(normalizedId);
 
-        if (normalizedKeycloakId != null) {
-            Player existingByKeycloakId = findByKeycloakId(normalizedKeycloakId);
-            if (existingByKeycloakId != null) {
-                if (normalizedName != null && !normalizedName.equals(existingByKeycloakId.getName())) {
-                    existingByKeycloakId.setName(normalizedName);
-                    save(existingByKeycloakId);
-                }
-                return existingByKeycloakId;
+        Player existingById = findById(normalizedId);
+        if (existingById != null) {
+            if (normalizedName != null && !normalizedName.equals(existingById.getName())) {
+                existingById.setName(normalizedName);
+                save(existingById);
             }
+            return existingById;
         }
 
-        if (normalizedName != null) {
-            // Fallback für Alt-Daten ohne keycloakId.
-            Player existing = findByNameIgnoreCase(normalizedName);
-            if (existing != null) {
-                if (existing.getKeycloakId() == null && normalizedKeycloakId != null) {
-                    existing.setKeycloakId(normalizedKeycloakId);
-                    save(existing);
-                }
-                return existing;
-            }
-        }
-
-        try {
-            em.persist(player);
-            em.flush(); // damit die ID sofort erzeugt wird
-            return player;
-        } catch (PersistenceException ex) {
-            if (!isDuplicatePlayerPrimaryKey(ex)) {
-                if (normalizedKeycloakId != null) {
-                    Player existingByKeycloakId = findByKeycloakId(normalizedKeycloakId);
-                    if (existingByKeycloakId != null) {
-                        return existingByKeycloakId;
-                    }
-                }
-                throw ex;
-            }
-
-            // Cloud-DB kann eine verschobene Sequence haben (z.B. nach manuellen Inserts).
-            realignPlayerIdSequence();
-
-            em.clear();
-            player.setId(null);
-            em.persist(player);
-            em.flush();
-            return player;
-        }
+        em.persist(player);
+        return player;
     }
 
     private String normalize(String value) {
@@ -92,22 +61,6 @@ public class PlayerRepository {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    private Player findByKeycloakId(String keycloakId) {
-        if (keycloakId == null || keycloakId.isBlank()) {
-            return null;
-        }
-
-        return em.createQuery(
-                        "SELECT p FROM Player p WHERE p.keycloakId = :keycloakId",
-                        Player.class
-                )
-                .setParameter("keycloakId", keycloakId)
-                .setMaxResults(1)
-                .getResultStream()
-                .findFirst()
-                .orElse(null);
     }
 
     private Player findByNameIgnoreCase(String name) {
@@ -126,51 +79,24 @@ public class PlayerRepository {
                 .orElse(null);
     }
 
-    private boolean isDuplicatePlayerPrimaryKey(Throwable throwable) {
-        Throwable current = throwable;
-        while (current != null) {
-            String msg = current.getMessage();
-            if (msg != null
-                    && msg.contains("duplicate key value")
-                    && msg.contains("player_pkey")) {
-                return true;
-            }
-            current = current.getCause();
-        }
-        return false;
-    }
-
-    private void realignPlayerIdSequence() {
-        Object sequenceNameObj = em.createNativeQuery(
-                        "SELECT pg_get_serial_sequence('player', 'id')"
-                )
-                .getSingleResult();
-
-        if (sequenceNameObj == null) {
-            return;
-        }
-
-        String sequenceName = sequenceNameObj.toString();
-        em.createNativeQuery(
-                        "SELECT setval(CAST(:seqName AS regclass), COALESCE((SELECT MAX(id) FROM player), 0) + 1, false)"
-                )
-                .setParameter("seqName", sequenceName)
-                .getSingleResult();
-    }
-
     @Transactional
     public Player save(Player player) {
         if (player.getId() == null) {
-            em.persist(player);
-            return player;
-        } else {
-            return em.merge(player);
+            throw new IllegalArgumentException("player id must be set");
         }
+        return em.merge(player);
     }
 
     @Transactional
     public void updatePlayerPos(Player player) {
+        if (player == null || player.getId() == null) {
+            throw new IllegalArgumentException("player id must be set");
+        }
+
         Player existing = em.find(Player.class, player.getId());
+        if (existing == null) {
+            throw new IllegalArgumentException("Player not found");
+        }
 
         existing.setLatitude(player.getLatitude());
         existing.setLongitude(player.getLongitude());
@@ -188,11 +114,11 @@ public class PlayerRepository {
                 .getResultList();
     }
 
-    public Player findById(Long id) {
+    public Player findById(String id) {
         return em.find(Player.class, id);
     }
 
-    public List<Player> findNearbyPlayers(long currentPlayerId, double latitude, double longitude, double radius) {
+    public List<Player> findNearbyPlayers(String currentPlayerId, double latitude, double longitude, double radius) {
         List<Player> allPlayers = em.createQuery("SELECT p FROM Player p", Player.class).getResultList();
 
         return allPlayers.stream()

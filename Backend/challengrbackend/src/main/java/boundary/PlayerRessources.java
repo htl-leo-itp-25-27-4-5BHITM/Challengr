@@ -62,7 +62,7 @@ public class PlayerRessources {
     @PUT
     @Path("/{id}")
     @Transactional
-    public PlayerDTO updatePlayer(@PathParam("id") Long id, PlayerDTO dto) {
+    public PlayerDTO updatePlayer(@PathParam("id") String id, PlayerDTO dto) {
         Player player = playerRepository.findById(id);
         if (player == null) {
             throw new WebApplicationException("Player not found", 404);
@@ -89,7 +89,7 @@ public class PlayerRessources {
 
     @GET
     @Path("/{id}")
-    public PlayerDTO getPlayer(@PathParam("id") Long id) {
+    public PlayerDTO getPlayer(@PathParam("id") String id) {
         Player player = playerRepository.findById(id);
         if (player == null) {
             throw new WebApplicationException("Player not found", 404);
@@ -107,7 +107,7 @@ public class PlayerRessources {
     @GET
     @Path("/{id}/profile")
     @Transactional
-    public PlayerProfileDTO getProfile(@PathParam("id") Long id) {
+    public PlayerProfileDTO getProfile(@PathParam("id") String id) {
         Player player = playerRepository.findById(id);
         if (player == null) {
             throw new WebApplicationException("Player not found", 404);
@@ -140,7 +140,7 @@ public class PlayerRessources {
     @PUT
     @Path("/{id}/profile")
     @Transactional
-    public PlayerProfileDTO updateProfile(@PathParam("id") Long id, PlayerProfileDTO dto) {
+    public PlayerProfileDTO updateProfile(@PathParam("id") String id, PlayerProfileDTO dto) {
         Player player = playerRepository.findById(id);
         if (player == null) {
             throw new WebApplicationException("Player not found", 404);
@@ -158,7 +158,7 @@ public class PlayerRessources {
 
     @GET
     @Path("/{id}/loudness-best")
-    public PlayerLoudnessBestDTO getBestLoudness(@PathParam("id") Long id) {
+    public PlayerLoudnessBestDTO getBestLoudness(@PathParam("id") String id) {
         Player player = playerRepository.findById(id);
         if (player == null) {
             throw new WebApplicationException("Player not found", 404);
@@ -171,7 +171,7 @@ public class PlayerRessources {
     @Path("/{id}/loudness-best")
     @Transactional
     public PlayerLoudnessBestDTO updateBestLoudness(
-            @PathParam("id") Long id,
+        @PathParam("id") String id,
             PlayerLoudnessBestDTO dto
     ) {
         Player player = playerRepository.findById(id);
@@ -195,7 +195,7 @@ public class PlayerRessources {
     @GET
     @Path("/nearby")
     public List<PlayerDTO> getNearbyPlayers(
-            @QueryParam("playerId") long playerId,
+        @QueryParam("playerId") String playerId,
             @QueryParam("latitude") double latitude,
             @QueryParam("longitude") double longitude,
             @QueryParam("radius") double radius
@@ -247,12 +247,12 @@ public class PlayerRessources {
     }
 
     public static class PlayerPointsDTO {
-        public long playerId;
+        public String playerId;
         public int points;
 
         public PlayerPointsDTO() {}
 
-        public PlayerPointsDTO(long playerId, int points) {
+        public PlayerPointsDTO(String playerId, int points) {
             this.playerId = playerId;
             this.points = points;
         }
@@ -306,7 +306,7 @@ public class PlayerRessources {
 
     @GET
     @Path("/{id}/stats")
-    public PlayerStatsDTO getStats(@PathParam("id") Long id) {
+    public PlayerStatsDTO getStats(@PathParam("id") String id) {
         Player player = playerRepository.findById(id);
         if (player == null) {
             throw new NotFoundException();
@@ -325,7 +325,7 @@ public class PlayerRessources {
 
     @GET
     @Path("/{id}/points")
-    public PlayerPointsDTO getPlayerPoints(@PathParam("id") Long id) {
+    public PlayerPointsDTO getPlayerPoints(@PathParam("id") String id) {
         Player p = playerRepository.findById(id);
         if (p == null) {
             throw new NotFoundException();
@@ -335,7 +335,7 @@ public class PlayerRessources {
 
     @GET
     @Path("/{id}/battles")
-    public List<BattleHistoryDTO> getBattleHistory(@PathParam("id") Long id) {
+    public List<BattleHistoryDTO> getBattleHistory(@PathParam("id") String id) {
         Player player = playerRepository.findById(id);
         if (player == null) {
             throw new NotFoundException();
@@ -380,7 +380,7 @@ public class PlayerRessources {
 
     @GET
     @Path("/{id}/log")
-    public int getBattleCount(@PathParam("id") Long id) {
+    public int getBattleCount(@PathParam("id") String id) {
 
         Player player = playerRepository.findById(id);
         if (player == null) {
@@ -394,7 +394,7 @@ public class PlayerRessources {
 
     @GET
     @Path("/{id}/streak")
-    public int getStreak(@PathParam("id") Long id) {
+    public int getStreak(@PathParam("id") String id) {
 
         Player player = playerRepository.findById(id);
         if (player == null) {
@@ -426,7 +426,7 @@ public class PlayerRessources {
 
     @GET
     @Path("/{id}/points-history")
-    public List<PlayerPointsHistoryDTO> getPointsHistory(@PathParam("id") Long id) {
+    public List<PlayerPointsHistoryDTO> getPointsHistory(@PathParam("id") String id) {
 
         Player player = playerRepository.findById(id);
         if (player == null) {

@@ -13,7 +13,7 @@ struct CompassChallengeView: View {
 
     // Inputs
     let battleId: Int64
-    let playerId: Int64
+    let playerId: String
     let socket: GameSocketService
     let onClose: () -> Void
 
@@ -219,6 +219,6 @@ final class CompassManager: NSObject, ObservableObject, CLLocationManagerDelegat
 // Preview
 struct CompassChallengeView_Previews: PreviewProvider {
     static var previews: some View {
-        CompassChallengeView(battleId: 1, playerId: 1, socket: GameSocketService(playerId: 1), onClose: {})
+    CompassChallengeView(battleId: 1, playerId: "1", socket: GameSocketService(playerId: "1"), onClose: {})
     }
 }

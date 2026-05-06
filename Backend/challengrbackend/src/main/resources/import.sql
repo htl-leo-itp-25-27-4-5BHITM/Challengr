@@ -1,8 +1,8 @@
 -- Spieler
-INSERT INTO player (name, longitude, latitude, points, consecutiveConflicts) VALUES
-                                                                                 ('EigenerSpieler', 14.251389, 48.268333, 800, 0),
-                                                                                 ('ZweiterSpieler', 14.251400, 48.268300, 200, 0),
-                                                                                 ('WebappSpieler', 14.251385, 48.268639, 200, 0);
+INSERT INTO player (id, name, longitude, latitude, points, consecutiveConflicts) VALUES
+                                                                                 ('demo-1', 'EigenerSpieler', 14.251389, 48.268333, 800, 0),
+                                                                                 ('demo-2', 'ZweiterSpieler', 14.251400, 48.268300, 200, 0),
+                                                                                 ('3', 'WebappSpieler', 14.251385, 48.268639, 200, 0);
 
 -- Kategorien (NEU: ohne Suchen, dafür iPhone & Customer)
 INSERT INTO challenge_categories (name, description) VALUES

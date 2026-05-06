@@ -3,9 +3,9 @@ import SwiftUI
 struct ChallengeDialogView: View {
 
     // MARK: - Input (Eingaben)
-    let otherPlayerId: Int64
+    let otherPlayerId: String
     let otherPlayerName: String
-    let ownPlayerId: Int64
+    let ownPlayerId: String
 
     let allChallenges: [ChallengeDTO]      // ⬅️ alle vom MapView vorab geladen
     let socket: GameSocketService
