@@ -54,6 +54,8 @@ struct ChallengeDialogView: View {
                         Text(challenge)
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .multilineTextAlignment(.center)
+                            .lineLimit(4)
+                            .fixedSize(horizontal: false, vertical: true)
                             .foregroundStyle(.challengrBlack)
                             .padding(10)
                             .frame(maxWidth: .infinity)

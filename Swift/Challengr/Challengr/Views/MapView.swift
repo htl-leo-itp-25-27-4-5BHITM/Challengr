@@ -160,6 +160,11 @@ struct MapView: View {
     @State private var opponentVote: String? = nil
 
     @State private var activeOverlay: ActiveOverlay = .none
+    @State private var hasCenteredOnUser = false
+    @State private var currentZoomDistance: CLLocationDistance = 1000
+    @State private var isProgrammaticCameraUpdate = false
+    @State private var isFollowingUser = true
+    @State private var hasCapturedInitialZoom = false
 
     let minDistance: CLLocationDistance = 200
     let maxDistance: CLLocationDistance = 5000
@@ -211,6 +216,8 @@ struct MapView: View {
                     // LINKS: Capsule "Spieler in meiner Nähe" (ausklappbar)
                     HStack(spacing: 8) {
                         Button {
+                            hasCenteredOnUser = true
+                            isFollowingUser = true
                             position = .userLocation(
                                 followsHeading: false,
                                 fallback: .camera(
@@ -526,6 +533,13 @@ struct MapView: View {
                 MapCircle(center: ownCoordinate, radius: 200)
                     .foregroundStyle(Color.blue.opacity(0.2))
                     .stroke(Color.blue.opacity(0.6), lineWidth: 2)
+
+                Annotation("Du", coordinate: ownCoordinate) {
+                    Image(systemName: "person.circle.fill")
+                        .font(.title)
+                        .foregroundColor(.challengrYellow)
+                        .shadow(color: .black.opacity(0.25), radius: 2, x: 0, y: 1)
+                }
             }
 
             // Annotations for all nearby players.
@@ -556,12 +570,29 @@ struct MapView: View {
         .tint(.challengrGreen)
         .accentColor(.challengrYellow)
         .ignoresSafeArea()
-        .onAppear(perform: setupSocket)
+        .onAppear {
+            setupSocket()
+            seedInitialZoom()
+        }
         /// React to location updates
         .onReceive(locationHelper.$userLocation, perform: handleLocation)
         .onMapCameraChange { ctx in
                 let heading = ctx.camera.heading    // 0 = Norden
                 compassAngle = .degrees(heading)
+                if !isProgrammaticCameraUpdate {
+                    currentZoomDistance = ctx.camera.distance
+                    if !hasCapturedInitialZoom {
+                        hasCapturedInitialZoom = true
+                    }
+                    if let ownCoordinate {
+                        let center = ctx.camera.centerCoordinate
+                        let deltaLat = abs(center.latitude - ownCoordinate.latitude)
+                        let deltaLon = abs(center.longitude - ownCoordinate.longitude)
+                        if deltaLat > 0.00025 || deltaLon > 0.00025 {
+                            isFollowingUser = false
+                        }
+                    }
+                }
             }
     }
 
@@ -1103,14 +1134,33 @@ struct MapView: View {
 
         /// Make the camera follow the player.
         ownCoordinate = userLoc
+        if !hasCenteredOnUser {
+            hasCenteredOnUser = true
+            isFollowingUser = true
+        }
+
+        guard isFollowingUser else { return }
+        guard hasCapturedInitialZoom else { return }
+
+        let currentCamera = position.camera
+        let heading = currentCamera?.heading ?? 0
+        let pitch = currentCamera?.pitch ?? 0
+        if let distance = currentCamera?.distance {
+            currentZoomDistance = distance
+        }
+
+        isProgrammaticCameraUpdate = true
         position = .camera(
             MapCamera(
                 centerCoordinate: userLoc,
-                distance: 1000,
-                heading: 0,
-                pitch: 0
+                distance: currentZoomDistance,
+                heading: heading,
+                pitch: pitch
             )
         )
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            isProgrammaticCameraUpdate = false
+        }
 
         Task {
             do {
@@ -1134,6 +1184,23 @@ struct MapView: View {
                 }
             } catch {
                 print("Fehler beim Laden der Nearby Players", error)
+            }
+        }
+    }
+
+    private func seedInitialZoom() {
+        guard !hasCapturedInitialZoom else { return }
+        if let distance = position.camera?.distance {
+            currentZoomDistance = distance
+            hasCapturedInitialZoom = true
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            guard !hasCapturedInitialZoom else { return }
+            if let distance = position.camera?.distance {
+                currentZoomDistance = distance
+                hasCapturedInitialZoom = true
             }
         }
     }
