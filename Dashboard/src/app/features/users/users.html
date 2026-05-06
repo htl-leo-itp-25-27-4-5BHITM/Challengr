@@ -20,14 +20,14 @@
 <div class="section">
   <div class="card">
     <div class="list">
-      <div class="row" *ngFor="let user of users">
-        <div>{{ user.name }}</div>
-        <div
-          class="badge"
-          [class.active]="user.status === 'active'">
-          {{ user.status }}
+      @for (user of users; track user.id) {
+        <div class="row">
+          <div>{{ user.name }}</div>
+          <div class="badge" [class.active]="user.status === 'active'">
+            {{ user.status }}
+          </div>
         </div>
-      </div>
+      }
     </div>
   </div>
 </div>

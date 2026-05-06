@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { ChangeDetectorRef } from '@angular/core';
 
 @Component({
   selector: 'app-users',
@@ -13,31 +15,25 @@ export class Users implements OnInit {
   activeUsers = 0;
   inactiveUsers = 0;
 
-  ngOnInit() {
-    this.loadUsers();
-  }
 
-  async loadUsers() {
-    try {
-      const res = await fetch('https://it220257.cloud.htl-leonding.ac.at/api/players');
 
-      if (!res.ok) {
-        throw new Error('API Fehler: ' + res.status);
-      }
+constructor(
+  private http: HttpClient,
+  private cd: ChangeDetectorRef
+) {}
 
-      const data = await res.json();
+ngOnInit() {
+  this.http.get<any[]>('/api/players').subscribe((data) => {
+    this.users = data.map(u => ({
+      id: u.id,
+      name: u.name,
+      status: u.points > 0 ? 'active' : 'inactive',
+    }));
 
-      this.users = data.map((u: any) => ({
-        id: u.id,
-        name: u.name,
-        status: this.getStatus(u),
-      }));
-
-      this.calculateStats();
-    } catch (err) {
-      console.error('Fehler beim Laden:', err);
-    }
-  }
+    this.calculateStats();
+    this.cd.detectChanges();
+  });
+}
 
   getStatus(user: any): string {
     return user.points > 0 ? 'active' : 'inactive';

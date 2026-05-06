@@ -1,0 +1,10 @@
+{
+  "/api": {
+    "target": "https://it220257.cloud.htl-leonding.ac.at",
+    "secure": false,
+    "changeOrigin": true,
+    "headers": {
+      "Origin": "https://it220257.cloud.htl-leonding.ac.at"
+    }
+  }
+}

@@ -1,13 +1,49 @@
-<div class="grid">
-  <div class="card challenge" *ngFor="let c of challenges">
-    <div class="title">{{ c.title }}</div>
+<div class="layout">
 
-    <div class="meta">
-      👥 {{ c.participants }}
+  <div class="sidebar">
+
+    <div
+      class="card category"
+      *ngFor="let c of categories()"
+      (click)="selectCategory(c)"
+      [class.active]="selectedCategory === c.name"
+    >
+      <div class="title">{{ c.name }}</div>
+
+      <div class="meta">
+        {{ c.count }} Challenges
+      </div>
+
     </div>
 
-    <div class="progress">
-      <div class="bar"></div>
-    </div>
   </div>
+
+  <div class="content">
+
+    <div class="card">
+
+      <div class="header">
+        <h2>{{ selectedCategory || 'Wähle eine Kategorie' }}</h2>
+      </div>
+
+      <div class="list">
+
+        <div class="row" *ngFor="let c of getSelected()">
+
+          <div class="text">
+            {{ c.text }}
+          </div>
+
+          <div class="badge">
+            {{ c.category }}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
 </div>
