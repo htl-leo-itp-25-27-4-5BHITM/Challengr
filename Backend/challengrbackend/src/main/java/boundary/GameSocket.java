@@ -374,26 +374,29 @@ public class GameSocket {
         }
 
 
-        String payload = """
-    {
-      "type": "battle-result",
-      "battleId": %d,
-      "winnerName": "%s",
-      "winnerAvatar": "opponentAvatar",
-      "winnerPointsDelta": %d,
-      "loserName": "%s",
-      "loserAvatar": "ownAvatar",
-      "loserPointsDelta": %d,
-      "trashTalk": "%s"
-    }
-    """.formatted(
-                battleId,
-                escapeJson(winnerName != null ? winnerName : "Niemand"),
-                winnerDelta,
-                escapeJson(loserName != null ? loserName : "Niemand"),
-                loserDelta,
-                escapeJson(trashTalk)
-        );
+                String metricsJson = buildMetricsJson(battle, winnerName, loserName);
+
+                String payload = """
+        {
+            "type": "battle-result",
+            "battleId": %d,
+            "winnerName": "%s",
+            "winnerAvatar": "opponentAvatar",
+            "winnerPointsDelta": %d,
+            "loserName": "%s",
+            "loserAvatar": "ownAvatar",
+            "loserPointsDelta": %d,
+            "trashTalk": "%s"%s
+        }
+        """.formatted(
+                                battleId,
+                                escapeJson(winnerName != null ? winnerName : "Niemand"),
+                                winnerDelta,
+                                escapeJson(loserName != null ? loserName : "Niemand"),
+                                loserDelta,
+                                escapeJson(trashTalk),
+                                metricsJson
+                );
 
         SESSIONS.values().forEach(s -> {
             if (s.isOpen()) {
@@ -408,6 +411,160 @@ public class GameSocket {
         String fromName = battle.getFromPlayer().getName();
         String toName   = battle.getToPlayer().getName();
         return fromName.equals(winnerName) ? toName : fromName;
+    }
+
+    private String buildMetricsJson(Battle battle, String winnerName, String loserName) {
+        if (winnerName == null || loserName == null) {
+            return "";
+        }
+        if ("Niemand".equalsIgnoreCase(winnerName) || "Niemand".equalsIgnoreCase(loserName)) {
+            return "";
+        }
+
+        Long battleId = battle.getId();
+        String fromId = battle.getFromPlayer().getId();
+        String toId   = battle.getToPlayer().getId();
+        String fromName = battle.getFromPlayer().getName();
+        String toName   = battle.getToPlayer().getName();
+
+        List<String> entries = new ArrayList<>();
+
+        Map<String, Double> sprintMap = SPRINT_RESULTS.get(battleId);
+        if (sprintMap != null) {
+            String entry = buildMetricEntryDouble(
+                    "sprint",
+                    fromName,
+                    toName,
+                    winnerName,
+                    loserName,
+                    sprintMap.getOrDefault(fromId, 0.0),
+                    sprintMap.getOrDefault(toId, 0.0),
+                    "%.2f"
+            );
+            if (entry != null) {
+                entries.add(entry);
+            }
+        }
+
+        Map<String, Double> loudnessMap = LOUDNESS_RESULTS.get(battleId);
+        if (loudnessMap != null) {
+            String entry = buildMetricEntryDouble(
+                    "loudness",
+                    fromName,
+                    toName,
+                    winnerName,
+                    loserName,
+                    loudnessMap.getOrDefault(fromId, -60.0),
+                    loudnessMap.getOrDefault(toId, -60.0),
+                    "%.2f"
+            );
+            if (entry != null) {
+                entries.add(entry);
+            }
+        }
+
+        Map<String, Double> compassMap = COMPASS_RESULTS.get(battleId);
+        if (compassMap != null) {
+            String entry = buildMetricEntryDouble(
+                    "compass",
+                    fromName,
+                    toName,
+                    winnerName,
+                    loserName,
+                    compassMap.getOrDefault(fromId, 0.0),
+                    compassMap.getOrDefault(toId, 0.0),
+                    "%.2f"
+            );
+            if (entry != null) {
+                entries.add(entry);
+            }
+        }
+
+        Map<String, Integer> shakeMap = SHAKE_RESULTS.get(battleId);
+        if (shakeMap != null) {
+            String entry = buildMetricEntryInt(
+                    "shake",
+                    fromName,
+                    toName,
+                    winnerName,
+                    loserName,
+                    shakeMap.getOrDefault(fromId, 0),
+                    shakeMap.getOrDefault(toId, 0)
+            );
+            if (entry != null) {
+                entries.add(entry);
+            }
+        }
+
+        Map<String, Integer> pushupMap = PUSHUP_RESULTS.get(battleId);
+        if (pushupMap != null) {
+            String entry = buildMetricEntryInt(
+                    "pushup",
+                    fromName,
+                    toName,
+                    winnerName,
+                    loserName,
+                    pushupMap.getOrDefault(fromId, 0),
+                    pushupMap.getOrDefault(toId, 0)
+            );
+            if (entry != null) {
+                entries.add(entry);
+            }
+        }
+
+        if (entries.isEmpty()) {
+            return "";
+        }
+
+        String joined = String.join(",\n      ", entries);
+
+        return """
+,
+      "metrics": {
+      %s
+      }
+""".formatted(joined);
+    }
+
+    private String buildMetricEntryDouble(
+            String key,
+            String fromName,
+            String toName,
+            String winnerName,
+            String loserName,
+            double fromValue,
+            double toValue,
+            String format
+    ) {
+        if (winnerName.equals(fromName) && loserName.equals(toName)) {
+            String winnerValue = String.format(Locale.US, format, fromValue);
+            String loserValue = String.format(Locale.US, format, toValue);
+            return "\"%s\": {\"winner\": %s, \"loser\": %s}".formatted(key, winnerValue, loserValue);
+        }
+        if (winnerName.equals(toName) && loserName.equals(fromName)) {
+            String winnerValue = String.format(Locale.US, format, toValue);
+            String loserValue = String.format(Locale.US, format, fromValue);
+            return "\"%s\": {\"winner\": %s, \"loser\": %s}".formatted(key, winnerValue, loserValue);
+        }
+        return null;
+    }
+
+    private String buildMetricEntryInt(
+            String key,
+            String fromName,
+            String toName,
+            String winnerName,
+            String loserName,
+            int fromValue,
+            int toValue
+    ) {
+        if (winnerName.equals(fromName) && loserName.equals(toName)) {
+            return "\"%s\": {\"winner\": %d, \"loser\": %d}".formatted(key, fromValue, toValue);
+        }
+        if (winnerName.equals(toName) && loserName.equals(fromName)) {
+            return "\"%s\": {\"winner\": %d, \"loser\": %d}".formatted(key, toValue, fromValue);
+        }
+        return null;
     }
 
     private int applyConflictToPlayer(Player player) {

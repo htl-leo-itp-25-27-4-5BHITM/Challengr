@@ -273,6 +273,7 @@ final class GameSocketService: ObservableObject {
                 let winnerDelta = json["winnerPointsDelta"] as? Int ?? 0
                 let loserDelta  = json["loserPointsDelta"]  as? Int ?? 0
                 let trashTalk   = json["trashTalk"] as? String ?? "Good game!"
+                let metrics = parseBattleMetrics(from: json)
 
                 let result = BattleResultData(
                     winnerName: winnerName,
@@ -281,7 +282,8 @@ final class GameSocketService: ObservableObject {
                     loserName: loserName,
                     loserAvatar: "ownAvatar",
                     loserPointsDelta: loserDelta,
-                    trashTalk: trashTalk
+                    trashTalk: trashTalk,
+                    metrics: metrics
                 )
 
                 DispatchQueue.main.async {
@@ -329,5 +331,41 @@ final class GameSocketService: ObservableObject {
         if let str = value as? String { return str }
         if let num = value as? NSNumber { return num.stringValue }
         return ""
+    }
+
+    private func parseBattleMetrics(from json: [String: Any]) -> BattleMetrics? {
+        guard let metricsJson = json["metrics"] as? [String: Any] else { return nil }
+
+        let sprint = parseDoubleMetric(metricsJson["sprint"])
+        let loudness = parseDoubleMetric(metricsJson["loudness"])
+        let compass = parseDoubleMetric(metricsJson["compass"])
+        let shake = parseIntMetric(metricsJson["shake"])
+        let pushup = parseIntMetric(metricsJson["pushup"])
+
+        if sprint == nil, loudness == nil, compass == nil, shake == nil, pushup == nil {
+            return nil
+        }
+
+        return BattleMetrics(
+            sprint: sprint,
+            loudness: loudness,
+            compass: compass,
+            shake: shake,
+            pushup: pushup
+        )
+    }
+
+    private func parseDoubleMetric(_ value: Any?) -> BattleMetricPair<Double>? {
+        guard let dict = value as? [String: Any],
+              let winner = (dict["winner"] as? NSNumber)?.doubleValue,
+              let loser = (dict["loser"] as? NSNumber)?.doubleValue else { return nil }
+        return BattleMetricPair(winner: winner, loser: loser)
+    }
+
+    private func parseIntMetric(_ value: Any?) -> BattleMetricPair<Int>? {
+        guard let dict = value as? [String: Any],
+              let winner = (dict["winner"] as? NSNumber)?.intValue,
+              let loser = (dict["loser"] as? NSNumber)?.intValue else { return nil }
+        return BattleMetricPair(winner: winner, loser: loser)
     }
 }

@@ -428,6 +428,15 @@ struct MapView: View {
                             onClose: { activeFullScreen = .none }
                         )
 
+                    } else if info.category == "iPhone",
+                              info.challengeName.lowercased().contains("liegest")
+                              || info.challengeName.lowercased().contains("pushup") {
+                        PushupChallengeView(
+                            battleId: battleId,
+                            socket: socket,
+                            onClose: { activeFullScreen = .none }
+                        )
+
                     } else {
                         BattleView(
                             challengeName: info.challengeName,

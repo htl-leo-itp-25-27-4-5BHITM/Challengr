@@ -74,6 +74,13 @@ struct BattleWinView: View {
                         .font(.system(size: 20, weight: .black, design: .rounded))
                         .foregroundColor(.challengrGreen)
                         .padding(.top, 4)
+
+                    if let metrics = data.metrics {
+                        let rows = metricRows(from: metrics)
+                        if !rows.isEmpty {
+                            metricsSection(rows: rows)
+                        }
+                    }
                 }
                 .padding(28)
                 .frame(maxWidth: 360)
@@ -188,5 +195,102 @@ struct BattleWinView: View {
                 .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .foregroundColor(color.opacity(0.9))
         }
+    }
+
+    private struct MetricRow {
+        let title: String
+        let winnerValue: String
+        let loserValue: String
+    }
+
+    private func metricRows(from metrics: BattleMetrics) -> [MetricRow] {
+        var rows: [MetricRow] = []
+
+        if let sprint = metrics.sprint {
+            rows.append(MetricRow(
+                title: "SPRINT",
+                winnerValue: String(format: "%.1f m", sprint.winner),
+                loserValue: String(format: "%.1f m", sprint.loser)
+            ))
+        }
+
+        if let loudness = metrics.loudness {
+            rows.append(MetricRow(
+                title: "LAUTSTÄRKE",
+                winnerValue: String(format: "%.1f dB", loudness.winner),
+                loserValue: String(format: "%.1f dB", loudness.loser)
+            ))
+        }
+
+        if let compass = metrics.compass {
+            rows.append(MetricRow(
+                title: "KOMPASS",
+                winnerValue: String(format: "%.0f°", compass.winner),
+                loserValue: String(format: "%.0f°", compass.loser)
+            ))
+        }
+
+        if let shake = metrics.shake {
+            rows.append(MetricRow(
+                title: "SHAKE",
+                winnerValue: "\(shake.winner) Shakes",
+                loserValue: "\(shake.loser) Shakes"
+            ))
+        }
+
+        if let pushup = metrics.pushup {
+            rows.append(MetricRow(
+                title: "LIEGESTÜTZ",
+                winnerValue: "\(pushup.winner) Reps",
+                loserValue: "\(pushup.loser) Reps"
+            ))
+        }
+
+        return rows
+    }
+
+    private func metricsSection(rows: [MetricRow]) -> some View {
+        VStack(spacing: 10) {
+            Text("CHALLENGE WERTE")
+                .font(.system(size: 12, weight: .black, design: .rounded))
+                .tracking(1.6)
+                .foregroundColor(.challengrBlack.opacity(0.6))
+
+            ForEach(rows, id: \.title) { row in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(row.title)
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.challengrBlack.opacity(0.85))
+
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(data.winnerName.uppercased())
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .tracking(1)
+                            Text(row.winnerValue)
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                        }
+                        .foregroundColor(.challengrGreen)
+
+                        Spacer()
+
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(data.loserName.uppercased())
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .tracking(1)
+                            Text(row.loserValue)
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                        }
+                        .foregroundColor(.challengrRed)
+                    }
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(.systemGray6))
+                )
+            }
+        }
+        .padding(.top, 6)
     }
 }

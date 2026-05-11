@@ -1,17 +1,5 @@
 import SwiftUI
 
-struct BattleResultData {
-    let winnerName: String
-    let winnerAvatar: String   // später: Bildname
-    let winnerPointsDelta: Int
-
-    let loserName: String
-    let loserAvatar: String
-    let loserPointsDelta: Int
-
-    let trashTalk: String      // nur im Lose-Screen angezeigt
-}
-
 // MARK: - View (UI)
 
 struct BattleView: View {
