@@ -17,17 +17,94 @@
   </div>
 </div>
 
-<div class="section">
-  <div class="card">
-    <div class="list">
-      @for (user of users; track user.id) {
-        <div class="row">
-          <div>{{ user.name }}</div>
-          <div class="badge" [class.active]="user.status === 'active'">
-            {{ user.status }}
+<div class="layout">
+
+  <div class="sidebar">
+
+    <div class="card">
+      <div class="list">
+
+        @for (user of users; track user.id) {
+
+          <div
+            class="row clickable"
+            (click)="selectUser(user)"
+            [class.active]="selectedUser?.id === user.id"
+          >
+
+            <div>{{ user.name }}</div>
+
+            <div
+              class="badge"
+              [class.active]="user.status === 'active'"
+            >
+              {{ user.status }}
+            </div>
+
           </div>
-        </div>
-      }
+
+        }
+
+      </div>
     </div>
+
   </div>
+
+  <div class="content">
+
+    <div class="card details">
+
+      <div class="header">
+        <h2>
+          {{ selectedUser?.name || 'Wähle einen User' }}
+        </h2>
+      </div>
+
+      @if(selectedUser){
+
+        <div class="info">
+
+          <div class="item">
+            <span>ID</span>
+            <strong>{{ selectedUser.id }}</strong>
+          </div>
+
+          <div class="item">
+            <span>Name</span>
+            <strong>{{ selectedUser.name }}</strong>
+          </div>
+
+          <div class="item">
+            <span>Points</span>
+            <strong>{{ selectedUser.points }}</strong>
+          </div>
+
+          <div class="item">
+            <span>Status</span>
+            <strong>{{ selectedUser.status }}</strong>
+          </div>
+
+          <div class="item">
+            <span>Email</span>
+            <strong>{{ selectedUser.email }}</strong>
+          </div>
+
+          <div class="item">
+            <span>Level</span>
+            <strong>{{ selectedUser.level }}</strong>
+          </div>
+
+          <div class="item">
+            <span>Created</span>
+            <strong>{{ selectedUser.createdAt }}</strong>
+          </div>
+
+        </div>
+
+      }
+
+    </div>
+
+  </div>
+
 </div>

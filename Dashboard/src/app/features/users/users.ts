@@ -15,25 +15,33 @@ export class Users implements OnInit {
   activeUsers = 0;
   inactiveUsers = 0;
 
+  selectedUser: any = null;
 
+  constructor(
+    private http: HttpClient,
+    private cd: ChangeDetectorRef,
+  ) {}
 
-constructor(
-  private http: HttpClient,
-  private cd: ChangeDetectorRef
-) {}
+  ngOnInit() {
+    this.http.get<any[]>('/api/players').subscribe((data) => {
+      this.users = data.map((u) => ({
+        id: u.id,
+        name: u.name,
+        points: u.points,
+        email: u.email,
+        level: u.level,
+        createdAt: u.createdAt,
+        status: u.points > 0 ? 'active' : 'inactive',
+      }));
 
-ngOnInit() {
-  this.http.get<any[]>('/api/players').subscribe((data) => {
-    this.users = data.map(u => ({
-      id: u.id,
-      name: u.name,
-      status: u.points > 0 ? 'active' : 'inactive',
-    }));
+      this.calculateStats();
+      this.cd.detectChanges();
+    });
+  }
 
-    this.calculateStats();
-    this.cd.detectChanges();
-  });
-}
+  selectUser(user: any) {
+    this.selectedUser = user;
+  }
 
   getStatus(user: any): string {
     return user.points > 0 ? 'active' : 'inactive';
