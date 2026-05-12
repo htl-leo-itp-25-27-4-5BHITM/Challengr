@@ -21,8 +21,36 @@ struct FriendsListView: View {
             bondLevel: 5,
             lastAction: "Hat zuletzt eine iPhone-Challenge gespielt.",
             lastOnline: "vor 2 Monaten"
+        ),
+        Friend(
+            name: "LenaSprinter",
+            avatarName: "figure.run.circle.fill",
+            bondLevel: 4,
+            lastAction: "Sprint-Challenge gewonnen.",
+            lastOnline: "vor 5 Tagen"
+        ),
+        Friend(
+            name: "ChrisCompass",
+            avatarName: "location.north.circle.fill",
+            bondLevel: 2,
+            lastAction: "Zuletzt eine Kompass-Challenge gespielt.",
+            lastOnline: "vor 1 Stunde"
         )
     ]
+
+    @State private var searchText: String = ""
+    @State private var appliedSearch: String = ""
+    @State private var selectedBondLevel: Int = 0
+
+    private var filteredFriends: [Friend] {
+        let trimmedSearch = appliedSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        return friends.filter { friend in
+            let matchesSearch = trimmedSearch.isEmpty
+                || friend.name.localizedCaseInsensitiveContains(trimmedSearch)
+            let matchesBond = selectedBondLevel == 0 || friend.bondLevel == selectedBondLevel
+            return matchesSearch && matchesBond
+        }
+    }
     
     var body: some View {
         ScrollView {
@@ -43,11 +71,47 @@ struct FriendsListView: View {
                         icon: "magnifyingglass",
                         title: "Suchen",
                         foreground: challengrDark,
-                        background: challengrDark.opacity(0.08)
+                        background: challengrDark.opacity(0.08),
+                        action: {
+                            appliedSearch = searchText
+                        }
                     )
                 }
 
-                ForEach(friends) { friend in
+                VStack(alignment: .leading, spacing: 12) {
+                    TextField("Freund suchen", text: $searchText)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(challengrDark.opacity(0.12), lineWidth: 1)
+                        )
+                        .onSubmit {
+                            appliedSearch = searchText
+                        }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Freundschaftslevel filtern")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.secondary)
+
+                        Picker("Freundschaftslevel", selection: $selectedBondLevel) {
+                            Text("Alle").tag(0)
+                            Text("1").tag(1)
+                            Text("2").tag(2)
+                            Text("3").tag(3)
+                            Text("4").tag(4)
+                            Text("5").tag(5)
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+
+                ForEach(filteredFriends) { friend in
                     FriendRow(
                         friend: friend,
                         challengrRed: challengrRed,
@@ -71,10 +135,11 @@ struct FriendActionButton: View {
     let title: String
     let foreground: Color
     let background: Color
+    var action: (() -> Void)? = nil
 
     var body: some View {
         Button {
-            // Statischer Prototyp: noch ohne Funktion
+            action?()
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: icon)
