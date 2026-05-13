@@ -1,5 +1,9 @@
 # Ausarbeitung der App‑Review‑Grundlagen
 
+App-Review-Guidlines: [https://developer.apple.com/app-store/review/guidelines/](https://developer.apple.com/app-store/review/guidelines/)
+
+Die vollständigen und originalen Richtlinien sind im oben genannten Link direkt auf der offiziellen Apple‑Webseite einsehbar. Zusätzlich stellt Apple zu vielen Themen weiterführende Dokumentationen und technische Guidelines als herunterladbare Dateien bereit, darunter auch Materialien zu Swift, Frameworks, API‑Nutzung und weiteren Entwicklerressourcen.
+
 ## 1. Allgemeine Grundsätze
 
 Apple betont folgende Punkte:
