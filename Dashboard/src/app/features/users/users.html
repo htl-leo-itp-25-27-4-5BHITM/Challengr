@@ -1,5 +1,7 @@
 <div class="section">
+
   <div class="grid">
+
     <div class="card stat">
       <div class="label">Total Users</div>
       <div class="value">{{ totalUsers }}</div>
@@ -14,7 +16,36 @@
       <div class="label">Inactive</div>
       <div class="value red">{{ inactiveUsers }}</div>
     </div>
+
   </div>
+
+</div>
+
+<div class="toolbar card">
+
+  <input
+    type="text"
+    placeholder="Suche nach Name oder ID..."
+    [(ngModel)]="search"
+    (input)="applyFilters()"
+  >
+
+  <select
+    [(ngModel)]="orderBy"
+    (change)="applyFilters()"
+  >
+    <option value="name">Alphabet</option>
+    <option value="points">Points</option>
+  </select>
+
+  <select
+    [(ngModel)]="orderDirection"
+    (change)="applyFilters()"
+  >
+    <option value="asc">Aufsteigend</option>
+    <option value="desc">Absteigend</option>
+  </select>
+
 </div>
 
 <div class="layout">
@@ -24,7 +55,7 @@
     <div class="card">
       <div class="list">
 
-        @for (user of users; track user.id) {
+        @for (user of filteredUsers; track user.id) {
 
           <div
             class="row clickable"
@@ -54,13 +85,11 @@
 
     <div class="card details">
 
-      <div class="header">
-        <h2>
-          {{ selectedUser?.name || 'Wähle einen User' }}
-        </h2>
-      </div>
-
       @if(selectedUser){
+
+        <div class="header">
+          <h2>{{ selectedUser.name }}</h2>
+        </div>
 
         <div class="info">
 
@@ -98,6 +127,23 @@
             <span>Created</span>
             <strong>{{ selectedUser.createdAt }}</strong>
           </div>
+
+        </div>
+
+      } @else {
+
+        <div class="empty-state">
+
+          <div class="empty-icon">
+            👤
+          </div>
+
+          <h2>Kein Spieler ausgewählt</h2>
+
+          <p>
+            Wähle links einen Spieler aus um
+            die Details anzuzeigen.
+          </p>
 
         </div>
 

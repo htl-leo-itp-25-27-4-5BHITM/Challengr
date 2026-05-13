@@ -8,10 +8,11 @@ import { Header } from './core/header/header';
 import { Dashboard } from './features/dashboard/dashboard';
 import { Users } from './features/users/users';
 import { Challenges } from './features/challenges/challenges';
+import { FormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [App, Layout, Header, Dashboard, Users, Challenges],
-  imports: [BrowserModule, AppRoutingModule],
+  imports: [BrowserModule, AppRoutingModule, FormsModule],
   providers: [provideBrowserGlobalErrorListeners(), provideClientHydration(withEventReplay())],
   bootstrap: [App],
 })
