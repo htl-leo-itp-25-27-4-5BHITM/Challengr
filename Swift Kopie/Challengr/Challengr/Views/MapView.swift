@@ -55,6 +55,8 @@ struct MapView: View {
 
     /// Auth is needed for Settings/Logout. Optional for preview/default init.
     private let auth: KeycloakAuthService?
+
+    @EnvironmentObject private var friendsInbox: FriendsInboxStore
     
 
     @State private var allChallenges: [ChallengeDTO] = []
@@ -184,6 +186,9 @@ struct MapView: View {
 
     @State private var showNearbyText = true
 
+    @State private var showFriendRequestBanner: Bool = false
+    @State private var friendRequestBannerText: String = ""
+
     
     /// Resolves a challenge text + category for a given ID (Challenge-Infos für ID)
     private func challengeInfo(for id: Int64) -> (name: String, category: String) {
@@ -212,6 +217,12 @@ struct MapView: View {
             mapLayer
 
             VStack {
+                if showFriendRequestBanner {
+                    FriendRequestBanner(text: friendRequestBannerText)
+                        .padding(.top, 18)
+                        .transition(AnyTransition.move(edge: .top).combined(with: .opacity))
+                }
+
                 HStack {
                     // LINKS: Capsule "Spieler in meiner Nähe" (ausklappbar)
                     HStack(spacing: 8) {
@@ -347,6 +358,24 @@ struct MapView: View {
         .onChange(of: showProfile) { isShown in
             if isShown {
                 reloadOwnPlayerData()
+            }
+        }
+
+        .onChange(of: friendsInbox.lastBannerText) { _, newValue in
+            guard let text = newValue, !text.isEmpty else { return }
+            friendRequestBannerText = text
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
+                showFriendRequestBanner = true
+            }
+
+            Task {
+                try? await Task.sleep(nanoseconds: 2_500_000_000)
+                await MainActor.run {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        showFriendRequestBanner = false
+                    }
+                    friendsInbox.consumeBanner()
+                }
             }
         }
 
@@ -664,15 +693,29 @@ struct MapView: View {
                     reloadOwnPlayerData()
                     showProfile = true
                 } label: {
-                    Image(AvatarPresets.persistedImageName())
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 64, height: 64)
-                        .clipShape(Circle())
-                        .overlay(
-                            Circle().stroke(Color.white, lineWidth: 3)
-                        )
-                        .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 3)
+                    ZStack(alignment: .topTrailing) {
+                        Image(AvatarPresets.persistedImageName())
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 64, height: 64)
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle().stroke(Color.white, lineWidth: 3)
+                            )
+                            .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 3)
+
+                        if friendsInbox.pendingIncomingCount > 0 {
+                            Text("\(friendsInbox.pendingIncomingCount)")
+                                .font(.system(size: 12, weight: .black, design: .rounded))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 4)
+                                .background(
+                                    Capsule().fill(Color.challengrRed)
+                                )
+                                .offset(x: 8, y: -8)
+                        }
+                    }
                 }
                 .padding(.bottom, 32)
                 .padding(.trailing, 20)
@@ -1214,5 +1257,33 @@ struct MapView: View {
                 hasCapturedInitialZoom = true
             }
         }
+    }
+}
+
+private struct FriendRequestBanner: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "person.badge.plus")
+                .font(.system(size: 16, weight: .black))
+                .foregroundColor(.challengrDark)
+
+            Text(text)
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundColor(.challengrDark)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.challengrYellow)
+                .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
+        )
+        .padding(.horizontal, 16)
     }
 }

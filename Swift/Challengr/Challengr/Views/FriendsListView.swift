@@ -76,16 +76,31 @@ struct FriendsListView: View {
                     }
                 }
 
-                // Friends list (MVP: empty state)
+                // Friends list
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Deine Freunde")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.secondary)
 
-                    Text("Noch keine Freunde. Füge Leute aus deiner Nähe hinzu.")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 8)
+                    if vm.friends.isEmpty {
+                        Text("Noch keine Freunde. Füge Leute aus deiner Nähe hinzu.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 8)
+                    } else {
+                        ForEach(vm.friends) { friend in
+                            FriendRow(
+                                player: friend,
+                                challengrDark: challengrDark,
+                                cardBackground: cardBackground,
+                                onRemove: {
+                                    Task {
+                                        await vm.removeFriend(ownPlayerId: ownPlayerId, friendId: friend.id)
+                                    }
+                                }
+                            )
+                        }
+                    }
                 }
                 .padding(.top, 6)
 
@@ -104,7 +119,7 @@ struct FriendsListView: View {
                         } else {
                             Button("Neu laden") {
                                 Task {
-                                    await vm.loadNearby(
+                                    await vm.loadAll(
                                         ownPlayerId: ownPlayerId,
                                         coordinate: currentCoordinate,
                                         radiusMeters: radiusMeters
@@ -152,12 +167,63 @@ struct FriendsListView: View {
         }
         .background(Color(.systemGroupedBackground))
         .task {
-            await vm.loadNearby(
+            await vm.loadAll(
                 ownPlayerId: ownPlayerId,
                 coordinate: currentCoordinate,
                 radiusMeters: radiusMeters
             )
         }
+    }
+}
+
+private struct FriendRow: View {
+    let player: PlayerDTO
+    let challengrDark: Color
+    let cardBackground: Color
+    let onRemove: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "person.crop.circle.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 46, height: 46)
+                .foregroundColor(challengrDark.opacity(0.75))
+                .padding(6)
+                .background(challengrDark.opacity(0.08))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(player.name)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(challengrDark)
+
+                Text("Punkte: \(player.points)")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(challengrDark.opacity(0.75))
+            }
+
+            Spacer()
+
+            Button(action: onRemove) {
+                Image(systemName: "person.fill.xmark")
+                    .font(.system(size: 14, weight: .black))
+                    .foregroundColor(.white)
+                    .padding(10)
+                    .background(Circle().fill(Color.red.opacity(0.9)))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(cardBackground)
+                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 6)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(challengrDark.opacity(0.08), lineWidth: 1)
+        )
     }
 }
 

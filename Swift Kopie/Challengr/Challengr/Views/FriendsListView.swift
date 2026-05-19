@@ -18,7 +18,10 @@ struct FriendsListView: View {
     @State private var selectedBondLevel: Int = 0
 
     @State private var showIncomingPopup: Bool = false
-    @State private var incomingPopupText: String = ""
+    @State private var incomingFromName: String = ""
+    @State private var incomingRequestId: Int64? = nil
+
+    private let playerService = PlayerLocationService()
     
     var body: some View {
         ScrollView {
@@ -79,16 +82,31 @@ struct FriendsListView: View {
                     }
                 }
 
-                // Friends list (MVP: empty state)
+                // Friends list
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Deine Freunde")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.secondary)
 
-                    Text("Noch keine Freunde. Füge Leute aus deiner Nähe hinzu.")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 8)
+                    if vm.friends.isEmpty {
+                        Text("Noch keine Freunde. Füge Leute aus deiner Nähe hinzu.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 8)
+                    } else {
+                        ForEach(vm.friends) { friend in
+                            FriendRow(
+                                player: friend,
+                                challengrDark: challengrDark,
+                                cardBackground: cardBackground,
+                                onRemove: {
+                                    Task {
+                                        await vm.removeFriend(ownPlayerId: ownPlayerId, friendId: friend.id)
+                                    }
+                                }
+                            )
+                        }
+                    }
                 }
                 .padding(.top, 6)
 
@@ -107,7 +125,7 @@ struct FriendsListView: View {
                         } else {
                             Button("Neu laden") {
                                 Task {
-                                    await vm.loadNearby(
+                                    await vm.loadAll(
                                         ownPlayerId: ownPlayerId,
                                         coordinate: currentCoordinate,
                                         radiusMeters: radiusMeters
@@ -155,7 +173,7 @@ struct FriendsListView: View {
         }
         .background(Color(.systemGroupedBackground))
         .task {
-            await vm.loadNearby(
+            await vm.loadAll(
                 ownPlayerId: ownPlayerId,
                 coordinate: currentCoordinate,
                 radiusMeters: radiusMeters
@@ -171,16 +189,176 @@ struct FriendsListView: View {
         }
         .onChange(of: vm.incomingRequest?.id) { _, _ in
             guard let req = vm.incomingRequest else { return }
-            incomingPopupText = "Neue Freundschaftsanfrage von \(req.fromPlayerId)"
-            showIncomingPopup = true
-        }
-        .alert("Freundschaftsanfrage", isPresented: $showIncomingPopup) {
-            Button("OK") {
-                showIncomingPopup = false
+            incomingRequestId = req.id
+            Task {
+                // Load sender for nicer UI (show name instead of id)
+                if let dto = try? await playerService.loadPlayerById(id: req.fromPlayerId) {
+                    incomingFromName = dto.name
+                } else {
+                    incomingFromName = req.fromPlayerId
+                }
+                showIncomingPopup = true
             }
-        } message: {
-            Text(incomingPopupText)
         }
+        .sheet(isPresented: $showIncomingPopup) {
+            IncomingFriendRequestSheet(
+                fromName: incomingFromName,
+                onAccept: {
+                    guard let id = incomingRequestId else {
+                        showIncomingPopup = false
+                        return
+                    }
+                    Task {
+                        await vm.acceptIncoming(requestId: id)
+                        await vm.loadAll(
+                            ownPlayerId: ownPlayerId,
+                            coordinate: currentCoordinate,
+                            radiusMeters: radiusMeters
+                        )
+                        showIncomingPopup = false
+                    }
+                },
+                onDecline: {
+                    guard let id = incomingRequestId else {
+                        showIncomingPopup = false
+                        return
+                    }
+                    Task {
+                        await vm.declineIncoming(requestId: id)
+                        showIncomingPopup = false
+                    }
+                }
+            )
+            .presentationDetents([.height(260)])
+        }
+    }
+}
+
+private struct FriendRow: View {
+    let player: PlayerDTO
+    let challengrDark: Color
+    let cardBackground: Color
+    let onRemove: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "person.crop.circle.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 46, height: 46)
+                .foregroundColor(challengrDark.opacity(0.75))
+                .padding(6)
+                .background(challengrDark.opacity(0.08))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(player.name)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(challengrDark)
+
+                Text("Punkte: \(player.points)")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(challengrDark.opacity(0.75))
+            }
+
+            Spacer()
+
+            Button(action: onRemove) {
+                Image(systemName: "person.fill.xmark")
+                    .font(.system(size: 14, weight: .black))
+                    .foregroundColor(.white)
+                    .padding(10)
+                    .background(Circle().fill(Color.red.opacity(0.9)))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(cardBackground)
+                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 6)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(challengrDark.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
+private struct IncomingFriendRequestSheet: View {
+    let fromName: String
+    let onAccept: () -> Void
+    let onDecline: () -> Void
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Capsule()
+                .fill(Color.black.opacity(0.12))
+                .frame(width: 44, height: 5)
+                .padding(.top, 10)
+
+            HStack(spacing: 12) {
+                Image(systemName: "person.crop.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 52, height: 52)
+                    .foregroundColor(Color.black.opacity(0.65))
+                    .background(Color.black.opacity(0.06))
+                    .clipShape(Circle())
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Freundschaftsanfrage")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.secondary)
+                    Text(fromName)
+                        .font(.system(size: 22, weight: .black, design: .rounded))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 6)
+
+            Text("Möchtest du die Anfrage annehmen?")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.primary.opacity(0.85))
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(spacing: 12) {
+                Button(action: onDecline) {
+                    Text("Ablehnen")
+                        .font(.system(size: 16, weight: .black, design: .rounded))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Color.black.opacity(0.06))
+                        )
+                }
+                .buttonStyle(.plain)
+
+                Button(action: onAccept) {
+                    Text("Annehmen")
+                        .font(.system(size: 16, weight: .black, design: .rounded))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Color(red: 0.73, green: 0.12, blue: 0.20))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
+
+            Spacer(minLength: 8)
+        }
+        .background(Color(.systemBackground))
     }
 }
 

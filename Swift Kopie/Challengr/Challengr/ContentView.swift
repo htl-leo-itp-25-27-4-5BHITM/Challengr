@@ -13,6 +13,7 @@ import Combine
 
 struct ContentView: View {
     @StateObject private var auth = KeycloakAuthService()
+    @StateObject private var friendsInbox = FriendsInboxStore()
 
     // MARK: - Body (UI-Aufbau)
     var body: some View {
@@ -24,6 +25,10 @@ struct ContentView: View {
                         ownPlayerName: auth.playerName,
                         auth: auth
                     )
+                    .environmentObject(friendsInbox)
+                    .task {
+                        friendsInbox.startPolling(playerId: playerId)
+                    }
                 } else {
                     VStack(spacing: 12) {
                         if let error = auth.errorMessage {

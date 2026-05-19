@@ -28,7 +28,12 @@ public class FriendRequestRepository {
 
         FriendRequest existing = findByPair(fromPlayerId, toPlayerId);
         if (existing != null) {
-            // idempotent behavior: keep existing request
+            // If there is already a record for this pair (unique constraint), allow re-sending.
+            // Otherwise a previously ACCEPTED/DECLINED request would block new requests forever.
+            if (existing.getStatus() != FriendRequest.Status.PENDING) {
+                existing.setStatus(FriendRequest.Status.PENDING);
+                existing.setCreatedAt(java.time.Instant.now());
+            }
             return existing;
         }
 
@@ -71,5 +76,22 @@ public class FriendRequestRepository {
                 .setParameter("pid", playerId)
                 .setParameter("status", FriendRequest.Status.PENDING)
                 .getResultList();
+    }
+
+    @Transactional
+    public FriendRequest updateStatus(Long requestId, FriendRequest.Status status) {
+        if (requestId == null) {
+            throw new IllegalArgumentException("requestId must not be null");
+        }
+        if (status == null) {
+            throw new IllegalArgumentException("status must not be null");
+        }
+
+        FriendRequest req = em.find(FriendRequest.class, requestId);
+        if (req == null) {
+            return null;
+        }
+        req.setStatus(status);
+        return req;
     }
 }
