@@ -16,6 +16,9 @@ struct FriendsListView: View {
     @State private var searchText: String = ""
     @State private var appliedSearch: String = ""
     @State private var selectedBondLevel: Int = 0
+
+    @State private var showIncomingPopup: Bool = false
+    @State private var incomingPopupText: String = ""
     
     var body: some View {
         ScrollView {
@@ -157,6 +160,26 @@ struct FriendsListView: View {
                 coordinate: currentCoordinate,
                 radiusMeters: radiusMeters
             )
+        }
+        .task {
+            // Lightweight polling while the view is visible.
+            // This ensures the receiver sees a popup without needing to restart.
+            while !Task.isCancelled {
+                await vm.pollIncomingOnce(playerId: ownPlayerId)
+                try? await Task.sleep(nanoseconds: 2_000_000_000) // 2s
+            }
+        }
+        .onChange(of: vm.incomingRequest?.id) { _, _ in
+            guard let req = vm.incomingRequest else { return }
+            incomingPopupText = "Neue Freundschaftsanfrage von \(req.fromPlayerId)"
+            showIncomingPopup = true
+        }
+        .alert("Freundschaftsanfrage", isPresented: $showIncomingPopup) {
+            Button("OK") {
+                showIncomingPopup = false
+            }
+        } message: {
+            Text(incomingPopupText)
         }
     }
 }
