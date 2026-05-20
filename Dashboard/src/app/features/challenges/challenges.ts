@@ -15,7 +15,9 @@ export class Challenges {
 
   private refresh$ = new BehaviorSubject<void>(undefined);
 
-  challenges = toSignal(this.refresh$.pipe(switchMap(() => this.http.get<any[]>('/api/challenges'))));
+  challenges = toSignal(
+    this.refresh$.pipe(switchMap(() => this.http.get<any[]>('/api/challenges'))),
+  );
 
   categories = toSignal(
     this.refresh$.pipe(
@@ -82,7 +84,11 @@ export class Challenges {
         this.createError = 'Bitte alle 4 Antworten ausfüllen.';
         return;
       }
-      if (this.createCorrectIndex == null || this.createCorrectIndex < 0 || this.createCorrectIndex > 3) {
+      if (
+        this.createCorrectIndex == null ||
+        this.createCorrectIndex < 0 ||
+        this.createCorrectIndex > 3
+      ) {
         this.createError = 'CorrectIndex muss 0-3 sein.';
         return;
       }
@@ -102,5 +108,14 @@ export class Challenges {
     } finally {
       this.isCreating = false;
     }
+  }
+  showModal = false;
+
+  openModal() {
+    this.showModal = true;
+  }
+
+  closeModal() {
+    this.showModal = false;
   }
 }
