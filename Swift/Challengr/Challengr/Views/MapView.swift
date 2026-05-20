@@ -184,6 +184,14 @@ struct MapView: View {
 
     @State private var showNearbyText = true
 
+    // Periodic refresh so newly appearing players are shown even if our own GPS
+    // coordinate does not change (simulator often stays constant).
+    @State private var nearbyRefreshTask: Task<Void, Never>? = nil
+
+    // WebSocket-driven refresh (throttled/debounced) for truly live nearby updates.
+    @State private var wsNearbyRefreshTask: Task<Void, Never>? = nil
+    @State private var lastWsNearbyRefreshAt: Date? = nil
+
     
     /// Resolves a challenge text + category for a given ID (Challenge-Infos für ID)
     private func challengeInfo(for id: Int64) -> (name: String, category: String) {
@@ -584,6 +592,22 @@ struct MapView: View {
         .onAppear {
             setupSocket()
             seedInitialZoom()
+
+            // Start lightweight polling for nearby players.
+            if nearbyRefreshTask == nil {
+                nearbyRefreshTask = Task {
+                    while !Task.isCancelled {
+                        if let loc = ownCoordinate {
+                            await refreshNearbyPlayers(at: loc)
+                        }
+                        try? await Task.sleep(nanoseconds: 4_000_000_000) // 4s
+                    }
+                }
+            }
+        }
+        .onDisappear {
+            nearbyRefreshTask?.cancel()
+            nearbyRefreshTask = nil
         }
         /// React to location updates
         .onReceive(locationHelper.$userLocation, perform: handleLocation)
@@ -1017,6 +1041,12 @@ struct MapView: View {
             }
         }
 
+        // Realtime: when any player moves, update the nearby list quickly (but throttled).
+        socket.onPlayerPositionUpdated = { _, _, _ in
+            // Only refresh when we actually know our own location.
+            Task { await scheduleNearbyRefreshFromWebSocket() }
+        }
+
 
         
         socket.onBattleAccepted = { battleId in
@@ -1139,6 +1169,24 @@ struct MapView: View {
 
     }
 
+    private func scheduleNearbyRefreshFromWebSocket() async {
+        let now = Date()
+        if let last = lastWsNearbyRefreshAt, now.timeIntervalSince(last) < 2.0 {
+            return
+        }
+        lastWsNearbyRefreshAt = now
+
+        wsNearbyRefreshTask?.cancel()
+        wsNearbyRefreshTask = Task {
+            // Debounce bursts of WS events
+            try? await Task.sleep(nanoseconds: 350_000_000) // 0.35s
+            guard !Task.isCancelled else { return }
+            if let loc = ownCoordinate {
+                await refreshNearbyPlayers(at: loc)
+            }
+        }
+    }
+
     /// Handles updates of the user location and refreshes nearby players.
     private func handleLocation(_ userLoc: CLLocationCoordinate2D?) {
         guard let userLoc = userLoc else { return }
@@ -1173,29 +1221,32 @@ struct MapView: View {
             isProgrammaticCameraUpdate = false
         }
 
-        Task {
-            do {
-                let players = try await playerService.loadNearbyPlayers(
-                    currentPlayerId: ownPlayerId,
-                    latitude: userLoc.latitude,
-                    longitude: userLoc.longitude,
-                    radius: 200.0
+        Task { await refreshNearbyPlayers(at: userLoc) }
+    }
+
+    @MainActor
+    private func refreshNearbyPlayers(at coordinate: CLLocationCoordinate2D) async {
+        do {
+            let players = try await playerService.loadNearbyPlayers(
+                currentPlayerId: ownPlayerId,
+                latitude: coordinate.latitude,
+                longitude: coordinate.longitude,
+                radius: 200.0
+            )
+
+            annotations = players.map {
+                PlayerAnnotation(
+                    playerId: $0.id,
+                    coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude),
+                    title: "\($0.name) · \($0.rankName)"
                 )
-
-                annotations = players.map {
-                    PlayerAnnotation(
-                        playerId: $0.id,
-                        coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude),
-                        title: "\($0.name) · \($0.rankName)"
-                    )
-                }
-
-                if let me = players.first(where: { $0.id == ownPlayerId }) {
-                    ownPlayerName = me.name
-                }
-            } catch {
-                print("Fehler beim Laden der Nearby Players", error)
             }
+
+            if let me = players.first(where: { $0.id == ownPlayerId }) {
+                ownPlayerName = me.name
+            }
+        } catch {
+            print("Fehler beim Laden der Nearby Players", error)
         }
     }
 

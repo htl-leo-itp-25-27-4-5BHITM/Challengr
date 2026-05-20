@@ -29,6 +29,17 @@ final class GameSocketService: ObservableObject {
     /// Called when a knowledge question arrives (Wissensfrage empfangen)
     var onKnowledgeQuestion: ((Int64, ChallengeDTO) -> Void)?
 
+    // MARK: - Realtime social / map callbacks
+
+    /// Friend request created/resend (both sender and receiver get it)
+    var onFriendRequestCreated: ((Int64, String, String) -> Void)?
+    /// Friend request status changed (ACCEPTED/DECLINED)
+    var onFriendRequestUpdated: ((Int64, String, String, String) -> Void)?
+    /// Friendship removed (both sides get it)
+    var onFriendRemoved: ((String, String) -> Void)?
+    /// Any player updated their position; clients can decide if it matters (friends/radius)
+    var onPlayerPositionUpdated: ((String, Double?, Double?) -> Void)?
+
 
 
     
@@ -295,6 +306,44 @@ final class GameSocketService: ObservableObject {
                 print("🔹 battle-requested targetLat=\(targetLat as Any), targetLon=\(targetLon as Any)")
 
                 onChallengeReceived?(battleId, fromId, toId, challengeId, targetLat, targetLon)
+            }
+
+            // Friends realtime events
+            if type == "friend-request-created" {
+                let requestId = (json["requestId"] as? NSNumber)?.int64Value ?? 0
+                let fromId = parsePlayerId(json["fromPlayerId"])
+                let toId = parsePlayerId(json["toPlayerId"])
+                DispatchQueue.main.async {
+                    self.onFriendRequestCreated?(requestId, fromId, toId)
+                }
+            }
+
+            if type == "friend-request-updated" {
+                let requestId = (json["requestId"] as? NSNumber)?.int64Value ?? 0
+                let fromId = parsePlayerId(json["fromPlayerId"])
+                let toId = parsePlayerId(json["toPlayerId"])
+                let status = json["status"] as? String ?? ""
+                DispatchQueue.main.async {
+                    self.onFriendRequestUpdated?(requestId, fromId, toId, status)
+                }
+            }
+
+            if type == "friend-removed" {
+                let playerId = parsePlayerId(json["playerId"])
+                let friendId = parsePlayerId(json["friendId"])
+                DispatchQueue.main.async {
+                    self.onFriendRemoved?(playerId, friendId)
+                }
+            }
+
+            // Position realtime events
+            if type == "player-position-updated" {
+                let pid = parsePlayerId(json["playerId"])
+                let lat = json["latitude"] as? Double
+                let lon = json["longitude"] as? Double
+                DispatchQueue.main.async {
+                    self.onPlayerPositionUpdated?(pid, lat, lon)
+                }
             }
 
             if type == "battle-updated" {

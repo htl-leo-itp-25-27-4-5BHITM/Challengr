@@ -77,6 +77,9 @@ public class PlayerRessources {
         player.setLongitude(dto.longitude());
         // Punkte kommen aus Battles → hier NICHT setzen
 
+    // Realtime: notify connected clients.
+    GameSocket.emitPlayerPositionUpdated(player.getId(), player.getLatitude(), player.getLongitude());
+
         return new PlayerDTO(
                 player.getId(),
                 player.getName(),

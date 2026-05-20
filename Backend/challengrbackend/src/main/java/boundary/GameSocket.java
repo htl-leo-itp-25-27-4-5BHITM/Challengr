@@ -618,6 +618,14 @@ public class GameSocket {
     // ---------------------------------------------------------
 
     private void sendToPlayer(String playerId, String jsonPayload) {
+        // Instance wrapper for existing call sites.
+        sendToPlayerStatic(playerId, jsonPayload);
+    }
+
+    /**
+     * Allows other components (e.g. REST resources) to push messages to players.
+     */
+    public static void sendToPlayerStatic(String playerId, String jsonPayload) {
         Session s = SESSIONS.get(playerId);
         if (s != null && s.isOpen()) {
             System.out.println("Sending WS payload to player " + playerId + ": " + jsonPayload);
@@ -625,6 +633,85 @@ public class GameSocket {
         } else {
             System.out.println("No active WebSocket session for player " + playerId + ". Payload not delivered: " + jsonPayload);
         }
+    }
+
+    // ---------------------------------------------------------
+    // Real-time events (friends + positions)
+    // ---------------------------------------------------------
+
+    public static void emitFriendRequestCreated(Long requestId, String fromPlayerId, String toPlayerId) {
+        String payload = """
+            {
+              \"type\": \"friend-request-created\",
+              \"requestId\": %d,
+              \"fromPlayerId\": \"%s\",
+              \"toPlayerId\": \"%s\"
+            }
+            """.formatted(requestId, escapeJsonStatic(fromPlayerId), escapeJsonStatic(toPlayerId));
+        sendToPlayerStatic(fromPlayerId, payload);
+        sendToPlayerStatic(toPlayerId, payload);
+    }
+
+    public static void emitFriendRequestUpdated(Long requestId, String fromPlayerId, String toPlayerId, String status) {
+        String payload = """
+            {
+              \"type\": \"friend-request-updated\",
+              \"requestId\": %d,
+              \"fromPlayerId\": \"%s\",
+              \"toPlayerId\": \"%s\",
+              \"status\": \"%s\"
+            }
+            """.formatted(
+                requestId,
+                escapeJsonStatic(fromPlayerId),
+                escapeJsonStatic(toPlayerId),
+                escapeJsonStatic(status)
+        );
+        sendToPlayerStatic(fromPlayerId, payload);
+        sendToPlayerStatic(toPlayerId, payload);
+    }
+
+    public static void emitFriendRemoved(String playerId, String friendId) {
+        String payload = """
+            {
+              \"type\": \"friend-removed\",
+              \"playerId\": \"%s\",
+              \"friendId\": \"%s\"
+            }
+            """.formatted(escapeJsonStatic(playerId), escapeJsonStatic(friendId));
+        sendToPlayerStatic(playerId, payload);
+        sendToPlayerStatic(friendId, payload);
+    }
+
+    public static void emitPlayerPositionUpdated(String playerId, Double latitude, Double longitude) {
+        String payload = """
+            {
+              \"type\": \"player-position-updated\",
+              \"playerId\": \"%s\",
+              \"latitude\": %s,
+              \"longitude\": %s
+            }
+            """.formatted(
+                escapeJsonStatic(playerId),
+                latitude != null ? latitude.toString() : "null",
+                longitude != null ? longitude.toString() : "null"
+        );
+        // Broadcast to all connected clients; each client can decide if it matters (radius/friends).
+        broadcast(payload);
+    }
+
+    private static void broadcast(String payload) {
+        for (var entry : SESSIONS.entrySet()) {
+            Session s = entry.getValue();
+            if (s != null && s.isOpen()) {
+                s.getAsyncRemote().sendText(payload);
+            }
+        }
+    }
+
+    private static String escapeJsonStatic(String s) {
+        if (s == null) return "";
+        return s.replace("\"", "\\\"");
     }
 
     private void sendError(Session session, String msg) {

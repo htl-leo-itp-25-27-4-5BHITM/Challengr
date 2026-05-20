@@ -186,6 +186,10 @@ struct MapView: View {
 
     @State private var showNearbyText = true
 
+    // Periodic refresh so newly appearing players are shown even if our own GPS
+    // coordinate does not change (simulator often stays constant).
+    @State private var nearbyRefreshTask: Task<Void, Never>? = nil
+
     @State private var showFriendRequestBanner: Bool = false
     @State private var friendRequestBannerText: String = ""
 
@@ -613,6 +617,22 @@ struct MapView: View {
         .onAppear {
             setupSocket()
             seedInitialZoom()
+
+            // Start lightweight polling for nearby players.
+            if nearbyRefreshTask == nil {
+                nearbyRefreshTask = Task {
+                    while !Task.isCancelled {
+                        if let loc = ownCoordinate {
+                            await refreshNearbyPlayers(at: loc)
+                        }
+                        try? await Task.sleep(nanoseconds: 4_000_000_000) // 4s
+                    }
+                }
+            }
+        }
+        .onDisappear {
+            nearbyRefreshTask?.cancel()
+            nearbyRefreshTask = nil
         }
         /// React to location updates
         .onReceive(locationHelper.$userLocation, perform: handleLocation)
@@ -1216,29 +1236,32 @@ struct MapView: View {
             isProgrammaticCameraUpdate = false
         }
 
-        Task {
-            do {
-                let players = try await playerService.loadNearbyPlayers(
-                    currentPlayerId: ownPlayerId,
-                    latitude: userLoc.latitude,
-                    longitude: userLoc.longitude,
-                    radius: 200.0
+        Task { await refreshNearbyPlayers(at: userLoc) }
+    }
+
+    @MainActor
+    private func refreshNearbyPlayers(at coordinate: CLLocationCoordinate2D) async {
+        do {
+            let players = try await playerService.loadNearbyPlayers(
+                currentPlayerId: ownPlayerId,
+                latitude: coordinate.latitude,
+                longitude: coordinate.longitude,
+                radius: 200.0
+            )
+
+            annotations = players.map {
+                PlayerAnnotation(
+                    playerId: $0.id,
+                    coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude),
+                    title: "\($0.name) · \($0.rankName)"
                 )
-
-                annotations = players.map {
-                    PlayerAnnotation(
-                        playerId: $0.id,
-                        coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude),
-                        title: "\($0.name) · \($0.rankName)"
-                    )
-                }
-
-                if let me = players.first(where: { $0.id == ownPlayerId }) {
-                    ownPlayerName = me.name
-                }
-            } catch {
-                print("Fehler beim Laden der Nearby Players", error)
             }
+
+            if let me = players.first(where: { $0.id == ownPlayerId }) {
+                ownPlayerName = me.name
+            }
+        } catch {
+            print("Fehler beim Laden der Nearby Players", error)
         }
     }
 

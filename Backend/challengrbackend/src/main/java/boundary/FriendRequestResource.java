@@ -30,6 +30,7 @@ public class FriendRequestResource {
             throw new WebApplicationException("Missing body", 400);
         }
         FriendRequest request = friendRequestRepository.create(dto.fromPlayerId(), dto.toPlayerId());
+        GameSocket.emitFriendRequestCreated(request.getId(), request.getFromPlayerId(), request.getToPlayerId());
         return toDTO(request);
     }
 
@@ -62,6 +63,8 @@ public class FriendRequestResource {
         // Persist the actual friendship relation.
         friendshipRepository.createIfMissing(updated.getFromPlayerId(), updated.getToPlayerId());
 
+        GameSocket.emitFriendRequestUpdated(updated.getId(), updated.getFromPlayerId(), updated.getToPlayerId(), updated.getStatus().name());
+
         return toDTO(updated);
     }
 
@@ -72,6 +75,7 @@ public class FriendRequestResource {
         if (updated == null) {
             throw new WebApplicationException("Request not found", 404);
         }
+        GameSocket.emitFriendRequestUpdated(updated.getId(), updated.getFromPlayerId(), updated.getToPlayerId(), updated.getStatus().name());
         return toDTO(updated);
     }
 
@@ -95,6 +99,8 @@ public class FriendRequestResource {
         if (!removed) {
             throw new WebApplicationException("Friendship not found", 404);
         }
+
+        GameSocket.emitFriendRemoved(playerId, friendId);
     }
 
     @GET

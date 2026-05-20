@@ -16,10 +16,19 @@ final class FriendsViewModel: ObservableObject {
     private let playerService = PlayerLocationService()
     private let friendsService = FriendsService()
 
+    // Keep the last used inputs so we can refresh after actions (accept/remove/send)
+    private var lastOwnPlayerId: String? = nil
+    private var lastCoordinate: CLLocationCoordinate2D? = nil
+    private var lastRadiusMeters: Double? = nil
+
     func loadAll(ownPlayerId: String, coordinate: CLLocationCoordinate2D, radiusMeters: Double) async {
         isLoadingNearby = true
         errorText = nil
         defer { isLoadingNearby = false }
+
+        lastOwnPlayerId = ownPlayerId
+        lastCoordinate = coordinate
+        lastRadiusMeters = radiusMeters
 
         do {
             // Friends
@@ -32,13 +41,16 @@ final class FriendsViewModel: ObservableObject {
             }
             friends = friendDTOs
 
+            let friendIdSet = Set(friendDTOs.map { $0.id })
+
             let players = try await playerService.loadNearbyPlayers(
                 currentPlayerId: ownPlayerId,
                 latitude: coordinate.latitude,
                 longitude: coordinate.longitude,
                 radius: radiusMeters
             )
-            nearbyPlayers = players
+            // Exclude already-friended players from the nearby suggestions.
+            nearbyPlayers = players.filter { !friendIdSet.contains($0.id) }
 
             let outgoing = try await friendsService.loadOutgoingPendingRequests(playerId: ownPlayerId)
             pendingOutgoingToPlayerIds = Set(outgoing.map { $0.toPlayerId })
@@ -57,6 +69,7 @@ final class FriendsViewModel: ObservableObject {
         do {
             try await friendsService.sendFriendRequest(from: ownPlayerId, to: playerId)
             pendingOutgoingToPlayerIds.insert(playerId)
+            await refreshIfPossible()
         } catch {
             errorText = "Konnte Anfrage nicht senden: \(error.localizedDescription)"
         }
@@ -83,6 +96,7 @@ final class FriendsViewModel: ObservableObject {
         do {
             try await friendsService.acceptRequest(requestId: requestId)
             incomingRequest = nil
+            await refreshIfPossible()
         } catch {
             print("Accept friend request failed:", error)
         }
@@ -92,6 +106,7 @@ final class FriendsViewModel: ObservableObject {
         do {
             try await friendsService.declineRequest(requestId: requestId)
             incomingRequest = nil
+            await refreshIfPossible()
         } catch {
             print("Decline friend request failed:", error)
         }
@@ -102,8 +117,17 @@ final class FriendsViewModel: ObservableObject {
         do {
             try await friendsService.removeFriend(playerId: ownPlayerId, friendId: friendId)
             friends.removeAll(where: { $0.id == friendId })
+            await refreshIfPossible()
         } catch {
             errorText = "Konnte Freund nicht entfernen: \(error.localizedDescription)"
         }
+    }
+
+    private func refreshIfPossible() async {
+        guard let pid = lastOwnPlayerId,
+              let coord = lastCoordinate,
+              let radius = lastRadiusMeters else { return }
+
+        await loadAll(ownPlayerId: pid, coordinate: coord, radiusMeters: radius)
     }
 }
