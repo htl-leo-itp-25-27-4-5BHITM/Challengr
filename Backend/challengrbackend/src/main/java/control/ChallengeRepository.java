@@ -4,6 +4,7 @@ import entity.Challenges;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 
 import java.util.List;
 
@@ -29,5 +30,15 @@ public class ChallengeRepository {
 
     public Challenges findById(Long id) {
         return em.find(Challenges.class, id);
+    }
+
+    @Transactional
+    public Challenges create(Challenges challenge) {
+        if (challenge == null) {
+            throw new IllegalArgumentException("challenge must not be null");
+        }
+
+        em.persist(challenge);
+        return challenge;
     }
 }

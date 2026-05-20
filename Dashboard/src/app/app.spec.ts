@@ -1,6 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { RouterModule } from '@angular/router';
 import { App } from './app';
+import { Layout } from './core/layout/layout';
+import { Header } from './core/header/header';
+import { Dashboard } from './features/dashboard/dashboard';
+import { Users } from './features/users/users';
+import { Challenges } from './features/challenges/challenges';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -9,7 +14,12 @@ describe('App', () => {
         RouterModule.forRoot([])
       ],
       declarations: [
-        App
+        App,
+        Layout,
+        Header,
+        Dashboard,
+        Users,
+        Challenges
       ],
     }).compileComponents();
   });
@@ -20,10 +30,10 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render title', async () => {
+  it('should render layout', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, Dashboard');
+    expect(compiled.querySelector('app-layout')).toBeTruthy();
   });
 });

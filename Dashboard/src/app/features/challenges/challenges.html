@@ -20,6 +20,55 @@
 
   <div class="content">
 
+    <div class="card" style="margin-bottom: 16px;">
+      <div class="header">
+        <h2>Challenge erstellen</h2>
+      </div>
+
+      <div style="display: grid; gap: 10px;">
+        <label>
+          <div class="meta">Kategorie</div>
+          <input
+            type="text"
+            placeholder="z.B. Fitness, Mutprobe, Wissen …"
+            [(ngModel)]="createCategory"
+          />
+        </label>
+
+        <label>
+          <div class="meta">Text</div>
+          <textarea
+            rows="3"
+            placeholder="Challenge Text"
+            [(ngModel)]="createText"
+          ></textarea>
+        </label>
+
+        <div *ngIf="isWissenSelected" style="display: grid; gap: 10px;">
+          <div class="meta">Antworten (Wissen)</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <input type="text" placeholder="Option A" [(ngModel)]="createChoices[0]" />
+            <input type="text" placeholder="Option B" [(ngModel)]="createChoices[1]" />
+            <input type="text" placeholder="Option C" [(ngModel)]="createChoices[2]" />
+            <input type="text" placeholder="Option D" [(ngModel)]="createChoices[3]" />
+          </div>
+
+          <label>
+            <div class="meta">Correct Index (0-3)</div>
+            <input type="number" min="0" max="3" [(ngModel)]="createCorrectIndex" />
+          </label>
+        </div>
+
+        <div *ngIf="createError" style="color: #b00020; font-size: 13px;">
+          {{ createError }}
+        </div>
+
+        <button (click)="createChallenge()" [disabled]="isCreating">
+          {{ isCreating ? 'Erstelle…' : 'Erstellen' }}
+        </button>
+      </div>
+    </div>
+
     <div class="card">
 
       <div class="header">

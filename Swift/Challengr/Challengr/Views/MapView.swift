@@ -113,15 +113,9 @@ struct MapView: View {
     /// Fallback (Default Map: Vienna)
     private let startCoordinate = CLLocationCoordinate2D(latitude: 48.2082, longitude: 16.3738)
 
+    @available(*, unavailable, message: "Use MapView(ownPlayerId:ownPlayerName:auth:) so each device connects with its real Keycloak playerId.")
     init() {
-        let defaultPlayerId = "1"
-        let defaultPlayerName = "Player"
-
-        self.ownPlayerId = defaultPlayerId
-        self.auth = nil
-        _ownPlayerName = State(initialValue: defaultPlayerName)
-        _locationHelper = StateObject(wrappedValue: LocationHelper(playerId: defaultPlayerId, playerName: defaultPlayerName))
-        _socket = StateObject(wrappedValue: GameSocketService(playerId: defaultPlayerId))
+        fatalError("Unavailable")
     }
 
     init(ownPlayerId: Int64, ownPlayerName: String, auth: KeycloakAuthService) {

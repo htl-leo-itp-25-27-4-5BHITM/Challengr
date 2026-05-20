@@ -1,6 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormsModule } from '@angular/forms';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 import { Dashboard } from './dashboard';
+import { Users } from '../users/users';
+import { Challenges } from '../challenges/challenges';
 
 describe('Dashboard', () => {
   let component: Dashboard;
@@ -8,7 +12,8 @@ describe('Dashboard', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [Dashboard],
+      imports: [FormsModule, HttpClientTestingModule],
+      declarations: [Dashboard, Users, Challenges],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Dashboard);

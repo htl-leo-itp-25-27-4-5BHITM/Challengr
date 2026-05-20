@@ -33,6 +33,10 @@ public class PlayerRepository {
         if (normalizedId == null) {
             if (normalizedName != null && normalizedName.equalsIgnoreCase("WebappSpieler")) {
                 normalizedId = "3";
+            } else if (normalizedName != null) {
+                // Dev/simulator convenience: if no keycloak id is sent, fall back to a stable id derived
+                // from the name. This keeps old workflows (name-only create) working.
+                normalizedId = "name:" + normalizedName.toLowerCase();
             } else {
                 throw new IllegalArgumentException("player id (keycloak id) must not be null");
             }
