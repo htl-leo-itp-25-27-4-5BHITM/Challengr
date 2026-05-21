@@ -13,17 +13,10 @@
       (click)="activeTab = 'challenges'">
       Challenges
     </button>
-
-    <button
-      [class.active]="activeTab === 'erd'"
-      (click)="activeTab = 'erd'">
-      ERD
-    </button>
   </div>
 </div>
 
 <div class="view">
   <app-users *ngIf="activeTab === 'users'"></app-users>
   <app-challenges *ngIf="activeTab === 'challenges'"></app-challenges>
-  <app-erd *ngIf="activeTab === 'erd'"></app-erd>
 </div>

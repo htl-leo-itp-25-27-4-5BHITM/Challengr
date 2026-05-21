@@ -7,5 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './dashboard.css',
 })
 export class Dashboard {
-  activeTab: 'users' | 'challenges' | 'erd' = 'users';
+  activeTab: 'users' | 'challenges' = 'users';
 }
