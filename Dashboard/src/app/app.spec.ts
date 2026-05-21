@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { App } from './app';
 import { Layout } from './core/layout/layout';
 import { Header } from './core/header/header';
@@ -11,7 +13,9 @@ describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [
-        RouterModule.forRoot([])
+        RouterModule.forRoot([]),
+        FormsModule,
+        HttpClientTestingModule,
       ],
       declarations: [
         App,

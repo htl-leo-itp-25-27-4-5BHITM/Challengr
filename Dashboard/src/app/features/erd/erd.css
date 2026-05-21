@@ -1,0 +1,215 @@
+.topbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.subtitle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+:host {
+  display: block;
+  background: #f7f7f7;
+  color: #2b2b2b;
+  padding: 20px;
+  border-radius: 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.muted {
+  color: #6b6b6b;
+}
+
+.diagramHeader {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #2b2b2b;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  row-gap: 6px;
+  column-gap: 10px;
+  font-size: 14px;
+}
+
+.code {
+  width: 100%;
+  background: #0b1220;
+  color: #e5e7eb;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  border-radius: 10px;
+  padding: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.diagram {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  background: #fffef5;
+  padding: 20px;
+  overflow: visible;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.diagram :global(svg),
+.diagram svg {
+  user-select: none;
+}
+
+.diagram :global(svg g.node),
+.diagram svg g.node,
+.diagram :global(svg g[class*="node"]),
+.diagram svg g[class*="node"],
+.diagram :global(svg g.classGroup),
+.diagram svg g.classGroup {
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.diagram :global(svg g.classGroup *),
+.diagram svg g.classGroup * {
+  pointer-events: all;
+}
+
+.diagram :global(svg g.classGroup rect),
+.diagram svg g.classGroup rect,
+.diagram :global(svg g.classGroup text),
+.diagram svg g.classGroup text {
+  cursor: pointer;
+}
+
+.diagram :global(svg .classGroup rect),
+.diagram svg .classGroup rect {
+  fill: #fff9c4;
+  stroke: #3b3b3b;
+  stroke-width: 1.2;
+  rx: 4px;
+  ry: 4px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
+}
+
+.diagram :global(svg .classGroup text),
+.diagram svg .classGroup text {
+  fill: #2b2b2b;
+  font-weight: 600;
+}
+
+.diagram :global(svg .classGroup line),
+.diagram svg .classGroup line {
+  stroke: #3b3b3b;
+  stroke-width: 1.1;
+}
+
+.diagram :global(svg path),
+.diagram svg path,
+.diagram :global(svg line),
+.diagram svg line {
+  stroke: #3b3b3b;
+  stroke-width: 1.1;
+}
+
+.diagram :global(svg marker path),
+.diagram svg marker path {
+  fill: #3b3b3b;
+}
+
+
+.tableData {
+  margin-top: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.tableDataHeader {
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #2b2b2b;
+}
+
+.empty {
+  color: #6b6b6b;
+}
+
+.dataTable {
+  overflow-x: auto;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+}
+
+.dataHeader,
+.dataRow {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(140px, 1fr);
+}
+
+.dataHeader {
+  background: #fffbe6;
+  font-weight: 600;
+}
+
+.cell {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 12px;
+}
+
+.dataRow:last-child .cell {
+  border-bottom: none;
+}
+
+.dataRow .cell:last-child,
+.dataHeader .cell:last-child {
+  border-right: none;
+}
+
+.diagram :global(svg),
+.diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.hint {
+  margin-top: 10px;
+}
+
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .tables {
+    grid-template-columns: 1fr;
+  }
+}
