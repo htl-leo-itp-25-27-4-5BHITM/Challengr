@@ -6,16 +6,16 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 NAMESPACE="${K8S_NAMESPACE:-student-it220257}"
 IMAGE_OWNER="${GHCR_OWNER:-htl-leo-itp-25-27-4-5bhitm}"
 BACKEND_IMAGE="ghcr.io/${IMAGE_OWNER}/challengr-backend:latest"
-WEBAPP_IMAGE="ghcr.io/${IMAGE_OWNER}/challengr-webapp:latest"
+DASHBOARD_IMAGE="ghcr.io/${IMAGE_OWNER}/challengr-dashboard:latest"
 PLATFORM="${DOCKER_PLATFORM:-linux/amd64}"
 
 usage() {
   cat <<EOF
-Usage: ./scripts/deploy-cloud.sh [backend|webapp|both]
+Usage: ./scripts/deploy-cloud.sh [backend|dashboard|both]
 
 Deploy target:
   backend   Build + push backend image and restart backend deployment
-  webapp    Build + push webapp image and restart webapp deployment
+  dashboard Build + push dashboard image and restart dashboard deployment
   both      Build + push both images and restart both deployments
 
 Optional environment variables:
@@ -25,7 +25,7 @@ Optional environment variables:
 
 Examples:
   ./scripts/deploy-cloud.sh backend
-  ./scripts/deploy-cloud.sh webapp
+  ./scripts/deploy-cloud.sh dashboard
   ./scripts/deploy-cloud.sh both
 EOF
 }
@@ -55,18 +55,18 @@ build_backend() {
   kubectl -n "$NAMESPACE" rollout status deployment/challengr-backend
 }
 
-build_webapp() {
-  echo "\n[webapp] Docker buildx push -> $WEBAPP_IMAGE"
-  cd "$ROOT_DIR/WebApp"
+build_dashboard() {
+  echo "\n[dashboard] Docker buildx push -> $DASHBOARD_IMAGE"
+  cd "$ROOT_DIR/Dashboard"
   docker buildx build \
     --platform "$PLATFORM" \
     -f Dockerfile \
-    -t "$WEBAPP_IMAGE" \
+    -t "$DASHBOARD_IMAGE" \
     --push .
 
-  echo "[webapp] Restart deployment..."
-  kubectl -n "$NAMESPACE" rollout restart deployment/challengr-webapp
-  kubectl -n "$NAMESPACE" rollout status deployment/challengr-webapp
+  echo "[dashboard] Restart deployment..."
+  kubectl -n "$NAMESPACE" rollout restart deployment/challengr-dashboard
+  kubectl -n "$NAMESPACE" rollout status deployment/challengr-dashboard
 }
 
 deploy_keycloak() {
@@ -81,7 +81,7 @@ if [[ "$TARGET" == "-h" || "$TARGET" == "--help" ]]; then
   exit 0
 fi
 
-if [[ "$TARGET" != "backend" && "$TARGET" != "webapp" && "$TARGET" != "both" ]]; then
+if [[ "$TARGET" != "backend" && "$TARGET" != "dashboard" && "$TARGET" != "both" ]]; then
   echo "❌ Invalid target: $TARGET"
   usage
   exit 1
@@ -94,8 +94,8 @@ if [[ "$TARGET" == "backend" || "$TARGET" == "both" ]]; then
   build_backend
 fi
 
-if [[ "$TARGET" == "webapp" || "$TARGET" == "both" ]]; then
-  build_webapp
+if [[ "$TARGET" == "dashboard" || "$TARGET" == "both" ]]; then
+  build_dashboard
 fi
 
 # Keycloak bei "both" mit deployen

@@ -20,10 +20,24 @@ spec:
                 name: challengr-keycloak-service
                 port:
                   number: 8080
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: challengr-backend-service
+                port:
+                  number: 8080
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: challengr-backend-service
+                port:
+                  number: 8080
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: challengr-webapp-service
+                name: challengr-dashboard-service
                 port:
                   number: 80

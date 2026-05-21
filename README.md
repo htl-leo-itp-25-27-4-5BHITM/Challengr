@@ -177,7 +177,7 @@ Project Backlog:
 
 ---
 
-## Lokaler Schnellstart (WebApp + Cloud Backend)
+## Lokaler Schnellstart (Dashboard + Cloud Backend)
 
 Im Projekt-Root reicht jetzt **ein Befehl**:
 
@@ -187,7 +187,7 @@ Im Projekt-Root reicht jetzt **ein Befehl**:
 
 Der Befehl macht automatisch:
 
-- lokale WebApp auf `http://localhost:5173` starten
+- lokales Dashboard auf `http://localhost:4200` starten
 - Proxy auf Cloud-Backend (`https://it220257.cloud.htl-leonding.ac.at`) setzen
 - DB-Tunnel für IntelliJ auf `localhost:15432` starten
 
@@ -203,7 +203,7 @@ DB-Tunnel stoppen:
 ./scripts/db-tunnel-stop.sh
 ```
 
-Optional: kompletten lokalen Stack (Postgres + Backend + WebApp) starten:
+Optional: kompletten lokalen Stack (Postgres + Backend + Dashboard) starten:
 
 ```bash
 docker compose --profile local-stack up --build
@@ -222,7 +222,7 @@ Die genaue Anleitung findest du in:
 Kurz gesagt:
 
 1. Backend-Image bauen und pushen
-2. WebApp-Image bauen und pushen
+2. Dashboard-Image bauen und pushen
 3. Secret anlegen
 4. Kubernetes-Manifeste aus `k8s/` deployen
 
@@ -236,7 +236,7 @@ Im Projekt-Root:
 
 ```bash
 ./scripts/deploy-cloud.sh backend
-./scripts/deploy-cloud.sh webapp
+./scripts/deploy-cloud.sh dashboard
 ./scripts/deploy-cloud.sh both
 ```
 

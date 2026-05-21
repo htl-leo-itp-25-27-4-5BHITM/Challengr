@@ -9,7 +9,7 @@ Für LeoCloud werden **drei Teile** deployed:
 
 1. `challengr-postgres` – PostgreSQL
 2. `challengr-backend` – Quarkus Backend
-3. `challengr-webapp` – statische WebApp über nginx
+3. `challengr-dashboard` – Admin-Dashboard (Angular SSR)
 
 Die lokale `docker-compose.yml` bleibt für Development bestehen. Für LeoCloud werden die Dateien im Ordner `k8s/` verwendet.
 
@@ -36,13 +36,13 @@ docker push ghcr.io/htl-leo-itp-25-27-4-5bhitm/challengr-backend:latest
 
 ---
 
-## 3. WebApp-Image bauen und pushen
+## 3. Dashboard-Image bauen und pushen
 
 ```bash
-cd WebApp
+cd Dashboard
 
-docker build -t ghcr.io/htl-leo-itp-25-27-4-5bhitm/challengr-webapp:latest .
-docker push ghcr.io/htl-leo-itp-25-27-4-5bhitm/challengr-webapp:latest
+docker build -t ghcr.io/htl-leo-itp-25-27-4-5bhitm/challengr-dashboard:latest .
+docker push ghcr.io/htl-leo-itp-25-27-4-5bhitm/challengr-dashboard:latest
 ```
 
 ---
@@ -96,7 +96,7 @@ Wenn das Secret schon existiert, zuerst löschen oder `apply` mit YAML verwenden
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/postgres.yaml
 kubectl apply -f k8s/backend.yaml
-kubectl apply -f k8s/webapp.yaml
+kubectl apply -f k8s/dashboard.yaml
 kubectl apply -f k8s/ingress.yaml
 ```
 
@@ -116,7 +116,7 @@ Logs prüfen:
 
 ```bash
 kubectl -n student-it220257 logs deploy/challengr-backend
-kubectl -n student-it220257 logs deploy/challengr-webapp
+kubectl -n student-it220257 logs deploy/challengr-dashboard
 kubectl -n student-it220257 logs deploy/challengr-postgres
 ```
 
@@ -126,8 +126,8 @@ kubectl -n student-it220257 logs deploy/challengr-postgres
 
 Nach erfolgreichem Deployment:
 
-- WebApp: `https://it220257.cloud.htl-leonding.ac.at`
-- Backend via Proxy durch nginx: `https://it220257.cloud.htl-leonding.ac.at/api/challenges`
+- Dashboard: `https://it220257.cloud.htl-leonding.ac.at`
+- Backend: `https://it220257.cloud.htl-leonding.ac.at/api/challenges`
 
 Wenn du das Backend direkt intern prüfen willst:
 
@@ -153,14 +153,14 @@ Nach Codeänderungen:
 
 ```bash
 kubectl -n student-it220257 rollout restart deployment/challengr-backend
-kubectl -n student-it220257 rollout restart deployment/challengr-webapp
+kubectl -n student-it220257 rollout restart deployment/challengr-dashboard
 ```
 
 ---
 
 ## 10. Häufige Probleme
 
-### WebApp startet, aber API geht nicht
+### Dashboard startet, aber API geht nicht
 - Prüfen, ob `challengr-backend-service` läuft
 - Backend-Logs prüfen
 - Ingress prüfen
@@ -171,7 +171,6 @@ kubectl -n student-it220257 rollout restart deployment/challengr-webapp
 - Service `challengr-postgres-service` prüfen
 
 ### WebSocket geht nicht
-- `/ws` wird in `WebApp/docker/nginx.conf` zum Backend durchgereicht
 - Backend muss unter `challengr-backend-service:8080` erreichbar sein
 - Ingress/Proxy muss Upgrade-Header durchlassen
 
@@ -227,10 +226,9 @@ Keycloak läuft dann auf: `http://localhost:9090`
 
 ## Dateien
 
-- `WebApp/Dockerfile` – Production-WebApp mit nginx
-- `WebApp/docker/nginx.conf` – Proxy für `/api` und `/ws`
+- `Dashboard/Dockerfile` – Production-Dashboard (Angular SSR)
 - `k8s/postgres.yaml` – PostgreSQL + PVC + Service
 - `k8s/backend.yaml` – Quarkus Deployment + Service
-- `k8s/webapp.yaml` – WebApp Deployment + Service
+- `k8s/dashboard.yaml` – Dashboard Deployment + Service
 - `k8s/ingress.yaml` – öffentliche Route für LeoCloud
 - `k8s/secret-example.yaml` – Beispiel-Secret

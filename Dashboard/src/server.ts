@@ -5,12 +5,15 @@ import {
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
 import express from 'express';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import { join } from 'node:path';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
+
+const backendTarget = process.env['BACKEND_URL'] || 'http://challengr-backend-service:8080';
 
 /**
  * Example Express Rest API endpoints can be defined here.
@@ -27,6 +30,25 @@ const angularApp = new AngularNodeAppEngine();
 /**
  * Serve static files from /browser
  */
+app.use(
+  '/api',
+  createProxyMiddleware({
+    target: backendTarget,
+    changeOrigin: true,
+    secure: false,
+  }),
+);
+
+app.use(
+  '/ws',
+  createProxyMiddleware({
+    target: backendTarget,
+    changeOrigin: true,
+    ws: true,
+    secure: false,
+  }),
+);
+
 app.use(
   express.static(browserDistFolder, {
     maxAge: '1y',

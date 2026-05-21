@@ -8,7 +8,7 @@
 
 Was der Befehl automatisch startet:
 
-- lokale WebApp (`http://localhost:5173`)
+- lokales Dashboard (`http://localhost:4200`)
 - Proxy auf Cloud-Backend + Cloud-WebSocket
 - stabilen DB-Tunnel nach Kubernetes auf `localhost:15432`
 
@@ -34,7 +34,7 @@ Tunnel stoppen:
 docker compose --profile local-stack up --build
 ```
 
-Dann laufen PostgreSQL + Backend + WebApp lokal.
+Dann laufen PostgreSQL + Backend + Dashboard lokal.
 
 ---
 
@@ -50,17 +50,17 @@ cd Backend/challengrbackend
 # Portiert auf http://localhost:8080
 ```
 
-### WebApp (Vite)
+### Dashboard (Angular)
 ```bash
-cd WebApp
+cd Dashboard
 
 # Dependencies installieren
 npm install
 
 # Dev-Server starten
-npm run dev
+npm run start
 
-# Portiert auf http://localhost:5173
+# Portiert auf http://localhost:4200
 ```
 
 **Voraussetzung**: PostgreSQL muss auf `localhost:5432` laufen
@@ -107,7 +107,7 @@ Challengr/
 │       │       └── application-prod.properties   # Prod Config
 │       └── src/main/docker/
 │           └── Dockerfile.txt                    # Docker Build
-└── WebApp/                     # Vite WebApp
+└── Dashboard/                  # Admin Dashboard
 ```
 
 ---
