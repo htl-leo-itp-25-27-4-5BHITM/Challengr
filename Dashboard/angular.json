@@ -39,7 +39,7 @@
             "server": "src/main.server.ts",
             "outputMode": "server",
             "security": {
-              "allowedHosts": []
+              "allowedHosts": ["it220257.cloud.htl-leonding.ac.at"]
             },
             "ssr": {
               "entry": "src/server.ts"

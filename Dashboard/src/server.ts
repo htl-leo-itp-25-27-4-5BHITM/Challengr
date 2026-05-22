@@ -15,6 +15,8 @@ const angularApp = new AngularNodeAppEngine();
 
 const backendTarget = process.env['BACKEND_URL'] || 'http://challengr-backend-service:8080';
 
+app.set('trust proxy', true);
+
 /**
  * Example Express Rest API endpoints can be defined here.
  * Uncomment and define endpoints as necessary.

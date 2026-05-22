@@ -8,6 +8,8 @@ data:
     parent=keycloak
     import=common/keycloak
     styles=css/styles.css
+        locales=de
+        defaultLocale=de
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -158,3 +160,43 @@ data:
     /* Links */
     a { color: #ffcc00 !important; font-weight: 600 !important; text-decoration: none !important; }
     a:hover { text-decoration: underline !important; }
+
+    /* Locale dropdown */
+    #kc-locale, .kc-locale, .pf-v5-c-login__header #kc-locale {
+        display: none !important;
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: challengr-theme-messages
+    namespace: student-it220257
+data:
+    messages_de.properties: |
+        doLogIn=Anmelden
+        loginAccountTitle=Bei deinem Konto anmelden
+        loginTitle=Anmelden
+        loginTitleHtml=Anmelden
+        username=Benutzername
+        usernameOrEmail=Benutzername oder E-Mail
+        e-mail=E-Mail
+        password=Passwort
+        rememberMe=Angemeldet bleiben
+        forgotPassword=Passwort vergessen?
+        noAccount=Noch kein Konto?
+        doRegister=Registrieren
+        registerTitle=Konto erstellen
+        registerTitleHtml=Konto erstellen
+        backToLogin=Zurück zum Login
+        emailForgotTitle=Passwort zurücksetzen
+        emailForgotMessage=Gib deine E-Mail-Adresse ein, um dein Passwort zurückzusetzen.
+        emailInstruction=E-Mail
+        loginProfileTitle=Profil aktualisieren
+        loginProfileMessage=Bitte aktualisiere deine Profilinformationen.
+        invalidUsernameMessage=Ungültiger Benutzername oder E-Mail.
+        invalidPasswordMessage=Ungültiges Passwort.
+        accountDisabledMessage=Dein Konto ist deaktiviert.
+        accountTemporarilyDisabledMessage=Dein Konto ist vorübergehend deaktiviert. Bitte später erneut versuchen.
+        accountPermanentlyDisabledMessage=Dein Konto ist dauerhaft deaktiviert.
+        pageNotFound=Seite nicht gefunden

@@ -80,3 +80,8 @@ body {
 .pf-c-form__label-text {
     font-weight: 500 !important;
 }
+
+/* Locale dropdown */
+#kc-locale, .kc-locale, .pf-v5-c-login__header #kc-locale {
+    display: none !important;
+}

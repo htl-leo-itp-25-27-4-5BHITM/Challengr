@@ -58,6 +58,9 @@ spec:
             - name: theme-css
               mountPath: /opt/keycloak/themes/challengr/login/resources/css/styles.css
               subPath: styles.css
+            - name: theme-messages
+              mountPath: /opt/keycloak/themes/challengr/login/resources/messages/messages_de.properties
+              subPath: messages_de.properties
       volumes:
         - name: theme-properties
           configMap:
@@ -65,6 +68,9 @@ spec:
         - name: theme-css
           configMap:
             name: challengr-theme-css
+        - name: theme-messages
+          configMap:
+            name: challengr-theme-messages
 ---
 apiVersion: v1
 kind: Service
