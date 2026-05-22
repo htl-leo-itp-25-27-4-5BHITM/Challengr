@@ -781,9 +781,10 @@ struct MapView: View {
             if let challenge = incomingChallenge,
                let battleId = currentBattleId {
 
-                let opponentName =
+                let opponentTitle =
                     annotations.first(where: { $0.playerId == challenge.fromId })?.title
                     ?? "Gegner \(challenge.fromId)"
+                let opponentName = cleanPlayerName(opponentTitle)
 
                 ZStack {
                     Color.black.opacity(0.55)
@@ -1059,7 +1060,7 @@ struct MapView: View {
                     annotations.first(where: { $0.playerId == challenge.fromId })?.title
                     ?? "Gegner \(challenge.fromId)"
 
-                let opponentName = opponentTitle.components(separatedBy: " · ").first ?? opponentTitle
+                let opponentName = cleanPlayerName(opponentTitle)
 
                 activeBattleInfo = (
                     challengeName: challenge.name,
@@ -1081,7 +1082,7 @@ struct MapView: View {
                     annotations.first(where: { $0.playerId == outgoing.opponentId })?.title
                     ?? "Gegner \(outgoing.opponentId)"
 
-                let opponentName = opponentTitle.components(separatedBy: " · ").first ?? opponentTitle
+                let opponentName = cleanPlayerName(opponentTitle)
 
                 activeBattleInfo = (
                     challengeName: outgoing.challengeName,
@@ -1259,5 +1260,14 @@ struct MapView: View {
                 hasCapturedInitialZoom = true
             }
         }
+    }
+
+    private func cleanPlayerName(_ title: String) -> String {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let separator = " · "
+        if trimmed.contains(separator) {
+            return trimmed.components(separatedBy: separator).first ?? trimmed
+        }
+        return trimmed
     }
 }
