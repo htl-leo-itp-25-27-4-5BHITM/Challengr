@@ -38,6 +38,8 @@ public class GameSocket {
 
     private static final Map<Long, Map<String, Double>> COMPASS_RESULTS = new ConcurrentHashMap<>();
 
+    private static final Map<Long, Map<String, Double>> CAMERA_RESULTS = new ConcurrentHashMap<>();
+
     private static final Map<Long, Map<String, Integer>> SHAKE_RESULTS = new ConcurrentHashMap<>();
 
     @Inject
@@ -116,6 +118,9 @@ public class GameSocket {
 
             } else if (message.contains("\"type\":\"compass-result\"")) {
                 handleCompassResult(message, playerId);
+
+            } else if (message.contains("\"type\":\"camera-result\"")) {
+                handleCameraResult(message, playerId);
 
             } else if (message.contains("\"type\":\"shake-result\"")) {
                 handleShakeResult(message, playerId);
@@ -1127,6 +1132,64 @@ public class GameSocket {
 
         computeAndBroadcastResult(battle, List.of(winnerName));
         COMPASS_RESULTS.remove(battleId);
+    }
+
+    private void handleCameraResult(String message, String playerId) {
+        Long battleId = extractLong(message, "battleId");
+        double score = extractDouble(message, "score");
+
+        System.out.println("➡️ camera-result parsed: battleId=" + battleId + ", score=" + score);
+        if (playerId == null) {
+            System.out.println("camera-result ohne playerId, ignoriere");
+            return;
+        }
+
+        Battle battle = battleService.findById(battleId);
+        if (battle == null) {
+            System.out.println("camera-result: battle " + battleId + " nicht gefunden");
+            return;
+        }
+
+        CAMERA_RESULTS
+                .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
+                .put(playerId, score);
+
+        Map<String, Double> map = CAMERA_RESULTS.get(battleId);
+        String fromId = battle.getFromPlayer().getId();
+        String toId   = battle.getToPlayer().getId();
+
+        if (map == null || !(map.containsKey(fromId) && map.containsKey(toId))) {
+            System.out.println("Camera result stored for battle " + battleId + ", waiting for opponent...");
+            return;
+        }
+
+        double scoreFrom = map.get(fromId);
+        double scoreTo   = map.get(toId);
+
+        String winnerName;
+        if (scoreFrom > scoreTo) {
+            winnerName = battle.getFromPlayer().getName();
+        } else if (scoreTo > scoreFrom) {
+            winnerName = battle.getToPlayer().getName();
+        } else {
+            winnerName = "Niemand";
+        }
+
+        String pendingPayload = """
+    {
+      "type": "battle-pending",
+      "battleId": %d
+    }
+    """.formatted(battleId);
+
+        sendToPlayer(fromId, pendingPayload);
+        sendToPlayer(toId,   pendingPayload);
+
+        System.out.println("✅ Camera ausgewertet, from=" + scoreFrom + ", to=" + scoreTo
+                + ", winner=" + winnerName);
+
+        computeAndBroadcastResult(battle, List.of(winnerName));
+        CAMERA_RESULTS.remove(battleId);
     }
 
     private static final Map<Long, Map<String, Integer>> PUSHUP_RESULTS = new ConcurrentHashMap<>();

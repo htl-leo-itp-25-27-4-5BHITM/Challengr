@@ -257,6 +257,16 @@ final class GameSocketService: ObservableObject {
         send(json: payload)
     }
 
+    func sendCameraResult(battleId: Int64, score: Double) {
+        let payload: [String: Any] = [
+            "type": "camera-result",
+            "battleId": battleId,
+            "score": score
+        ]
+        print("📤 sendCameraResult:", payload)
+        send(json: payload)
+    }
+
     // MARK: - Receive messages (Empfangen)
 
     private func receive() {

@@ -420,6 +420,16 @@ struct MapView: View {
                         )
 
               } else if info.category == "iPhone",
+                        info.challengeName.lowercased().contains("kamera")
+                        || info.challengeName.lowercased().contains("camera")
+                        || info.challengeName.lowercased().contains("foto") {
+                CameraChallengeView(
+                    battleId: battleId,
+                    socket: socket,
+                    onClose: { activeFullScreen = .none }
+                )
+
+              } else if info.category == "iPhone",
                     (info.challengeName.lowercased().contains("compass") || info.challengeName.lowercased().contains("kompass")) {
                 CompassChallengeView(battleId: battleId, playerId: ownPlayerId, socket: socket, onClose: { activeFullScreen = .none })
 
