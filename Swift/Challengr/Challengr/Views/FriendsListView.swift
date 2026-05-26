@@ -26,8 +26,9 @@ struct FriendsListView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
                 Text("Freunde")
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(challengrDark)
@@ -97,16 +98,21 @@ struct FriendsListView: View {
                             .padding(.vertical, 8)
                     } else {
                         ForEach(vm.friends) { friend in
-                            FriendRow(
-                                player: friend,
-                                challengrDark: challengrDark,
-                                cardBackground: cardBackground,
-                                onRemove: {
-                                    Task {
-                                        await vm.removeFriend(ownPlayerId: ownPlayerId, friendId: friend.id)
+                            NavigationLink {
+                                FriendProfileView(friend: friend)
+                            } label: {
+                                FriendRow(
+                                    player: friend,
+                                    challengrDark: challengrDark,
+                                    cardBackground: cardBackground,
+                                    onRemove: {
+                                        Task {
+                                            await vm.removeFriend(ownPlayerId: ownPlayerId, friendId: friend.id)
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -169,9 +175,10 @@ struct FriendsListView: View {
 
                 Spacer(minLength: 12)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 20)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
+            }
         }
         .background(Color(.systemGroupedBackground))
         .task {
@@ -256,6 +263,8 @@ private struct FriendRow: View {
                     .background(Circle().fill(Color.red.opacity(0.9)))
             }
             .buttonStyle(.plain)
+            .controlSize(.regular)
+            .buttonStyle(.borderless)
         }
         .padding(12)
         .background(
