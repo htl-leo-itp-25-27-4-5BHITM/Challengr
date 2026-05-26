@@ -297,8 +297,10 @@ struct BattleView: View {
         alignRight: Bool,
         compact: Bool
     ) -> some View {
-        let modelSize = compact ? CGSize(width: 190, height: 140) : CGSize(width: 230, height: 160)
-        let stripHeight = modelSize.height + 46
+    let modelSize = compact ? CGSize(width: 190, height: 140) : CGSize(width: 230, height: 160)
+    let stripHeight = modelSize.height + 34
+    // Full character in battle strips, but always planted on the bottom edge.
+    let characterScale: CGFloat = compact ? 1.0 : 1.0
         let corner: UIRectCorner = alignRight ? [.topLeft, .bottomLeft] : [.topRight, .bottomRight]
         let nameFont: CGFloat = compact ? 12 : 13
 
@@ -313,21 +315,22 @@ struct BattleView: View {
                     .allowsTightening(true)
                     .frame(minWidth: 110, maxWidth: 170, alignment: .leading)
                     .padding(.leading, 16)
-                    .padding(.vertical, 10)
+                    .padding(.top, 10)
+                    .padding(.bottom, 4)
 
                 characterModelView(flip: flip, fallbackImage: imageName)
-                    // Make the character sit on the bottom edge of the strip.
+                    .scaleEffect(characterScale, anchor: .bottom)
+                    // Keep the avatar on the box bottom edge.
                     .frame(width: modelSize.width, height: modelSize.height, alignment: .bottom)
-                    .frame(height: stripHeight - 10, alignment: .bottom)
                     .shadow(color: .black.opacity(0.55), radius: 18, x: 0, y: 12)
-                    .padding(.trailing, 10)
+                .padding(.trailing, 6)
             } else {
                 characterModelView(flip: flip, fallbackImage: imageName)
-                    // Make the character sit on the bottom edge of the strip.
+                    .scaleEffect(characterScale, anchor: .bottom)
+                    // Keep the avatar on the box bottom edge.
                     .frame(width: modelSize.width, height: modelSize.height, alignment: .bottom)
-                    .frame(height: stripHeight - 10, alignment: .bottom)
                     .shadow(color: .black.opacity(0.55), radius: 18, x: 0, y: 12)
-                    .padding(.leading, 10)
+                .padding(.leading, 6)
 
                 Text(name.uppercased())
                     .font(.system(size: nameFont, weight: .black, design: .rounded))
@@ -338,7 +341,8 @@ struct BattleView: View {
                     .allowsTightening(true)
                     .frame(minWidth: 110, maxWidth: 170, alignment: .trailing)
                     .padding(.trailing, 16)
-                    .padding(.vertical, 10)
+                    .padding(.top, 10)
+                    .padding(.bottom, 4)
             }
         }
         .frame(height: stripHeight)
@@ -472,11 +476,20 @@ private struct CharacterModelContainer: View {
     var body: some View {
         ZStack {
             if model == nil {
-                Image(fallbackImage)
-                    .resizable()
-                    .scaledToFit()
-                    // Right-side fighter should face left; left-side fighter should face right.
-                    .scaleEffect(x: flip ? 1 : -1, y: 1)
+                ZStack(alignment: .bottom) {
+                    // Grounding shadow/plate so the character doesn't look like it's floating.
+                    Capsule()
+                        .fill(Color.black.opacity(0.35))
+                        .frame(width: 92, height: 16)
+                        .blur(radius: 8)
+                        .offset(y: 10)
+
+                    Image(fallbackImage)
+                        .resizable()
+                        .scaledToFit()
+                        // Right-side fighter should face left; left-side fighter should face right.
+                        .scaleEffect(x: flip ? -1 : 1, y: 1)
+                }
             }
 
             if #available(iOS 17.0, *), let model {
@@ -486,7 +499,7 @@ private struct CharacterModelContainer: View {
 
                     let clone = model.clone(recursive: true)
                     // Rotate the right-side fighter towards center.
-                    let rotation = simd_quatf(angle: flip ? 0 : .pi, axis: SIMD3<Float>(0, 1, 0))
+                    let rotation = simd_quatf(angle: flip ? .pi : 0, axis: SIMD3<Float>(0, 1, 0))
 
                     // Basic staging so the model looks consistent even without custom cameras.
                     clone.transform = Transform(

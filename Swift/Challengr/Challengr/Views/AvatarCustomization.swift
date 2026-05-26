@@ -20,11 +20,13 @@ struct AvatarPreset: Identifiable, Hashable {
 }
 
 /// Central place for available 2D avatar presets.
-/// Note: currently only `playerBoy` + `playerGirl` exist in assets.
+/// Keep this list in sync with assets in `Assets.xcassets`.
 enum AvatarPresets {
     static let all: [AvatarPreset] = [
         AvatarPreset(id: "boy", title: "Boy", imageName: "playerBoy", category: .outfits),
-        AvatarPreset(id: "girl", title: "Girl", imageName: "playerGirl", category: .outfits)
+        AvatarPreset(id: "girl", title: "Girl", imageName: "playerGirl", category: .outfits),
+        AvatarPreset(id: "hacker", title: "Hacker", imageName: "hacker", category: .outfits),
+        AvatarPreset(id: "mage-girl", title: "Magierin", imageName: "mageGirl", category: .outfits)
     ]
 
     static func presets(for category: AvatarCategory) -> [AvatarPreset] {
