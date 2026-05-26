@@ -248,7 +248,6 @@ struct MapView: View {
                                 default: return "\(count) Spieler in meiner Nähe"
                                 }
                             }()
-
                             Text(text)
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(.challengrDark)
@@ -858,6 +857,65 @@ struct MapView: View {
         }
     }
 
+    /// Overlay shown for the attacker while the request is pending.
+    private var outgoingChallengeOverlay: some View {
+        Group {
+            if incomingChallenge == nil,
+               let outgoing = outgoingBattleInfo,
+               activeFullScreen == .none {
+
+                let opponentTitle =
+                    annotations.first(where: { $0.playerId == outgoing.opponentId })?.title
+                    ?? "Gegner \(outgoing.opponentId)"
+                let opponentName = cleanPlayerName(opponentTitle)
+
+                ZStack {
+                    Color.black.opacity(0.35)
+                        .ignoresSafeArea()
+
+                    GameCard {
+                        Text("ANFRAGE GESENDET")
+                            .font(.system(size: 14, weight: .black, design: .rounded))
+                            .tracking(1.2)
+                            .foregroundColor(.challengrYellow)
+
+                        Text(opponentName.uppercased())
+                            .font(.system(size: 18, weight: .black, design: .rounded))
+                            .foregroundColor(.challengrDark)
+
+                        Text(outgoing.challengeName)
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.challengrDark)
+                            .padding(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(Color.challengrYellow)
+                            )
+
+                        HStack(spacing: 12) {
+                            ProgressView()
+                                .tint(.challengrDark)
+
+                            Text("Warte auf Annahme …")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.challengrDark)
+                        }
+
+                        GamePrimaryButton(title: "Abbrechen", color: .challengrSurface) {
+                            // No cancel API yet – just hide locally.
+                            outgoingBattleInfo = nil
+                            currentBattleId = nil
+                        }
+                        .foregroundColor(.challengrRed)
+                    }
+                    .frame(maxWidth: 320)
+                }
+                .transition(.opacity)
+            }
+        }
+    }
+
     private var resultPendingOverlay: some View {
         Group {
             if activeOverlay == .resultPending {
@@ -1012,37 +1070,38 @@ struct MapView: View {
         socket.onChallengeReceived = { battleId, fromId, toId, challengeId, targetLat, targetLon in
             let info = challengeInfo(for: challengeId)
 
-            if toId == ownPlayerId {
-                // Eingehende Challenge
-                incomingChallenge = (
-                    battleId: battleId,
-                    fromId: fromId,
-                    challengeId: challengeId,
-                    name: info.name,
-                    category: info.category
-                )
-                currentBattleId = battleId
+            Task { @MainActor in
+                if toId == ownPlayerId {
+                    // Eingehende Challenge
+                    incomingChallenge = (
+                        battleId: battleId,
+                        fromId: fromId,
+                        challengeId: challengeId,
+                        name: info.name,
+                        category: info.category
+                    )
+                    currentBattleId = battleId
+                } else if fromId == ownPlayerId {
+                    // Wir sind der Angreifer
+                    outgoingBattleInfo = (
+                        battleId: battleId,
+                        opponentId: toId,
+                        challengeName: info.name,
+                        category: info.category
+                    )
+                    currentBattleId = battleId
+                }
 
-            } else if fromId == ownPlayerId {
-                // Wir sind der Angreifer
-                outgoingBattleInfo = (
-                    battleId: battleId,
-                    opponentId: toId,
-                    challengeName: info.name,
-                    category: info.category
-                )
-                currentBattleId = battleId
-            }
+                if info.category != "Wissen" {
+                    lastKnowledgeQuestion = nil
+                }
 
-            if info.category != "Wissen" {
-                lastKnowledgeQuestion = nil
-            }
-
-            // Zielkoordinate (für Check-In-Spot)
-            if let lat = targetLat, let lon = targetLon {
-                currentTargetCoordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-            } else {
-                currentTargetCoordinate = nil
+                // Zielkoordinate (für Check-In-Spot)
+                if let lat = targetLat, let lon = targetLon {
+                    currentTargetCoordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+                } else {
+                    currentTargetCoordinate = nil
+                }
             }
         }
 
@@ -1101,6 +1160,7 @@ struct MapView: View {
                     playerB: opponentName
                 )
 
+                outgoingBattleInfo = nil
                 activeFullScreen = .battle
                 return
             }

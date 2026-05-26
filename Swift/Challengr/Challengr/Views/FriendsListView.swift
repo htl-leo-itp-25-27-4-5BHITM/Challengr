@@ -12,7 +12,6 @@ struct FriendsListView: View {
     var radiusMeters: Double = 250
 
     @StateObject private var vm = FriendsViewModel()
-    @StateObject private var socket: GameSocketService
 
     @State private var searchText: String = ""
     @State private var appliedSearch: String = ""
@@ -22,7 +21,6 @@ struct FriendsListView: View {
         self.ownPlayerId = ownPlayerId
         self.currentCoordinate = currentCoordinate
         self.radiusMeters = radiusMeters
-        _socket = StateObject(wrappedValue: GameSocketService(playerId: ownPlayerId))
     }
     
     var body: some View {
@@ -189,29 +187,6 @@ struct FriendsListView: View {
             )
         }
         .task {
-            socket.connect()
-
-            // Any friend event involving us should refresh the lists.
-            socket.onFriendRequestCreated = { _, fromId, toId in
-                guard fromId == ownPlayerId || toId == ownPlayerId else { return }
-                Task {
-                    await vm.loadAll(ownPlayerId: ownPlayerId, coordinate: currentCoordinate, radiusMeters: radiusMeters)
-                }
-            }
-            socket.onFriendRequestUpdated = { _, fromId, toId, _ in
-                guard fromId == ownPlayerId || toId == ownPlayerId else { return }
-                Task {
-                    await vm.loadAll(ownPlayerId: ownPlayerId, coordinate: currentCoordinate, radiusMeters: radiusMeters)
-                }
-            }
-            socket.onFriendRemoved = { playerId, friendId in
-                guard playerId == ownPlayerId || friendId == ownPlayerId else { return }
-                Task {
-                    await vm.loadAll(ownPlayerId: ownPlayerId, coordinate: currentCoordinate, radiusMeters: radiusMeters)
-                }
-            }
-        }
-        .task {
             // Lightweight polling while the view is visible.
             // This makes the sender see accept/remove changes without tapping "Neu laden".
             while !Task.isCancelled {
@@ -220,7 +195,7 @@ struct FriendsListView: View {
                     coordinate: currentCoordinate,
                     radiusMeters: radiusMeters
                 )
-                try? await Task.sleep(nanoseconds: 3_000_000_000) // 3s
+                try? await Task.sleep(nanoseconds: 30_000_000_000) // 30s
             }
         }
     }

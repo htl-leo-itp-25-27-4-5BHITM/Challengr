@@ -67,6 +67,7 @@ struct CameraChallengeView: View {
     @State private var rgbTolerance: Double = 0.32
     @State private var dotProduct: Double = 0.0
     @State private var hasSentResult = false
+    @State private var waitingForResult = false
 
     var body: some View {
         GeometryReader { geo in
@@ -171,8 +172,13 @@ struct CameraChallengeView: View {
                                 score += 10
                                 if !hasSentResult {
                                     hasSentResult = true
+                                    waitingForResult = true
                                     socket.sendCameraResult(battleId: battleId, score: dotProduct)
-                                    onClose()
+                                    // Don't close immediately; give the battle flow time to transition.
+                                    // If the parent listens for `battle-result`, it can close/transition itself.
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                                        onClose()
+                                    }
                                 }
                             }
                         }) {
@@ -183,6 +189,7 @@ struct CameraChallengeView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(.blue)
+                        .disabled(waitingForResult)
 
                         Button(action: {
                             lastCheckResult = nil
@@ -206,6 +213,17 @@ struct CameraChallengeView: View {
                             .frame(maxWidth: .infinity)
                             .background(RoundedRectangle(cornerRadius: 12).fill(showResultColor))
                             .foregroundColor(.white)
+                    }
+
+                    if waitingForResult {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                                .tint(.white)
+                            Text("Warte auf Ergebnis …")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.white)
+                        }
+                        .padding(.vertical, 6)
                     }
 
                     VStack(spacing: 4) {

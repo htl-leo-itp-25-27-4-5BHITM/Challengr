@@ -12,6 +12,7 @@ struct FriendsListView: View {
     var radiusMeters: Double = 250
 
     @StateObject private var vm = FriendsViewModel()
+    @StateObject private var socket: GameSocketService
 
     @State private var searchText: String = ""
     @State private var appliedSearch: String = ""
@@ -22,6 +23,13 @@ struct FriendsListView: View {
     @State private var incomingRequestId: Int64? = nil
 
     private let playerService = PlayerLocationService()
+
+    init(ownPlayerId: String, currentCoordinate: CLLocationCoordinate2D, radiusMeters: Double = 250) {
+        self.ownPlayerId = ownPlayerId
+        self.currentCoordinate = currentCoordinate
+        self.radiusMeters = radiusMeters
+        _socket = StateObject(wrappedValue: GameSocketService(playerId: ownPlayerId))
+    }
     
     var body: some View {
         ScrollView {
@@ -172,6 +180,12 @@ struct FriendsListView: View {
             .padding(.bottom, 20)
         }
         .background(Color(.systemGroupedBackground))
+        .onAppear {
+            socket.connect()
+        }
+        .onDisappear {
+            socket.disconnect()
+        }
         .task {
             await vm.loadAll(
                 ownPlayerId: ownPlayerId,
@@ -181,10 +195,10 @@ struct FriendsListView: View {
         }
         .task {
             // Lightweight polling while the view is visible.
-            // This ensures the receiver sees a popup without needing to restart.
+            // Polling too frequently can destabilize the connection on real devices.
             while !Task.isCancelled {
                 await vm.pollIncomingOnce(playerId: ownPlayerId)
-                try? await Task.sleep(nanoseconds: 2_000_000_000) // 2s
+                try? await Task.sleep(nanoseconds: 15_000_000_000) // 15s
             }
         }
         .onChange(of: vm.incomingRequest?.id) { _, _ in

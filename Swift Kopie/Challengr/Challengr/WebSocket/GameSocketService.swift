@@ -10,6 +10,7 @@ final class GameSocketService: ObservableObject {
     private let urlSession = URLSession(configuration: .default)
     private var reconnectWorkItem: DispatchWorkItem?
     private var isManualDisconnect = false
+    private var reconnectAttempt: Int = 0
     private var pendingMessages: [String] = []
     private let maxPendingMessages = 30
 
@@ -52,6 +53,7 @@ final class GameSocketService: ObservableObject {
         task.resume()
 
         print("🔌 WS connect für Player \(playerId)")
+        reconnectAttempt = 0
         receive()
     }
 
@@ -77,6 +79,7 @@ final class GameSocketService: ObservableObject {
     func disconnect() {
         isManualDisconnect = true
         reconnectWorkItem?.cancel()
+        reconnectAttempt = 0
         webSocketTask?.cancel(with: .goingAway, reason: nil)
         webSocketTask = nil
     }
@@ -85,16 +88,23 @@ final class GameSocketService: ObservableObject {
         guard !isManualDisconnect else { return }
         guard reconnectWorkItem == nil else { return }
 
+        // Cancel any existing task so we always reconnect from a clean state.
+        webSocketTask?.cancel(with: .goingAway, reason: nil)
+        webSocketTask = nil
+
+        reconnectAttempt = min(reconnectAttempt + 1, 6)
+        // 1s, 2s, 4s, 8s, 16s, 30s...
+        let delay = min(pow(2.0, Double(reconnectAttempt - 1)), 30.0)
+
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
             self.reconnectWorkItem = nil
-            self.webSocketTask = nil
             self.connect()
         }
 
         reconnectWorkItem = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: work)
-        print("🔁 WS reconnect scheduled for player \(playerId)")
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+        print("🔁 WS reconnect scheduled for player \(playerId) in \(delay)s (attempt \(reconnectAttempt))")
     }
 
     // MARK: - Send messages (Senden)
@@ -264,8 +274,10 @@ final class GameSocketService: ObservableObject {
             switch result {
             case .failure(let error):
                 print("WS receive error:", error)
-                self.webSocketTask = nil
                 self.scheduleReconnect()
+                // IMPORTANT: don't call receive() again on failure.
+                // scheduleReconnect() will create a new task and restart receive().
+                return
             case .success(let message):
                 switch message {
                 case .string(let text):
