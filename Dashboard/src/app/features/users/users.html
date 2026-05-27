@@ -115,7 +115,11 @@
 
           <div class="item">
             <span>Banned</span>
-            <strong>{{ isBanned(selectedUser) ? 'yes' : 'no' }}</strong>
+            <strong>
+              <span class="pill" [class.pill--danger]="isBanned(selectedUser)" [class.pill--ok]="!isBanned(selectedUser)">
+                {{ isBanned(selectedUser) ? 'yes' : 'no' }}
+              </span>
+            </strong>
           </div>
 
           @if (selectedUser.banUntil) {
@@ -135,22 +139,24 @@
           <div class="item">
             <span>Ban duration (hours)</span>
             <strong>
-              <input type="number" min="1" [(ngModel)]="banHours" style="width: 100px;" />
+              <input class="control control--number" type="number" min="1" [(ngModel)]="banHours" />
             </strong>
           </div>
 
           <div class="item">
             <span>Ban reason</span>
             <strong>
-              <input type="text" [(ngModel)]="banReason" placeholder="optional" style="width: 220px;" />
+              <input class="control" type="text" [(ngModel)]="banReason" placeholder="optional" />
             </strong>
           </div>
 
           <div class="item">
             <span>Actions</span>
             <strong>
-              <button (click)="banSelected()" [disabled]="banBusy">Ban</button>
-              <button (click)="unbanSelected()" [disabled]="banBusy">Unban</button>
+              <div class="actions">
+                <button class="btn btn--danger" (click)="banSelected()" [disabled]="banBusy">Ban</button>
+                <button class="btn" (click)="unbanSelected()" [disabled]="banBusy">Unban</button>
+              </div>
             </strong>
           </div>
 

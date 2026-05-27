@@ -196,6 +196,98 @@
   font-weight: 600;
 }
 
+/* DETAILS - FORM CONTROLS */
+
+.control {
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #dbe1e8;
+  padding: 0 12px;
+  font-size: 14px;
+  background: white;
+  outline: none;
+  transition: 0.2s;
+  width: 240px;
+  box-sizing: border-box;
+}
+
+.control--number {
+  width: 110px;
+}
+
+.control:focus {
+  border-color: #86b7ff;
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
+}
+
+/* STATUS PILLS */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  border: 1px solid transparent;
+}
+
+.pill--ok {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+  border-color: rgba(22, 163, 74, 0.18);
+}
+
+.pill--danger {
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+  border-color: rgba(220, 38, 38, 0.18);
+}
+
+/* ACTION BUTTONS */
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.btn {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid #dbe1e8;
+  background: white;
+  color: #111827;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn--danger {
+  border-color: rgba(220, 38, 38, 0.35);
+  background: rgba(220, 38, 38, 0.06);
+  color: #b91c1c;
+}
+
+.btn--danger:hover:not(:disabled) {
+  border-color: rgba(220, 38, 38, 0.6);
+  background: rgba(220, 38, 38, 0.1);
+}
+
 /* TOOLBAR */
 
 .toolbar {

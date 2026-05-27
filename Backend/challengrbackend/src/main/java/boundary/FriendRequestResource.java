@@ -5,9 +5,11 @@ import boundary.dto.FriendRequestDTO;
 import boundary.dto.FriendDTO;
 import control.FriendRequestRepository;
 import control.FriendshipRepository;
+import control.BanEnforcementService;
 import entity.FriendRequest;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
@@ -23,9 +25,20 @@ public class FriendRequestResource {
     @Inject
     FriendshipRepository friendshipRepository;
 
+    @Inject
+    BanEnforcementService banEnforcement;
+
+    @Inject
+    HttpHeaders headers;
+
+    private void enforceNotBanned() {
+        banEnforcement.assertNotBanned(headers.getHeaderString(BanEnforcementService.PLAYER_ID_HEADER));
+    }
+
     @POST
     @Path("/requests")
     public FriendRequestDTO createRequest(FriendRequestCreateDTO dto) {
+        enforceNotBanned();
         if (dto == null) {
             throw new WebApplicationException("Missing body", 400);
         }
@@ -55,6 +68,7 @@ public class FriendRequestResource {
     @POST
     @Path("/requests/{id}/accept")
     public FriendRequestDTO accept(@PathParam("id") Long id) {
+        enforceNotBanned();
         FriendRequest updated = friendRequestRepository.updateStatus(id, FriendRequest.Status.ACCEPTED);
         if (updated == null) {
             throw new WebApplicationException("Request not found", 404);
@@ -71,6 +85,7 @@ public class FriendRequestResource {
     @POST
     @Path("/requests/{id}/decline")
     public FriendRequestDTO decline(@PathParam("id") Long id) {
+        enforceNotBanned();
         FriendRequest updated = friendRequestRepository.updateStatus(id, FriendRequest.Status.DECLINED);
         if (updated == null) {
             throw new WebApplicationException("Request not found", 404);
@@ -82,6 +97,7 @@ public class FriendRequestResource {
     @GET
     @Path("/list")
     public List<FriendDTO> listFriends(@QueryParam("playerId") String playerId) {
+        enforceNotBanned();
         if (playerId == null || playerId.isBlank()) {
             throw new WebApplicationException("playerId is required", 400);
         }
@@ -92,6 +108,7 @@ public class FriendRequestResource {
     @Path("/remove")
     public void removeFriend(@QueryParam("playerId") String playerId,
                              @QueryParam("friendId") String friendId) {
+        enforceNotBanned();
         if (playerId == null || playerId.isBlank() || friendId == null || friendId.isBlank()) {
             throw new WebApplicationException("playerId and friendId are required", 400);
         }
@@ -106,6 +123,7 @@ public class FriendRequestResource {
     @GET
     @Path("/requests/incoming/count")
     public long incomingCount(@QueryParam("playerId") String playerId) {
+        enforceNotBanned();
         if (playerId == null || playerId.isBlank()) {
             throw new WebApplicationException("playerId is required", 400);
         }
