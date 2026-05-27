@@ -19,6 +19,10 @@ export class Users implements OnInit {
 
   selectedUser: any = null;
 
+  banHours = 24;
+  banReason = '';
+  banBusy = false;
+
   search = '';
 
   orderBy = 'name';
@@ -37,9 +41,8 @@ export class Users implements OnInit {
         id: u.id,
         name: u.name,
         points: u.points,
-        email: u.email,
-        level: u.level,
-        createdAt: u.createdAt,
+        banUntil: u.banUntil ?? null,
+        banReason: u.banReason ?? null,
         status: u.points > 0 ? 'active' : 'inactive',
       }));
 
@@ -50,6 +53,68 @@ export class Users implements OnInit {
 
       this.cd.detectChanges();
     });
+  }
+
+  isBanned(user: any): boolean {
+    if (!user?.banUntil) return false;
+    const t = new Date(user.banUntil).getTime();
+    return Number.isFinite(t) && t > Date.now();
+  }
+
+  banSelected() {
+    if (!this.selectedUser || this.banBusy) return;
+    const hours = Number(this.banHours);
+    if (!Number.isFinite(hours) || hours <= 0) return;
+
+    this.banBusy = true;
+    const durationSeconds = Math.round(hours * 3600);
+
+    this.http
+      .post<any>(`/api/admin/players/${encodeURIComponent(this.selectedUser.id)}/ban`, {
+        durationSeconds,
+        reason: this.banReason || null,
+      })
+      .subscribe({
+        next: (res) => {
+          this.selectedUser.banUntil = res?.banUntil ?? null;
+          this.selectedUser.banReason = res?.banReason ?? null;
+          // mirror back into list
+          const u = this.users.find((x) => x.id === this.selectedUser.id);
+          if (u) {
+            u.banUntil = this.selectedUser.banUntil;
+            u.banReason = this.selectedUser.banReason;
+          }
+          this.cd.detectChanges();
+          this.banBusy = false;
+        },
+        error: () => {
+          this.banBusy = false;
+        },
+      });
+  }
+
+  unbanSelected() {
+    if (!this.selectedUser || this.banBusy) return;
+    this.banBusy = true;
+
+    this.http
+      .post<any>(`/api/admin/players/${encodeURIComponent(this.selectedUser.id)}/unban`, {})
+      .subscribe({
+        next: (res) => {
+          this.selectedUser.banUntil = res?.banUntil ?? null;
+          this.selectedUser.banReason = res?.banReason ?? null;
+          const u = this.users.find((x) => x.id === this.selectedUser.id);
+          if (u) {
+            u.banUntil = this.selectedUser.banUntil;
+            u.banReason = this.selectedUser.banReason;
+          }
+          this.cd.detectChanges();
+          this.banBusy = false;
+        },
+        error: () => {
+          this.banBusy = false;
+        },
+      });
   }
 
   selectUser(user: any) {

@@ -7,6 +7,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 
 @ApplicationScoped
@@ -120,6 +121,19 @@ public class PlayerRepository {
 
     public Player findById(String id) {
         return em.find(Player.class, id);
+    }
+
+    public List<Player> findBannedExpired(Instant now) {
+        if (now == null) {
+            now = Instant.now();
+        }
+
+        return em.createQuery(
+                        "SELECT p FROM Player p WHERE p.banUntil IS NOT NULL AND p.banUntil <= :now",
+                        Player.class
+                )
+                .setParameter("now", now)
+                .getResultList();
     }
 
     public List<Player> findNearbyPlayers(String currentPlayerId, double latitude, double longitude, double radius) {

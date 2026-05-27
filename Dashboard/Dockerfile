@@ -8,6 +8,9 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
+# Create a production-only node_modules tree once, and reuse it in the runtime image.
+RUN npm prune --omit=dev
+
 FROM node:20-alpine
 
 WORKDIR /app
@@ -15,7 +18,7 @@ ENV NODE_ENV=production
 ENV PORT=4000
 
 COPY --from=build /app/package*.json ./
-RUN npm ci --omit=dev
+COPY --from=build /app/node_modules ./node_modules
 
 COPY --from=build /app/dist/Dashboard ./dist/Dashboard
 

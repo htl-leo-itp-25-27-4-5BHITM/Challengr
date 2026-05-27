@@ -113,6 +113,47 @@
             <strong>{{ selectedUser.status }}</strong>
           </div>
 
+          <div class="item">
+            <span>Banned</span>
+            <strong>{{ isBanned(selectedUser) ? 'yes' : 'no' }}</strong>
+          </div>
+
+          @if (selectedUser.banUntil) {
+            <div class="item">
+              <span>Ban until</span>
+              <strong>{{ selectedUser.banUntil }}</strong>
+            </div>
+          }
+
+          @if (selectedUser.banReason) {
+            <div class="item">
+              <span>Reason</span>
+              <strong>{{ selectedUser.banReason }}</strong>
+            </div>
+          }
+
+          <div class="item">
+            <span>Ban duration (hours)</span>
+            <strong>
+              <input type="number" min="1" [(ngModel)]="banHours" style="width: 100px;" />
+            </strong>
+          </div>
+
+          <div class="item">
+            <span>Ban reason</span>
+            <strong>
+              <input type="text" [(ngModel)]="banReason" placeholder="optional" style="width: 220px;" />
+            </strong>
+          </div>
+
+          <div class="item">
+            <span>Actions</span>
+            <strong>
+              <button (click)="banSelected()" [disabled]="banBusy">Ban</button>
+              <button (click)="unbanSelected()" [disabled]="banBusy">Unban</button>
+            </strong>
+          </div>
+
 
 
         </div>

@@ -3,6 +3,8 @@ package entity;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.persistence.*;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "player")
 public class Player {
@@ -28,6 +30,15 @@ public class Player {
     private String badgesJson;
 
     private Double bestLoudness;
+
+    /**
+     * If set and in the future, the player is considered banned.
+     * The actual login access is enforced by disabling the Keycloak user.
+     */
+    private Instant banUntil;
+
+    @Column(length = 1024)
+    private String banReason;
 
     public Player(String name, double longitude, double latitude) {
         this.name = name;
@@ -109,5 +120,21 @@ public class Player {
 
     public void setBestLoudness(Double bestLoudness) {
         this.bestLoudness = bestLoudness;
+    }
+
+    public Instant getBanUntil() {
+        return banUntil;
+    }
+
+    public void setBanUntil(Instant banUntil) {
+        this.banUntil = banUntil;
+    }
+
+    public String getBanReason() {
+        return banReason;
+    }
+
+    public void setBanReason(String banReason) {
+        this.banReason = banReason;
     }
 }

@@ -82,6 +82,24 @@
             <artifactId>quarkus-oidc</artifactId>
         </dependency>
 
+        <!-- For scheduled unban jobs -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler</artifactId>
+        </dependency>
+
+        <!-- Use MicroProfile Rest Client to call Keycloak Admin API -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client-jackson</artifactId>
+        </dependency>
+
+        <!-- Client credentials flow against Keycloak token endpoint -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc-client</artifactId>
+        </dependency>
+
         <!-- Test-only: In-memory DB so `mvn test` works without Postgres running -->
         <dependency>
             <groupId>io.quarkus</groupId>
