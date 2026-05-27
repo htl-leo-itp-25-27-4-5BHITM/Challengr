@@ -26,27 +26,48 @@
 
   <div class="content">
 
-    <div class="card">
+    <div class="card details">
 
-      <div class="header">
-        <h2>{{ selectedCategory || 'Wähle eine Kategorie' }}</h2>
-      </div>
+      @if(selectedCategory){
 
-      <div class="list">
+        <div class="header">
+          <h2>{{ selectedCategory }}</h2>
+        </div>
 
-        <div class="row" *ngFor="let c of getSelected()">
+        <div class="list">
 
-          <div class="text">
-            {{ c.text }}
-          </div>
+          <div class="row" *ngFor="let c of getSelected()">
 
-          <div class="badge">
-            {{ c.category }}
+            <div class="text">
+              {{ c.text }}
+            </div>
+
+            <div class="badge">
+              {{ c.category }}
+            </div>
+
           </div>
 
         </div>
 
-      </div>
+      } @else {
+
+        <div class="empty-state">
+
+          <div class="empty-icon">
+            🏆
+          </div>
+
+          <h2>Keine Kategorie ausgewählt</h2>
+
+          <p>
+            Wähle links eine Kategorie aus um
+            die Challenges anzuzeigen.
+          </p>
+
+        </div>
+
+      }
 
     </div>
 

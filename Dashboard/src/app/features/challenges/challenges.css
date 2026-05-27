@@ -278,3 +278,28 @@ select:focus {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
 }
+
+.empty-state{
+  height: 100%;
+  min-height: 400px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  text-align: center;
+  gap: 12px;
+}
+
+.empty-icon{
+  font-size: 64px;
+}
+
+.details{
+  height: 100%;
+}
+
+.details .header{
+  margin-bottom: 20px;
+}
