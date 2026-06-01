@@ -17,6 +17,8 @@ struct FriendsListView: View {
     @State private var appliedSearch: String = ""
     @State private var selectedBondLevel: Int = 0
 
+    @State private var showAddFriendSheet: Bool = false
+
     init(ownPlayerId: String, currentCoordinate: CLLocationCoordinate2D, radiusMeters: Double = 250) {
         self.ownPlayerId = ownPlayerId
         self.currentCoordinate = currentCoordinate
@@ -37,6 +39,10 @@ struct FriendsListView: View {
                         title: "Hinzufügen",
                         foreground: challengrRed,
                         background: challengrRed.opacity(0.12)
+                        ,
+                        action: {
+                            showAddFriendSheet = true
+                        }
                     )
 
                     FriendActionButton(
@@ -179,6 +185,15 @@ struct FriendsListView: View {
             }
         }
         .background(Color(.systemGroupedBackground))
+        .sheet(isPresented: $showAddFriendSheet) {
+            AddFriendSheet(
+                ownPlayerId: ownPlayerId,
+                onDidSendRequest: {
+                    Task { await vm.loadAll(ownPlayerId: ownPlayerId, coordinate: currentCoordinate, radiusMeters: radiusMeters) }
+                }
+            )
+            .presentationDetents([.medium])
+        }
         .task {
             await vm.loadAll(
                 ownPlayerId: ownPlayerId,
@@ -196,6 +211,54 @@ struct FriendsListView: View {
                     radiusMeters: radiusMeters
                 )
                 try? await Task.sleep(nanoseconds: 30_000_000_000) // 30s
+            }
+        }
+    }
+}
+
+private struct AddFriendSheet: View {
+    let ownPlayerId: String
+    let onDidSendRequest: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var showQR: Bool = false
+    @State private var showScanner: Bool = false
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Button {
+                        showQR = true
+                    } label: {
+                        Label("QR anzeigen", systemImage: "qrcode")
+                    }
+
+                    Button {
+                        showScanner = true
+                    } label: {
+                        Label("QR scannen", systemImage: "camera.viewfinder")
+                    }
+                } header: {
+                    Text("Freund hinzufügen")
+                } footer: {
+                    Text("Du kannst eine Einladung als QR zeigen oder den QR von jemand anderem scannen.")
+                }
+            }
+            .navigationTitle("Hinzufügen")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fertig") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $showQR) {
+                FriendInviteQRView(ownPlayerId: ownPlayerId)
+            }
+            .sheet(isPresented: $showScanner) {
+                FriendInviteScannerView(ownPlayerId: ownPlayerId) {
+                    onDidSendRequest()
+                    dismiss()
+                }
             }
         }
     }

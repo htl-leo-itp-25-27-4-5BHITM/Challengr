@@ -18,9 +18,12 @@ struct FriendsListView: View {
     @State private var appliedSearch: String = ""
     @State private var selectedBondLevel: Int = 0
 
+    @State private var showAddFriendSheet: Bool = false
+
     @State private var showIncomingPopup: Bool = false
     @State private var incomingFromName: String = ""
     @State private var incomingRequestId: Int64? = nil
+    @State private var incomingFromPlayerId: String? = nil
 
     private let playerService = PlayerLocationService()
 
@@ -43,7 +46,10 @@ struct FriendsListView: View {
                         icon: "person.badge.plus",
                         title: "Hinzufügen",
                         foreground: challengrRed,
-                        background: challengrRed.opacity(0.12)
+                        background: challengrRed.opacity(0.12),
+                        action: {
+                            showAddFriendSheet = true
+                        }
                     )
 
                     FriendActionButton(
@@ -180,6 +186,15 @@ struct FriendsListView: View {
             .padding(.bottom, 20)
         }
         .background(Color(.systemGroupedBackground))
+        .sheet(isPresented: $showAddFriendSheet) {
+            AddFriendSheet(
+                ownPlayerId: ownPlayerId,
+                onDidSendRequest: {
+                    Task { await vm.loadAll(ownPlayerId: ownPlayerId, coordinate: currentCoordinate, radiusMeters: radiusMeters) }
+                }
+            )
+            .presentationDetents([.medium])
+        }
         .onAppear {
             socket.connect()
         }
@@ -204,6 +219,10 @@ struct FriendsListView: View {
         .onChange(of: vm.incomingRequest?.id) { _, _ in
             guard let req = vm.incomingRequest else { return }
             incomingRequestId = req.id
+            incomingFromPlayerId = req.fromPlayerId
+            // Show the sheet immediately with a placeholder, then replace with the real name.
+            incomingFromName = "Lädt…"
+            showIncomingPopup = true
             Task {
                 // Load sender for nicer UI (show name instead of id)
                 if let dto = try? await playerService.loadPlayerById(id: req.fromPlayerId) {
@@ -211,12 +230,12 @@ struct FriendsListView: View {
                 } else {
                     incomingFromName = req.fromPlayerId
                 }
-                showIncomingPopup = true
             }
         }
         .sheet(isPresented: $showIncomingPopup) {
             IncomingFriendRequestSheet(
                 fromName: incomingFromName,
+                fromPlayerId: incomingFromPlayerId,
                 onAccept: {
                     guard let id = incomingRequestId else {
                         showIncomingPopup = false
@@ -301,6 +320,7 @@ private struct FriendRow: View {
 
 private struct IncomingFriendRequestSheet: View {
     let fromName: String
+    let fromPlayerId: String?
     let onAccept: () -> Void
     let onDecline: () -> Void
 
@@ -324,10 +344,21 @@ private struct IncomingFriendRequestSheet: View {
                     Text("Freundschaftsanfrage")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.secondary)
-                    Text(fromName)
-                        .font(.system(size: 22, weight: .black, design: .rounded))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(fromName)
+                            .font(.system(size: 22, weight: .black, design: .rounded))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+
+                        if fromName == "Lädt…", let pid = fromPlayerId {
+                            Text(pid)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
+                    }
                 }
 
                 Spacer()
@@ -400,6 +431,54 @@ struct FriendActionButton: View {
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct AddFriendSheet: View {
+    let ownPlayerId: String
+    let onDidSendRequest: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var showQR: Bool = false
+    @State private var showScanner: Bool = false
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Button {
+                        showQR = true
+                    } label: {
+                        Label("QR anzeigen", systemImage: "qrcode")
+                    }
+
+                    Button {
+                        showScanner = true
+                    } label: {
+                        Label("QR scannen", systemImage: "camera.viewfinder")
+                    }
+                } header: {
+                    Text("Freund hinzufügen")
+                } footer: {
+                    Text("Du kannst eine Einladung als QR zeigen oder den QR von jemand anderem scannen.")
+                }
+            }
+            .navigationTitle("Hinzufügen")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fertig") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $showQR) {
+                FriendInviteQRView(ownPlayerId: ownPlayerId)
+            }
+            .sheet(isPresented: $showScanner) {
+                FriendInviteScannerView(ownPlayerId: ownPlayerId) {
+                    onDidSendRequest()
+                    dismiss()
+                }
+            }
+        }
     }
 }
 
