@@ -1,29 +1,89 @@
-<div class="topbar">
-  <h1>Dashboard</h1>
+<div class="container">
 
-  <div class="tabs">
-    <button
-      [class.active]="activeTab === 'users'"
-      (click)="activeTab = 'users'">
-      Users
-    </button>
-
-    <button
-      [class.active]="activeTab === 'challenges'"
-      (click)="activeTab = 'challenges'">
-      Challenges
-    </button>
-
-    <button
-      [class.active]="activeTab === 'erd'"
-      (click)="activeTab = 'erd'">
-      ERD
-    </button>
+  <div class="topbar">
+    <div>
+      <div class="crumbs">Admin <span>/</span> Dashboard</div>
+      <h1>Dashboard</h1>
+      <div class="subtitle">Kurzer Operations-Überblick mit nächsten sinnvollen Aktionen.</div>
+    </div>
   </div>
-</div>
 
-<div class="view">
-  <app-users *ngIf="activeTab === 'users'"></app-users>
-  <app-challenges *ngIf="activeTab === 'challenges'"></app-challenges>
-  <app-erd *ngIf="activeTab === 'erd'"></app-erd>
+  <div class="overview">
+
+  <div class="loading" *ngIf="loading">Loading overview…</div>
+
+  <div class="error" *ngIf="!loading && error">
+    <div class="error-title">Overview konnte nicht geladen werden</div>
+    <div class="error-detail">{{ error }}</div>
+    <button class="btn-secondary" type="button" (click)="reload()">Retry</button>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="card kpi" *ngFor="let k of kpis">
+      <div class="kpi-top">
+        <div class="kpi-label">{{ k.label }}</div>
+        <div class="kpi-icon" [attr.data-tone]="k.tone">{{ k.icon }}</div>
+      </div>
+
+      <div class="kpi-value">{{ k.value }}</div>
+    </div>
+  </div>
+
+  <div class="bottom-grid">
+
+    <div class="card panel">
+      <div class="panel-header">
+        <h2>Setup-Warnungen</h2>
+      </div>
+
+      <div class="panel-body">
+  <ng-container *ngIf="setupWarnings.length; else setupEmpty">
+          <div class="warn-row" *ngFor="let w of setupWarnings" [attr.data-tone]="w.tone">
+            <div class="dot"></div>
+            <div class="warn-text">
+              <div class="warn-title">{{ w.title }}</div>
+              <div class="warn-detail">{{ w.detail }}</div>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-template #setupEmpty>
+          <div class="empty">
+            <div class="empty-icon">✅</div>
+            <div class="empty-title">Keine Warnungen vorhanden</div>
+            <div class="empty-detail">Alles sieht gut aus.</div>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <div class="card panel">
+      <div class="panel-header panel-header--row">
+        <h2>Letzte Audit Events</h2>
+        <button class="btn-secondary" type="button">Diagnose</button>
+      </div>
+
+      <div class="panel-body">
+  <ng-container *ngIf="auditEvents.length; else auditEmpty">
+          <div class="event" *ngFor="let e of auditEvents">
+            <div class="event-badge" [attr.data-type]="e.type">{{ e.type }}</div>
+            <div class="event-text">
+              <div class="event-detail">{{ e.detail }}</div>
+            </div>
+            <div class="event-at">{{ e.at }}</div>
+          </div>
+        </ng-container>
+
+        <ng-template #auditEmpty>
+          <div class="empty">
+            <div class="empty-icon">🗂️</div>
+            <div class="empty-title">Noch keine Events</div>
+            <div class="empty-detail">Sobald Admin-Aktionen passieren, erscheinen sie hier.</div>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+  </div>
+  </div>
 </div>

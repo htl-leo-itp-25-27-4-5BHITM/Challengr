@@ -136,6 +136,25 @@ public class PlayerRepository {
                 .getResultList();
     }
 
+    public long countPlayers() {
+        return em.createQuery("SELECT COUNT(p) FROM Player p", Long.class)
+                .getSingleResult();
+    }
+
+    /** Players currently banned (banUntil in the future). */
+    public long countActiveBans(Instant now) {
+        if (now == null) {
+            now = Instant.now();
+        }
+
+        return em.createQuery(
+                        "SELECT COUNT(p) FROM Player p WHERE p.banUntil IS NOT NULL AND p.banUntil > :now",
+                        Long.class
+                )
+                .setParameter("now", now)
+                .getSingleResult();
+    }
+
     public List<Player> findNearbyPlayers(String currentPlayerId, double latitude, double longitude, double radius) {
         List<Player> allPlayers = em.createQuery("SELECT p FROM Player p", Player.class).getResultList();
 

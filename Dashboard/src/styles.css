@@ -13,6 +13,7 @@ body {
   font-family: 'Inter', sans-serif;
   background: var(--bg);
   color: var(--black);
+  overflow: hidden;
 }
 
 /* Standard Card Style */

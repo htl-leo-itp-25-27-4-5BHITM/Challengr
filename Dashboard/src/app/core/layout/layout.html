@@ -1,5 +1,45 @@
 <app-header></app-header>
 
-<div class="main">
-  <app-dashboard></app-dashboard>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="nav">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <span class="icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+
+      <a routerLink="/users" routerLinkActive="active">
+        <span class="icon">👥</span>
+        <span>Users</span>
+      </a>
+
+      <a routerLink="/challenges" routerLinkActive="active">
+        <span class="icon">⚔️</span>
+        <span>Challenges</span>
+      </a>
+
+      <a routerLink="/erd" routerLinkActive="active">
+        <span class="icon">🧩</span>
+        <span>ERD</span>
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user">
+        <div class="avatar">AD</div>
+        <div>
+          <div class="name">admin</div>
+          <div class="role">Challengr</div>
+        </div>
+      </div>
+
+      <button class="logout" type="button">Logout</button>
+    </div>
+  </aside>
+
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+
 </div>
