@@ -32,8 +32,10 @@ public class FriendRequestRepository {
             // Otherwise a previously ACCEPTED/DECLINED request would block new requests forever.
             if (existing.getStatus() != FriendRequest.Status.PENDING) {
                 existing.setStatus(FriendRequest.Status.PENDING);
-                existing.setCreatedAt(java.time.Instant.now());
             }
+            // Always bump timestamp so client polling can detect a fresh resend,
+            // even when the same request row (same id) stays PENDING.
+            existing.setCreatedAt(java.time.Instant.now());
             return existing;
         }
 

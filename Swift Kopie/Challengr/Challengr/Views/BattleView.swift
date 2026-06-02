@@ -299,7 +299,6 @@ struct BattleView: View {
     ) -> some View {
         let modelSize = compact ? CGSize(width: 190, height: 140) : CGSize(width: 230, height: 160)
         let stripHeight = modelSize.height + 46
-        let corner: UIRectCorner = alignRight ? [.topLeft, .bottomLeft] : [.topRight, .bottomRight]
         let nameFont: CGFloat = compact ? 12 : 13
 
         return HStack(alignment: .bottom, spacing: 12) {
@@ -479,7 +478,7 @@ private struct CharacterModelContainer: View {
                     .scaleEffect(x: flip ? 1 : -1, y: 1)
             }
 
-            if #available(iOS 17.0, *), let model {
+            if #available(iOS 18.0, *), let model {
                 RealityView { content in
                     // Anchor: otherwise entities can appear in an unexpected coordinate space.
                     let anchor = AnchorEntity(world: .zero)
@@ -516,11 +515,12 @@ private struct CharacterModelContainer: View {
             }
         }
         .task {
-            guard model == nil else { return }
+            guard #available(iOS 18.0, *), model == nil else { return }
             await loadModel()
         }
     }
 
+    @available(iOS 18.0, *)
     private func loadModel() async {
         didTryLoad = true
 

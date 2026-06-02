@@ -100,10 +100,37 @@ enum FriendInvitePayload {
 
     static func parse(_ raw: String) -> String? {
         // Returns fromPlayerId if the payload matches.
-        guard let url = URL(string: raw), url.scheme == "challengr" else { return nil }
-        guard url.host == "friend-invite" else { return nil }
+        // Be tolerant to legacy/alternate QR formats.
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
 
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
-        return components.queryItems?.first(where: { $0.name == "from" })?.value
+        // Legacy fallback: QR contained only the player id.
+        if !trimmed.contains("://"), !trimmed.contains("/") {
+            return trimmed
+        }
+
+        guard let url = URL(string: trimmed) else { return nil }
+
+        // Accept both `challengr://friend-invite?from=...` and legacy hosts like `invite`.
+        if let scheme = url.scheme?.lowercased(), scheme != "challengr" {
+            return nil
+        }
+
+        if let components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+            if let from = components.queryItems?.first(where: { $0.name == "from" || $0.name == "playerId" })?.value,
+               !from.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return from
+            }
+        }
+
+        // Path fallback: challengr://friend-invite/<playerId>
+        let pathCandidate = url.path
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !pathCandidate.isEmpty {
+            return pathCandidate
+        }
+
+        return nil
     }
 }

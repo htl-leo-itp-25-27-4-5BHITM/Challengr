@@ -3,9 +3,13 @@ import Combine
 
 final class GameSocketService: ObservableObject {
 
+    private static let ownershipQueue = DispatchQueue(label: "gamesocket.ownership.queue")
+    private static var activeOwnerByPlayerId: [String: UUID] = [:]
+
     // MARK: - Configuration (Konfiguration)
 
     private let playerId: String
+    private let instanceId = UUID()
     private var webSocketTask: URLSessionWebSocketTask?
     private let urlSession = URLSession(configuration: .default)
     private var reconnectWorkItem: DispatchWorkItem?
@@ -13,6 +17,7 @@ final class GameSocketService: ObservableObject {
     private var reconnectAttempt: Int = 0
     private var pendingMessages: [String] = []
     private let maxPendingMessages = 30
+    private var pingTimer: DispatchSourceTimer?
 
     // MARK: - Event callbacks (Event-Callbacks)
 
@@ -41,20 +46,53 @@ final class GameSocketService: ObservableObject {
 
     // MARK: - Connect / Disconnect (Verbinden / Trennen)
 
-    func connect() {
-        isManualDisconnect = false
-        reconnectWorkItem?.cancel()
+    private func claimSocketOwnership() {
+        Self.ownershipQueue.sync {
+            Self.activeOwnerByPlayerId[playerId] = instanceId
+        }
+    }
+
+    private func releaseSocketOwnershipIfNeeded() {
+        Self.ownershipQueue.sync {
+            if Self.activeOwnerByPlayerId[playerId] == instanceId {
+                Self.activeOwnerByPlayerId[playerId] = nil
+            }
+        }
+    }
+
+    private func isCurrentOwner() -> Bool {
+        Self.ownershipQueue.sync {
+            Self.activeOwnerByPlayerId[playerId] == instanceId
+        }
+    }
+
+    private func openConnectionIfNeeded() {
         guard webSocketTask == nil else { return }
 
         let url = BackendConfig.gameWebSocketURL(playerId: playerId)
+        print("🔎 WS URL for \(playerId): \(url.absoluteString)")
 
         let task = urlSession.webSocketTask(with: url)
         webSocketTask = task
         task.resume()
 
         print("🔌 WS connect für Player \(playerId)")
-        reconnectAttempt = 0
+
+        startPing()
         receive()
+
+        // If we already queued messages before connect(), try flushing shortly after.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            self?.flushPendingMessages()
+        }
+    }
+
+    func connect() {
+        isManualDisconnect = false
+        reconnectWorkItem?.cancel()
+        reconnectWorkItem = nil
+        claimSocketOwnership()
+        openConnectionIfNeeded()
     }
 
     private func flushPendingMessages() {
@@ -79,14 +117,20 @@ final class GameSocketService: ObservableObject {
     func disconnect() {
         isManualDisconnect = true
         reconnectWorkItem?.cancel()
+        reconnectWorkItem = nil
         reconnectAttempt = 0
+        stopPing()
         webSocketTask?.cancel(with: .goingAway, reason: nil)
         webSocketTask = nil
+        releaseSocketOwnershipIfNeeded()
     }
 
     private func scheduleReconnect() {
         guard !isManualDisconnect else { return }
+        guard isCurrentOwner() else { return }
         guard reconnectWorkItem == nil else { return }
+
+        stopPing()
 
         // Cancel any existing task so we always reconnect from a clean state.
         webSocketTask?.cancel(with: .goingAway, reason: nil)
@@ -99,12 +143,46 @@ final class GameSocketService: ObservableObject {
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
             self.reconnectWorkItem = nil
-            self.connect()
+            guard self.isCurrentOwner(), !self.isManualDisconnect else { return }
+            self.openConnectionIfNeeded()
         }
 
         reconnectWorkItem = work
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
         print("🔁 WS reconnect scheduled for player \(playerId) in \(delay)s (attempt \(reconnectAttempt))")
+    }
+
+    // MARK: - Keepalive ping
+
+    private func startPing() {
+        stopPing()
+
+        let timer = DispatchSource.makeTimerSource(queue: .main)
+        timer.schedule(deadline: .now() + 10, repeating: 10)
+        timer.setEventHandler { [weak self] in
+            guard let self else { return }
+            self.sendPing()
+        }
+        pingTimer = timer
+        timer.resume()
+    }
+
+    private func stopPing() {
+        pingTimer?.setEventHandler {}
+        pingTimer?.cancel()
+        pingTimer = nil
+    }
+
+    private func sendPing() {
+        guard let task = webSocketTask else { return }
+        task.sendPing { [weak self] error in
+            guard let self else { return }
+            if let error {
+                print("🏓 WS ping failed:", error)
+                self.webSocketTask = nil
+                self.scheduleReconnect()
+            }
+        }
     }
 
     // MARK: - Send messages (Senden)
@@ -296,6 +374,7 @@ final class GameSocketService: ObservableObject {
 
     // Whenever we get any message, we know the socket is alive; flush any queued sends.
     private func handleIncoming(text: String) {
+        reconnectAttempt = 0
         flushPendingMessages()
 
         guard let data = text.data(using: .utf8) else { return }
@@ -399,6 +478,7 @@ final class GameSocketService: ObservableObject {
     }
 
     deinit {
+        stopPing()
         disconnect()
     }
 

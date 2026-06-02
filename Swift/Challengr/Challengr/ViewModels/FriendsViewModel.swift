@@ -10,6 +10,10 @@ final class FriendsViewModel: ObservableObject {
     @Published var isLoadingNearby = false
     @Published var errorText: String? = nil
 
+    @Published var incomingRequest: FriendRequestDTO? = nil
+    @Published var incomingSignal: Int = 0
+    private var lastSeenIncomingRequestKey: String? = nil
+
     private let playerService = PlayerLocationService()
     private let friendsService = FriendsService()
 
@@ -51,8 +55,46 @@ final class FriendsViewModel: ObservableObject {
 
             let outgoing = try await friendsService.loadOutgoingPendingRequests(playerId: ownPlayerId)
             pendingOutgoingToPlayerIds = Set(outgoing.map { $0.toPlayerId })
+
+            await pollIncomingOnce(playerId: ownPlayerId)
         } catch {
             errorText = "Fehler beim Laden: \(error.localizedDescription)"
+        }
+    }
+
+    func pollIncomingOnce(playerId: String) async {
+        do {
+            let incoming = try await friendsService.loadIncomingPendingRequests(playerId: playerId)
+            if let newest = incoming.first {
+                let key = "\(newest.id)-\(newest.createdAt)"
+                if lastSeenIncomingRequestKey != key || incomingRequest == nil {
+                    lastSeenIncomingRequestKey = key
+                    incomingRequest = newest
+                    incomingSignal += 1
+                }
+            }
+        } catch {
+            print("Incoming friend requests poll failed:", error)
+        }
+    }
+
+    func acceptIncoming(requestId: Int64) async {
+        do {
+            try await friendsService.acceptRequest(requestId: requestId)
+            incomingRequest = nil
+            await refreshIfPossible()
+        } catch {
+            print("Accept friend request failed:", error)
+        }
+    }
+
+    func declineIncoming(requestId: Int64) async {
+        do {
+            try await friendsService.declineRequest(requestId: requestId)
+            incomingRequest = nil
+            await refreshIfPossible()
+        } catch {
+            print("Decline friend request failed:", error)
         }
     }
 

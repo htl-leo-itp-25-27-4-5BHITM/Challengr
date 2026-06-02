@@ -11,7 +11,8 @@ final class FriendsViewModel: ObservableObject {
     @Published var errorText: String? = nil
 
     @Published var incomingRequest: FriendRequestDTO? = nil
-    private var lastSeenIncomingRequestId: Int64? = nil
+    @Published var incomingSignal: Int = 0
+    private var lastSeenIncomingRequestKey: String? = nil
 
     private let playerService = PlayerLocationService()
     private let friendsService = FriendsService()
@@ -81,9 +82,11 @@ final class FriendsViewModel: ObservableObject {
 
             // If there's a new request we haven't shown yet, surface it.
             if let newest = incoming.first {
-                if lastSeenIncomingRequestId != newest.id {
-                    lastSeenIncomingRequestId = newest.id
+                let key = "\(newest.id)-\(newest.createdAt)"
+                if lastSeenIncomingRequestKey != key || incomingRequest == nil {
+                    lastSeenIncomingRequestKey = key
                     incomingRequest = newest
+                    incomingSignal += 1
                 }
             }
         } catch {

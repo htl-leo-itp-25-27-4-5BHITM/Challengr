@@ -12,7 +12,6 @@ struct FriendsListView: View {
     var radiusMeters: Double = 250
 
     @StateObject private var vm = FriendsViewModel()
-    @StateObject private var socket: GameSocketService
 
     @State private var searchText: String = ""
     @State private var appliedSearch: String = ""
@@ -21,6 +20,7 @@ struct FriendsListView: View {
     @State private var showAddFriendSheet: Bool = false
 
     @State private var showIncomingPopup: Bool = false
+    @State private var pendingIncomingPopup: Bool = false
     @State private var incomingFromName: String = ""
     @State private var incomingRequestId: Int64? = nil
     @State private var incomingFromPlayerId: String? = nil
@@ -31,7 +31,6 @@ struct FriendsListView: View {
         self.ownPlayerId = ownPlayerId
         self.currentCoordinate = currentCoordinate
         self.radiusMeters = radiusMeters
-        _socket = StateObject(wrappedValue: GameSocketService(playerId: ownPlayerId))
     }
     
     var body: some View {
@@ -195,12 +194,6 @@ struct FriendsListView: View {
             )
             .presentationDetents([.medium])
         }
-        .onAppear {
-            socket.connect()
-        }
-        .onDisappear {
-            socket.disconnect()
-        }
         .task {
             await vm.loadAll(
                 ownPlayerId: ownPlayerId,
@@ -213,16 +206,22 @@ struct FriendsListView: View {
             // Polling too frequently can destabilize the connection on real devices.
             while !Task.isCancelled {
                 await vm.pollIncomingOnce(playerId: ownPlayerId)
-                try? await Task.sleep(nanoseconds: 15_000_000_000) // 15s
+                try? await Task.sleep(nanoseconds: 5_000_000_000) // 5s
             }
         }
-        .onChange(of: vm.incomingRequest?.id) { _, _ in
+        .onChange(of: vm.incomingSignal) { _, _ in
             guard let req = vm.incomingRequest else { return }
             incomingRequestId = req.id
             incomingFromPlayerId = req.fromPlayerId
             // Show the sheet immediately with a placeholder, then replace with the real name.
             incomingFromName = "Lädt…"
-            showIncomingPopup = true
+
+            if showAddFriendSheet {
+                pendingIncomingPopup = true
+            } else {
+                showIncomingPopup = true
+            }
+
             Task {
                 // Load sender for nicer UI (show name instead of id)
                 if let dto = try? await playerService.loadPlayerById(id: req.fromPlayerId) {
@@ -230,6 +229,12 @@ struct FriendsListView: View {
                 } else {
                     incomingFromName = req.fromPlayerId
                 }
+            }
+        }
+        .onChange(of: showAddFriendSheet) { _, isPresented in
+            if !isPresented, pendingIncomingPopup, incomingRequestId != nil {
+                pendingIncomingPopup = false
+                showIncomingPopup = true
             }
         }
         .sheet(isPresented: $showIncomingPopup) {

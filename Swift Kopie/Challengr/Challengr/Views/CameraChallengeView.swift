@@ -393,8 +393,12 @@ struct CameraView: UIViewRepresentable {
             output.setSampleBufferDelegate(self, queue: queue)
 
             if session.canAddOutput(output) { session.addOutput(output) }
-            if let connection = output.connection(with: .video), connection.isVideoOrientationSupported {
-                connection.videoOrientation = .portrait
+            if let connection = output.connection(with: .video) {
+                if #available(iOS 17.0, *), connection.isVideoRotationAngleSupported(90) {
+                    connection.videoRotationAngle = 90
+                } else if connection.isVideoOrientationSupported {
+                    connection.videoOrientation = .portrait
+                }
             }
 
             session.commitConfiguration()

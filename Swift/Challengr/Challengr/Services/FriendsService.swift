@@ -44,6 +44,45 @@ final class FriendsService {
         return try JSONDecoder().decode([FriendRequestDTO].self, from: data)
     }
 
+    func loadIncomingPendingRequests(playerId: String) async throws -> [FriendRequestDTO] {
+        var components = URLComponents(url: baseURL.appendingPathComponent("requests/incoming"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "playerId", value: playerId)]
+        guard let url = components.url else { return [] }
+
+        let (data, _) = try await URLSession.shared.data(from: url)
+        return try JSONDecoder().decode([FriendRequestDTO].self, from: data)
+    }
+
+    func acceptRequest(requestId: Int64) async throws {
+        let url = baseURL
+            .appendingPathComponent("requests")
+            .appendingPathComponent(String(requestId))
+            .appendingPathComponent("accept")
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+    }
+
+    func declineRequest(requestId: Int64) async throws {
+        let url = baseURL
+            .appendingPathComponent("requests")
+            .appendingPathComponent(String(requestId))
+            .appendingPathComponent("decline")
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+    }
+
     func loadFriends(playerId: String) async throws -> [FriendDTO] {
         var components = URLComponents(url: baseURL.appendingPathComponent("list"), resolvingAgainstBaseURL: false)!
         components.queryItems = [URLQueryItem(name: "playerId", value: playerId)]
