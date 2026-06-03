@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreLocation
+import UniformTypeIdentifiers
 
 struct FriendsListView: View {
     private let challengrRed = Color(red: 0.73, green: 0.12, blue: 0.20)
@@ -446,6 +447,13 @@ private struct AddFriendSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showQR: Bool = false
     @State private var showScanner: Bool = false
+    @State private var showInviteImporter: Bool = false
+    @State private var isImportingInvite: Bool = false
+    @State private var shareInviteFile: ShareInviteFile? = nil
+    @State private var importError: String? = nil
+    @State private var shareError: String? = nil
+
+    private let friendsService = FriendsService()
 
     var body: some View {
         NavigationStack {
@@ -458,17 +466,55 @@ private struct AddFriendSheet: View {
                     }
 
                     Button {
+                        prepareShareInvite()
+                    } label: {
+                        Label("Per AirDrop teilen", systemImage: "square.and.arrow.up")
+                    }
+
+                    Button {
                         showScanner = true
                     } label: {
                         Label("QR scannen", systemImage: "camera.viewfinder")
                     }
+
+                    Button {
+                        showInviteImporter = true
+                    } label: {
+                        Label("AirDrop-Datei öffnen", systemImage: "square.and.arrow.down")
+                    }
+                    .disabled(isImportingInvite)
                 } header: {
                     Text("Freund hinzufügen")
                 } footer: {
-                    Text("Du kannst eine Einladung als QR zeigen oder den QR von jemand anderem scannen.")
+                    Text("Du kannst eine Einladung als QR zeigen, per AirDrop teilen oder den QR von jemand anderem scannen. Wenn AirDrop nur eine Datei lädt, öffne sie hier.")
                 }
             }
             .navigationTitle("Hinzufügen")
+            .sheet(item: $shareInviteFile) { shareFile in
+                ShareSheet(activityItems: [shareFile.url])
+            }
+            .fileImporter(
+                isPresented: $showInviteImporter,
+                allowedContentTypes: [.challengrFriendInvite, .data, .plainText]
+            ) { result in
+                importInvite(from: result)
+            }
+            .alert("Teilen fehlgeschlagen", isPresented: Binding(
+                get: { shareError != nil },
+                set: { if !$0 { shareError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(shareError ?? "")
+            }
+            .alert("Import fehlgeschlagen", isPresented: Binding(
+                get: { importError != nil },
+                set: { if !$0 { importError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(importError ?? "")
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Fertig") { dismiss() }
@@ -484,6 +530,59 @@ private struct AddFriendSheet: View {
                 }
             }
         }
+    }
+
+    private func prepareShareInvite() {
+        do {
+            shareError = nil
+            shareInviteFile = ShareInviteFile(url: try FriendInviteTransfer.makeTemporaryInviteFile(fromPlayerId: ownPlayerId))
+        } catch {
+            shareError = "Die AirDrop-Einladung konnte nicht erstellt werden."
+        }
+    }
+
+    private func importInvite(from result: Result<URL, Error>) {
+        guard !isImportingInvite else { return }
+
+        switch result {
+        case .success(let url):
+            isImportingInvite = true
+            importError = nil
+
+            Task {
+                do {
+                    let fromPlayerId = try FriendInvitePayload.parseIncomingURL(url)
+
+                    guard fromPlayerId != ownPlayerId else {
+                        await MainActor.run {
+                            isImportingInvite = false
+                            importError = "Das ist deine eigene Einladung."
+                        }
+                        return
+                    }
+
+                    try await friendsService.sendFriendRequest(from: ownPlayerId, to: fromPlayerId)
+
+                    await MainActor.run {
+                        isImportingInvite = false
+                        onDidSendRequest()
+                        dismiss()
+                    }
+                } catch {
+                    await MainActor.run {
+                        isImportingInvite = false
+                        importError = (error as? LocalizedError)?.errorDescription ?? "Die Einladung konnte nicht importiert werden."
+                    }
+                }
+            }
+        case .failure:
+            importError = "Die Einladung konnte nicht geöffnet werden."
+        }
+    }
+
+    private struct ShareInviteFile: Identifiable {
+        let id = UUID()
+        let url: URL
     }
 }
 

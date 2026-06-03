@@ -3,9 +3,13 @@ import Combine
 
 final class GameSocketService: ObservableObject {
 
+    private static let ownershipQueue = DispatchQueue(label: "gamesocket.ownership.queue")
+    private static var activeOwnerByPlayerId: [String: UUID] = [:]
+
     // MARK: - Configuration (Konfiguration)
 
     private let playerId: String
+    private let instanceId = UUID()
     private var webSocketTask: URLSessionWebSocketTask?
     private let urlSession = URLSession(configuration: .default)
     private var reconnectWorkItem: DispatchWorkItem?
@@ -51,31 +55,52 @@ final class GameSocketService: ObservableObject {
     
     var onBattleResult: ((BattleResultData) -> Void)?
 
+    private func claimSocketOwnership() {
+        Self.ownershipQueue.sync {
+            Self.activeOwnerByPlayerId[playerId] = instanceId
+        }
+    }
+
+    private func releaseSocketOwnershipIfNeeded() {
+        Self.ownershipQueue.sync {
+            if Self.activeOwnerByPlayerId[playerId] == instanceId {
+                Self.activeOwnerByPlayerId[playerId] = nil
+            }
+        }
+    }
+
+    private func isCurrentOwner() -> Bool {
+        Self.ownershipQueue.sync {
+            Self.activeOwnerByPlayerId[playerId] == instanceId
+        }
+    }
+
+    private func openConnectionIfNeeded() {
+        guard webSocketTask == nil else { return }
+
+        let url = BackendConfig.gameWebSocketURL(playerId: playerId)
+        let task = urlSession.webSocketTask(with: url)
+        webSocketTask = task
+        task.resume()
+
+        print("🔌 WS connect für Player \(playerId)")
+
+        startPing()
+        receive()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            self?.flushPendingMessages()
+        }
+    }
+
     // MARK: - Connect / Disconnect (Verbinden / Trennen)
 
     func connect() {
         isManualDisconnect = false
         reconnectWorkItem?.cancel()
         reconnectWorkItem = nil
-        guard webSocketTask == nil else { return }
-
-        let url = BackendConfig.gameWebSocketURL(playerId: playerId)
-
-        let task = urlSession.webSocketTask(with: url)
-        webSocketTask = task
-        task.resume()
-
-        print("🔌 WS connect für Player \(playerId)")
-    // Don't reset reconnectAttempt here.
-    // We only reset after we *know* the connection is healthy (i.e. we received a message).
-
-        startPing()
-        receive()
-
-        // If we already queued messages before connect(), try flushing shortly after.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-            self?.flushPendingMessages()
-        }
+        claimSocketOwnership()
+        openConnectionIfNeeded()
     }
 
     private func flushPendingMessages() {
@@ -105,10 +130,12 @@ final class GameSocketService: ObservableObject {
         stopPing()
         webSocketTask?.cancel(with: .goingAway, reason: nil)
         webSocketTask = nil
+        releaseSocketOwnershipIfNeeded()
     }
 
     private func scheduleReconnect() {
         guard !isManualDisconnect else { return }
+        guard isCurrentOwner() else { return }
         guard reconnectWorkItem == nil else { return }
 
         stopPing()
@@ -124,7 +151,8 @@ final class GameSocketService: ObservableObject {
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
             self.reconnectWorkItem = nil
-            self.connect()
+            guard self.isCurrentOwner(), !self.isManualDisconnect else { return }
+            self.openConnectionIfNeeded()
         }
 
         reconnectWorkItem = work
@@ -332,9 +360,8 @@ final class GameSocketService: ObservableObject {
             switch result {
             case .failure(let error):
                 print("WS receive error:", error)
+                self.webSocketTask = nil
                 self.scheduleReconnect()
-                // IMPORTANT: don't call receive() again on failure.
-                // scheduleReconnect() will create a new task and restart receive().
                 return
             case .success(let message):
                 switch message {
@@ -347,7 +374,6 @@ final class GameSocketService: ObservableObject {
                     break
                 }
             }
-            // weiter zuhören
             self.receive()
         }
     }

@@ -79,31 +79,3 @@ struct FriendInviteQRView: View {
         return UIImage(systemName: "xmark.circle") ?? UIImage()
     }
 }
-
-enum FriendInvitePayload {
-    case v1(fromPlayerId: String)
-
-    func asURLString() -> String {
-        switch self {
-        case .v1(let fromPlayerId):
-            // Keep it short, robust, and easy to parse.
-            // Example: challengr://friend-invite?from=abc123
-            var components = URLComponents()
-            components.scheme = "challengr"
-            components.host = "friend-invite"
-            components.queryItems = [
-                URLQueryItem(name: "from", value: fromPlayerId)
-            ]
-            return components.string ?? "challengr://friend-invite?from=\(fromPlayerId)"
-        }
-    }
-
-    static func parse(_ raw: String) -> String? {
-        // Returns fromPlayerId if the payload matches.
-        guard let url = URL(string: raw), url.scheme == "challengr" else { return nil }
-        guard url.host == "friend-invite" else { return nil }
-
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
-        return components.queryItems?.first(where: { $0.name == "from" })?.value
-    }
-}

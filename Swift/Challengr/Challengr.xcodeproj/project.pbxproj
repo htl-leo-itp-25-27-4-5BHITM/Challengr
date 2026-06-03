@@ -254,11 +254,13 @@
 				DEVELOPMENT_TEAM = YVTW3J7XLC;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDocumentTypes = "( { CFBundleTypeName = \"Challengr Friend Invite\"; LSHandlerRank = Owner; LSItemContentTypes = (\"at.htl.leonding.challengr.friend-invite\"); } )";
 				INFOPLIST_KEY_CFBundleURLTypes = "( { CFBundleURLSchemes = (challengr); } )";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Die App benötigt Zugriff auf die Kamera, um für die Liegestütz-Challenge dein Gesicht zu erkennen.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Die App benötigt Ihren Standort, um ihn auf der Karte anzuzeigen.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "need your location";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Diese App benötigt ihr mikrofon";
+				INFOPLIST_KEY_UTExportedTypeDeclarations = "( { UTTypeConformsTo = (\"public.data\", \"public.text\"); UTTypeDescription = \"Challengr Friend Invite\"; UTTypeIdentifier = \"at.htl.leonding.challengr.friend-invite\"; UTTypeTagSpecification = { \"public.filename-extension\" = (challengrfriend); \"public.mime-type\" = (\"application/vnd.challengr.friend-invite\"); }; } )";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -292,11 +294,13 @@
 				DEVELOPMENT_TEAM = YVTW3J7XLC;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDocumentTypes = "( { CFBundleTypeName = \"Challengr Friend Invite\"; LSHandlerRank = Owner; LSItemContentTypes = (\"at.htl.leonding.challengr.friend-invite\"); } )";
 				INFOPLIST_KEY_CFBundleURLTypes = "( { CFBundleURLSchemes = (challengr); } )";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Die App benötigt Zugriff auf die Kamera, um für die Liegestütz-Challenge dein Gesicht zu erkennen.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Die App benötigt Ihren Standort, um ihn auf der Karte anzuzeigen.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "need your location";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Diese App benötigt ihr mikrofon";
+				INFOPLIST_KEY_UTExportedTypeDeclarations = "( { UTTypeConformsTo = (\"public.data\", \"public.text\"); UTTypeDescription = \"Challengr Friend Invite\"; UTTypeIdentifier = \"at.htl.leonding.challengr.friend-invite\"; UTTypeTagSpecification = { \"public.filename-extension\" = (challengrfriend); \"public.mime-type\" = (\"application/vnd.challengr.friend-invite\"); }; } )";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
