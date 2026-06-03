@@ -10,6 +10,8 @@ struct FriendsListView: View {
     // MVP inputs
     let ownPlayerId: String
     let currentCoordinate: CLLocationCoordinate2D
+    var allChallenges: [ChallengeDTO] = []
+    var socket: GameSocketService? = nil
     var radiusMeters: Double = 250
 
     @StateObject private var vm = FriendsViewModel()
@@ -25,12 +27,22 @@ struct FriendsListView: View {
     @State private var incomingFromName: String = ""
     @State private var incomingRequestId: Int64? = nil
     @State private var incomingFromPlayerId: String? = nil
+    @State private var selectedBattleFriend: PlayerDTO? = nil
+    @State private var openedGift: OpenedGiftPresentation? = nil
 
     private let playerService = PlayerLocationService()
 
-    init(ownPlayerId: String, currentCoordinate: CLLocationCoordinate2D, radiusMeters: Double = 250) {
+    init(
+        ownPlayerId: String,
+        currentCoordinate: CLLocationCoordinate2D,
+        allChallenges: [ChallengeDTO] = [],
+        socket: GameSocketService? = nil,
+        radiusMeters: Double = 250
+    ) {
         self.ownPlayerId = ownPlayerId
         self.currentCoordinate = currentCoordinate
+        self.allChallenges = allChallenges
+        self.socket = socket
         self.radiusMeters = radiusMeters
     }
     
@@ -96,6 +108,30 @@ struct FriendsListView: View {
                     }
                 }
 
+                if !vm.incomingGifts.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Geschenke")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.secondary)
+
+                        ForEach(vm.incomingGifts) { gift in
+                            GiftInboxRow(
+                                senderName: giftSenderName(for: gift),
+                                challengrRed: challengrRed,
+                                cardBackground: cardBackground
+                            ) {
+                                Task {
+                                    let senderName = giftSenderName(for: gift)
+                                    let claimed = await vm.claimGift(giftId: gift.id, ownPlayerId: ownPlayerId)
+                                    if claimed {
+                                        openedGift = OpenedGiftPresentation(senderName: senderName)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Friends list
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Deine Freunde")
@@ -108,11 +144,24 @@ struct FriendsListView: View {
                             .foregroundColor(.secondary)
                             .padding(.vertical, 8)
                     } else {
-                        ForEach(vm.friends) { friend in
+                        ForEach(filteredFriends) { friend in
+                            let distanceMeters = distanceToFriend(friend)
                             FriendRow(
                                 player: friend,
+                                distanceText: distanceLabel(for: distanceMeters),
+                                isNearby: isNearbyForBattle(distanceMeters),
+                                challengrRed: challengrRed,
                                 challengrDark: challengrDark,
                                 cardBackground: cardBackground,
+                                showsBattleAction: isNearbyForBattle(distanceMeters) && socket != nil && !allChallenges.isEmpty,
+                                onBattle: {
+                                    selectedBattleFriend = friend
+                                },
+                                onSendGift: {
+                                    Task {
+                                        await vm.sendGift(ownPlayerId: ownPlayerId, to: friend.id)
+                                    }
+                                },
                                 onRemove: {
                                     Task {
                                         await vm.removeFriend(ownPlayerId: ownPlayerId, friendId: friend.id)
@@ -270,46 +319,154 @@ struct FriendsListView: View {
             )
             .presentationDetents([.height(260)])
         }
+        .sheet(item: $openedGift) { gift in
+            GiftOpenedSheet(senderName: gift.senderName)
+                .presentationDetents([.height(300)])
+        }
+        .overlay(friendBattleOverlay)
+    }
+
+    private var filteredFriends: [PlayerDTO] {
+        let normalizedQuery = appliedSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedQuery.isEmpty else { return vm.friends }
+        return vm.friends.filter {
+            $0.name.localizedCaseInsensitiveContains(normalizedQuery) ||
+            $0.id.localizedCaseInsensitiveContains(normalizedQuery)
+        }
+    }
+
+    private var friendBattleOverlay: some View {
+        Group {
+            if let friend = selectedBattleFriend, let socket {
+                ZStack {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            selectedBattleFriend = nil
+                        }
+
+                    ChallengeDialogView(
+                        otherPlayerId: friend.id,
+                        otherPlayerName: friend.name,
+                        ownPlayerId: ownPlayerId,
+                        allChallenges: allChallenges,
+                        socket: socket
+                    ) {
+                        selectedBattleFriend = nil
+                    }
+                }
+                .transition(.scale)
+            }
+        }
+    }
+
+    private func distanceToFriend(_ friend: PlayerDTO) -> Double? {
+        let friendLocation = CLLocation(latitude: friend.latitude, longitude: friend.longitude)
+        let ownLocation = CLLocation(latitude: currentCoordinate.latitude, longitude: currentCoordinate.longitude)
+        return ownLocation.distance(from: friendLocation)
+    }
+
+    private func isNearbyForBattle(_ distanceMeters: Double?) -> Bool {
+        guard let distanceMeters else { return false }
+        return distanceMeters <= radiusMeters
+    }
+
+    private func distanceLabel(for distanceMeters: Double?) -> String {
+        guard let distanceMeters else { return "Standort unbekannt" }
+        if distanceMeters <= radiusMeters {
+            return "In deiner Nähe"
+        }
+        if distanceMeters > 2_000 {
+            return "Über 2 km entfernt"
+        }
+        if distanceMeters >= 1_000 {
+            return String(format: "%.1f km entfernt", distanceMeters / 1_000)
+        }
+        return "\(Int(distanceMeters.rounded())) m entfernt"
+    }
+
+    private func giftSenderName(for gift: FriendGiftDTO) -> String {
+        vm.friends.first(where: { $0.id == gift.fromPlayerId })?.name ?? "Ein Freund"
+    }
+
+    private struct OpenedGiftPresentation: Identifiable {
+        let id = UUID()
+        let senderName: String
     }
 }
 
 private struct FriendRow: View {
     let player: PlayerDTO
+    let distanceText: String
+    let isNearby: Bool
+    let challengrRed: Color
     let challengrDark: Color
     let cardBackground: Color
+    let showsBattleAction: Bool
+    let onBattle: () -> Void
+    let onSendGift: () -> Void
     let onRemove: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "person.crop.circle.fill")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 46, height: 46)
-                .foregroundColor(challengrDark.opacity(0.75))
-                .padding(6)
-                .background(challengrDark.opacity(0.08))
-                .clipShape(Circle())
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                HStack(spacing: 12) {
+                    Image(systemName: "person.crop.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 46, height: 46)
+                        .foregroundColor(challengrDark.opacity(0.75))
+                        .padding(6)
+                        .background(challengrDark.opacity(0.08))
+                        .clipShape(Circle())
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(player.name)
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundColor(challengrDark)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(player.name)
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(challengrDark)
 
-                Text("Punkte: \(player.points)")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(challengrDark.opacity(0.75))
+                        Text("Punkte: \(player.points)")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(challengrDark.opacity(0.75))
+
+                        Text(distanceText)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(isNearby ? .green : challengrDark.opacity(0.72))
+                    }
+
+                    Spacer(minLength: 0)
+                }
+
+                Button(action: onRemove) {
+                    Image(systemName: "person.fill.xmark")
+                        .font(.system(size: 14, weight: .black))
+                        .foregroundColor(.white)
+                        .padding(10)
+                        .background(Circle().fill(Color.red.opacity(0.9)))
+                }
+                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
             }
 
-            Spacer()
+            HStack(spacing: 10) {
+                FriendActionButton(
+                    icon: "gift.fill",
+                    title: "Geschenk",
+                    foreground: challengrRed,
+                    background: challengrRed.opacity(0.12),
+                    action: onSendGift
+                )
 
-            Button(action: onRemove) {
-                Image(systemName: "person.fill.xmark")
-                    .font(.system(size: 14, weight: .black))
-                    .foregroundColor(.white)
-                    .padding(10)
-                    .background(Circle().fill(Color.red.opacity(0.9)))
+                if showsBattleAction {
+                    FriendActionButton(
+                        icon: "bolt.fill",
+                        title: "Battlen",
+                        foreground: .green,
+                        background: Color.green.opacity(0.14),
+                        action: onBattle
+                    )
+                }
             }
-            .buttonStyle(.plain)
         }
         .padding(12)
         .background(
@@ -437,6 +594,109 @@ struct FriendActionButton: View {
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct GiftInboxRow: View {
+    let senderName: String
+    let challengrRed: Color
+    let cardBackground: Color
+    let onOpen: () -> Void
+
+    var body: some View {
+        Button(action: onOpen) {
+            HStack(spacing: 12) {
+                Image(systemName: "gift.fill")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 48, height: 48)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(challengrRed)
+                    )
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Geschenk erhalten")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.primary)
+
+                    Text("Von \(senderName)")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.secondary)
+            }
+            .padding(14)
+            .background(cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(challengrRed.opacity(0.18), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct GiftOpenedSheet: View {
+    let senderName: String
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var animateGift = false
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Capsule()
+                .fill(Color.black.opacity(0.12))
+                .frame(width: 44, height: 5)
+                .padding(.top, 10)
+
+            ZStack {
+                Circle()
+                    .fill(Color(red: 0.73, green: 0.12, blue: 0.20).opacity(0.12))
+                    .frame(width: 110, height: 110)
+                    .scaleEffect(animateGift ? 1.08 : 0.9)
+
+                Image(systemName: "gift.fill")
+                    .font(.system(size: 46, weight: .bold))
+                    .foregroundColor(Color(red: 0.73, green: 0.12, blue: 0.20))
+                    .scaleEffect(animateGift ? 1.0 : 0.6)
+                    .rotationEffect(.degrees(animateGift ? 0 : -12))
+            }
+            .animation(.spring(response: 0.45, dampingFraction: 0.62), value: animateGift)
+
+            Text("Geschenk erhalten")
+                .font(.system(size: 24, weight: .black, design: .rounded))
+
+            Text("\(senderName) hat dir ein Geschenk geschickt.")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.secondary)
+
+            Button("Schließen") {
+                dismiss()
+            }
+            .font(.system(size: 16, weight: .bold))
+            .foregroundColor(.white)
+            .padding(.horizontal, 28)
+            .padding(.vertical, 12)
+            .background(
+                Capsule()
+                    .fill(Color(red: 0.73, green: 0.12, blue: 0.20))
+            )
+            .buttonStyle(.plain)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 20)
+        .background(Color(.systemBackground))
+        .onAppear {
+            animateGift = true
+        }
     }
 }
 

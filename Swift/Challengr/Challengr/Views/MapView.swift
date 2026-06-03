@@ -342,6 +342,8 @@ struct MapView: View {
                 battleHistory: battleHistory,
                 profileStatusText: profileStatusText,
                 profileBadges: profileBadges,
+                allChallenges: allChallenges,
+                socket: socket,
                 currentCoordinate: ownCoordinate
             )
         }

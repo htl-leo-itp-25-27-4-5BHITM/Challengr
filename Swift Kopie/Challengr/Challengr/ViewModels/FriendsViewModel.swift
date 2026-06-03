@@ -6,6 +6,7 @@ import Combine
 final class FriendsViewModel: ObservableObject {
     @Published var friends: [PlayerDTO] = []
     @Published var nearbyPlayers: [PlayerDTO] = []
+    @Published var incomingGifts: [FriendGiftDTO] = []
     @Published var pendingOutgoingToPlayerIds: Set<String> = []
     @Published var isLoadingNearby = false
     @Published var errorText: String? = nil
@@ -55,6 +56,8 @@ final class FriendsViewModel: ObservableObject {
 
             let outgoing = try await friendsService.loadOutgoingPendingRequests(playerId: ownPlayerId)
             pendingOutgoingToPlayerIds = Set(outgoing.map { $0.toPlayerId })
+
+            incomingGifts = try await friendsService.loadIncomingGifts(playerId: ownPlayerId)
 
             // Also check incoming once on load (used to show popup)
             await pollIncomingOnce(playerId: ownPlayerId)
@@ -123,6 +126,28 @@ final class FriendsViewModel: ObservableObject {
             await refreshIfPossible()
         } catch {
             errorText = "Konnte Freund nicht entfernen: \(error.localizedDescription)"
+        }
+    }
+
+    func sendGift(ownPlayerId: String, to playerId: String) async {
+        errorText = nil
+        do {
+            try await friendsService.sendGift(from: ownPlayerId, to: playerId)
+            await refreshIfPossible()
+        } catch {
+            errorText = "Konnte Geschenk nicht senden: \(error.localizedDescription)"
+        }
+    }
+
+    func claimGift(giftId: Int64, ownPlayerId: String) async -> Bool {
+        errorText = nil
+        do {
+            try await friendsService.claimGift(giftId: giftId, playerId: ownPlayerId)
+            await refreshIfPossible()
+            return true
+        } catch {
+            errorText = "Konnte Geschenk nicht öffnen: \(error.localizedDescription)"
+            return false
         }
     }
 

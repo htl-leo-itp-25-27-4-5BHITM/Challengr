@@ -17,6 +17,20 @@ struct FriendDTO: Decodable {
     let playerId: String
 }
 
+struct FriendGiftCreateDTO: Codable {
+    let fromPlayerId: String
+    let toPlayerId: String
+}
+
+struct FriendGiftDTO: Decodable, Identifiable {
+    let id: Int64
+    let fromPlayerId: String
+    let toPlayerId: String
+    let status: String
+    let createdAt: String
+    let claimedAt: String?
+}
+
 final class FriendsService {
     private let baseURL = BackendConfig.apiURL("api/friends")
 
@@ -102,6 +116,50 @@ final class FriendsService {
 
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+    }
+
+    func sendGift(from fromPlayerId: String, to toPlayerId: String) async throws {
+        let url = baseURL.appendingPathComponent("gifts")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(
+            FriendGiftCreateDTO(fromPlayerId: fromPlayerId, toPlayerId: toPlayerId)
+        )
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+    }
+
+    func loadIncomingGifts(playerId: String) async throws -> [FriendGiftDTO] {
+        var components = URLComponents(url: baseURL.appendingPathComponent("gifts/incoming"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "playerId", value: playerId)]
+        guard let url = components.url else { return [] }
+
+        let (data, _) = try await URLSession.shared.data(from: url)
+        return try JSONDecoder().decode([FriendGiftDTO].self, from: data)
+    }
+
+    func claimGift(giftId: Int64, playerId: String) async throws {
+        var components = URLComponents(
+            url: baseURL
+                .appendingPathComponent("gifts")
+                .appendingPathComponent(String(giftId))
+                .appendingPathComponent("claim"),
+            resolvingAgainstBaseURL: false
+        )!
+        components.queryItems = [URLQueryItem(name: "playerId", value: playerId)]
+        guard let url = components.url else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
 
         let (_, response) = try await URLSession.shared.data(for: request)
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {

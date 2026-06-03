@@ -60,6 +60,15 @@ public class FriendshipRepository {
                 .orElse(null);
     }
 
+    public boolean areFriends(String player1, String player2) {
+        if (player1 == null || player1.isBlank() || player2 == null || player2.isBlank()) {
+            return false;
+        }
+        String pa = a(player1.trim(), player2.trim());
+        String pb = b(player1.trim(), player2.trim());
+        return findByPair(pa, pb) != null;
+    }
+
     public List<String> listFriendIds(String playerId) {
         List<String> out = new ArrayList<>();
 

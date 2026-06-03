@@ -3,10 +3,14 @@ package boundary;
 import boundary.dto.FriendRequestCreateDTO;
 import boundary.dto.FriendRequestDTO;
 import boundary.dto.FriendDTO;
+import boundary.dto.FriendGiftCreateDTO;
+import boundary.dto.FriendGiftDTO;
 import control.FriendRequestRepository;
+import control.FriendGiftRepository;
 import control.FriendshipRepository;
 import control.BanEnforcementService;
 import entity.FriendRequest;
+import entity.FriendGift;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -24,6 +28,9 @@ public class FriendRequestResource {
 
     @Inject
     FriendshipRepository friendshipRepository;
+
+    @Inject
+    FriendGiftRepository friendGiftRepository;
 
     @Inject
     BanEnforcementService banEnforcement;
@@ -104,6 +111,48 @@ public class FriendRequestResource {
         return friendshipRepository.listFriendIds(playerId).stream().map(FriendDTO::new).toList();
     }
 
+    @POST
+    @Path("/gifts")
+    public FriendGiftDTO createGift(FriendGiftCreateDTO dto) {
+        enforceNotBanned();
+        if (dto == null) {
+            throw new WebApplicationException("Missing body", 400);
+        }
+        if (!friendshipRepository.areFriends(dto.fromPlayerId(), dto.toPlayerId())) {
+            throw new WebApplicationException("Gift can only be sent to friends", 400);
+        }
+        FriendGift gift = friendGiftRepository.create(dto.fromPlayerId(), dto.toPlayerId());
+        return toDTO(gift);
+    }
+
+    @GET
+    @Path("/gifts/incoming")
+    public List<FriendGiftDTO> incomingGifts(@QueryParam("playerId") String playerId) {
+        enforceNotBanned();
+        if (playerId == null || playerId.isBlank()) {
+            throw new WebApplicationException("playerId is required", 400);
+        }
+        return friendGiftRepository.findIncomingPending(playerId).stream().map(this::toDTO).toList();
+    }
+
+    @POST
+    @Path("/gifts/{id}/claim")
+    public FriendGiftDTO claimGift(@PathParam("id") Long id, @QueryParam("playerId") String playerId) {
+        enforceNotBanned();
+        if (playerId == null || playerId.isBlank()) {
+            throw new WebApplicationException("playerId is required", 400);
+        }
+        try {
+            FriendGift updated = friendGiftRepository.claim(id, playerId);
+            if (updated == null) {
+                throw new WebApplicationException("Gift not found", 404);
+            }
+            return toDTO(updated);
+        } catch (IllegalArgumentException ex) {
+            throw new WebApplicationException(ex.getMessage(), 400);
+        }
+    }
+
     @DELETE
     @Path("/remove")
     public void removeFriend(@QueryParam("playerId") String playerId,
@@ -137,6 +186,17 @@ public class FriendRequestResource {
                 r.getToPlayerId(),
                 r.getStatus(),
                 r.getCreatedAt()
+        );
+    }
+
+    private FriendGiftDTO toDTO(FriendGift g) {
+        return new FriendGiftDTO(
+                g.getId(),
+                g.getFromPlayerId(),
+                g.getToPlayerId(),
+                g.getStatus(),
+                g.getCreatedAt(),
+                g.getClaimedAt()
         );
     }
 }

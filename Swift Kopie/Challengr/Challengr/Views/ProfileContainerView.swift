@@ -9,6 +9,8 @@ struct ProfileContainerView: View {
     let battleHistory: [BattleHistoryDTO]
     let profileStatusText: String?
     let profileBadges: [String]
+    let allChallenges: [ChallengeDTO]
+    let socket: GameSocketService?
     
     // Used for Nearby friends suggestions (Option A: reuse Map coordinate)
     var currentCoordinate: CLLocationCoordinate2D? = nil
@@ -60,7 +62,9 @@ struct ProfileContainerView: View {
                     if let currentCoordinate {
                         FriendsListView(
                             ownPlayerId: ownPlayerId,
-                            currentCoordinate: currentCoordinate
+                            currentCoordinate: currentCoordinate,
+                            allChallenges: allChallenges,
+                            socket: socket
                         )
                     } else {
                         Text("Standort benötigt für Freunde in der Nähe.")
