@@ -20,6 +20,10 @@ struct ChallengeDialogView: View {
     // Kategorien wie in der Webapp / Backend
     private let categories: [String] = ["Fitness", "Mutprobe", "Wissen", "iPhone", "Customer"]
 
+    private var hasAnyLoadedChallenges: Bool {
+        !allChallenges.isEmpty
+    }
+
     var body: some View {
         ZStack {
 
@@ -72,10 +76,18 @@ struct ChallengeDialogView: View {
                         .scaleEffect(0.9)
                 }
 
+                if !isLoading && !hasAnyLoadedChallenges {
+                    Text("Challenges werden noch geladen oder sind gerade nicht verfügbar.")
+                        .font(.system(size: 13, weight: .semibold))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.challengrBlack.opacity(0.75))
+                }
+
                 // CATEGORY BUTTONS (nur sichtbar, solange keine Challenge gewählt & nicht loading)
                 if selectedChallenge == nil && !isLoading {
                     VStack(spacing: 10) {
                         ForEach(categories, id: \.self) { category in
+                            let availableCount = availableChallengeCount(for: category)
                             Button {
                                 Task {
                                     await loadRandomChallenge(for: category)
@@ -93,14 +105,19 @@ struct ChallengeDialogView: View {
                                         .foregroundStyle(.white)
 
                                     Spacer()
+
+                                    Text("\(availableCount)")
+                                        .font(.system(size: 12, weight: .black))
+                                        .foregroundStyle(.white.opacity(0.9))
                                 }
                                 .padding(.vertical, 10)
                                 .padding(.horizontal, 14)
                                 .background(
                                     RoundedRectangle(cornerRadius: 14)
-                                        .fill(color(for: category))
+                                        .fill(color(for: category).opacity(availableCount == 0 ? 0.4 : 1))
                                 )
                             }
+                            .disabled(availableCount == 0)
                         }
                     }
                 }
@@ -109,10 +126,11 @@ struct ChallengeDialogView: View {
                 VStack(spacing: 10) {
 
                     Button {
+                        guard let selectedChallengeId else { return }
                         socket.sendCreateBattle(
                             fromId: ownPlayerId,
                             toId: otherPlayerId,
-                            challengeId: selectedChallengeId ?? 0
+                            challengeId: selectedChallengeId
                         )
                         onClose()
                     } label: {
@@ -127,8 +145,8 @@ struct ChallengeDialogView: View {
                                     .fill(.challengrGreen)
                             )
                     }
-                    .disabled(selectedChallenge == nil)
-                    .opacity(selectedChallenge == nil ? 0.4 : 1)
+                            .disabled(selectedChallengeId == nil)
+                            .opacity(selectedChallengeId == nil ? 0.4 : 1)
 
                     Button(action: onClose) {
                         Text("ABBRECHEN")
@@ -167,7 +185,9 @@ struct ChallengeDialogView: View {
         selectedCategory = category
 
         // hier kein Netzwerk – wir benutzen die vom MapView gelieferten Challenges
-        let filtered = allChallenges.filter { $0.category == category }
+        let filtered = allChallenges.filter {
+            normalizedCategory($0.category) == normalizedCategory(category)
+        }
 
         if let random = filtered.randomElement() {
             selectedChallenge = random.text
@@ -201,5 +221,15 @@ struct ChallengeDialogView: View {
         case "Customer": return "person.2"
         default:         return "questionmark"
         }
+    }
+
+    private func availableChallengeCount(for category: String) -> Int {
+        allChallenges.filter {
+            normalizedCategory($0.category) == normalizedCategory(category)
+        }.count
+    }
+
+    private func normalizedCategory(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 }

@@ -1035,18 +1035,7 @@ struct MapView: View {
 
         // Preload challenges for all categories once at startup.
         Task {
-            do {
-                let fitness  = try await challengesService.loadCategoryChallenges(category: "Fitness")
-                let mutprobe = try await challengesService.loadCategoryChallenges(category: "Mutprobe")
-                let wissen   = try await challengesService.loadCategoryChallenges(category: "Wissen")
-                let iphone   = try await challengesService.loadCategoryChallenges(category: "iPhone")
-                let customer = try await challengesService.loadCategoryChallenges(category: "Customer")
-
-                allChallenges = fitness + mutprobe + wissen + iphone + customer
-                print("AllChallenges geladen, Anzahl:", allChallenges.count)
-            } catch {
-                print("Fehler beim Vorladen der Challenges:", error)
-            }
+            await preloadChallenges()
         }
 
         
@@ -1212,6 +1201,24 @@ struct MapView: View {
 
 
 
+    }
+
+    @MainActor
+    private func preloadChallenges() async {
+        let categories = ["Fitness", "Mutprobe", "Wissen", "iPhone", "Customer"]
+        var loadedChallenges: [ChallengeDTO] = []
+
+        for category in categories {
+            do {
+                let challenges = try await challengesService.loadCategoryChallenges(category: category)
+                loadedChallenges.append(contentsOf: challenges)
+            } catch {
+                print("Fehler beim Laden der Kategorie \(category):", error)
+            }
+        }
+
+        allChallenges = loadedChallenges
+        print("AllChallenges geladen, Anzahl:", allChallenges.count)
     }
 
     /// Handles updates of the user location and refreshes nearby players.

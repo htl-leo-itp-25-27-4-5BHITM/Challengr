@@ -86,7 +86,7 @@ final class GameSocketService: ObservableObject {
         print("🔌 WS connect für Player \(playerId)")
 
         startPing()
-        receive()
+        receive(on: task)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
             self?.flushPendingMessages()
@@ -115,6 +115,7 @@ final class GameSocketService: ObservableObject {
             task.send(.string(text)) { error in
                 if let error = error {
                     print("❌ WS flush send error:", error)
+                    guard self.webSocketTask === task else { return }
                     self.webSocketTask = nil
                     self.scheduleReconnect()
                 }
@@ -354,16 +355,18 @@ final class GameSocketService: ObservableObject {
 
     // MARK: - Receive messages (Empfangen)
 
-    private func receive() {
-        webSocketTask?.receive { [weak self] result in
+    private func receive(on task: URLSessionWebSocketTask) {
+        task.receive { [weak self] result in
             guard let self else { return }
             switch result {
             case .failure(let error):
                 print("WS receive error:", error)
+                guard self.webSocketTask === task else { return }
                 self.webSocketTask = nil
                 self.scheduleReconnect()
                 return
             case .success(let message):
+                guard self.webSocketTask === task else { return }
                 switch message {
                 case .string(let text):
                     print("WS message:", text)
@@ -374,7 +377,7 @@ final class GameSocketService: ObservableObject {
                     break
                 }
             }
-            self.receive()
+            self.receive(on: task)
         }
     }
 
