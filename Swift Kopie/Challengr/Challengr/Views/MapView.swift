@@ -106,6 +106,7 @@ struct MapView: View {
     
     @State private var showProfile = false
     @State private var showSettings = false
+    @State private var showShop = false
     @State private var currentTargetCoordinate: CLLocationCoordinate2D? = nil
 
     
@@ -296,6 +297,13 @@ struct MapView: View {
                                 .frame(width: 36, height: 36)
                         }
 
+                        Button {
+                            showShop = true
+                        } label: {
+                            HudCircleButton(systemName: "bag.fill")
+                                .frame(width: 36, height: 36)
+                        }
+
                         CompassView(angle: compassAngle) {
                             withAnimation(.easeOut(duration: 0.35)) {
                                 guard let cam = position.camera else { return }
@@ -339,6 +347,9 @@ struct MapView: View {
                 Text("Einstellungen sind erst nach dem Login verfügbar")
                     .padding()
             }
+        }
+        .sheet(isPresented: $showShop) {
+            ShopView()
         }
         .sheet(isPresented: $showProfile) {
             ProfileContainerView(
