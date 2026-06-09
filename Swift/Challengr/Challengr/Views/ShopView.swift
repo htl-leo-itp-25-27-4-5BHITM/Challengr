@@ -10,22 +10,50 @@ import SwiftUI
 struct ShopItem {
     let name: String
     let imageName: String
-    let price: Int = 100
+    let price: Int
+    let rarity: ItemRarity
+}
+
+enum ItemRarity {
+    case common
+    case uncommon
+    case rare
+    case epic
+    case legendary
+    
+    var color: Color {
+        switch self {
+        case .common: return Color.gray
+        case .uncommon: return Color.green
+        case .rare: return Color.blue
+        case .epic: return Color.purple
+        case .legendary: return Color.yellow
+        }
+    }
 }
 
 struct ShopView: View {
     @Environment(\.dismiss) var dismiss
     
     private let shopItems = [
-        ShopItem(name: "Coin", imageName: "Coin"),
-        ShopItem(name: "Combo Booster", imageName: "ComboBooster"),
-        ShopItem(name: "Energieflasche", imageName: "Energieflasche"),
-        ShopItem(name: "Punkte Schild", imageName: "PunkteSchild"),
-        ShopItem(name: "Rematch Ticket", imageName: "RematchTicket"),
-        ShopItem(name: "Stealth Cloak", imageName: "StealthCloak"),
-        ShopItem(name: "Streak Saver", imageName: "StreakSaver"),
-        ShopItem(name: "Trophy", imageName: "Trophy"),
-        ShopItem(name: "Unsichtbar", imageName: "Unsichtbar")
+        // Legendary
+        ShopItem(name: "Full Stealth Potion", imageName: "Unsichtbar 1", price: 800, rarity: .legendary),
+        
+        // Epic
+        ShopItem(name: "Point Shield", imageName: "PunkteSchild 1", price: 600, rarity: .epic),
+        ShopItem(name: "Streak Saver", imageName: "StreakSaver 1", price: 400, rarity: .epic),
+        
+        // Rare
+        ShopItem(name: "Stealth Cloak", imageName: "StealthCloak 1", price: 300, rarity: .rare),
+        ShopItem(name: "Rematch Ticket", imageName: "RematchTicket 1", price: 250, rarity: .rare),
+        
+        // Uncommon
+        ShopItem(name: "Trophy Boost", imageName: "Energieflasche 1", price: 200, rarity: .uncommon),
+        ShopItem(name: "Combo Booster", imageName: "ComboBooster 1", price: 150, rarity: .uncommon),
+        
+        // Common
+        ShopItem(name: "Coin", imageName: "Coin 1", price: 50, rarity: .common),
+        ShopItem(name: "Trophy", imageName: "Trophy 1", price: 100, rarity: .common)
     ]
     
     var body: some View {
@@ -73,14 +101,27 @@ struct ShopItemView: View {
     
     var body: some View {
         VStack(spacing: 12) {
+            // Rarity Badge - centered
+            Text(rarityLabel(item.rarity))
+                .font(.system(size: 7, weight: .bold))
+                .tracking(-0.3)
+                .foregroundColor(.challengrDark)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(item.rarity.color)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+            
             // Item Image
-            Image(item.imageName)
-                .resizable()
-                .scaledToFit()
-                .frame(height: 80)
-                .padding(8)
-                .background(Color.white.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+            ZStack {
+                Color.white.opacity(0.1)
+                
+                Image(item.imageName)
+                    .resizable()
+                    .scaledToFit()
+                    .padding(8)
+            }
+            .frame(height: 80)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
             
             // Item Name
             Text(item.name)
@@ -89,15 +130,15 @@ struct ShopItemView: View {
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
             
-            // Price
+            // Price with Rarity Color
             HStack(spacing: 4) {
                 Image(systemName: "dollarsign.circle.fill")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.challengrYellow)
+                    .foregroundColor(item.rarity.color)
                 
                 Text("\(item.price)")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.challengrYellow)
+                    .foregroundColor(item.rarity.color)
             }
             
             // Buy Button
@@ -110,10 +151,22 @@ struct ShopItemView: View {
                     .background(Color.challengrYellow)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
+            
+            Spacer()
         }
         .padding(12)
         .background(Color.white.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+    
+    private func rarityLabel(_ rarity: ItemRarity) -> String {
+        switch rarity {
+        case .common: return "Common"
+        case .uncommon: return "Uncommon"
+        case .rare: return "Rare"
+        case .epic: return "Epic"
+        case .legendary: return "Legendary"
+        }
     }
 }
 
