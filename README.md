@@ -154,8 +154,6 @@ Ziele:
 
 ---
 
-
-
 ## Sprint (Sprint 13 – Start: 13.05.2026)
 
 Ziele:
@@ -176,6 +174,24 @@ Project Backlog:
 * Rollenbasierte Identifizierung für Dashboard-Admins implementieren
 
 ---
+
+
+
+## Sprint (Sprint 14 – Start: 27.05.2026)
+
+Ziele:
+
+* Marketing-Konzept ausarbeiten
+* Schultests planen und vorbereiten
+* Präsentation für die 5. Klasse erstellen
+* Shop-System mit eigener Währung konzipieren
+* Erste Shop-Ansicht mit Items implementieren (ohne Kaufmöglichkeit)
+* Challenges finalisieren
+* Wissens-Backend überarbeiten
+
+---
+
+
 
 ## Lokaler Schnellstart (Dashboard + Cloud Backend)
 
