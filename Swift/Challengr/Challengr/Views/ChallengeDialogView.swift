@@ -1,4 +1,41 @@
 import SwiftUI
+import AVFoundation
+
+// MARK: - Sound Manager (Global)
+class SoundManager: NSObject, AVAudioPlayerDelegate {
+    static let shared = SoundManager()
+    private var audioPlayer: AVAudioPlayer?
+    
+    func playSound(_ filename: String) {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.duckOthers])
+            try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("❌ Audio Session error:", error)
+        }
+        
+        let soundPath = "/Users/julianrichter/Library/CloudStorage/OneDrive-Persönlich/HTL/4BHITM/ITP/Challengr_Projekt/Challengr/Swift/Challengr/Challengr/Sounds/CLICK/\(filename).mp3"
+        let url = URL(fileURLWithPath: soundPath)
+        
+        guard FileManager.default.fileExists(atPath: soundPath) else {
+            print("❌ Sound file not found at: \(soundPath)")
+            return
+        }
+
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.delegate = self
+            audioPlayer?.play()
+            print("🔊 Playing sound: \(filename)")
+        } catch {
+            print("❌ Error playing sound:", error)
+        }
+    }
+    
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        print("✅ Sound finished playing")
+    }
+}
 
 struct ChallengeDialogView: View {
 
@@ -127,6 +164,7 @@ struct ChallengeDialogView: View {
 
                     Button {
                         guard let selectedChallengeId else { return }
+                        playSound()
                         socket.sendCreateBattle(
                             fromId: ownPlayerId,
                             toId: otherPlayerId,
@@ -231,5 +269,9 @@ struct ChallengeDialogView: View {
 
     private func normalizedCategory(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private func playSound() {
+        SoundManager.shared.playSound("CLICK_02")
     }
 }
