@@ -47,19 +47,19 @@ INSERT INTO challenges (text, category_id) VALUES
 ---------------------------------------------------------
 -- Zusätzliche iPhone-Challenges mit Sensorspielereien
 INSERT INTO challenges (text, category_id) VALUES
-                                               (
+                                               /*(
                                                    'Sprint-Challenge: Laufe in 15 Sekunden so weit wie möglich.',
                                                    (SELECT id FROM challenge_categories WHERE name = 'iPhone')
                                                ),
                                                (
                                                    'Check-In-Spot: Erreiche den Zielpunkt auf der Karte.',
                                                    (SELECT id FROM challenge_categories WHERE name = 'iPhone')
-                                               ),
+                                               ),*/
                                                (
                                                    'Kompass-Präzision: Richte dich auf einen zufälligen Zielwinkel aus.',
                                                    (SELECT id FROM challenge_categories WHERE name = 'iPhone')
                                                ),
-                                               (
+                                               /*(
                                                    'Shake-Challenge: Schüttle das iPhone 5 Sekunden lang maximal.',
                                                    (SELECT id FROM challenge_categories WHERE name = 'iPhone')
                                                ),
@@ -70,7 +70,7 @@ INSERT INTO challenges (text, category_id) VALUES
                                                (
                                                    'Foto-Beweis: Finde ein rotes Auto und fotografiere es.',
                                                    (SELECT id FROM challenge_categories WHERE name = 'iPhone')
-                                               ),
+                                               ),*/
                                                (
                                                    'Liegestütz-Zähler: Zähle deine Push-Ups mit der Nase auf dem Screen.',
                                                    (SELECT id FROM challenge_categories WHERE name = 'iPhone')
