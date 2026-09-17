@@ -55,18 +55,20 @@ export class AdminDashboardApi {
       kpis: [
         { label: 'Spieler (aktiv/gesamt)', value: '182 / 614', tone: 'primary', icon: '👥' },
         { label: 'Aktive Bans', value: '2', tone: 'danger', icon: '⛔' },
+        { label: 'Battles (heute / gesamt)', value: '14 / 892', tone: 'info', icon: '⚔️' },
+        { label: 'Challenges im Katalog', value: '47', tone: 'primary', icon: '🏆' },
+        { label: 'Shop-Käufe gesamt', value: '63', tone: 'info', icon: '🛍️' },
+        { label: 'Beliebteste Kategorie', value: 'Mutprobe', tone: 'primary', icon: '🔥' },
+        { label: 'Top Spieler', value: 'test (399 P.)', tone: 'warning', icon: '👑' },
       ],
       setupWarnings: [
-        { title: 'Keycloak', detail: 'Realm reachable, token flow OK', tone: 'ok' },
-        { title: 'Database', detail: 'Connection stable, migrations up-to-date', tone: 'ok' },
-        { title: 'Websocket / Game', detail: '1 instance restarting (investigate)', tone: 'warn' },
-        { title: 'Reports', detail: '4 items need review', tone: 'warn' },
+        { title: 'Backend & Datenbank', detail: 'Nicht erreichbar – zeige Beispieldaten', tone: 'warn' },
       ],
       auditEvents: [
-        { type: 'BAN', detail: 'User 9b2a… banned for 7 days', at: '27.05.2026, 13:57' },
-        { type: 'UNBAN', detail: 'User 22ac… unbanned', at: '27.05.2026, 11:26' },
-        { type: 'STORE', detail: 'Updated item price: Turbo-Start', at: '26.05.2026, 13:08' },
-        { type: 'CHALLENGE', detail: 'Created category: Event (Battle Royale)', at: '26.05.2026, 11:23' },
+        { type: 'BATTLE', detail: 'test gewinnt eine Mutprobe-Challenge', at: '27.05.2026, 13:57' },
+        { type: 'SHOP', detail: 'cookieclicker kauft Streak Saver', at: '27.05.2026, 11:26' },
+        { type: 'BATTLE', detail: 'cookieclicker gewinnt eine Fitness-Challenge', at: '26.05.2026, 13:08' },
+        { type: 'SHOP', detail: 'test kauft Point Shield', at: '26.05.2026, 11:23' },
       ],
     };
   }

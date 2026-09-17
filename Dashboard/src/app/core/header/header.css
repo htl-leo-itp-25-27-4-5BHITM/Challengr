@@ -5,36 +5,69 @@
   right: 0;
   z-index: 50;
   height: 64px;
-  background: var(--white);
+  background: linear-gradient(180deg, #0a1020 0%, #080f1f 100%);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
-  border-bottom: 1px solid var(--gray);
+  padding: 0 28px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .logo {
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-weight: 800;
   font-size: 18px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
+}
+
+.logo-mark {
+  font-size: 16px;
+  filter: drop-shadow(0 0 6px rgba(253, 208, 6, 0.6));
 }
 
 .logo span {
   color: var(--yellow);
+  font-weight: 900;
 }
 
 .right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.search-icon {
+  font-size: 12px;
 }
 
 .avatar {
   width: 36px;
   height: 36px;
   background: var(--yellow);
+  color: var(--black);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 800;
+  font-family: var(--font-display);
+  box-shadow: 0 0 0 2px rgba(253, 208, 6, 0.25);
 }

@@ -1,10 +1,69 @@
 import SwiftUI
+import AVFoundation
+
+// MARK: - Sound Manager (Global)
+class SoundManager: NSObject, AVAudioPlayerDelegate {
+    static let shared = SoundManager()
+    private var audioPlayer: AVAudioPlayer?
+
+    // Indexes every .mp3 shipped in the app bundle by filename (without extension),
+    // regardless of which subfolder it lives in. Avoids depending on a fixed
+    // subdirectory path, which differs between the simulator, device and every
+    // developer's machine.
+    private lazy var soundURLsByName: [String: URL] = Self.indexBundleSounds()
+
+    func playSound(_ filename: String) {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.duckOthers])
+            try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("❌ Audio Session error:", error)
+        }
+
+        guard let url = soundURLsByName[filename] else {
+            print("❌ Sound file not found in bundle: \(filename)")
+            return
+        }
+
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.delegate = self
+            audioPlayer?.play()
+            print("🔊 Playing sound: \(filename)")
+        } catch {
+            print("❌ Error playing sound:", error)
+        }
+    }
+
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        print("✅ Sound finished playing")
+    }
+
+    private static func indexBundleSounds() -> [String: URL] {
+        guard let resourceURL = Bundle.main.resourceURL else { return [:] }
+
+        var result: [String: URL] = [:]
+        let enumerator = FileManager.default.enumerator(
+            at: resourceURL,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        )
+
+        while let url = enumerator?.nextObject() as? URL {
+            guard url.pathExtension.lowercased() == "mp3" else { continue }
+            result[url.deletingPathExtension().lastPathComponent] = url
+        }
+
+        return result
+    }
+}
 
 struct ChallengeDialogView: View {
 
     // MARK: - Input (Eingaben)
     let otherPlayerId: String
     let otherPlayerName: String
+    var otherPlayerRankColor: Color = .gray
     let ownPlayerId: String
 
     let allChallenges: [ChallengeDTO]      // ⬅️ alle vom MapView vorab geladen
@@ -41,6 +100,8 @@ struct ChallengeDialogView: View {
                     .tracking(1.4)
                     .foregroundStyle(.challengrBlack)
 
+                MapAvatarPin(imageName: nil, ringColor: otherPlayerRankColor, isOwnPlayer: false)
+
                 Text(otherPlayerName.uppercased())
                     .font(.system(size: 20, weight: .black, design: .rounded))
                     .multilineTextAlignment(.center)
@@ -48,25 +109,37 @@ struct ChallengeDialogView: View {
 
                 // SELECTED CHALLENGE
                 if let challenge = selectedChallenge {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 10) {
 
                         Text("ZUFÄLLIGE CHALLENGE")
                             .font(.system(size: 10, weight: .black))
                             .tracking(1.2)
                             .foregroundStyle(.challengrBlack)
 
-                        Text(challenge)
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
-                            .multilineTextAlignment(.center)
-                            .lineLimit(4)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .foregroundStyle(.challengrBlack)
+                        if let selectedCategory {
+                            HStack(spacing: 10) {
+                                ZStack {
+                                    Circle()
+                                        .fill(color(for: selectedCategory).opacity(0.18))
+                                        .frame(width: 34, height: 34)
+                                    Image(systemName: icon(for: selectedCategory))
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundStyle(color(for: selectedCategory))
+                                }
+
+                                Text(challenge)
+                                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                                    .multilineTextAlignment(.leading)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .foregroundStyle(.challengrBlack)
+                            }
                             .padding(10)
-                            .frame(maxWidth: .infinity)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .background(
                                 RoundedRectangle(cornerRadius: 14)
                                     .fill(.challengrYellow)
                             )
+                        }
                     }
                 }
 
@@ -127,6 +200,7 @@ struct ChallengeDialogView: View {
 
                     Button {
                         guard let selectedChallengeId else { return }
+                        playSound()
                         socket.sendCreateBattle(
                             fromId: ownPlayerId,
                             toId: otherPlayerId,
@@ -231,5 +305,9 @@ struct ChallengeDialogView: View {
 
     private func normalizedCategory(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private func playSound() {
+        SoundManager.shared.playSound("CLICK_02")
     }
 }

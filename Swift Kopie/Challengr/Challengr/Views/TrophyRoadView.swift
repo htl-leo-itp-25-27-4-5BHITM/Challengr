@@ -372,7 +372,7 @@ private struct RankSectionView: View {
         // Figur eher in der unteren/mittleren Region halten
         let minSlot = 0          // direkt an der Card möglich
         let maxSlot = steps - 1  // z.B. bis drei Slots vor Ende
-        idx = max(maxSlot, min(minSlot, idx))
+        idx = min(maxSlot, max(minSlot, idx))
 
         return idx
     }

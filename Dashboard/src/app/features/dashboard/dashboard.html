@@ -1,16 +1,17 @@
-<div class="container">
-
-  <div class="topbar">
-    <div>
-      <div class="crumbs">Admin <span>/</span> Dashboard</div>
-      <h1>Dashboard</h1>
-      <div class="subtitle">Kurzer Operations-Überblick mit nächsten sinnvollen Aktionen.</div>
-    </div>
+<div class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="crumbs">Admin <span>/</span> Dashboard</div>
+    <h1>Willkommen zurück <span class="wave">👋</span></h1>
+    <div class="subtitle">Live-Zahlen aus dem Backend – Spieler, Battles, Shop und Challenges auf einen Blick.</div>
   </div>
+</div>
+
+<div class="container">
 
   <div class="overview">
 
-  <div class="loading" *ngIf="loading">Loading overview…</div>
+  <div class="loading" *ngIf="loading">Lade Übersicht…</div>
 
   <div class="error" *ngIf="!loading && error">
     <div class="error-title">Overview konnte nicht geladen werden</div>
@@ -19,13 +20,12 @@
   </div>
 
   <div class="kpi-grid">
-    <div class="card kpi" *ngFor="let k of kpis">
-      <div class="kpi-top">
+    <div class="card kpi" *ngFor="let k of kpis" [attr.data-tone]="k.tone">
+      <div class="kpi-icon-badge">{{ k.icon }}</div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ k.value }}</div>
         <div class="kpi-label">{{ k.label }}</div>
-        <div class="kpi-icon" [attr.data-tone]="k.tone">{{ k.icon }}</div>
       </div>
-
-      <div class="kpi-value">{{ k.value }}</div>
     </div>
   </div>
 
@@ -33,7 +33,7 @@
 
     <div class="card panel">
       <div class="panel-header">
-        <h2>Setup-Warnungen</h2>
+        <h2><span class="panel-icon">🛡️</span> Setup-Warnungen</h2>
       </div>
 
       <div class="panel-body">
@@ -59,18 +59,22 @@
 
     <div class="card panel">
       <div class="panel-header panel-header--row">
-        <h2>Letzte Audit Events</h2>
-        <button class="btn-secondary" type="button">Diagnose</button>
+        <h2><span class="panel-icon">📡</span> Letzte Aktivität</h2>
+        <button class="btn-secondary" type="button" (click)="reload()">Aktualisieren</button>
       </div>
 
       <div class="panel-body">
   <ng-container *ngIf="auditEvents.length; else auditEmpty">
-          <div class="event" *ngFor="let e of auditEvents">
-            <div class="event-badge" [attr.data-type]="e.type">{{ e.type }}</div>
-            <div class="event-text">
-              <div class="event-detail">{{ e.detail }}</div>
+          <div class="timeline">
+            <div class="timeline-item" *ngFor="let e of auditEvents">
+              <div class="timeline-dot" [attr.data-type]="e.type">
+                {{ e.type === 'BATTLE' ? '⚔️' : e.type === 'SHOP' ? '🛍️' : 'ℹ️' }}
+              </div>
+              <div class="timeline-content">
+                <div class="timeline-detail">{{ e.detail }}</div>
+                <div class="timeline-at">{{ e.at }}</div>
+              </div>
             </div>
-            <div class="event-at">{{ e.at }}</div>
           </div>
         </ng-container>
 
@@ -78,7 +82,7 @@
           <div class="empty">
             <div class="empty-icon">🗂️</div>
             <div class="empty-title">Noch keine Events</div>
-            <div class="empty-detail">Sobald Admin-Aktionen passieren, erscheinen sie hier.</div>
+            <div class="empty-detail">Sobald Spieler Battles spielen oder im Shop kaufen, erscheinen sie hier.</div>
           </div>
         </ng-template>
       </div>

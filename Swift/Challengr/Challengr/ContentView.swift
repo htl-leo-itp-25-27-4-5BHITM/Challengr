@@ -14,6 +14,7 @@ import Combine
 struct ContentView: View {
     @StateObject private var auth = KeycloakAuthService()
     @StateObject private var inviteFlow = FriendInviteFlow()
+    @State private var showOnboarding = OnboardingView.shouldShow
 
     // MARK: - Body (UI-Aufbau)
     var body: some View {
@@ -25,6 +26,11 @@ struct ContentView: View {
                         ownPlayerName: auth.playerName,
                         auth: auth
                     )
+                    .fullScreenCover(isPresented: $showOnboarding) {
+                        OnboardingView {
+                            showOnboarding = false
+                        }
+                    }
                 } else {
                     VStack(spacing: 12) {
                         if let error = auth.errorMessage {

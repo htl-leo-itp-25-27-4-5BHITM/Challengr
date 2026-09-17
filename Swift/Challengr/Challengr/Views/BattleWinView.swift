@@ -3,26 +3,33 @@ import SwiftUI
 struct BattleWinView: View {
     // MARK: - Input (Eingaben)
     let data: BattleResultData
+    let ownPlayerName: String
     let onClose: () -> Void
 
     // MARK: - Animation States
     @State private var appearScale: CGFloat = 0.6
     @State private var appearOpacity: Double = 0.0
     @State private var titleScale: CGFloat = 1.0
-    @State private var rotateWinnerCards = false
 
     // MARK: - Body (UI-Aufbau)
     var body: some View {
         ZStack {
-            // heller App-Hintergrund
+            // Dark, cinematic background — continues the mood from the battle
+            // screen instead of cutting to a plain light card.
             LinearGradient(
-                colors: [
-                    Color(.systemGray6),
-                    Color(.systemGray5)
-                ],
+                colors: [Color.challengrDark, Color.black],
                 startPoint: .top,
                 endPoint: .bottom
             )
+            .ignoresSafeArea()
+
+            RadialGradient(
+                colors: [Color.challengrYellow.opacity(0.4), Color.clear],
+                center: .center,
+                startRadius: 10,
+                endRadius: 300
+            )
+            .opacity(appearOpacity)
             .ignoresSafeArea()
 
             ConfettiView()
@@ -37,33 +44,34 @@ struct BattleWinView: View {
                     Text("BATTLE ERGEBNIS")
                         .font(.system(size: 12, weight: .black, design: .rounded))
                         .tracking(2)
-                        .foregroundColor(.challengrRed.opacity(0.9))
+                        .foregroundColor(.challengrYellow.opacity(0.9))
 
                     // großer WIN-Titel
                     Text("GEWONNEN!")
-                        .font(.system(size: 30, weight: .black, design: .rounded))
+                        .font(.system(size: 38, weight: .black, design: .rounded))
                         .tracking(3)
-                        .foregroundColor(.challengrBlack)
+                        .foregroundColor(.white)
+                        .shadow(color: .challengrYellow.opacity(0.7), radius: 16, x: 0, y: 0)
                         .scaleEffect(titleScale)
 
                     // Glückwunsch-Zeile
                     Text("GLÜCKWUNSCH, \(data.winnerName.uppercased())!")
                         .font(.system(size: 16, weight: .semibold, design: .rounded))
                         .multilineTextAlignment(.center)
-                        .foregroundColor(.challengrBlack.opacity(0.9))
+                        .foregroundColor(.white.opacity(0.85))
 
                     // Winner / Loser Cards nebeneinander
                     HStack(spacing: 20) {
                         resultPlayerCard(
                             name: data.winnerName,
-                            avatarName: "playerBoy",
+                            avatarName: avatarName(for: data.winnerName),
                             pointsDelta: data.winnerPointsDelta,
                             isWinner: true
                         )
 
                         resultPlayerCard(
                             name: data.loserName,
-                            avatarName: "playerGirl",
+                            avatarName: avatarName(for: data.loserName),
                             pointsDelta: data.loserPointsDelta,
                             isWinner: false
                         )
@@ -71,7 +79,7 @@ struct BattleWinView: View {
 
                     // Punkte-Gewinn hervorgehoben
                     Text("+\(data.winnerPointsDelta) PUNKTE")
-                        .font(.system(size: 20, weight: .black, design: .rounded))
+                        .font(.system(size: 22, weight: .black, design: .rounded))
                         .foregroundColor(.challengrGreen)
                         .padding(.top, 4)
 
@@ -87,14 +95,14 @@ struct BattleWinView: View {
                 .background(
                     ZStack {
                         RoundedRectangle(cornerRadius: 32)
-                            .fill(Color.white)
+                            .fill(Color.white.opacity(0.07))
 
                         RoundedRectangle(cornerRadius: 32)
                             .stroke(
                                 LinearGradient(
                                     colors: [
-                                        Color.challengrYellow.opacity(0.6),
-                                        Color.challengrGreen.opacity(0.4)
+                                        Color.challengrYellow.opacity(0.7),
+                                        Color.challengrGreen.opacity(0.5)
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
@@ -103,23 +111,25 @@ struct BattleWinView: View {
                             )
                     }
                 )
-                .shadow(color: .black.opacity(0.12), radius: 30, x: 0, y: 18)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 32))
+                .shadow(color: .black.opacity(0.5), radius: 30, x: 0, y: 18)
+                .shadow(color: .challengrYellow.opacity(0.15), radius: 30, x: 0, y: 0)
                 .scaleEffect(appearScale)
                 .opacity(appearOpacity)
 
                 // Button zurück zur Karte
                 Button(action: onClose) {
                     Text("ZURÜCK ZUR KARTE")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .font(.system(size: 14, weight: .black, design: .rounded))
                         .tracking(1)
-                        .foregroundColor(.challengrBlack.opacity(0.85))
+                        .foregroundColor(.challengrDark)
                         .frame(maxWidth: 260)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 14)
                         .background(
                             RoundedRectangle(cornerRadius: 20)
-                                .fill(Color.white.opacity(0.95))
+                                .fill(Color.challengrYellow)
                         )
-                        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
+                        .shadow(color: .challengrYellow.opacity(0.4), radius: 14, x: 0, y: 6)
                 }
                 .padding(.top, 18)
                 .opacity(appearOpacity)
@@ -128,6 +138,7 @@ struct BattleWinView: View {
             }
             .padding(.horizontal, 24)
             .onAppear {
+                SoundManager.shared.playSound("JINGLE_01")
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
                     appearScale = 1.0
                     appearOpacity = 1.0
@@ -137,6 +148,15 @@ struct BattleWinView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Helpers (Hilfsfunktionen)
+
+    /// Shows the local player's real chosen avatar; the opponent's actual
+    /// avatar isn't known server-side, so they always get the same neutral
+    /// fallback instead of a value that used to depend on who won.
+    private func avatarName(for playerName: String) -> String {
+        playerName == ownPlayerName ? AvatarPresets.persistedImageName() : "playerGirl"
     }
 
     // MARK: - Subviews (Unteransichten)
@@ -154,7 +174,7 @@ struct BattleWinView: View {
                 RoundedRectangle(cornerRadius: 24)
                     .fill(Color.white)
                     .frame(width: 130, height: 190)
-                    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 6)
+                    .shadow(color: .black.opacity(0.3), radius: 14, x: 0, y: 8)
 
                 RoundedRectangle(cornerRadius: 20)
                     .stroke(color, lineWidth: 3)
@@ -254,13 +274,13 @@ struct BattleWinView: View {
             Text("CHALLENGE WERTE")
                 .font(.system(size: 12, weight: .black, design: .rounded))
                 .tracking(1.6)
-                .foregroundColor(.challengrBlack.opacity(0.6))
+                .foregroundColor(.white.opacity(0.6))
 
             ForEach(rows, id: \.title) { row in
                 VStack(alignment: .leading, spacing: 8) {
                     Text(row.title)
                         .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(.challengrBlack.opacity(0.85))
+                        .foregroundColor(.white.opacity(0.85))
 
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
@@ -287,7 +307,7 @@ struct BattleWinView: View {
                 .padding(12)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(.systemGray6))
+                        .fill(Color.white.opacity(0.08))
                 )
             }
         }

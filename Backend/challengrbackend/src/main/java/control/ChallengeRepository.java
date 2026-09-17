@@ -32,6 +32,10 @@ public class ChallengeRepository {
         return em.find(Challenges.class, id);
     }
 
+    public long count() {
+        return em.createQuery("SELECT COUNT(c) FROM Challenges c", Long.class).getSingleResult();
+    }
+
     @Transactional
     public Challenges create(Challenges challenge) {
         if (challenge == null) {

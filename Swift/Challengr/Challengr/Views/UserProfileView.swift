@@ -40,6 +40,7 @@ struct UserProfileView: View {
     let battleHistory: [BattleHistoryDTO]
     let profileStatusText: String?
     let profileBadges: [String]
+    var rankColor: Color = .gray
 
     @State private var selectedDate: String? = nil
     @State private var selectedPoints: Int? = nil
@@ -68,7 +69,7 @@ struct UserProfileView: View {
                             .frame(width: 100, height: 100)
                             .clipShape(Circle())
                             .overlay(
-                                Circle().stroke(Color.yellow, lineWidth: 4)
+                                Circle().stroke(Color.challengrYellow, lineWidth: 4)
                             )
                             .shadow(radius: 10)
 
@@ -88,14 +89,21 @@ struct UserProfileView: View {
                 }
                 .buttonStyle(.plain)
 
-                Text(data.name)
-                    .font(.system(size: 24, weight: .bold))
+                Text(data.name.uppercased())
+                    .font(.system(size: 24, weight: .black, design: .rounded))
+                    .tracking(1)
 
                 statusChip
 
-                Text("\(data.points) Punkte")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
+                HStack(spacing: 6) {
+                    Image(systemName: "trophy.fill")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.challengrYellow)
+                    Text("\(data.points) PUNKTE")
+                        .font(.system(size: 16, weight: .black, design: .rounded))
+                        .tracking(0.5)
+                        .foregroundColor(.secondary)
+                }
 
                 VStack(spacing: 12) {
                     HStack(spacing: 12) {
@@ -109,7 +117,8 @@ struct UserProfileView: View {
                         StatBox(title: "Gewonnen",
                                 value: "\(data.wonChallenges)")
                         StatBox(title: "Rang",
-                                value: data.rankName)
+                                value: data.rankName,
+                                valueColor: rankColor)
                     }
                 }
                 .padding(.top, 8)
@@ -137,8 +146,9 @@ struct UserProfileView: View {
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Punkteverlauf")
-                    .font(.system(size: 14, weight: .bold))
+                Text("PUNKTEVERLAUF")
+                    .font(.system(size: 12, weight: .black, design: .rounded))
+                    .tracking(1.2)
                     .foregroundColor(.secondary)
                 Spacer()
                 Button {
@@ -280,8 +290,9 @@ struct UserProfileView: View {
         let badges = resolvedBadges
 
         return VStack(alignment: .leading, spacing: 10) {
-            Text("Badges")
-                .font(.system(size: 14, weight: .bold))
+            Text("BADGES")
+                .font(.system(size: 12, weight: .black, design: .rounded))
+                .tracking(1.2)
                 .foregroundColor(.secondary)
 
             if badges.isEmpty {
@@ -604,14 +615,16 @@ struct UserProfileView: View {
 struct StatBox: View {
     let title: String
     let value: String
+    var valueColor: Color = .primary
 
     var body: some View {
         VStack(spacing: 6) {
             Text(value)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(.primary)
+                .font(.system(size: 17, weight: .black, design: .rounded))
+                .foregroundColor(valueColor)
             Text(title.uppercased())
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .tracking(0.5)
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)

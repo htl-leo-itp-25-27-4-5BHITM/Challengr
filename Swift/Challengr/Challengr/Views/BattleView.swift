@@ -1,6 +1,4 @@
 import SwiftUI
-import RealityKit
-import simd
 
 // MARK: - View (UI)
 
@@ -14,8 +12,12 @@ struct BattleView: View {
     let onSurrender: () -> Void
     let onFinished: () -> Void
 
-    // MARK: - UI States (keine Animationen)
-    // Intentionally no animated state—screen should be static.
+    // MARK: - Entrance choreography (Eintritts-Animation)
+    @State private var headerAppeared = false
+    @State private var stripsAppeared = false
+    @State private var vsAppeared = false
+    @State private var vsFlash = false
+    @State private var idleBounce = false
 
     // MARK: - Body (UI-Aufbau)
     var body: some View {
@@ -27,6 +29,8 @@ struct BattleView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 14) {
                         header
+                            .opacity(headerAppeared ? 1 : 0)
+                            .offset(y: headerAppeared ? 0 : -16)
 
                         // Give the challenge title more breathing room above the stage.
                         // (We intentionally push the stage down; there's free space below.)
@@ -43,6 +47,8 @@ struct BattleView: View {
                 .scrollBounceBehavior(.basedOnSize)
                 .safeAreaInset(edge: .bottom) {
                     bottomBar
+                        .opacity(stripsAppeared ? 1 : 0)
+                        .offset(y: stripsAppeared ? 0 : 24)
                         .padding(.horizontal, 16)
                         .padding(.bottom, 10)
                         .background(
@@ -56,6 +62,27 @@ struct BattleView: View {
                             )
                         )
                 }
+            }
+        }
+        .onAppear { playEntrance() }
+    }
+
+    private func playEntrance() {
+        withAnimation(.easeOut(duration: 0.35)) {
+            headerAppeared = true
+        }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.72).delay(0.15)) {
+            stripsAppeared = true
+        }
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.55).delay(0.5)) {
+            vsAppeared = true
+        }
+        withAnimation(.easeOut(duration: 0.6).delay(0.5)) {
+            vsFlash = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
+                idleBounce = true
             }
         }
     }
@@ -210,45 +237,10 @@ struct BattleView: View {
     }
 
     // MARK: - Subviews (Unteransichten)
-    // MARK: - Player Panel (Spieler-Panel)
-
-    private func playerPanel(
-        name: String,
-        color: Color,
-        imageName: String,
-        flip: Bool
-    ) -> some View {
-        VStack(spacing: 8) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 26)
-                    .fill(Color.white)
-                    .frame(width: 120, height: 180)
-                    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 6)
-
-                RoundedRectangle(cornerRadius: 22)
-                    .stroke(color, lineWidth: 3)
-                    .frame(width: 110, height: 170)
-
-                Image(imageName)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 110, height: 170)
-                    .scaleEffect(x: flip ? -1 : 1, y: 1)
-                    .clipShape(
-                        RoundedRectangle(cornerRadius: 22)
-                    )
-            }
-
-            Text(name.uppercased())
-                .font(.system(size: 13, weight: .bold, design: .rounded))
-                .tracking(1)
-                .foregroundColor(color)
-        }
-    }
+    // MARK: - Battle stage (Kampf-Bühne)
 
     private func battleStage(stageHeight: CGFloat) -> some View {
         ZStack {
-            // Top-left Challenger strip (extends right)
             VStack {
                 HStack {
                     playerStrip(
@@ -259,6 +251,8 @@ struct BattleView: View {
                         alignRight: false,
                         compact: stageHeight < 300
                     )
+                    .offset(x: stripsAppeared ? 0 : -260)
+                    .opacity(stripsAppeared ? 1 : 0)
 
                     Spacer(minLength: 0)
                 }
@@ -280,6 +274,8 @@ struct BattleView: View {
                         alignRight: true,
                         compact: stageHeight < 300
                     )
+                    .offset(x: stripsAppeared ? 0 : 260)
+                    .opacity(stripsAppeared ? 1 : 0)
                 }
             }
             .padding(.horizontal, 8)
@@ -297,11 +293,8 @@ struct BattleView: View {
         alignRight: Bool,
         compact: Bool
     ) -> some View {
-    let modelSize = compact ? CGSize(width: 190, height: 140) : CGSize(width: 230, height: 160)
-    let stripHeight = modelSize.height + 34
-    // Full character in battle strips, but always planted on the bottom edge.
-    let characterScale: CGFloat = compact ? 1.0 : 1.0
-        let corner: UIRectCorner = alignRight ? [.topLeft, .bottomLeft] : [.topRight, .bottomRight]
+        let modelSize = compact ? CGSize(width: 200, height: 155) : CGSize(width: 250, height: 185)
+        let stripHeight = modelSize.height + 34
         let nameFont: CGFloat = compact ? 12 : 13
 
         return HStack(alignment: .bottom, spacing: 12) {
@@ -318,19 +311,15 @@ struct BattleView: View {
                     .padding(.top, 10)
                     .padding(.bottom, 4)
 
-                characterModelView(flip: flip, fallbackImage: imageName)
-                    .scaleEffect(characterScale, anchor: .bottom)
-                    // Keep the avatar on the box bottom edge.
+                CharacterAvatarView(imageName: imageName, flip: flip, bounce: idleBounce)
                     .frame(width: modelSize.width, height: modelSize.height, alignment: .bottom)
                     .shadow(color: .black.opacity(0.55), radius: 18, x: 0, y: 12)
-                .padding(.trailing, 6)
+                    .padding(.trailing, 6)
             } else {
-                characterModelView(flip: flip, fallbackImage: imageName)
-                    .scaleEffect(characterScale, anchor: .bottom)
-                    // Keep the avatar on the box bottom edge.
+                CharacterAvatarView(imageName: imageName, flip: flip, bounce: idleBounce)
                     .frame(width: modelSize.width, height: modelSize.height, alignment: .bottom)
                     .shadow(color: .black.opacity(0.55), radius: 18, x: 0, y: 12)
-                .padding(.leading, 6)
+                    .padding(.leading, 6)
 
                 Text(name.uppercased())
                     .font(.system(size: nameFont, weight: .black, design: .rounded))
@@ -348,10 +337,7 @@ struct BattleView: View {
         .frame(height: stripHeight)
         .background {
             ZStack {
-                // Player strip background image (the "box" background)
-                Image("basic")
-                    .resizable()
-                    .scaledToFill()
+                battleStripBackground(color: color, alignRight: alignRight)
 
                 // Readability + team tint
                 Color.black.opacity(0.45)
@@ -377,15 +363,69 @@ struct BattleView: View {
             }
             .clipped() // prevent any image bleed
         }
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .clipShape(ChamferedCard(alignRight: alignRight))
         .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(color.opacity(0.35), lineWidth: 1)
+            ChamferedCard(alignRight: alignRight)
+                .stroke(color.opacity(0.45), lineWidth: 1.5)
         )
+    }
+
+    /// On-brand player strip backdrop: dark base + team-colored glow + faint
+    /// diagonal speed lines. Replaces a mismatched stock "war photo" image.
+    private func battleStripBackground(color: Color, alignRight: Bool) -> some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color.challengrDark, Color.black],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            RadialGradient(
+                colors: [color.opacity(0.45), Color.clear],
+                center: alignRight ? .bottomLeading : .bottomTrailing,
+                startRadius: 4,
+                endRadius: 220
+            )
+
+            GeometryReader { geo in
+                Path { path in
+                    let spacing: CGFloat = 22
+                    var x: CGFloat = -geo.size.height
+                    while x < geo.size.width {
+                        path.move(to: CGPoint(x: x, y: 0))
+                        path.addLine(to: CGPoint(x: x + geo.size.height, y: geo.size.height))
+                        x += spacing
+                    }
+                }
+                .stroke(Color.white.opacity(0.05), lineWidth: 3)
+            }
+        }
     }
 
     private var vsCenter: some View {
         ZStack {
+            // Expanding impact ring on entrance.
+            Circle()
+                .stroke(Color.white.opacity(vsFlash ? 0 : 0.85), lineWidth: 3)
+                .frame(width: vsFlash ? 150 : 40, height: vsFlash ? 150 : 40)
+
+            // Split-color disc (each fighter's color) glowing behind the badge,
+            // instead of a busy radiating pattern.
+            Circle()
+                .fill(
+                    AngularGradient(
+                        colors: [
+                            .challengrYellow, .challengrYellow,
+                            .challengrRed, .challengrRed,
+                            .challengrYellow
+                        ],
+                        center: .center
+                    )
+                )
+                .frame(width: 84, height: 84)
+                .blur(radius: 18)
+                .opacity(0.55)
+
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(
                     LinearGradient(
@@ -405,168 +445,71 @@ struct BattleView: View {
                 .shadow(color: Color.challengrYellow.opacity(0.12), radius: 18, x: 0, y: 0)
                 .shadow(color: Color.challengrRed.opacity(0.12), radius: 18, x: 0, y: 0)
 
-            VStack(spacing: 6) {
-                Text("VS")
-                    .font(.system(size: 26, weight: .black, design: .rounded))
-                    .tracking(1.2)
-                    .foregroundColor(.white)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 12)
+            Text("VS")
+                .font(.system(size: 28, weight: .black, design: .rounded))
+                .tracking(1.2)
+                .foregroundColor(.white)
         }
-        .frame(width: 66, height: 62)
+        .frame(width: 70, height: 66)
+        .scaleEffect(vsAppeared ? 1 : 0.2)
+        .opacity(vsAppeared ? 1 : 0)
         .accessibilityLabel("VS")
     }
-
-    private func characterCard(
-        name: String,
-        color: Color,
-        imageName: String,
-        flip: Bool,
-        compact: Bool
-    ) -> some View {
-        let modelSize = compact ? CGSize(width: 180, height: 140) : CGSize(width: 220, height: 170)
-        let nameWidth: CGFloat = compact ? 220 : 260
-
-        return VStack(spacing: 6) {
-            characterModelView(flip: flip, fallbackImage: imageName)
-                .frame(width: modelSize.width, height: modelSize.height)
-                .shadow(color: Color.black.opacity(0.55), radius: 20, x: 0, y: 14)
-                .background(
-                    RadialGradient(
-                        colors: [
-                            color.opacity(0.18),
-                            Color.clear
-                        ],
-                        center: .center,
-                        startRadius: 8,
-                        endRadius: 150
-                    )
-                )
-
-            Text(name.uppercased())
-                .font(.system(size: 11, weight: .black, design: .rounded))
-                .tracking(0.8)
-                .foregroundColor(color)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .lineLimit(1)
-                .minimumScaleFactor(0.60)
-                .background(
-                    Capsule()
-                        .fill(Color.white.opacity(0.15))
-                )
-                .frame(width: nameWidth)
-        }
-    }
-
-    @ViewBuilder
-    private func characterModelView(flip: Bool, fallbackImage: String) -> some View {
-        CharacterModelContainer(flip: flip, fallbackImage: fallbackImage)
-    }
 }
 
-private struct CharacterModelContainer: View {
-    let flip: Bool
-    let fallbackImage: String
-
-    @State private var model: ModelEntity?
-    @State private var didTryLoad = false
-
-    var body: some View {
-        ZStack {
-            if model == nil {
-                ZStack(alignment: .bottom) {
-                    // Grounding shadow/plate so the character doesn't look like it's floating.
-                    Capsule()
-                        .fill(Color.black.opacity(0.35))
-                        .frame(width: 92, height: 16)
-                        .blur(radius: 8)
-                        .offset(y: 10)
-
-                    Image(fallbackImage)
-                        .resizable()
-                        .scaledToFit()
-                        // Right-side fighter should face left; left-side fighter should face right.
-                        .scaleEffect(x: flip ? -1 : 1, y: 1)
-                }
-            }
-
-            if #available(iOS 17.0, *), let model {
-                RealityView { content in
-                    // Anchor: otherwise entities can appear in an unexpected coordinate space.
-                    let anchor = AnchorEntity(world: .zero)
-
-                    let clone = model.clone(recursive: true)
-                    // Rotate the right-side fighter towards center.
-                    let rotation = simd_quatf(angle: flip ? .pi : 0, axis: SIMD3<Float>(0, 1, 0))
-
-                    // Basic staging so the model looks consistent even without custom cameras.
-                    clone.transform = Transform(
-                        scale: SIMD3<Float>(repeating: 1.10),
-                        rotation: rotation,
-                        translation: SIMD3<Float>(0, -0.55, 0)
-                    )
-
-                    // Light
-                    let light = DirectionalLight()
-                    light.light.intensity = 22_000
-                    light.shadow = DirectionalLightComponent.Shadow(maximumDistance: 4.0)
-                    light.look(at: SIMD3<Float>(0, 0, 0), from: SIMD3<Float>(1.5, 2.0, 1.5), relativeTo: nil)
-                    anchor.addChild(light)
-
-                    // Ground plane for softer shadows / grounding cue
-                    let ground = ModelEntity(
-                        mesh: .generatePlane(width: 2.2, depth: 2.2),
-                        materials: [SimpleMaterial(color: .black.withAlphaComponent(0.12), isMetallic: false)]
-                    )
-                    ground.position = SIMD3<Float>(0, -0.75, 0)
-                    anchor.addChild(ground)
-                    anchor.addChild(clone)
-
-                    content.add(anchor)
-                }
-            }
-        }
-        .task {
-            guard model == nil else { return }
-            await loadModel()
-        }
-    }
-
-    private func loadModel() async {
-        didTryLoad = true
-
-        // Preferred: load from Asset Catalog dataset `character.dataset/character.usdc`
-        if let fromCatalog = try? await ModelEntity(named: "character") {
-            model = fromCatalog
-            return
-        }
-
-        // Fallbacks: in case the asset is shipped as a standalone file.
-        if let usdzURL = Bundle.main.url(forResource: "character", withExtension: "usdz"),
-           let fromUsdz = try? await ModelEntity(contentsOf: usdzURL) {
-            model = fromUsdz
-            return
-        }
-
-        if let usdcURL = Bundle.main.url(forResource: "character", withExtension: "usdc"),
-           let fromUsdc = try? await ModelEntity(contentsOf: usdcURL) {
-            model = fromUsdc
-        }
-    }
-}
-
-private struct RoundedCorner: Shape {
-    var radius: CGFloat = .infinity
-    var corners: UIRectCorner = .allCorners
+/// Card shape with one corner chamfered off, angled toward the VS badge.
+/// Gives the two fighter cards a "clash" feel instead of two plain boxes.
+private struct ChamferedCard: Shape {
+    let alignRight: Bool
+    var chamfer: CGFloat = 30
 
     func path(in rect: CGRect) -> Path {
-        let path = UIBezierPath(
-            roundedRect: rect,
-            byRoundingCorners: corners,
-            cornerRadii: CGSize(width: radius, height: radius)
-        )
-        return Path(path.cgPath)
+        let c = min(chamfer, min(rect.width, rect.height) * 0.35)
+        var path = Path()
+
+        if alignRight {
+            // Bottom-right card: chamfer the top-left corner (faces up/left toward VS).
+            path.move(to: CGPoint(x: c, y: 0))
+            path.addLine(to: CGPoint(x: rect.width, y: 0))
+            path.addLine(to: CGPoint(x: rect.width, y: rect.height))
+            path.addLine(to: CGPoint(x: 0, y: rect.height))
+            path.addLine(to: CGPoint(x: 0, y: c))
+            path.closeSubpath()
+        } else {
+            // Top-left card: chamfer the bottom-right corner (faces down/right toward VS).
+            path.move(to: CGPoint(x: 0, y: 0))
+            path.addLine(to: CGPoint(x: rect.width, y: 0))
+            path.addLine(to: CGPoint(x: rect.width, y: rect.height - c))
+            path.addLine(to: CGPoint(x: rect.width - c, y: rect.height))
+            path.addLine(to: CGPoint(x: 0, y: rect.height))
+            path.closeSubpath()
+        }
+
+        return path
+    }
+}
+
+/// A player's 2D character illustration, planted on a grounding shadow with a
+/// subtle idle breathing loop so the VS screen doesn't feel static.
+private struct CharacterAvatarView: View {
+    let imageName: String
+    let flip: Bool
+    let bounce: Bool
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Capsule()
+                .fill(Color.black.opacity(0.35))
+                .frame(width: 96, height: 18)
+                .blur(radius: 8)
+                .offset(y: 12)
+
+            Image(imageName)
+                .resizable()
+                .scaledToFit()
+                // Right-side fighter should face left; left-side fighter should face right.
+                .scaleEffect(x: flip ? -1 : 1, y: 1)
+                .scaleEffect(bounce ? 1.035 : 1.0, anchor: .bottom)
+        }
     }
 }

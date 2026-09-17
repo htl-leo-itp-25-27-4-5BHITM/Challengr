@@ -125,4 +125,18 @@ INSERT INTO rank (name, min, max, color) VALUES
                                              ('Dueler', 1400, 1999, 'purple'),
                                              ('Challengr', 2000, 2800, 'yellow');
 
+---------------------------------------------------------
+-- SHOP ITEMS
+---------------------------------------------------------
+INSERT INTO shop_item (code, name, imageName, price, rarity) VALUES
+                                             ('coin', 'Coin', 'Coin 1', 50, 'common'),
+                                             ('trophy', 'Trophy', 'Trophy 1', 100, 'common'),
+                                             ('combo_booster', 'Combo Booster', 'ComboBooster 1', 150, 'uncommon'),
+                                             ('trophy_boost', 'Trophy Boost', 'Energieflasche 1', 200, 'uncommon'),
+                                             ('rematch_ticket', 'Rematch Ticket', 'RematchTicket 1', 250, 'rare'),
+                                             ('stealth_cloak', 'Stealth Cloak', 'StealthCloak 1', 300, 'rare'),
+                                             ('streak_saver', 'Streak Saver', 'StreakSaver 1', 400, 'epic'),
+                                             ('point_shield', 'Point Shield', 'PunkteSchild 1', 600, 'epic'),
+                                             ('full_stealth_potion', 'Full Stealth Potion', 'Unsichtbar 1', 800, 'legendary');
+
 

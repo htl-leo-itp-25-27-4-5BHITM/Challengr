@@ -21,6 +21,7 @@ struct PlayerAnnotation: Identifiable {
     let playerId: String
     let coordinate: CLLocationCoordinate2D
     let title: String
+    let rankName: String
 }
 
 enum ActiveFullScreen {
@@ -191,6 +192,10 @@ struct MapView: View {
     // coordinate does not change (simulator often stays constant).
     @State private var nearbyRefreshTask: Task<Void, Never>? = nil
 
+    /// Rank name -> rank color, used to tint player pins on the map.
+    @State private var rankColorsByName: [String: Color] = [:]
+    private let rankService = RankService()
+
     @State private var showFriendRequestBanner: Bool = false
     @State private var friendRequestBannerText: String = ""
 
@@ -323,6 +328,12 @@ struct MapView: View {
                 .padding(.top, 28)
                 .padding(.horizontal, 18)
 
+                HStack {
+                    pointsChip
+                    Spacer()
+                }
+                .padding(.top, 10)
+                .padding(.horizontal, 18)
 
                 Spacer()
             }
@@ -349,7 +360,18 @@ struct MapView: View {
             }
         }
         .sheet(isPresented: $showShop) {
-            ShopView()
+            ShopView(
+                ownPlayerId: ownPlayerId,
+                initialPoints: ownPoints,
+                onPointsChanged: { newPoints in
+                    ownPoints = newPoints
+                }
+            )
+        }
+        .onChange(of: showShop) { isShown in
+            if isShown {
+                reloadOwnPlayerData()
+            }
         }
         .sheet(isPresented: $showProfile) {
             ProfileContainerView(
@@ -367,6 +389,7 @@ struct MapView: View {
                 battleHistory: battleHistory,
                 profileStatusText: profileStatusText,
                 profileBadges: profileBadges,
+                rankColor: rankColor(for: ownRankName),
                 allChallenges: allChallenges,
                 socket: socket,
                 currentCoordinate: ownCoordinate
@@ -535,7 +558,7 @@ struct MapView: View {
 
             case .win:
                 if let data = resultData {
-                    BattleWinView(data: data) {
+                    BattleWinView(data: data, ownPlayerName: ownPlayerName) {
                         activeFullScreen = .none   // zurück zur Map
                     }
                 } else {
@@ -545,7 +568,7 @@ struct MapView: View {
 
             case .lose:
                 if let data = resultData {
-                    BattleLoseView(data: data) {
+                    BattleLoseView(data: data, ownPlayerName: ownPlayerName) {
                         activeFullScreen = .none   // schließt das Fullscreen-Cover
                     }
                 } else {
@@ -602,10 +625,11 @@ struct MapView: View {
                     .stroke(Color.blue.opacity(0.6), lineWidth: 2)
 
                 Annotation("Du", coordinate: ownCoordinate) {
-                    Image(systemName: "person.circle.fill")
-                        .font(.title)
-                        .foregroundColor(.challengrYellow)
-                        .shadow(color: .black.opacity(0.25), radius: 2, x: 0, y: 1)
+                    MapAvatarPin(
+                        imageName: AvatarPresets.persistedImageName(),
+                        ringColor: .challengrYellow,
+                        isOwnPlayer: true
+                    )
                 }
             }
 
@@ -620,9 +644,11 @@ struct MapView: View {
                             showPlayerPopup = true
                         }
                     } label: {
-                        Image(systemName: "mappin.circle.fill")
-                            .font(.title)
-                            .foregroundColor(.chalengrRed)
+                        MapAvatarPin(
+                            imageName: nil,
+                            ringColor: rankColor(for: annotation.rankName),
+                            isOwnPlayer: false
+                        )
                     }
                 }
             }
@@ -677,6 +703,28 @@ struct MapView: View {
                     }
                 }
             }
+    }
+
+    /// Always-visible points/currency chip, tappable to jump straight into the shop.
+    private var pointsChip: some View {
+        Button {
+            showShop = true
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.challengrYellow)
+                Text("\(ownPoints)")
+                    .font(.system(size: 13, weight: .black, design: .rounded))
+                    .foregroundColor(.challengrDark)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color.white.opacity(0.9))
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.18), radius: 5, x: 0, y: 3)
+        }
+        .buttonStyle(.plain)
     }
 
     /// Floating button that centers the map on the current user location.
@@ -780,10 +828,23 @@ struct MapView: View {
             if let player = selectedPlayer, showPlayerPopup {
                 VStack(spacing: 10) {
 
-                    Text(player.title.uppercased())
-                        .font(.system(size: 14, weight: .black, design: .rounded))
-                        .tracking(1)
-                        .foregroundStyle(.challengrBlack)
+                    MapAvatarPin(
+                        imageName: nil,
+                        ringColor: rankColor(for: player.rankName),
+                        isOwnPlayer: false
+                    )
+
+                    VStack(spacing: 2) {
+                        Text(cleanPlayerName(player.title).uppercased())
+                            .font(.system(size: 14, weight: .black, design: .rounded))
+                            .tracking(1)
+                            .foregroundStyle(.challengrBlack)
+
+                        Text(player.rankName.uppercased())
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .tracking(1)
+                            .foregroundStyle(rankColor(for: player.rankName))
+                    }
 
                     Button {
                         showPlayerChallengeDialog = true
@@ -830,7 +891,8 @@ struct MapView: View {
 
                     ChallengeDialogView(
                         otherPlayerId: player.playerId,
-                        otherPlayerName: player.title,
+                        otherPlayerName: cleanPlayerName(player.title),
+                        otherPlayerRankColor: rankColor(for: player.rankName),
                         ownPlayerId: ownPlayerId,
                         allChallenges: allChallenges,
                         socket: socket
@@ -843,15 +905,51 @@ struct MapView: View {
         }
     }
 
+    /// Small circular category badge (icon + tint), used in challenge overlays.
+    private func categoryBadge(for category: String) -> some View {
+        ZStack {
+            Circle()
+                .fill(categoryColor(for: category).opacity(0.16))
+                .frame(width: 40, height: 40)
+
+            Image(systemName: categoryIcon(for: category))
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(categoryColor(for: category))
+        }
+    }
+
+    private func categoryColor(for category: String) -> Color {
+        switch category {
+        case "Fitness":  return .challengrYellow
+        case "Mutprobe": return .chalengrRed
+        case "Wissen":   return .challengrGreen
+        case "iPhone":   return .challengrBlack
+        case "Customer": return .gray
+        default:         return .challengrYellow
+        }
+    }
+
+    private func categoryIcon(for category: String) -> String {
+        switch category {
+        case "Fitness":  return "sportscourt"
+        case "Mutprobe": return "flame"
+        case "Wissen":   return "lightbulb"
+        case "iPhone":   return "iphone"
+        case "Customer": return "person.2"
+        default:         return "questionmark"
+        }
+    }
+
     /// Overlay that appears when another player challenges the local player.
     private var incomingChallengeOverlay: some View {
         Group {
             if let challenge = incomingChallenge,
                let battleId = currentBattleId {
 
-                let opponentName =
-                    annotations.first(where: { $0.playerId == challenge.fromId })?.title
-                    ?? "Gegner \(challenge.fromId)"
+                let opponentAnnotation = annotations.first(where: { $0.playerId == challenge.fromId })
+                let opponentTitle = opponentAnnotation?.title ?? "Gegner \(challenge.fromId)"
+                let opponentName = cleanPlayerName(opponentTitle)
+                let opponentRingColor = opponentAnnotation.map { rankColor(for: $0.rankName) } ?? .gray
 
                 ZStack {
                     Color.black.opacity(0.55)
@@ -863,9 +961,13 @@ struct MapView: View {
                             .tracking(1.4)
                             .foregroundColor(.challengrYellow)
 
+                        MapAvatarPin(imageName: nil, ringColor: opponentRingColor, isOwnPlayer: false)
+
                         Text(opponentName.uppercased())
                             .font(.system(size: 20, weight: .black, design: .rounded))
                             .foregroundColor(.challengrDark)
+
+                        categoryBadge(for: challenge.category)
 
                         Text(challenge.name)
                             .font(.system(size: 15, weight: .bold, design: .rounded))
@@ -919,24 +1021,10 @@ struct MapView: View {
         Group {
             if activeOverlay == .resultPending {
                 ZStack {
-                    Color.black.opacity(0.4)
+                    Color.black.opacity(0.55)
                         .ignoresSafeArea()
 
-                    VStack(spacing: 12) {
-                        Text("ERGEBNIS WIRD BERECHNET")
-                            .font(.system(size: 16, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-
-                        ProgressView()
-                            .progressViewStyle(.circular)
-                            .tint(.white)
-                    }
-                    .padding(20)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(.ultraThinMaterial)
-                    )
-                    .shadow(radius: 10)
+                    ResultPendingCard()
                 }
                 .transition(.opacity)
             }
@@ -1049,8 +1137,11 @@ struct MapView: View {
             await preloadChallenges()
         }
 
-        
-        
+        Task {
+            await loadRankColors()
+        }
+
+
         reloadOwnPlayerData()
 
 
@@ -1215,6 +1306,29 @@ struct MapView: View {
     }
 
     @MainActor
+    private func loadRankColors() async {
+        do {
+            let ranks = try await rankService.loadRanks()
+            rankColorsByName = Dictionary(uniqueKeysWithValues: ranks.map { ($0.name, $0.uiColor) })
+        } catch {
+            print("Fehler beim Laden der Rank-Farben:", error)
+        }
+    }
+
+    private func rankColor(for rankName: String) -> Color {
+        rankColorsByName[rankName] ?? .gray
+    }
+
+    private func cleanPlayerName(_ title: String) -> String {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let separator = " · "
+        if trimmed.contains(separator) {
+            return trimmed.components(separatedBy: separator).first ?? trimmed
+        }
+        return trimmed
+    }
+
+    @MainActor
     private func preloadChallenges() async {
         let categories = ["Fitness", "Mutprobe", "Wissen", "iPhone", "Customer"]
         var loadedChallenges: [ChallengeDTO] = []
@@ -1283,7 +1397,8 @@ struct MapView: View {
                 PlayerAnnotation(
                     playerId: $0.id,
                     coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude),
-                    title: "\($0.name) · \($0.rankName)"
+                    title: "\($0.name) · \($0.rankName)",
+                    rankName: $0.rankName
                 )
             }
 

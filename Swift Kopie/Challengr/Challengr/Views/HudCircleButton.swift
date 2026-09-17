@@ -82,6 +82,46 @@ struct CompassView: View {
     }
 }
 
+/// Circular avatar-style map pin. Shows the player's own avatar image when
+/// available; falls back to a generic silhouette (tinted by rank) for other
+/// players, since we don't know their chosen outfit server-side.
+struct MapAvatarPin: View {
+    let imageName: String?
+    let ringColor: Color
+    let isOwnPlayer: Bool
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.black.opacity(0.25))
+                .frame(width: 44, height: 44)
+                .blur(radius: 4)
+                .offset(y: 3)
+
+            Circle()
+                .fill(isOwnPlayer ? Color.white : Color.challengrDark)
+                .frame(width: 40, height: 40)
+
+            if let imageName {
+                Image(imageName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 40, height: 40)
+                    .clipShape(Circle())
+            } else {
+                Image(systemName: "person.fill")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+            }
+
+            Circle()
+                .stroke(ringColor, lineWidth: 3)
+                .frame(width: 40, height: 40)
+        }
+        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+    }
+}
+
 struct Triangle: Shape {
     // MARK: - Drawing (Zeichnen)
     func path(in rect: CGRect) -> Path {

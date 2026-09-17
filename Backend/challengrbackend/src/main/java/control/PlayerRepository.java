@@ -123,6 +123,12 @@ public class PlayerRepository {
         return em.find(Player.class, id);
     }
 
+    public List<Player> topPlayers(int limit) {
+        return em.createQuery("SELECT p FROM Player p ORDER BY p.points DESC", Player.class)
+                .setMaxResults(limit)
+                .getResultList();
+    }
+
     public List<Player> findBannedExpired(Instant now) {
         if (now == null) {
             now = Instant.now();

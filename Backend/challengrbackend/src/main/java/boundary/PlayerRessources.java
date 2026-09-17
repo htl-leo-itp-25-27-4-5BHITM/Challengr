@@ -458,9 +458,9 @@ public class PlayerRessources {
             int delta;
 
             if (b.getWinner() != null && b.getWinner().getId().equals(player.getId())) {
-                delta = b.getWinnerPointsDelta();
+                delta = b.getWinnerPointsDelta() != null ? b.getWinnerPointsDelta() : 0;
             } else {
-                delta = b.getLoserPointsDelta();
+                delta = b.getLoserPointsDelta() != null ? b.getLoserPointsDelta() : 0;
             }
 
             currentPoints -= delta; // 🔥 rückwärts rechnen!

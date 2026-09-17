@@ -15,6 +15,7 @@ struct ContentView: View {
     @StateObject private var auth = KeycloakAuthService()
     @StateObject private var friendsInbox = FriendsInboxStore()
     @StateObject private var inviteFlow = FriendInviteFlow()
+    @State private var showOnboarding = OnboardingView.shouldShow
 
     // MARK: - Body (UI-Aufbau)
     var body: some View {
@@ -29,6 +30,11 @@ struct ContentView: View {
                     .environmentObject(friendsInbox)
                     .task {
                         friendsInbox.startPolling(playerId: playerId)
+                    }
+                    .fullScreenCover(isPresented: $showOnboarding) {
+                        OnboardingView {
+                            showOnboarding = false
+                        }
                     }
                 } else {
                     VStack(spacing: 12) {

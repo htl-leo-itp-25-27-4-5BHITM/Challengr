@@ -9,6 +9,7 @@ struct ProfileContainerView: View {
     let battleHistory: [BattleHistoryDTO]
     let profileStatusText: String?
     let profileBadges: [String]
+    var rankColor: Color = .gray
     let allChallenges: [ChallengeDTO]
     let socket: GameSocketService?
     
@@ -54,7 +55,8 @@ struct ProfileContainerView: View {
                     pointsHistory: pointsHistory,
                     battleHistory: battleHistory,
                     profileStatusText: profileStatusText,
-                    profileBadges: profileBadges
+                    profileBadges: profileBadges,
+                    rankColor: rankColor
                 )
                 .tag(0)
 

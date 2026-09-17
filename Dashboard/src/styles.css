@@ -1,27 +1,42 @@
 :root {
   --yellow: #fdd006;
+  --yellow-deep: #e0ad00;
   --black: #1e000e;
   --white: #ffffff;
-  --bg: #f9f9f9;
+  --bg: #f6f5fa;
   --red: #ba1f33;
+  --green: #1fa85a;
+  --blue: #3b82f6;
   --gray: #eaeaea;
   --text-light: #6b6b6b;
+  --font-display: 'Poppins', 'Inter', sans-serif;
+  --font-body: 'Inter', Arial, sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body);
   background: var(--bg);
   color: var(--black);
   overflow: hidden;
 }
 
+h1, h2, h3 {
+  font-family: var(--font-display);
+  line-height: 1.3;
+}
+
 /* Standard Card Style */
 .card {
   background: var(--white);
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 20px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.04);
+  border: 1px solid rgba(30, 0, 14, 0.06);
+  box-shadow: 0 6px 20px rgba(30, 0, 14, 0.05);
   transition: all 0.2s ease;
 }
 

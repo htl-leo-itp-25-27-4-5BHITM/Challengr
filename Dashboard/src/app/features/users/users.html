@@ -1,20 +1,38 @@
+<div class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="crumbs">Admin <span>/</span> Users</div>
+    <h1>Spieler verwalten</h1>
+    <div class="subtitle">Alle registrierten Spieler, Punktestände und Sperren im Überblick.</div>
+  </div>
+</div>
+
 <div class="section">
 
   <div class="grid">
 
     <div class="card stat">
-      <div class="label">Total Users</div>
-      <div class="value">{{ totalUsers }}</div>
+      <div class="stat-icon-badge">👥</div>
+      <div class="stat-body">
+        <div class="value">{{ totalUsers }}</div>
+        <div class="label">Total Users</div>
+      </div>
     </div>
 
-    <div class="card stat">
-      <div class="label">Active</div>
-      <div class="value green">{{ activeUsers }}</div>
+    <div class="card stat" data-tone="ok">
+      <div class="stat-icon-badge">✅</div>
+      <div class="stat-body">
+        <div class="value green">{{ activeUsers }}</div>
+        <div class="label">Active</div>
+      </div>
     </div>
 
-    <div class="card stat">
-      <div class="label">Inactive</div>
-      <div class="value red">{{ inactiveUsers }}</div>
+    <div class="card stat" data-tone="danger">
+      <div class="stat-icon-badge">💤</div>
+      <div class="stat-body">
+        <div class="value red">{{ inactiveUsers }}</div>
+        <div class="label">Inactive</div>
+      </div>
     </div>
 
   </div>

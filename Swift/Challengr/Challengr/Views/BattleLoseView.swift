@@ -9,6 +9,7 @@ import SwiftUI
 struct BattleLoseView: View {
     // MARK: - Input (Eingaben)
     let data: BattleResultData
+    let ownPlayerName: String
     let onClose: () -> Void
 
     // MARK: - Animation States
@@ -19,15 +20,22 @@ struct BattleLoseView: View {
     // MARK: - Body (UI-Aufbau)
     var body: some View {
         ZStack {
-            // heller App-Hintergrund
+            // Dark, cinematic background — continues the mood from the battle
+            // screen instead of cutting to a plain light card.
             LinearGradient(
-                colors: [
-                    Color(.systemGray6),
-                    Color(.systemGray5)
-                ],
+                colors: [Color.challengrDark, Color.black],
                 startPoint: .top,
                 endPoint: .bottom
             )
+            .ignoresSafeArea()
+
+            RadialGradient(
+                colors: [Color.challengrRed.opacity(0.3), Color.clear],
+                center: .center,
+                startRadius: 10,
+                endRadius: 300
+            )
+            .opacity(appearOpacity)
             .ignoresSafeArea()
 
             VStack {
@@ -42,27 +50,28 @@ struct BattleLoseView: View {
                         .foregroundColor(.challengrRed.opacity(0.9))
 
                     Text("NIEDERLAGE")
-                        .font(.system(size: 26, weight: .black, design: .rounded))
+                        .font(.system(size: 32, weight: .black, design: .rounded))
                         .tracking(3)
                         .foregroundColor(.challengrRed)
+                        .shadow(color: .challengrRed.opacity(0.6), radius: 14, x: 0, y: 0)
 
                     Text("KOPF HOCH, \(data.loserName.uppercased())!")
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .multilineTextAlignment(.center)
-                        .foregroundColor(.challengrBlack.opacity(0.9))
+                        .foregroundColor(.white.opacity(0.85))
 
                     // Spieler nebeneinander
                     HStack(spacing: 20) {
                         resultPlayerCard(
                             name: data.loserName,
-                            avatarName: "playerBoy",
+                            avatarName: avatarName(for: data.loserName),
                             pointsDelta: data.loserPointsDelta,
                             isLoser: true
                         )
 
                         resultPlayerCard(
                             name: data.winnerName,
-                            avatarName: "playerGirl",
+                            avatarName: avatarName(for: data.winnerName),
                             pointsDelta: data.winnerPointsDelta,
                             isLoser: false
                         )
@@ -93,18 +102,18 @@ struct BattleLoseView: View {
                         Text("TRASH TALK")
                             .font(.system(size: 11, weight: .black, design: .rounded))
                             .tracking(2)
-                            .foregroundColor(.challengrBlack.opacity(0.5))
+                            .foregroundColor(.white.opacity(0.5))
 
                         Text(data.trashTalk)
                             .font(.system(size: 14, weight: .semibold, design: .rounded))
                             .multilineTextAlignment(.center)
-                            .foregroundColor(.challengrBlack)
+                            .foregroundColor(.white.opacity(0.9))
                     }
                     .padding(18)
                     .frame(maxWidth: .infinity)
                     .background(
                         RoundedRectangle(cornerRadius: 24)
-                            .fill(Color(.systemGray6))
+                            .fill(Color.white.opacity(0.06))
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 24)
@@ -116,14 +125,14 @@ struct BattleLoseView: View {
                 .background(
                     ZStack {
                         RoundedRectangle(cornerRadius: 32)
-                            .fill(Color.white)
+                            .fill(Color.white.opacity(0.07))
 
                         RoundedRectangle(cornerRadius: 32)
                             .stroke(
                                 LinearGradient(
                                     colors: [
-                                        Color.challengrYellow.opacity(0.4),
-                                        Color.challengrRed.opacity(0.5)
+                                        Color.challengrYellow.opacity(0.35),
+                                        Color.challengrRed.opacity(0.6)
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
@@ -132,7 +141,9 @@ struct BattleLoseView: View {
                             )
                     }
                 )
-                .shadow(color: .black.opacity(0.12), radius: 30, x: 0, y: 18)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 32))
+                .shadow(color: .black.opacity(0.5), radius: 30, x: 0, y: 18)
+                .shadow(color: .challengrRed.opacity(0.15), radius: 30, x: 0, y: 0)
                 .scaleEffect(appearScale)
                 .opacity(appearOpacity)
                 .offset(x: shakeOffset)
@@ -140,16 +151,16 @@ struct BattleLoseView: View {
                 // Button zurück zur Karte
                 Button(action: onClose) {
                     Text("ZURÜCK ZUR KARTE")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .font(.system(size: 14, weight: .black, design: .rounded))
                         .tracking(1)
-                        .foregroundColor(.challengrBlack.opacity(0.85))
+                        .foregroundColor(.challengrDark)
                         .frame(maxWidth: 260)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 14)
                         .background(
                             RoundedRectangle(cornerRadius: 20)
                                 .fill(Color.white.opacity(0.95))
                         )
-                        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
+                        .shadow(color: .black.opacity(0.3), radius: 12, x: 0, y: 6)
                 }
                 .padding(.top, 18)
                 .opacity(appearOpacity)
@@ -158,6 +169,7 @@ struct BattleLoseView: View {
             }
             .padding(.horizontal, 24)
             .onAppear {
+                SoundManager.shared.playSound("TRASH_01")
                 // Hefty drop-in slam animation
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                     appearScale = 1.0
@@ -176,6 +188,15 @@ struct BattleLoseView: View {
         }
     }
 
+    // MARK: - Helpers (Hilfsfunktionen)
+
+    /// Shows the local player's real chosen avatar; the opponent's actual
+    /// avatar isn't known server-side, so they always get the same neutral
+    /// fallback instead of a value that used to depend on who won.
+    private func avatarName(for playerName: String) -> String {
+        playerName == ownPlayerName ? AvatarPresets.persistedImageName() : "playerGirl"
+    }
+
     // MARK: - Subviews (Unteransichten)
     // MARK: - Result Player Card (Ergebnis-Karte)
 
@@ -192,7 +213,7 @@ struct BattleLoseView: View {
                 RoundedRectangle(cornerRadius: 24)
                     .fill(Color.white)
                     .frame(width: 130, height: 190)
-                    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 6)
+                    .shadow(color: .black.opacity(0.3), radius: 14, x: 0, y: 8)
 
                 RoundedRectangle(cornerRadius: 20)
                     .stroke(color, lineWidth: 3)
@@ -288,13 +309,13 @@ struct BattleLoseView: View {
             Text("CHALLENGE WERTE")
                 .font(.system(size: 12, weight: .black, design: .rounded))
                 .tracking(1.6)
-                .foregroundColor(.challengrBlack.opacity(0.6))
+                .foregroundColor(.white.opacity(0.6))
 
             ForEach(rows, id: \.title) { row in
                 VStack(alignment: .leading, spacing: 8) {
                     Text(row.title)
                         .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(.challengrBlack.opacity(0.85))
+                        .foregroundColor(.white.opacity(0.85))
 
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
@@ -321,7 +342,7 @@ struct BattleLoseView: View {
                 .padding(12)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(.systemGray6))
+                        .fill(Color.white.opacity(0.08))
                 )
             }
         }
