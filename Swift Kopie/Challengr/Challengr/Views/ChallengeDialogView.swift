@@ -1,62 +1,4 @@
 import SwiftUI
-import AVFoundation
-
-// MARK: - Sound Manager (Global)
-class SoundManager: NSObject, AVAudioPlayerDelegate {
-    static let shared = SoundManager()
-    private var audioPlayer: AVAudioPlayer?
-
-    // Indexes every .mp3 shipped in the app bundle by filename (without extension),
-    // regardless of which subfolder it lives in. Avoids depending on a fixed
-    // subdirectory path, which differs between the simulator, device and every
-    // developer's machine.
-    private lazy var soundURLsByName: [String: URL] = Self.indexBundleSounds()
-
-    func playSound(_ filename: String) {
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.duckOthers])
-            try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
-        } catch {
-            print("❌ Audio Session error:", error)
-        }
-
-        guard let url = soundURLsByName[filename] else {
-            print("❌ Sound file not found in bundle: \(filename)")
-            return
-        }
-
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.delegate = self
-            audioPlayer?.play()
-            print("🔊 Playing sound: \(filename)")
-        } catch {
-            print("❌ Error playing sound:", error)
-        }
-    }
-
-    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        print("✅ Sound finished playing")
-    }
-
-    private static func indexBundleSounds() -> [String: URL] {
-        guard let resourceURL = Bundle.main.resourceURL else { return [:] }
-
-        var result: [String: URL] = [:]
-        let enumerator = FileManager.default.enumerator(
-            at: resourceURL,
-            includingPropertiesForKeys: nil,
-            options: [.skipsHiddenFiles]
-        )
-
-        while let url = enumerator?.nextObject() as? URL {
-            guard url.pathExtension.lowercased() == "mp3" else { continue }
-            result[url.deletingPathExtension().lastPathComponent] = url
-        }
-
-        return result
-    }
-}
 
 struct ChallengeDialogView: View {
 
@@ -162,6 +104,7 @@ struct ChallengeDialogView: View {
                         ForEach(categories, id: \.self) { category in
                             let availableCount = availableChallengeCount(for: category)
                             Button {
+                                SoundManager.shared.play(.tap)
                                 Task {
                                     await loadRandomChallenge(for: category)
                                 }
@@ -259,11 +202,7 @@ struct ChallengeDialogView: View {
         selectedCategory = category
 
         // hier kein Netzwerk – wir benutzen die vom MapView gelieferten Challenges
-        let filtered = allChallenges.filter {
-            normalizedCategory($0.category) == normalizedCategory(category)
-        }
-
-        if let random = filtered.randomElement() {
+        if let random = ChallengePicker.random(in: category, from: allChallenges) {
             selectedChallenge = random.text
             selectedChallengeId = Int64(random.id)
         } else {
@@ -298,16 +237,10 @@ struct ChallengeDialogView: View {
     }
 
     private func availableChallengeCount(for category: String) -> Int {
-        allChallenges.filter {
-            normalizedCategory($0.category) == normalizedCategory(category)
-        }.count
-    }
-
-    private func normalizedCategory(_ value: String) -> String {
-        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        ChallengePicker.challenges(in: category, from: allChallenges).count
     }
 
     private func playSound() {
-        SoundManager.shared.playSound("CLICK_02")
+        SoundManager.shared.play(.challengeSent)
     }
 }

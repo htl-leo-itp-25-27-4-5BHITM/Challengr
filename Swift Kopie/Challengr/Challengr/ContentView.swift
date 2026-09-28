@@ -13,7 +13,6 @@ import Combine
 
 struct ContentView: View {
     @StateObject private var auth = KeycloakAuthService()
-    @StateObject private var friendsInbox = FriendsInboxStore()
     @StateObject private var inviteFlow = FriendInviteFlow()
     @State private var showOnboarding = OnboardingView.shouldShow
 
@@ -27,10 +26,6 @@ struct ContentView: View {
                         ownPlayerName: auth.playerName,
                         auth: auth
                     )
-                    .environmentObject(friendsInbox)
-                    .task {
-                        friendsInbox.startPolling(playerId: playerId)
-                    }
                     .fullScreenCover(isPresented: $showOnboarding) {
                         OnboardingView {
                             showOnboarding = false

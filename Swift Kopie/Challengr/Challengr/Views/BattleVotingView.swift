@@ -1,13 +1,19 @@
 import SwiftUI
 
+/// Which tile was voted for (Namen können gleich sein, deshalb die Seite statt des Namens).
+enum VoteSide {
+    case playerA
+    case playerB
+}
+
 struct BattleVotingView: View {
     // MARK: - Input (Eingaben)
     let playerA: String          // nur Name
     let playerB: String          // nur Name
-    let onVote: (String) -> Void
+    let onVote: (VoteSide) -> Void
 
     // MARK: - State (State)
-    @State private var selected: String? = nil
+    @State private var selected: VoteSide? = nil
 
     // MARK: - Body (UI-Aufbau)
     var body: some View {
@@ -45,11 +51,13 @@ struct BattleVotingView: View {
                     // Player-Tiles
                     VStack(spacing: 16) {
                         playerTile(
+                            side: .playerA,
                             name: playerA,
                             color: .challengrYellow
                         )
 
                         playerTile(
+                            side: .playerB,
                             name: playerB,
                             color: .challengrRed
                         )
@@ -57,7 +65,7 @@ struct BattleVotingView: View {
 
                     // Instruction / Feedback
                     if let selected {
-                        Text("DU HAST FÜR \(selected.uppercased()) GESTIMMT")
+                        Text("DU HAST FÜR \((selected == .playerA ? playerA : playerB).uppercased()) GESTIMMT")
                             .font(.system(size: 12, weight: .bold, design: .rounded))
                             .tracking(1)
                             .foregroundColor(.challengrBlack.opacity(0.8))
@@ -102,18 +110,19 @@ struct BattleVotingView: View {
     // MARK: - Player Tile (Spieler-Kachel)
 
     private func playerTile(
+        side: VoteSide,
         name: String,
         color: Color
     ) -> some View {
-        let isSelected = selected == name
+        let isSelected = selected == side
         let isDimmed = selected != nil && !isSelected
 
         return Button {
             guard selected == nil else { return }
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                selected = name
+                selected = side
             }
-            onVote(name)
+            onVote(side)
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {

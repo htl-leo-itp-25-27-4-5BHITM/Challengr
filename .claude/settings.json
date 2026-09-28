@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -v \"^--$\")",
+      "Bash(java -version)",
+      "Bash(mvn -q -o compile)",
+      "Bash(mvn -q compile)",
+      "Bash(python3 -)",
+      "Bash(xcodebuild -project Challengr.xcodeproj -scheme Challengr -destination 'generic/platform=iOS Simulator' -derivedDataPath /private/tmp/claude-501/-Users-basti-Desktop-ChallengrProjekt-Challengr/48d02b2d-9923-43fe-bb97-2cd982e95667/scratchpad/dd CODE_SIGNING_ALLOWED=NO build)",
+      "Bash(rsync -a --delete --exclude '.DS_Store' Swift/Challengr/Challengr/ \"Swift Kopie/Challengr/Challengr/\")",
+      "Bash(cp Swift/SwiftDocumentation.tx \"Swift Kopie/SwiftDocumentation.tx\")",
+      "Bash(xcodebuild -project Challengr.xcodeproj -scheme Challengr -destination 'generic/platform=iOS Simulator' -derivedDataPath /private/tmp/claude-501/-Users-basti-Desktop-ChallengrProjekt-Challengr/48d02b2d-9923-43fe-bb97-2cd982e95667/scratchpad/dd2 CODE_SIGNING_ALLOWED=NO build)",
+      "Bash(xargs -I{} sh -c 'ls \"{}\" | grep -iE \"mp3|wav|m4a|caf|aif\" ; /usr/libexec/PlistBuddy -c \"Print CFBundleIdentifier\" \"{}/Info.plist\"')",
+      "Bash(git check-ignore *)",
+      "Bash(command -v docker kubectl)",
+      "Bash(docker info *)",
+      "Bash(kubectl config *)",
+      "Bash(kubectl -n student-it220257 get deploy challengr-backend)",
+      "Read(//Users/basti/.docker/run/**)",
+      "Bash(docker context *)",
+      "Bash(perl -e 'alarm 20; exec @ARGV' docker version --format '{{.Server.Version}}')",
+      "Bash(echo \"exit=$?\")",
+      "Bash(perl -e 'alarm 20; exec @ARGV' kubectl config current-context)",
+      "Bash(perl -e 'alarm 25; exec @ARGV' kubectl -n student-it220257 get deploy challengr-backend)",
+      "Bash(echo \"docker exit=$?\")"
+    ]
+  }
+}

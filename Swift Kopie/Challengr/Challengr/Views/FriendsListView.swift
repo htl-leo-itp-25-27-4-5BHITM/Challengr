@@ -21,11 +21,10 @@ struct FriendsListView: View {
     @State private var selectedBondLevel: Int = 0
 
     @State private var showAddFriendSheet: Bool = false
-
     @State private var showIncomingPopup: Bool = false
     @State private var pendingIncomingPopup: Bool = false
-    @State private var incomingFromName: String = ""
     @State private var incomingRequestId: Int64? = nil
+    @State private var incomingFromName: String = ""
     @State private var incomingFromPlayerId: String? = nil
     @State private var selectedBattleFriend: PlayerDTO? = nil
     @State private var openedGift: OpenedGiftPresentation? = nil
@@ -47,8 +46,9 @@ struct FriendsListView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
                 Text("Freunde")
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(challengrDark)
@@ -58,7 +58,8 @@ struct FriendsListView: View {
                         icon: "person.badge.plus",
                         title: "Hinzufügen",
                         foreground: challengrRed,
-                        background: challengrRed.opacity(0.12),
+                        background: challengrRed.opacity(0.12)
+                        ,
                         action: {
                             showAddFriendSheet = true
                         }
@@ -230,9 +231,10 @@ struct FriendsListView: View {
 
                 Spacer(minLength: 12)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 20)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
+            }
         }
         .background(Color(.systemGroupedBackground))
         .sheet(isPresented: $showAddFriendSheet) {
@@ -253,7 +255,18 @@ struct FriendsListView: View {
         }
         .task {
             // Lightweight polling while the view is visible.
-            // Polling too frequently can destabilize the connection on real devices.
+            // This makes the sender see accept/remove changes without tapping "Neu laden".
+            while !Task.isCancelled {
+                await vm.loadAll(
+                    ownPlayerId: ownPlayerId,
+                    coordinate: currentCoordinate,
+                    radiusMeters: radiusMeters
+                )
+                try? await Task.sleep(nanoseconds: 30_000_000_000) // 30s
+            }
+        }
+        .task {
+            // Poll incoming requests frequently so both app variants receive requests reliably.
             while !Task.isCancelled {
                 await vm.pollIncomingOnce(playerId: ownPlayerId)
                 try? await Task.sleep(nanoseconds: 5_000_000_000) // 5s
@@ -263,21 +276,17 @@ struct FriendsListView: View {
             guard let req = vm.incomingRequest else { return }
             incomingRequestId = req.id
             incomingFromPlayerId = req.fromPlayerId
-            // Show the sheet immediately with a placeholder, then replace with the real name.
-            incomingFromName = "Lädt…"
-
-            if showAddFriendSheet {
-                pendingIncomingPopup = true
-            } else {
-                showIncomingPopup = true
-            }
+            incomingFromName = req.fromPlayerId
 
             Task {
-                // Load sender for nicer UI (show name instead of id)
                 if let dto = try? await playerService.loadPlayerById(id: req.fromPlayerId) {
                     incomingFromName = dto.name
+                }
+
+                if showAddFriendSheet {
+                    pendingIncomingPopup = true
                 } else {
-                    incomingFromName = req.fromPlayerId
+                    showIncomingPopup = true
                 }
             }
         }
@@ -395,6 +404,152 @@ struct FriendsListView: View {
     }
 }
 
+private struct AddFriendSheet: View {
+    let ownPlayerId: String
+    let onDidSendRequest: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var showQR: Bool = false
+    @State private var showScanner: Bool = false
+    @State private var showInviteImporter: Bool = false
+    @State private var isImportingInvite: Bool = false
+    @State private var shareInviteFile: ShareInviteFile? = nil
+    @State private var importError: String? = nil
+    @State private var shareError: String? = nil
+
+    private let friendsService = FriendsService()
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Button {
+                        showQR = true
+                    } label: {
+                        Label("QR anzeigen", systemImage: "qrcode")
+                    }
+
+                    Button {
+                        prepareShareInvite()
+                    } label: {
+                        Label("Per AirDrop teilen", systemImage: "square.and.arrow.up")
+                    }
+
+                    Button {
+                        showScanner = true
+                    } label: {
+                        Label("QR scannen", systemImage: "camera.viewfinder")
+                    }
+
+                    Button {
+                        showInviteImporter = true
+                    } label: {
+                        Label("AirDrop-Datei öffnen", systemImage: "square.and.arrow.down")
+                    }
+                    .disabled(isImportingInvite)
+                } header: {
+                    Text("Freund hinzufügen")
+                } footer: {
+                    Text("Du kannst eine Einladung als QR zeigen, per AirDrop teilen oder den QR von jemand anderem scannen. Wenn AirDrop nur eine Datei lädt, öffne sie hier.")
+                }
+            }
+            .navigationTitle("Hinzufügen")
+            .sheet(item: $shareInviteFile) { shareFile in
+                ShareSheet(activityItems: [shareFile.url])
+            }
+            .fileImporter(
+                isPresented: $showInviteImporter,
+                allowedContentTypes: [.challengrFriendInvite, .data, .plainText]
+            ) { result in
+                importInvite(from: result)
+            }
+            .alert("Teilen fehlgeschlagen", isPresented: Binding(
+                get: { shareError != nil },
+                set: { if !$0 { shareError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(shareError ?? "")
+            }
+            .alert("Import fehlgeschlagen", isPresented: Binding(
+                get: { importError != nil },
+                set: { if !$0 { importError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(importError ?? "")
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Fertig") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $showQR) {
+                FriendInviteQRView(ownPlayerId: ownPlayerId)
+            }
+            .sheet(isPresented: $showScanner) {
+                FriendInviteScannerView(ownPlayerId: ownPlayerId) {
+                    onDidSendRequest()
+                    dismiss()
+                }
+            }
+        }
+    }
+
+    private func prepareShareInvite() {
+        do {
+            shareError = nil
+            shareInviteFile = ShareInviteFile(url: try FriendInviteTransfer.makeTemporaryInviteFile(fromPlayerId: ownPlayerId))
+        } catch {
+            shareError = "Die AirDrop-Einladung konnte nicht erstellt werden."
+        }
+    }
+
+    private func importInvite(from result: Result<URL, Error>) {
+        guard !isImportingInvite else { return }
+
+        switch result {
+        case .success(let url):
+            isImportingInvite = true
+            importError = nil
+
+            Task {
+                do {
+                    let fromPlayerId = try FriendInvitePayload.parseIncomingURL(url)
+
+                    guard fromPlayerId != ownPlayerId else {
+                        await MainActor.run {
+                            isImportingInvite = false
+                            importError = "Das ist deine eigene Einladung."
+                        }
+                        return
+                    }
+
+                    try await friendsService.sendFriendRequest(from: ownPlayerId, to: fromPlayerId)
+
+                    await MainActor.run {
+                        isImportingInvite = false
+                        onDidSendRequest()
+                        dismiss()
+                    }
+                } catch {
+                    await MainActor.run {
+                        isImportingInvite = false
+                        importError = (error as? LocalizedError)?.errorDescription ?? "Die Einladung konnte nicht importiert werden."
+                    }
+                }
+            }
+        case .failure:
+            importError = "Die Einladung konnte nicht geöffnet werden."
+        }
+    }
+
+    private struct ShareInviteFile: Identifiable {
+        let id = UUID()
+        let url: URL
+    }
+}
+
 private struct FriendRow: View {
     let player: PlayerDTO
     let distanceText: String
@@ -410,32 +565,37 @@ private struct FriendRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
-                HStack(spacing: 12) {
-                    Image(systemName: "person.crop.circle.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 46, height: 46)
-                        .foregroundColor(challengrDark.opacity(0.75))
-                        .padding(6)
-                        .background(challengrDark.opacity(0.08))
-                        .clipShape(Circle())
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(player.name)
-                            .font(.system(size: 17, weight: .bold))
-                            .foregroundColor(challengrDark)
-
-                        Text("Punkte: \(player.points)")
-                            .font(.system(size: 13, weight: .medium))
+                NavigationLink {
+                    FriendProfileView(friend: player)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "person.crop.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 46, height: 46)
                             .foregroundColor(challengrDark.opacity(0.75))
+                            .padding(6)
+                            .background(challengrDark.opacity(0.08))
+                            .clipShape(Circle())
 
-                        Text(distanceText)
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(isNearby ? .green : challengrDark.opacity(0.72))
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(player.name)
+                                .font(.system(size: 17, weight: .bold))
+                                .foregroundColor(challengrDark)
+
+                            Text("Punkte: \(player.points)")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(challengrDark.opacity(0.75))
+
+                            Text(distanceText)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(isNearby ? .green : challengrDark.opacity(0.72))
+                        }
+
+                        Spacer(minLength: 0)
                     }
-
-                    Spacer(minLength: 0)
                 }
+                .buttonStyle(.plain)
 
                 Button(action: onRemove) {
                     Image(systemName: "person.fill.xmark")
@@ -697,152 +857,6 @@ private struct GiftOpenedSheet: View {
         .onAppear {
             animateGift = true
         }
-    }
-}
-
-private struct AddFriendSheet: View {
-    let ownPlayerId: String
-    let onDidSendRequest: () -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var showQR: Bool = false
-    @State private var showScanner: Bool = false
-    @State private var showInviteImporter: Bool = false
-    @State private var isImportingInvite: Bool = false
-    @State private var shareInviteFile: ShareInviteFile? = nil
-    @State private var importError: String? = nil
-    @State private var shareError: String? = nil
-
-    private let friendsService = FriendsService()
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    Button {
-                        showQR = true
-                    } label: {
-                        Label("QR anzeigen", systemImage: "qrcode")
-                    }
-
-                    Button {
-                        prepareShareInvite()
-                    } label: {
-                        Label("Per AirDrop teilen", systemImage: "square.and.arrow.up")
-                    }
-
-                    Button {
-                        showScanner = true
-                    } label: {
-                        Label("QR scannen", systemImage: "camera.viewfinder")
-                    }
-
-                    Button {
-                        showInviteImporter = true
-                    } label: {
-                        Label("AirDrop-Datei öffnen", systemImage: "square.and.arrow.down")
-                    }
-                    .disabled(isImportingInvite)
-                } header: {
-                    Text("Freund hinzufügen")
-                } footer: {
-                    Text("Du kannst eine Einladung als QR zeigen, per AirDrop teilen oder den QR von jemand anderem scannen. Wenn AirDrop nur eine Datei lädt, öffne sie hier.")
-                }
-            }
-            .navigationTitle("Hinzufügen")
-            .sheet(item: $shareInviteFile) { shareFile in
-                ShareSheet(activityItems: [shareFile.url])
-            }
-            .fileImporter(
-                isPresented: $showInviteImporter,
-                allowedContentTypes: [.challengrFriendInvite, .data, .plainText]
-            ) { result in
-                importInvite(from: result)
-            }
-            .alert("Teilen fehlgeschlagen", isPresented: Binding(
-                get: { shareError != nil },
-                set: { if !$0 { shareError = nil } }
-            )) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(shareError ?? "")
-            }
-            .alert("Import fehlgeschlagen", isPresented: Binding(
-                get: { importError != nil },
-                set: { if !$0 { importError = nil } }
-            )) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(importError ?? "")
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Fertig") { dismiss() }
-                }
-            }
-            .sheet(isPresented: $showQR) {
-                FriendInviteQRView(ownPlayerId: ownPlayerId)
-            }
-            .sheet(isPresented: $showScanner) {
-                FriendInviteScannerView(ownPlayerId: ownPlayerId) {
-                    onDidSendRequest()
-                    dismiss()
-                }
-            }
-        }
-    }
-
-    private func prepareShareInvite() {
-        do {
-            shareError = nil
-            shareInviteFile = ShareInviteFile(url: try FriendInviteTransfer.makeTemporaryInviteFile(fromPlayerId: ownPlayerId))
-        } catch {
-            shareError = "Die AirDrop-Einladung konnte nicht erstellt werden."
-        }
-    }
-
-    private func importInvite(from result: Result<URL, Error>) {
-        guard !isImportingInvite else { return }
-
-        switch result {
-        case .success(let url):
-            isImportingInvite = true
-            importError = nil
-
-            Task {
-                do {
-                    let fromPlayerId = try FriendInvitePayload.parseIncomingURL(url)
-
-                    guard fromPlayerId != ownPlayerId else {
-                        await MainActor.run {
-                            isImportingInvite = false
-                            importError = "Das ist deine eigene Einladung."
-                        }
-                        return
-                    }
-
-                    try await friendsService.sendFriendRequest(from: ownPlayerId, to: fromPlayerId)
-
-                    await MainActor.run {
-                        isImportingInvite = false
-                        onDidSendRequest()
-                        dismiss()
-                    }
-                } catch {
-                    await MainActor.run {
-                        isImportingInvite = false
-                        importError = (error as? LocalizedError)?.errorDescription ?? "Die Einladung konnte nicht importiert werden."
-                    }
-                }
-            }
-        case .failure:
-            importError = "Die Einladung konnte nicht geöffnet werden."
-        }
-    }
-
-    private struct ShareInviteFile: Identifiable {
-        let id = UUID()
-        let url: URL
     }
 }
 

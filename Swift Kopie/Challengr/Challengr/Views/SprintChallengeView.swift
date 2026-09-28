@@ -149,7 +149,9 @@ private extension SprintChallengeView {
     func readyTick() {
         if countdown > 0 {
             countdown -= 1
+            if (1...3).contains(countdown) { SoundManager.shared.play(.countdownTick) }
         } else {
+            SoundManager.shared.play(.countdownGo)
             startRunningPhase()
         }
     }
@@ -172,6 +174,7 @@ private extension SprintChallengeView {
     func runningTick() {
         if countdown > 0 {
             countdown -= 1
+            if (1...3).contains(countdown) { SoundManager.shared.play(.countdownTick) }
         } else {
             startCooldownPhase()
         }

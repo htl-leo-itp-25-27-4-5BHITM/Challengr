@@ -20,6 +20,30 @@ public class BattleRepository implements PanacheRepository<Battle> {
         return find("toPlayer.id = ?1 AND status = ?2", toPlayerId, "REQUESTED").list();
     }
 
+    // REQUESTED battles created before the given time (für Ablauf)
+    public List<Battle> findRequestedOlderThan(LocalDateTime cutoff) {
+        return find("status = ?1 AND createdAt < ?2", "REQUESTED", cutoff).list();
+    }
+
+    // REQUESTED battles for a target player created after the given time (für erneute Zustellung)
+    public List<Battle> findRequestedForSince(String toPlayerId, LocalDateTime since) {
+        return find("toPlayer.id = ?1 AND status = ?2 AND createdAt >= ?3 ORDER BY createdAt ASC",
+                toPlayerId, "REQUESTED", since).list();
+    }
+
+    // Offene Anfrage zwischen zwei Spielern (egal in welche Richtung), jünger als since
+    public boolean existsOpenRequestBetween(String a, String b, LocalDateTime since) {
+        return count("status = ?1 AND createdAt >= ?2 AND "
+                        + "((fromPlayer.id = ?3 AND toPlayer.id = ?4) OR (fromPlayer.id = ?4 AND toPlayer.id = ?3))",
+                "REQUESTED", since, a, b) > 0;
+    }
+
+    // Laufende Battles (angenommen, aber nicht fertig), deren Status sich seit cutoff nicht geändert hat
+    public List<Battle> findActiveStaleSince(LocalDateTime cutoff, List<String> notActiveStatuses) {
+        return find("status NOT IN ?1 AND coalesce(statusChangedAt, createdAt) < ?2",
+                notActiveStatuses, cutoff).list();
+    }
+
     // All battles between two players (optional helper)
     public List<Battle> findBetween(String fromId, String toId) {
         return find("fromPlayer.id = ?1 AND toPlayer.id = ?2", fromId, toId).list();

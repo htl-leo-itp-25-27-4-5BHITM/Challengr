@@ -101,7 +101,7 @@ struct LoginView: View {
                                 Image(systemName: "person.badge.key.fill")
                                     .font(.system(size: 18, weight: .bold))
                             }
-                            Text(auth.isLoading ? "Wird angemeldet…" : "MIT KEYCLOAK ANMELDEN")
+                            Text(auth.isLoading ? "Wird angemeldet…" : "ANMELDEN")
                                 .font(.system(size: 15, weight: .black, design: .rounded))
                                 .tracking(1)
                         }

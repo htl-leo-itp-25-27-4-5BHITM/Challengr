@@ -140,7 +140,11 @@ struct ShakeChallengeView: View {
             remaining -= 1
             DispatchQueue.main.async {
                 countdown = remaining
+                if (1...3).contains(remaining) {
+                    SoundManager.shared.play(.countdownTick)
+                }
                 if remaining <= 0 {
+                    SoundManager.shared.play(.countdownGo)
                     phaseTimer?.invalidate()
                     completion()
                 }

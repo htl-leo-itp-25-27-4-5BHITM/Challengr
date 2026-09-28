@@ -43,6 +43,9 @@ public class Battle {
 
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    // Letzte Status-Änderung – damit hängende Battles erkannt werden
+    private LocalDateTime statusChangedAt = LocalDateTime.now();
+
     // --- Getter/Setter ---
 
     public Long getId() {
@@ -94,7 +97,18 @@ public class Battle {
     }
 
     public void setStatus(String status) {
+        if (!java.util.Objects.equals(this.status, status)) {
+            this.statusChangedAt = LocalDateTime.now();
+        }
         this.status = status;
+    }
+
+    public LocalDateTime getStatusChangedAt() {
+        return statusChangedAt;
+    }
+
+    public void setStatusChangedAt(LocalDateTime statusChangedAt) {
+        this.statusChangedAt = statusChangedAt;
     }
 
     public String getType() {

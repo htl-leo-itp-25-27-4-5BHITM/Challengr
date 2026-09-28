@@ -33,4 +33,15 @@ final class ChallengesService {
         let decoder = JSONDecoder()
         return try decoder.decode([ChallengeDTO].self, from: data)
     }
+
+    /// Loads a single challenge by id (Einzelne Challenge per ID laden)
+    func loadChallenge(id: Int64) async throws -> ChallengeDTO {
+        let url = baseURL.appendingPathComponent("id").appendingPathComponent(String(id))
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+        return try JSONDecoder().decode(ChallengeDTO.self, from: data)
+    }
 }

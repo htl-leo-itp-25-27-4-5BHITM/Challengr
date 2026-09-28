@@ -68,6 +68,7 @@ struct BattleView: View {
     }
 
     private func playEntrance() {
+        SoundManager.shared.play(.battleStart)
         withAnimation(.easeOut(duration: 0.35)) {
             headerAppeared = true
         }

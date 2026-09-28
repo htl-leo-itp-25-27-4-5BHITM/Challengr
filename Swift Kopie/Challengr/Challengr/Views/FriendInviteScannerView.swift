@@ -93,8 +93,7 @@ struct FriendInviteScannerView: View {
             } catch {
                 await MainActor.run {
                     isSending = false
-                    let details = error.localizedDescription
-                    errorText = details.isEmpty ? "Konnte Anfrage nicht senden." : "Konnte Anfrage nicht senden: \(details)"
+                    errorText = "Konnte Anfrage nicht senden."
                 }
             }
         }

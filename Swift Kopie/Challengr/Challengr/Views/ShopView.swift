@@ -193,7 +193,7 @@ struct ShopView: View {
                     currentPoints = result.remainingPoints
                     ownedQuantities[item.code] = result.newQuantity
                     onPointsChanged(result.remainingPoints)
-                    SoundManager.shared.playSound("COIN_02")
+                    SoundManager.shared.play(.purchase)
                     showToast("\(item.name) gekauft!", isError: false)
                 } else {
                     currentPoints = result.remainingPoints
@@ -209,6 +209,7 @@ struct ShopView: View {
     }
 
     private func showToast(_ message: String, isError: Bool) {
+        if isError { SoundManager.shared.play(.purchaseFailed) }
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             toastMessage = message
             toastIsError = isError

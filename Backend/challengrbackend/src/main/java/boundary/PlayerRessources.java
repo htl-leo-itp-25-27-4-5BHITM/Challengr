@@ -73,12 +73,17 @@ public class PlayerRessources {
             player.setName(dto.name());
         }
 
+        double oldLat = player.getLatitude();
+        double oldLon = player.getLongitude();
+
         player.setLatitude(dto.latitude());
         player.setLongitude(dto.longitude());
         // Punkte kommen aus Battles → hier NICHT setzen
 
-    // Realtime: notify connected clients.
-    GameSocket.emitPlayerPositionUpdated(player.getId(), player.getLatitude(), player.getLongitude());
+        // Realtime: nur Spieler in der Nähe (alte + neue Position) informieren,
+        // damit sie den Spieler kommen und gehen sehen.
+        GameSocket.emitPlayerPositionUpdated(player.getId(),
+                positionEventRecipients(player.getId(), oldLat, oldLon, player.getLatitude(), player.getLongitude()));
 
         return new PlayerDTO(
                 player.getId(),
@@ -559,5 +564,21 @@ public class PlayerRessources {
         return "Zuletzt aktiv: " + lastDate;
     }
 
+    /** Radius für Positions-Events – etwas größer als der Karten-Radius der App (200 m). */
+    static final double POSITION_EVENT_RADIUS_METERS = 300.0;
 
+    java.util.Set<String> positionEventRecipients(String playerId,
+                                                  double oldLat, double oldLon,
+                                                  double newLat, double newLon) {
+        java.util.Set<String> ids = new java.util.HashSet<>();
+        if (newLat != 0 && newLon != 0) {
+            playerRepository.findNearbyPlayers(playerId, newLat, newLon, POSITION_EVENT_RADIUS_METERS)
+                    .forEach(p -> ids.add(p.getId()));
+        }
+        if (oldLat != 0 && oldLon != 0) {
+            playerRepository.findNearbyPlayers(playerId, oldLat, oldLon, POSITION_EVENT_RADIUS_METERS)
+                    .forEach(p -> ids.add(p.getId()));
+        }
+        return ids;
+    }
 }

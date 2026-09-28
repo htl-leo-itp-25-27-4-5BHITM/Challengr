@@ -23,11 +23,12 @@ public class ChallengeRessources {
     @Inject
     ChallengeCategoriesRepository categoriesRepository;
 
+    // Dashboard (Verwaltung) – enthält die richtige Antwort
     @GET
     public List<ChallengeDTO> findAllChallenges() {
         return challengeRepository.getAllChallenges()
                 .stream()
-                .map(this::toDTO)
+                .map(ch -> toDTO(ch, true))
                 .toList();
     }
 
@@ -75,7 +76,7 @@ public class ChallengeRessources {
         }
 
         Challenges saved = challengeRepository.create(ch);
-        return toDTO(saved);
+        return toDTO(saved, true);
     }
 
     @GET
@@ -85,7 +86,7 @@ public class ChallengeRessources {
         if (ch == null) {
             throw new NotFoundException("challenge not found");
         }
-        return toDTO(ch); // deine bestehende Mapping-Methode
+        return toDTO(ch, false); // App: ohne richtige Antwort
     }
 
 
@@ -94,11 +95,15 @@ public class ChallengeRessources {
     public List<ChallengeDTO> findChallengesByKat(@PathParam("kategorie") String kategorie) {
         return challengeRepository.findChallengesByKat(kategorie)
                 .stream()
-                .map(this::toDTO)
+                .map(ch -> toDTO(ch, false)) // App: ohne richtige Antwort
                 .toList();
     }
 
-    private ChallengeDTO toDTO(Challenges ch) {
+    /**
+     * @param includeAnswer nur für das Dashboard true – die App darf die richtige
+     *                      Antwort nicht kennen, sonst kann man bei Wissen schummeln.
+     */
+    static ChallengeDTO toDTO(Challenges ch, boolean includeAnswer) {
         String categoryName = ch.getChallengeCategory().getName();
 
         List<String> choices = null;
@@ -111,7 +116,7 @@ public class ChallengeRessources {
                     ch.getOptionC(),
                     ch.getOptionD()
             );
-            correctIndex = ch.getCorrectIndex();
+            correctIndex = includeAnswer ? ch.getCorrectIndex() : null;
         }
 
         return new ChallengeDTO(

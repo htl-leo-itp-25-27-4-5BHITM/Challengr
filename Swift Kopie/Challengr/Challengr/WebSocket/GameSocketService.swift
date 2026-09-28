@@ -22,18 +22,32 @@ final class GameSocketService: ObservableObject {
     // MARK: - Event callbacks (Event-Callbacks)
 
     /// Called when a battle request arrives (Aufgerufen bei Battle-Anfrage)
-    /// Parameters: battleId, fromId, toId, challengeId, targetLat, targetLon
-    var onChallengeReceived: ((Int64, String, String, Int64, Double?, Double?) -> Void)?
+    /// Parameters: battleId, fromId, toId, challengeId, challengeText, challengeCategory, targetLat, targetLon
+    /// challengeText/challengeCategory come from the backend (nil for older backends).
+    var onChallengeReceived: ((Int64, String, String, Int64, String?, String?, Double?, Double?) -> Void)?
     /// Called when a battle reaches ACCEPTED (Aufgerufen bei Status ACCEPTED)
     var onBattleAccepted: ((Int64) -> Void)?
     /// Called when the battle is ready for voting (Bereit fürs Voting)
     var onReadyForVoting: ((Int64) -> Void)?
     /// Called on generic status updates (Generische Status-Updates)
     var onBattleUpdatedStatus: ((Int64, String) -> Void)?
+    /// Called when the backend refuses a new challenge (z.B. schon offene Anfrage). Parameter: reason
+    var onBattleRejected: ((String) -> Void)?
     /// Called when battle is pending (Battle pending)
     var onBattlePending: ((Int64) -> Void)?
     /// Called when a knowledge question arrives (Wissensfrage empfangen)
     var onKnowledgeQuestion: ((Int64, ChallengeDTO) -> Void)?
+
+    // MARK: - Realtime social / map callbacks
+
+    /// Friend request created/resend (both sender and receiver get it)
+    var onFriendRequestCreated: ((Int64, String, String) -> Void)?
+    /// Friend request status changed (ACCEPTED/DECLINED)
+    var onFriendRequestUpdated: ((Int64, String, String, String) -> Void)?
+    /// Friendship removed (both sides get it)
+    var onFriendRemoved: ((String, String) -> Void)?
+    /// Any player updated their position; clients can decide if it matters (friends/radius)
+    var onPlayerPositionUpdated: ((String, Double?, Double?) -> Void)?
 
 
 
@@ -43,8 +57,6 @@ final class GameSocketService: ObservableObject {
     }
     
     var onBattleResult: ((BattleResultData) -> Void)?
-
-    // MARK: - Connect / Disconnect (Verbinden / Trennen)
 
     private func claimSocketOwnership() {
         Self.ownershipQueue.sync {
@@ -70,8 +82,6 @@ final class GameSocketService: ObservableObject {
         guard webSocketTask == nil else { return }
 
         let url = BackendConfig.gameWebSocketURL(playerId: playerId)
-        print("🔎 WS URL for \(playerId): \(url.absoluteString)")
-
         let task = urlSession.webSocketTask(with: url)
         webSocketTask = task
         task.resume()
@@ -79,13 +89,14 @@ final class GameSocketService: ObservableObject {
         print("🔌 WS connect für Player \(playerId)")
 
         startPing()
-        receive()
+        receive(on: task)
 
-        // If we already queued messages before connect(), try flushing shortly after.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
             self?.flushPendingMessages()
         }
     }
+
+    // MARK: - Connect / Disconnect (Verbinden / Trennen)
 
     func connect() {
         isManualDisconnect = false
@@ -107,6 +118,7 @@ final class GameSocketService: ObservableObject {
             task.send(.string(text)) { error in
                 if let error = error {
                     print("❌ WS flush send error:", error)
+                    guard self.webSocketTask === task else { return }
                     self.webSocketTask = nil
                     self.scheduleReconnect()
                 }
@@ -266,11 +278,12 @@ final class GameSocketService: ObservableObject {
         }
     }
     
-    func sendVote(battleId: Int64, winnerName: String) {
+    func sendVote(battleId: Int64, winnerId: String, winnerName: String) {
         let payload: [String: Any] = [
             "type": "battle-vote",
             "battleId": battleId,
-            "winnerName": winnerName
+            "winnerId": winnerId,       // eindeutig, auch bei gleichen Namen
+            "winnerName": winnerName    // nur noch für ältere Backends
         ]
         send(json: payload)
     }
@@ -346,17 +359,18 @@ final class GameSocketService: ObservableObject {
 
     // MARK: - Receive messages (Empfangen)
 
-    private func receive() {
-        webSocketTask?.receive { [weak self] result in
+    private func receive(on task: URLSessionWebSocketTask) {
+        task.receive { [weak self] result in
             guard let self else { return }
             switch result {
             case .failure(let error):
                 print("WS receive error:", error)
+                guard self.webSocketTask === task else { return }
+                self.webSocketTask = nil
                 self.scheduleReconnect()
-                // IMPORTANT: don't call receive() again on failure.
-                // scheduleReconnect() will create a new task and restart receive().
                 return
             case .success(let message):
+                guard self.webSocketTask === task else { return }
                 switch message {
                 case .string(let text):
                     print("WS message:", text)
@@ -367,14 +381,18 @@ final class GameSocketService: ObservableObject {
                     break
                 }
             }
-            // weiter zuhören
-            self.receive()
+            self.receive(on: task)
         }
     }
 
     // Whenever we get any message, we know the socket is alive; flush any queued sends.
-    private func handleIncoming(text: String) {
+    /// Parses one server message and fires the matching callback.
+    /// Internal (not private) so unit tests can feed JSON directly.
+    func handleIncoming(text: String) {
+        // Any incoming message proves the socket is alive.
+        // Reset reconnect backoff so future disconnects start at attempt 1.
         reconnectAttempt = 0
+
         flushPendingMessages()
 
         guard let data = text.data(using: .utf8) else { return }
@@ -389,13 +407,55 @@ final class GameSocketService: ObservableObject {
                 let fromId      = parsePlayerId(json["fromPlayerId"])
                 let toId        = parsePlayerId(json["toPlayerId"])
                 let challengeId = (json["challengeId"] as? NSNumber)?.int64Value ?? 0
+                let challengeText     = json["challengeText"] as? String
+                let challengeCategory = json["challengeCategory"] as? String
 
                 let targetLat   = json["targetLatitude"] as? Double
                 let targetLon   = json["targetLongitude"] as? Double
 
-                print("🔹 battle-requested targetLat=\(targetLat as Any), targetLon=\(targetLon as Any)")
+                print("🔹 battle-requested battle=\(battleId) challenge=\(challengeId) targetLat=\(targetLat as Any), targetLon=\(targetLon as Any)")
 
-                onChallengeReceived?(battleId, fromId, toId, challengeId, targetLat, targetLon)
+                DispatchQueue.main.async {
+                    self.onChallengeReceived?(battleId, fromId, toId, challengeId, challengeText, challengeCategory, targetLat, targetLon)
+                }
+            }
+
+            // Friends realtime events
+            if type == "friend-request-created" {
+                let requestId = (json["requestId"] as? NSNumber)?.int64Value ?? 0
+                let fromId = parsePlayerId(json["fromPlayerId"])
+                let toId = parsePlayerId(json["toPlayerId"])
+                DispatchQueue.main.async {
+                    self.onFriendRequestCreated?(requestId, fromId, toId)
+                }
+            }
+
+            if type == "friend-request-updated" {
+                let requestId = (json["requestId"] as? NSNumber)?.int64Value ?? 0
+                let fromId = parsePlayerId(json["fromPlayerId"])
+                let toId = parsePlayerId(json["toPlayerId"])
+                let status = json["status"] as? String ?? ""
+                DispatchQueue.main.async {
+                    self.onFriendRequestUpdated?(requestId, fromId, toId, status)
+                }
+            }
+
+            if type == "friend-removed" {
+                let playerId = parsePlayerId(json["playerId"])
+                let friendId = parsePlayerId(json["friendId"])
+                DispatchQueue.main.async {
+                    self.onFriendRemoved?(playerId, friendId)
+                }
+            }
+
+            // Position realtime events
+            if type == "player-position-updated" {
+                let pid = parsePlayerId(json["playerId"])
+                let lat = json["latitude"] as? Double
+                let lon = json["longitude"] as? Double
+                DispatchQueue.main.async {
+                    self.onPlayerPositionUpdated?(pid, lat, lon)
+                }
             }
 
             if type == "battle-updated" {
@@ -432,7 +492,7 @@ final class GameSocketService: ObservableObject {
                 let trashTalk   = json["trashTalk"] as? String ?? "Good game!"
                 let metrics = parseBattleMetrics(from: json)
 
-                let result = BattleResultData(
+                var result = BattleResultData(
                     winnerName: winnerName,
                     winnerAvatar: "opponentAvatar",
                     winnerPointsDelta: winnerDelta,
@@ -442,9 +502,19 @@ final class GameSocketService: ObservableObject {
                     trashTalk: trashTalk,
                     metrics: metrics
                 )
+                result.battleId = (json["battleId"] as? NSNumber)?.int64Value
+                result.winnerId = json["winnerId"] as? String
+                result.loserId  = json["loserId"] as? String
 
                 DispatchQueue.main.async {
                     self.onBattleResult?(result)
+                }
+            }
+
+            if type == "battle-rejected" {
+                let reason = json["reason"] as? String ?? "Challenge nicht möglich"
+                DispatchQueue.main.async {
+                    self.onBattleRejected?(reason)
                 }
             }
 
@@ -478,7 +548,6 @@ final class GameSocketService: ObservableObject {
     }
 
     deinit {
-        stopPing()
         disconnect()
     }
 

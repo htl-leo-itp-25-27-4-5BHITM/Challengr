@@ -169,7 +169,7 @@ struct BattleLoseView: View {
             }
             .padding(.horizontal, 24)
             .onAppear {
-                SoundManager.shared.playSound("TRASH_01")
+                SoundManager.shared.play(.lose)
                 // Hefty drop-in slam animation
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                     appearScale = 1.0

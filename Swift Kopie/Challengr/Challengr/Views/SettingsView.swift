@@ -37,6 +37,11 @@ struct SettingsView: View {
                             Text("Mitteilungen")
                         }
                     }
+                    .onChange(of: notificationsEnabled) { _, enabled in
+                        if enabled {
+                            NotificationManager.shared.requestAuthorizationIfNeeded()
+                        }
+                    }
                 }
                 
                 Section(header: Text("Account")) {

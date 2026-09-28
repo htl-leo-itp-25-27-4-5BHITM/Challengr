@@ -84,6 +84,7 @@ final class FriendsViewModel: ObservableObject {
     func acceptIncoming(requestId: Int64) async {
         do {
             try await friendsService.acceptRequest(requestId: requestId)
+            SoundManager.shared.play(.friendAccepted)
             incomingRequest = nil
             await refreshIfPossible()
         } catch {
@@ -131,6 +132,7 @@ final class FriendsViewModel: ObservableObject {
         errorText = nil
         do {
             try await friendsService.sendGift(from: ownPlayerId, to: playerId)
+            SoundManager.shared.play(.giftSent)
             await refreshIfPossible()
         } catch {
             errorText = "Konnte Geschenk nicht senden: \(error.localizedDescription)"
@@ -141,6 +143,7 @@ final class FriendsViewModel: ObservableObject {
         errorText = nil
         do {
             try await friendsService.claimGift(giftId: giftId, playerId: ownPlayerId)
+            SoundManager.shared.play(.giftClaimed)
             await refreshIfPossible()
             return true
         } catch {

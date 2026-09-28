@@ -59,31 +59,15 @@ final class FriendsViewModel: ObservableObject {
 
             incomingGifts = try await friendsService.loadIncomingGifts(playerId: ownPlayerId)
 
-            // Also check incoming once on load (used to show popup)
             await pollIncomingOnce(playerId: ownPlayerId)
         } catch {
             errorText = "Fehler beim Laden: \(error.localizedDescription)"
         }
     }
 
-    func sendRequest(ownPlayerId: String, to playerId: String) async {
-        errorText = nil
-        guard !pendingOutgoingToPlayerIds.contains(playerId) else { return }
-
-        do {
-            try await friendsService.sendFriendRequest(from: ownPlayerId, to: playerId)
-            pendingOutgoingToPlayerIds.insert(playerId)
-            await refreshIfPossible()
-        } catch {
-            errorText = "Konnte Anfrage nicht senden: \(error.localizedDescription)"
-        }
-    }
-
     func pollIncomingOnce(playerId: String) async {
         do {
             let incoming = try await friendsService.loadIncomingPendingRequests(playerId: playerId)
-
-            // If there's a new request we haven't shown yet, surface it.
             if let newest = incoming.first {
                 let key = "\(newest.id)-\(newest.createdAt)"
                 if lastSeenIncomingRequestKey != key || incomingRequest == nil {
@@ -93,7 +77,6 @@ final class FriendsViewModel: ObservableObject {
                 }
             }
         } catch {
-            // Don't surface as fatal error; this is best-effort.
             print("Incoming friend requests poll failed:", error)
         }
     }
@@ -101,6 +84,7 @@ final class FriendsViewModel: ObservableObject {
     func acceptIncoming(requestId: Int64) async {
         do {
             try await friendsService.acceptRequest(requestId: requestId)
+            SoundManager.shared.play(.friendAccepted)
             incomingRequest = nil
             await refreshIfPossible()
         } catch {
@@ -123,9 +107,24 @@ final class FriendsViewModel: ObservableObject {
         do {
             try await friendsService.removeFriend(playerId: ownPlayerId, friendId: friendId)
             friends.removeAll(where: { $0.id == friendId })
+            // Refresh so nearby list updates immediately.
             await refreshIfPossible()
         } catch {
             errorText = "Konnte Freund nicht entfernen: \(error.localizedDescription)"
+        }
+    }
+
+    func sendRequest(ownPlayerId: String, to playerId: String) async {
+        errorText = nil
+        guard !pendingOutgoingToPlayerIds.contains(playerId) else { return }
+
+        do {
+            try await friendsService.sendFriendRequest(from: ownPlayerId, to: playerId)
+            pendingOutgoingToPlayerIds.insert(playerId)
+            // Refresh outgoing state (in case backend already had a request)
+            await refreshIfPossible()
+        } catch {
+            errorText = "Konnte Anfrage nicht senden: \(error.localizedDescription)"
         }
     }
 
@@ -133,6 +132,7 @@ final class FriendsViewModel: ObservableObject {
         errorText = nil
         do {
             try await friendsService.sendGift(from: ownPlayerId, to: playerId)
+            SoundManager.shared.play(.giftSent)
             await refreshIfPossible()
         } catch {
             errorText = "Konnte Geschenk nicht senden: \(error.localizedDescription)"
@@ -143,6 +143,7 @@ final class FriendsViewModel: ObservableObject {
         errorText = nil
         do {
             try await friendsService.claimGift(giftId: giftId, playerId: ownPlayerId)
+            SoundManager.shared.play(.giftClaimed)
             await refreshIfPossible()
             return true
         } catch {

@@ -24,4 +24,9 @@ struct BattleResultData {
 
     let trashTalk: String      // nur im Lose-Screen angezeigt
     let metrics: BattleMetrics?
+
+    /// Set by the backend; nil for old backends or a draw/conflict (kein Gewinner).
+    var battleId: Int64? = nil
+    var winnerId: String? = nil
+    var loserId: String? = nil
 }

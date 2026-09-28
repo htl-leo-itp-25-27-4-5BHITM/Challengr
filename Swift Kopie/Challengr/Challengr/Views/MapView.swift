@@ -56,14 +56,22 @@ struct MapView: View {
 
     /// Auth is needed for Settings/Logout. Optional for preview/default init.
     private let auth: KeycloakAuthService?
-
-    @EnvironmentObject private var friendsInbox: FriendsInboxStore
     
 
     @State private var allChallenges: [ChallengeDTO] = []
+    /// Newest battle-requested id; older async resolves must not overwrite it.
+    @State private var latestRequestedBattleId: Int64? = nil
 
     /// WebSocket
     @StateObject private var socket: GameSocketService
+
+    /// Incoming friend requests (Banner + Badge), live via WebSocket.
+    @StateObject private var friendsInbox = FriendsInboxStore()
+    @Environment(\.scenePhase) private var scenePhase
+
+    /// Short info banner at the top of the map (z.B. "Anfrage abgelaufen").
+    @State private var mapBanner: (icon: String, text: String)? = nil
+    @State private var mapBannerHideTask: Task<Void, Never>? = nil
     
     /// Information about an incoming challenge from another player.
     @State private var incomingChallenge: (
@@ -87,7 +95,8 @@ struct MapView: View {
     @State private var activeBattleInfo: (challengeName: String,
                                           category: String,
                                           playerA: String,
-                                          playerB: String)? = nil
+                                          playerB: String,
+                                          opponentId: String)? = nil
     @State private var activeFullScreen: ActiveFullScreen = .none
     @State private var resultData: BattleResultData? = nil
 
@@ -117,15 +126,9 @@ struct MapView: View {
     /// Fallback (Default Map: Vienna)
     private let startCoordinate = CLLocationCoordinate2D(latitude: 48.2082, longitude: 16.3738)
 
+    @available(*, unavailable, message: "Use MapView(ownPlayerId:ownPlayerName:auth:) so each device connects with its real Keycloak playerId.")
     init() {
-        let defaultPlayerId = "1"
-        let defaultPlayerName = "Player"
-
-        self.ownPlayerId = defaultPlayerId
-        self.auth = nil
-        _ownPlayerName = State(initialValue: defaultPlayerName)
-        _locationHelper = StateObject(wrappedValue: LocationHelper(playerId: defaultPlayerId, playerName: defaultPlayerName))
-        _socket = StateObject(wrappedValue: GameSocketService(playerId: defaultPlayerId))
+        fatalError("Unavailable")
     }
 
     init(ownPlayerId: Int64, ownPlayerName: String, auth: KeycloakAuthService) {
@@ -176,6 +179,10 @@ struct MapView: View {
     
     /// All players that should be displayed
     @State private var annotations: [PlayerAnnotation] = []
+
+    /// Rank name -> rank color, used to tint player pins on the map.
+    @State private var rankColorsByName: [String: Color] = [:]
+    private let rankService = RankService()
     
     /// Challenge Infos Window
     @State private var showChallengeView = false
@@ -192,21 +199,28 @@ struct MapView: View {
     // coordinate does not change (simulator often stays constant).
     @State private var nearbyRefreshTask: Task<Void, Never>? = nil
 
-    /// Rank name -> rank color, used to tint player pins on the map.
-    @State private var rankColorsByName: [String: Color] = [:]
-    private let rankService = RankService()
-
-    @State private var showFriendRequestBanner: Bool = false
-    @State private var friendRequestBannerText: String = ""
+    // WebSocket-driven refresh (throttled/debounced) for truly live nearby updates.
+    @State private var wsNearbyRefreshTask: Task<Void, Never>? = nil
+    @State private var lastWsNearbyRefreshAt: Date? = nil
 
     
     /// Resolves a challenge text + category for a given ID (Challenge-Infos für ID)
-    private func challengeInfo(for id: Int64) -> (name: String, category: String) {
-        if let ch = allChallenges.first(where: { $0.id == id }) {
-            return (ch.text, ch.category)
-        } else {
-            return ("Challenge \(id)", "Unbekannt")
+    /// Resolves the challenge that the backend actually stored for a battle.
+    /// Order: payload from backend -> local cache -> fetch by id (never guess).
+    @MainActor
+    private func resolveChallengeInfo(id: Int64, text: String?, category: String?) async -> (name: String, category: String) {
+        let service = challengesService
+        let resolved = await ChallengeResolver.resolve(
+            id: id,
+            text: text,
+            category: category,
+            cached: allChallenges,
+            fetch: { try await service.loadChallenge(id: $0) }
+        )
+        if let fetched = resolved.fetched, !allChallenges.contains(where: { $0.id == fetched.id }) {
+            allChallenges.append(fetched)
         }
+        return (resolved.name, resolved.category)
     }
 
 
@@ -227,12 +241,6 @@ struct MapView: View {
             mapLayer
 
             VStack {
-                if showFriendRequestBanner {
-                    FriendRequestBanner(text: friendRequestBannerText)
-                        .padding(.top, 18)
-                        .transition(AnyTransition.move(edge: .top).combined(with: .opacity))
-                }
-
                 HStack {
                     // LINKS: Capsule "Spieler in meiner Nähe" (ausklappbar)
                     HStack(spacing: 8) {
@@ -267,7 +275,6 @@ struct MapView: View {
                                 default: return "\(count) Spieler in meiner Nähe"
                                 }
                             }()
-
                             Text(text)
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(.challengrDark)
@@ -346,7 +353,9 @@ struct MapView: View {
         .overlay(playerPopupOverlay)
         .overlay(challengeDialogOverlay)
         .overlay(incomingChallengeOverlay)
+        .overlay(outgoingChallengeOverlay)
         .overlay(resultPendingOverlay)
+        .overlay(alignment: .top) { mapBannerOverlay }
         .sheet(isPresented: $showChallengeView) {
             challengeSheet
         }
@@ -401,24 +410,6 @@ struct MapView: View {
             }
         }
 
-        .onChange(of: friendsInbox.lastBannerText) { _, newValue in
-            guard let text = newValue, !text.isEmpty else { return }
-            friendRequestBannerText = text
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
-                showFriendRequestBanner = true
-            }
-
-            Task {
-                try? await Task.sleep(nanoseconds: 2_500_000_000)
-                await MainActor.run {
-                    withAnimation(.easeOut(duration: 0.25)) {
-                        showFriendRequestBanner = false
-                    }
-                    friendsInbox.consumeBanner()
-                }
-            }
-        }
-
 
 
 
@@ -443,7 +434,8 @@ struct MapView: View {
                 if let info = activeBattleInfo,
                    let battleId = currentBattleId {
 
-                    if info.category == "Wissen" {
+                    switch BattleScreen.forChallenge(category: info.category, name: info.challengeName) {
+                    case .knowledge:
                         KnowledgeBattleView(
                             battleId: battleId,
                             socket: socket,
@@ -451,24 +443,25 @@ struct MapView: View {
                             onClose: { activeFullScreen = .none }
                         )
 
-                    } else if info.category == "iPhone",
-                              info.challengeName.contains("Check-In-Spot"),
-                              let target = currentTargetCoordinate {
+                    case .checkInSpot:
+                        if let target = currentTargetCoordinate {
+                            CheckInSpotView(
+                                battleId: battleId,
+                                playerId: ownPlayerId,
+                                playerName: ownPlayerName,
+                                socket: socket,
+                                targetCoordinate: target,
+                                radius: 30,
+                                onClose: {
+                                    activeFullScreen = .none
+                                }
+                            )
+                        } else {
+                            // Kein Zielpunkt vom Backend → normales Battle
+                            genericBattleView(info: info)
+                        }
 
-                        CheckInSpotView(
-                            battleId: battleId,
-                            playerId: ownPlayerId,
-                            playerName: ownPlayerName,
-                            socket: socket,
-                            targetCoordinate: target,
-                            radius: 30,
-                            onClose: {
-                                activeFullScreen = .none
-                            }
-                        )
-
-                    } else if info.category == "iPhone",
-                              info.challengeName.contains("Sprint-Challenge") {
+                    case .sprint:
                         SprintChallengeView(
                             battleId: battleId,
                             playerId: ownPlayerId,
@@ -477,8 +470,7 @@ struct MapView: View {
                             onClose: { activeFullScreen = .none }
                         )
 
-                    } else if info.category == "iPhone",
-                              info.challengeName.contains("Schrei-Challenge") {
+                    case .loudness:
                         LoudnessChallengeView(
                             battleId: battleId,
                             playerId: ownPlayerId,
@@ -486,66 +478,32 @@ struct MapView: View {
                             onClose: { activeFullScreen = .none }
                         )
 
-              } else if info.category == "iPhone",
-                        info.challengeName.lowercased().contains("kamera")
-                        || info.challengeName.lowercased().contains("camera")
-                        || info.challengeName.lowercased().contains("foto") {
-                CameraChallengeView(
-                    battleId: battleId,
-                    socket: socket,
-                    onClose: { activeFullScreen = .none }
-                )
+                    case .camera:
+                        CameraChallengeView(
+                            battleId: battleId,
+                            socket: socket,
+                            onClose: { activeFullScreen = .none }
+                        )
 
-              } else if info.category == "iPhone",
-                    (info.challengeName.lowercased().contains("compass") || info.challengeName.lowercased().contains("kompass")) {
-                CompassChallengeView(battleId: battleId, playerId: ownPlayerId, socket: socket, onClose: { activeFullScreen = .none })
+                    case .compass:
+                        CompassChallengeView(battleId: battleId, playerId: ownPlayerId, socket: socket, onClose: { activeFullScreen = .none })
 
-                    } else if info.category == "iPhone",
-                              info.challengeName.lowercased().contains("shake")
-                              || info.challengeName.lowercased().contains("schüttel") {
+                    case .shake:
                         ShakeChallengeView(
                             battleId: battleId,
                             socket: socket,
                             onClose: { activeFullScreen = .none }
                         )
 
-                    } else if info.category == "iPhone",
-                              info.challengeName.lowercased().contains("liegest")
-                              || info.challengeName.lowercased().contains("pushup") {
+                    case .pushup:
                         PushupChallengeView(
                             battleId: battleId,
                             socket: socket,
                             onClose: { activeFullScreen = .none }
                         )
 
-                    } else {
-                        BattleView(
-                            challengeName: info.challengeName,
-                            category: info.category,
-                            playerLeft: info.playerA,
-                            playerRight: info.playerB,
-                            onClose: {
-                                activeFullScreen = .none
-                            },
-                            onSurrender: {
-                                if let battleId = currentBattleId {
-                                    socket.sendUpdateBattleStatus(
-                                        battleId: battleId,
-                                        status: "DONE_SURRENDER"
-                                    )
-                                }
-                                activeFullScreen = .none
-                                activeOverlay = .resultPending
-                            },
-                            onFinished: {
-                                if let battleId = currentBattleId {
-                                    socket.sendUpdateBattleStatus(
-                                        battleId: battleId,
-                                        status: "READY_FOR_VOTING"
-                                    )
-                                }
-                            }
-                        )
+                    case .generic:
+                        genericBattleView(info: info)
                     }
 
                 } else {
@@ -580,11 +538,17 @@ struct MapView: View {
                     BattleVotingView(
                         playerA: info.playerA,  // nur Name
                         playerB: info.playerB   // nur Name
-                    ) { chosen in
-                        myVote = chosen
+                    ) { side in
+                        // playerA = ich, playerB = Gegner
+                        let winner = side.winner(
+                            ownId: ownPlayerId, ownName: info.playerA,
+                            opponentId: info.opponentId, opponentName: info.playerB
+                        )
+                        myVote = winner.name
                         socket.sendVote(
                             battleId: battleId,
-                            winnerName: chosen
+                            winnerId: winner.id,
+                            winnerName: winner.name
                         )
                         activeFullScreen = .none
                         activeOverlay = .resultPending
@@ -666,6 +630,8 @@ struct MapView: View {
         .onAppear {
             setupSocket()
             seedInitialZoom()
+            friendsInbox.start(playerId: ownPlayerId)
+            NotificationManager.shared.requestAuthorizationIfNeeded()
 
             // Start lightweight polling for nearby players.
             if nearbyRefreshTask == nil {
@@ -679,7 +645,25 @@ struct MapView: View {
                 }
             }
         }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background:
+                // Keep the socket alive a bit so late challenges still arrive.
+                NotificationManager.shared.beginBackgroundWindow()
+            case .active:
+                NotificationManager.shared.endBackgroundWindow()
+                Task { await friendsInbox.refreshCount() }
+            default:
+                break
+            }
+        }
+        .onChange(of: friendsInbox.lastBannerText) { _, newValue in
+            guard let text = newValue, !text.isEmpty else { return }
+            showMapBanner(icon: "person.badge.plus", text: text)
+            friendsInbox.consumeBanner()
+        }
         .onDisappear {
+            friendsInbox.stop()
             nearbyRefreshTask?.cancel()
             nearbyRefreshTask = nil
         }
@@ -801,9 +785,7 @@ struct MapView: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 7)
                                 .padding(.vertical, 4)
-                                .background(
-                                    Capsule().fill(Color.challengrRed)
-                                )
+                                .background(Capsule().fill(Color.challengrRed))
                                 .offset(x: 8, y: -8)
                         }
                     }
@@ -990,7 +972,8 @@ struct MapView: View {
                                     challengeName: challenge.name,
                                     category: challenge.category,
                                     playerA: ownPlayerName,
-                                    playerB: opponentName
+                                    playerB: opponentName,
+                                    opponentId: challenge.fromId
                                 )
 
                                 incomingChallenge = nil
@@ -1002,6 +985,7 @@ struct MapView: View {
                                     battleId: battleId,
                                     status: "DECLINED"
                                 )
+                                SoundManager.shared.play(.challengeClosed)
 
                                 incomingChallenge = nil
                                 currentBattleId = nil
@@ -1013,6 +997,125 @@ struct MapView: View {
                 }
 
                 .transition(.scale)
+            }
+        }
+    }
+
+    /// Overlay shown for the attacker while the request is pending.
+    private var outgoingChallengeOverlay: some View {
+        Group {
+            if incomingChallenge == nil,
+               let outgoing = outgoingBattleInfo,
+               activeFullScreen == .none {
+
+                let outgoingAnnotation = annotations.first(where: { $0.playerId == outgoing.opponentId })
+                let opponentTitle = outgoingAnnotation?.title ?? "Gegner \(outgoing.opponentId)"
+                let opponentName = cleanPlayerName(opponentTitle)
+                let outgoingRingColor = outgoingAnnotation.map { rankColor(for: $0.rankName) } ?? .gray
+
+                ZStack {
+                    Color.black.opacity(0.35)
+                        .ignoresSafeArea()
+
+                    GameCard {
+                        Text("ANFRAGE GESENDET")
+                            .font(.system(size: 14, weight: .black, design: .rounded))
+                            .tracking(1.2)
+                            .foregroundColor(.challengrYellow)
+
+                        MapAvatarPin(imageName: nil, ringColor: outgoingRingColor, isOwnPlayer: false)
+
+                        Text(opponentName.uppercased())
+                            .font(.system(size: 18, weight: .black, design: .rounded))
+                            .foregroundColor(.challengrDark)
+
+                        Text(outgoing.challengeName)
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.challengrDark)
+                            .padding(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(Color.challengrYellow)
+                            )
+
+                        HStack(spacing: 12) {
+                            ProgressView()
+                                .tint(.challengrDark)
+
+                            Text("Warte auf Annahme …")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.challengrDark)
+                        }
+
+                        GamePrimaryButton(title: "Abbrechen", color: .challengrSurface) {
+                            // Tell the backend, so the receiver's popup disappears too.
+                            socket.sendUpdateBattleStatus(battleId: outgoing.battleId, status: "CANCELLED")
+                            SoundManager.shared.play(.challengeClosed)
+                            outgoingBattleInfo = nil
+                            currentBattleId = nil
+                        }
+                        .foregroundColor(.challengrRed)
+                    }
+                    .frame(maxWidth: 320)
+                }
+                .transition(.opacity)
+            }
+        }
+    }
+
+    /// Normal battle (Timer + Voting) – used for all non-special challenges.
+    @ViewBuilder
+    private func genericBattleView(info: (challengeName: String, category: String, playerA: String, playerB: String, opponentId: String)) -> some View {
+        BattleView(
+            challengeName: info.challengeName,
+            category: info.category,
+            playerLeft: info.playerA,
+            playerRight: info.playerB,
+            onClose: {
+                activeFullScreen = .none
+            },
+            onSurrender: {
+                if let battleId = currentBattleId {
+                    socket.sendUpdateBattleStatus(
+                        battleId: battleId,
+                        status: "DONE_SURRENDER"
+                    )
+                }
+                activeFullScreen = .none
+                activeOverlay = .resultPending
+            },
+            onFinished: {
+                if let battleId = currentBattleId {
+                    socket.sendUpdateBattleStatus(
+                        battleId: battleId,
+                        status: "READY_FOR_VOTING"
+                    )
+                }
+            }
+        )
+    }
+
+    private var mapBannerOverlay: some View {
+        Group {
+            if let banner = mapBanner {
+                MapInfoBanner(icon: banner.icon, text: banner.text)
+                    .padding(.top, 90)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+    }
+
+    private func showMapBanner(icon: String, text: String) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
+            mapBanner = (icon: icon, text: text)
+        }
+        mapBannerHideTask?.cancel()
+        mapBannerHideTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.25)) {
+                mapBanner = nil
             }
         }
     }
@@ -1142,45 +1245,73 @@ struct MapView: View {
         }
 
 
+
         reloadOwnPlayerData()
 
 
 
-        socket.onChallengeReceived = { battleId, fromId, toId, challengeId, targetLat, targetLon in
-            let info = challengeInfo(for: challengeId)
+        socket.onChallengeReceived = { battleId, fromId, toId, challengeId, challengeText, challengeCategory, targetLat, targetLon in
+            guard toId == ownPlayerId || fromId == ownPlayerId else { return }
+            latestRequestedBattleId = battleId
 
-            if toId == ownPlayerId {
-                // Eingehende Challenge
-                incomingChallenge = (
-                    battleId: battleId,
-                    fromId: fromId,
-                    challengeId: challengeId,
-                    name: info.name,
-                    category: info.category
+            Task { @MainActor in
+                let info = await resolveChallengeInfo(
+                    id: challengeId,
+                    text: challengeText,
+                    category: challengeCategory
                 )
-                currentBattleId = battleId
+                // A newer request arrived while we were resolving -> drop this one.
+                guard latestRequestedBattleId == battleId else { return }
 
-            } else if fromId == ownPlayerId {
-                // Wir sind der Angreifer
-                outgoingBattleInfo = (
-                    battleId: battleId,
-                    opponentId: toId,
-                    challengeName: info.name,
-                    category: info.category
-                )
-                currentBattleId = battleId
-            }
+                // Backend re-sends open requests after a reconnect – only alert once.
+                let alreadyShown = incomingChallenge?.battleId == battleId
+                if toId == ownPlayerId, !alreadyShown {
+                    SoundManager.shared.play(.challengeIncoming)
+                    NotificationManager.shared.notifyIfInBackground(
+                        title: "Neue Challenge!",
+                        body: info.name,
+                        identifier: "battle-\(battleId)"
+                    )
+                }
 
-            if info.category != "Wissen" {
-                lastKnowledgeQuestion = nil
-            }
+                if toId == ownPlayerId {
+                    // Eingehende Challenge
+                    incomingChallenge = (
+                        battleId: battleId,
+                        fromId: fromId,
+                        challengeId: challengeId,
+                        name: info.name,
+                        category: info.category
+                    )
+                    currentBattleId = battleId
+                } else if fromId == ownPlayerId {
+                    // Wir sind der Angreifer
+                    outgoingBattleInfo = (
+                        battleId: battleId,
+                        opponentId: toId,
+                        challengeName: info.name,
+                        category: info.category
+                    )
+                    currentBattleId = battleId
+                }
 
-            // Zielkoordinate (für Check-In-Spot)
-            if let lat = targetLat, let lon = targetLon {
-                currentTargetCoordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-            } else {
-                currentTargetCoordinate = nil
+                if info.category != "Wissen" {
+                    lastKnowledgeQuestion = nil
+                }
+
+                // Zielkoordinate (für Check-In-Spot)
+                if let lat = targetLat, let lon = targetLon {
+                    currentTargetCoordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+                } else {
+                    currentTargetCoordinate = nil
+                }
             }
+        }
+
+        // Realtime: when any player moves, update the nearby list quickly (but throttled).
+        socket.onPlayerPositionUpdated = { _, _, _ in
+            // Only refresh when we actually know our own location.
+            Task { await scheduleNearbyRefreshFromWebSocket() }
         }
 
 
@@ -1201,13 +1332,14 @@ struct MapView: View {
                     annotations.first(where: { $0.playerId == challenge.fromId })?.title
                     ?? "Gegner \(challenge.fromId)"
 
-                let opponentName = opponentTitle.components(separatedBy: " · ").first ?? opponentTitle
+                let opponentName = cleanPlayerName(opponentTitle)
 
                 activeBattleInfo = (
                     challengeName: challenge.name,
                     category: challenge.category,
                     playerA: ownPlayerName,   // schon ohne Rank
-                    playerB: opponentName     // jetzt auch ohne Rank
+                    playerB: opponentName,    // jetzt auch ohne Rank
+                    opponentId: challenge.fromId
                 )
 
                 incomingChallenge = nil
@@ -1223,15 +1355,18 @@ struct MapView: View {
                     annotations.first(where: { $0.playerId == outgoing.opponentId })?.title
                     ?? "Gegner \(outgoing.opponentId)"
 
-                let opponentName = opponentTitle.components(separatedBy: " · ").first ?? opponentTitle
+                let opponentName = cleanPlayerName(opponentTitle)
 
                 activeBattleInfo = (
                     challengeName: outgoing.challengeName,
                     category: outgoing.category,
                     playerA: ownPlayerName,
-                    playerB: opponentName
+                    playerB: opponentName,
+                    opponentId: outgoing.opponentId
                 )
 
+                SoundManager.shared.play(.challengeAccepted)
+                outgoingBattleInfo = nil
                 activeFullScreen = .battle
                 return
             }
@@ -1242,6 +1377,9 @@ struct MapView: View {
     
         
         socket.onBattleResult = { data in
+            // Only results of our own battle (Ergebnisse fremder Battles ignorieren)
+            guard data.isRelevant(ownPlayerId: ownPlayerId, currentBattleId: currentBattleId) else { return }
+
             // NEU: Punkte/Streak nach Battle neu laden
             reloadOwnPlayerData()
 
@@ -1250,7 +1388,7 @@ struct MapView: View {
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 activeOverlay = .none
-                if data.winnerName == ownPlayerName {
+                if data.didWin(ownPlayerId: ownPlayerId, ownPlayerName: ownPlayerName) {
                     activeFullScreen = .win
                 } else {
                     activeFullScreen = .lose
@@ -1259,6 +1397,11 @@ struct MapView: View {
         }
 
         
+        socket.onBattleRejected = { reason in
+            SoundManager.shared.play(.challengeClosed)
+            showMapBanner(icon: "exclamationmark.triangle.fill", text: reason)
+        }
+
         socket.onReadyForVoting = { battleId in
             currentBattleId = battleId
             activeFullScreen = .voting   // beide springen in Voting-Screen
@@ -1271,8 +1414,17 @@ struct MapView: View {
         }
 
         
+        socket.onFriendRequestCreated = { _, fromId, toId in
+            friendsInbox.handleRequestCreated(fromId: fromId, toId: toId)
+        }
+
+        socket.onFriendRequestUpdated = { _, fromId, toId, status in
+            friendsInbox.handleRequestUpdated(fromId: fromId, toId: toId, status: status)
+        }
+
         socket.onBattleUpdatedStatus = { battleId, status in
             print("Battle \(battleId) status updated to \(status)")
+            handleBattleClosed(battleId: battleId, status: status)
         }
         
         socket.onKnowledgeQuestion = { battleId, challenge in
@@ -1316,19 +1468,58 @@ struct MapView: View {
     }
 
     private func rankColor(for rankName: String) -> Color {
+        // Backend returns "Unranked" for players whose points fall outside every
+        // configured rank range (e.g. after dropping below 0). Give that a neutral
+        // color instead of silently reusing red, which already belongs to two
+        // real ranks (Punchbag, Brawler) and would otherwise read as a random
+        // rank rather than "no rank data".
         rankColorsByName[rankName] ?? .gray
     }
 
-    private func cleanPlayerName(_ title: String) -> String {
-        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let separator = " · "
-        if trimmed.contains(separator) {
-            return trimmed.components(separatedBy: separator).first ?? trimmed
+    @MainActor
+    /// A request ended before the battle started (abgelehnt / abgebrochen / abgelaufen).
+    private func handleBattleClosed(battleId: Int64, status: String) {
+        // Laufendes Battle ohne Fortschritt vom Backend abgebrochen (keine Punkte)
+        if status == "ABANDONED" {
+            guard currentBattleId == battleId else { return }
+            activeFullScreen = .none
+            activeOverlay = .none
+            activeBattleInfo = nil
+            currentBattleId = nil
+            SoundManager.shared.play(.challengeClosed)
+            showMapBanner(icon: "clock.badge.xmark", text: "Battle abgebrochen – zu lange keine Aktion, keine Punkte")
+            return
         }
-        return trimmed
+
+        let closedStatuses = ["DECLINED", "CANCELLED", "EXPIRED"]
+        guard closedStatuses.contains(status) else { return }
+
+        NotificationManager.shared.removeNotification(identifier: "battle-\(battleId)")
+
+        if let incoming = incomingChallenge, incoming.battleId == battleId {
+            withAnimation { incomingChallenge = nil }
+            if currentBattleId == battleId { currentBattleId = nil }
+            if status == "CANCELLED" {
+                SoundManager.shared.play(.challengeClosed)
+                showMapBanner(icon: "xmark.circle.fill", text: "Challenge wurde zurückgezogen")
+            } else if status == "EXPIRED" {
+                showMapBanner(icon: "clock.badge.xmark", text: "Challenge ist abgelaufen")
+            }
+            return
+        }
+
+        if let outgoing = outgoingBattleInfo, outgoing.battleId == battleId {
+            withAnimation { outgoingBattleInfo = nil }
+            if currentBattleId == battleId { currentBattleId = nil }
+            SoundManager.shared.play(.challengeClosed)
+            switch status {
+            case "DECLINED": showMapBanner(icon: "hand.raised.fill", text: "Challenge wurde abgelehnt")
+            case "EXPIRED":  showMapBanner(icon: "clock.badge.xmark", text: "Keine Antwort – Challenge abgelaufen")
+            default: break
+            }
+        }
     }
 
-    @MainActor
     private func preloadChallenges() async {
         let categories = ["Fitness", "Mutprobe", "Wissen", "iPhone", "Customer"]
         var loadedChallenges: [ChallengeDTO] = []
@@ -1344,6 +1535,24 @@ struct MapView: View {
 
         allChallenges = loadedChallenges
         print("AllChallenges geladen, Anzahl:", allChallenges.count)
+    }
+
+    private func scheduleNearbyRefreshFromWebSocket() async {
+        let now = Date()
+        if let last = lastWsNearbyRefreshAt, now.timeIntervalSince(last) < 2.0 {
+            return
+        }
+        lastWsNearbyRefreshAt = now
+
+        wsNearbyRefreshTask?.cancel()
+        wsNearbyRefreshTask = Task {
+            // Debounce bursts of WS events
+            try? await Task.sleep(nanoseconds: 350_000_000) // 0.35s
+            guard !Task.isCancelled else { return }
+            if let loc = ownCoordinate {
+                await refreshNearbyPlayers(at: loc)
+            }
+        }
     }
 
     /// Handles updates of the user location and refreshes nearby players.
@@ -1426,21 +1635,31 @@ struct MapView: View {
             }
         }
     }
+
+    private func cleanPlayerName(_ title: String) -> String {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let separator = " · "
+        if trimmed.contains(separator) {
+            return trimmed.components(separatedBy: separator).first ?? trimmed
+        }
+        return trimmed
+    }
 }
 
-private struct FriendRequestBanner: View {
+private struct MapInfoBanner: View {
+    let icon: String
     let text: String
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: "person.badge.plus")
+            Image(systemName: icon)
                 .font(.system(size: 16, weight: .black))
                 .foregroundColor(.challengrDark)
 
             Text(text)
                 .font(.system(size: 14, weight: .bold, design: .rounded))
                 .foregroundColor(.challengrDark)
-                .lineLimit(1)
+                .lineLimit(2)
                 .minimumScaleFactor(0.75)
 
             Spacer(minLength: 0)

@@ -138,7 +138,7 @@ struct BattleWinView: View {
             }
             .padding(.horizontal, 24)
             .onAppear {
-                SoundManager.shared.playSound("JINGLE_01")
+                SoundManager.shared.play(.win)
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
                     appearScale = 1.0
                     appearOpacity = 1.0

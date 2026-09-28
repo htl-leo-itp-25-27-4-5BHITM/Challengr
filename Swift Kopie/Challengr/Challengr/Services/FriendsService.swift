@@ -1,19 +1,5 @@
 import Foundation
 
-enum FriendsServiceError: LocalizedError {
-    case http(status: Int, message: String)
-
-    var errorDescription: String? {
-        switch self {
-        case .http(let status, let message):
-            if message.isEmpty {
-                return "Serverfehler (HTTP \(status))"
-            }
-            return "Serverfehler (HTTP \(status)): \(message)"
-        }
-    }
-}
-
 struct FriendRequestCreateDTO: Codable {
     let fromPlayerId: String
     let toPlayerId: String
@@ -57,11 +43,9 @@ final class FriendsService {
             FriendRequestCreateDTO(fromPlayerId: fromPlayerId, toPlayerId: toPlayerId)
         )
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (_, response) = try await URLSession.shared.data(for: request)
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-            let message = String(data: data, encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            throw FriendsServiceError.http(status: http.statusCode, message: message)
+            throw URLError(.badServerResponse)
         }
     }
 
@@ -148,11 +132,9 @@ final class FriendsService {
             FriendGiftCreateDTO(fromPlayerId: fromPlayerId, toPlayerId: toPlayerId)
         )
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (_, response) = try await URLSession.shared.data(for: request)
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-            let message = String(data: data, encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            throw FriendsServiceError.http(status: http.statusCode, message: message)
+            throw URLError(.badServerResponse)
         }
     }
 

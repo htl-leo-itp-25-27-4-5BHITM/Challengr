@@ -22,6 +22,7 @@ Optional environment variables:
   K8S_NAMESPACE   (default: ${NAMESPACE})
   GHCR_OWNER      (default: ${IMAGE_OWNER})
   DOCKER_PLATFORM (default: ${PLATFORM})
+  SKIP_TESTS=1    Backend-Tests überspringen (nur im Notfall)
 
 Examples:
   ./scripts/deploy-cloud.sh backend
@@ -39,9 +40,15 @@ require_cmd() {
 }
 
 build_backend() {
-  echo "\n[backend] Maven package..."
   cd "$ROOT_DIR/Backend/challengrbackend"
-  ./mvnw clean package -DskipTests
+  if [[ "${SKIP_TESTS:-0}" == "1" ]]; then
+    echo "\n[backend] Maven package (Tests übersprungen)..."
+    ./mvnw clean package -DskipTests
+  else
+    # Tests laufen gegen eine In-Memory-DB; schlägt einer fehl, wird nicht deployt.
+    echo "\n[backend] Maven test + package..."
+    ./mvnw clean package
+  fi
 
   echo "[backend] Docker buildx push -> $BACKEND_IMAGE"
   docker buildx build \
