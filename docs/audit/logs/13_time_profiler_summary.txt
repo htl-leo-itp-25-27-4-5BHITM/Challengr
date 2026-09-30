@@ -1,0 +1,20 @@
+Samples gesamt: 16 (1 ms Intervall, 15 s Karte im Leerlauf mit Polling)
+Threads: [('Challengr', 15), ('Main Thread', 1)]
+
+Top Leaf-Frames:
+      1  objc_retain
+      1  _kernelrpc_mach_vm_deallocate_trap
+      1  nanov2_malloc_type
+      1  kevent_qos
+      1  __workq_kernreturn
+      1  HTTPConnectionCache::performIdleSweep()
+      1  nw_content_context_create
+      1  0x18863bae0
+      1  objc_class::realizeIfNeeded()
+      1  specialized UnsafeBufferPointer.init(rebasing:)
+      1  objc_retain_x8
+      1  _xpc_serializer_append
+
+Top App-Frames (erster App-Frame im Stack):
+      1  static ChallengrApp.$main()
+Hang-Risiken: 0

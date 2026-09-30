@@ -1,0 +1,13 @@
+2026-09-30 08:03:30.052 appintentsmetadataprocessor[53395:1220173] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+Model.swift:45:9: warning: immutable property will not be decoded because it is declared with an initial value which cannot be overwritten
+Views/CameraChallengeView.swift:414:77: warning: 'isVideoOrientationSupported' was deprecated in iOS 17.0: Use -isVideoRotationAngleSupported: instead
+Views/CameraChallengeView.swift:415:28: warning: 'videoOrientation' was deprecated in iOS 17.0: Use -videoRotationAngle instead
+Views/LoudnessChallengeView.swift:236:21: warning: initialization of immutable value 'integral' was never used; consider replacing with assignment to '_' or removing it
+Views/LoudnessChallengeView.swift:295:25: warning: main actor-isolated conformance of 'LoudnessPhase' to 'Equatable' cannot be used in nonisolated context; this is an error in the Swift 6 language mode
+Views/MapView.swift:380:10: warning: 'onChange(of:perform:)' was deprecated in iOS 17.0: Use `onChange` with a two or zero parameter action closure instead.
+Views/MapView.swift:407:10: warning: 'onChange(of:perform:)' was deprecated in iOS 17.0: Use `onChange` with a two or zero parameter action closure instead.
+Views/TrophyRoadView.swift:166:22: warning: 'onChange(of:perform:)' was deprecated in iOS 17.0: Use `onChange` with a two or zero parameter action closure instead.
+Views/TrophyRoadView.swift:6:9: warning: immutable property will not be decoded because it is declared with an initial value which cannot be overwritten
+Views/UserProfileView.swift:194:56: warning: 'plotAreaFrame' was deprecated in iOS 17.0: renamed to 'plotFrame'
+Views/UserProfileView.swift:216:60: warning: 'plotAreaFrame' was deprecated in iOS 17.0: renamed to 'plotFrame'
+Views/UserProfileView.swift:246:60: warning: 'plotAreaFrame' was deprecated in iOS 17.0: renamed to 'plotFrame'

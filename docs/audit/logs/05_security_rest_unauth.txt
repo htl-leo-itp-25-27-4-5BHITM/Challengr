@@ -1,0 +1,13 @@
+# SEC-Test: unauthentifizierte REST-Zugriffe gegen lokales Audit-Backend (Kopie des Repo-Backends, Profil test)
+$ curl -s http://localhost:8080/api/players  (ohne Token)
+[{"id":"demo-1","name":"EigenerSpieler","longitude":14.251389,"latitude":48.268333,"points":800,"consecutiveConflicts":0,"profileStatus":null,"badgesJson":null,"bestLoudness":null,"banUntil":null,"banReason":null},{"id":"demo-2","name":"ZweiterSpieler","longitude":14.2514,"latitude":48.2683,"points":200,"consecutiveConflicts":0,"profileStatus":null,"badgesJson":null,"bestLoudness":null,"banUntil":null,"banReason":null},{"id":"3","name":"WebappSpieler","longitude":14.251385,"latitude":48.268639,"points":200,"consecutiveConflicts":0,"profileStatus":null,"badgesJson":null,"bestLoudness":null,"ban
+$ curl -X PUT /api/players/demo-2  name=GEHACKT (ohne Token, fremder Spieler)
+{"id":"demo-2","name":"GEHACKT","latitude":1.0,"longitude":1.0,"points":200,"rankName":"Scrapper"}
+HTTP 200
+$ curl /api/players/demo-2 (danach)
+{"id":"demo-2","name":"GEHACKT","latitude":1.0,"longitude":1.0,"points":200,"rankName":"Scrapper"}
+HTTP 200
+$ curl /api/challenges (Dashboard-Liste mit Antworten, ohne Token)
+{"id":18,"text":"Wie viele Planeten hat unser Sonnensystem?","correctIndex":1}
+$ curl /api/admin/overview (ohne Token)
+HTTP 200

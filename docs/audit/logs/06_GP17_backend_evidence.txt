@@ -1,0 +1,5 @@
+1438:battle created: id=14, status=REQUESTED, from=opp-gp17a, to=audit-1
+1476:WebSocket message from player audit-1: {"battleId":14,"type":"update-battle-status","status":"ACCEPTED"}
+1491:battle created: id=15, status=REQUESTED, from=opp-gp17b, to=audit-1
+1529:WebSocket message from player audit-1: {"status":"DONE_SURRENDER","type":"update-battle-status","battleId":15}
+1530:update-battle-status DONE_SURRENDER ignoriert: Battle 15 läuft nicht (REQUESTED)

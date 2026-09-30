@@ -1,0 +1,58 @@
+Model.swift:45:9: warning: immutable property will not be decoded because it is declared with an initial value which cannot be overwritten
+Services/MotionManager.swift:32:19: warning: call to main actor-isolated instance method 'update()' in a synchronous nonisolated context
+Services/NotificationManager.swift:34:13: warning: capture of 'center' with non-Sendable type 'UNUserNotificationCenter' in a '@Sendable' closure
+Services/NotificationManager.swift:7:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'UserNotifications'
+Services/SoundManager.swift:82:84: warning: converting non-Sendable function value to '@MainActor @Sendable @convention(block) () -> Void' may introduce data races
+Services/SoundMeter.swift:46:18: warning: main actor-isolated property 'recorder' can not be referenced from a Sendable closure
+Services/SoundMeter.swift:47:30: warning: main actor-isolated property 'recorder' can not be referenced from a Sendable closure
+Services/SoundMeter.swift:67:9: warning: call to main actor-isolated instance method 'stop()' in a synchronous nonisolated context
+Views/CameraChallengeView.swift:414:77: warning: 'isVideoOrientationSupported' was deprecated in iOS 17.0: Use -isVideoRotationAngleSupported: instead
+Views/CameraChallengeView.swift:415:28: warning: 'videoOrientation' was deprecated in iOS 17.0: Use -videoRotationAngle instead
+Views/CameraChallengeView.swift:540:22: warning: main actor-isolated property 'session' can not be referenced from a Sendable closure
+Views/CameraChallengeView.swift:547:22: warning: main actor-isolated property 'session' can not be referenced from a Sendable closure
+Views/KnowledgeBattleView.swift:149:22: warning: main actor-isolated property 'questionText' can not be mutated from a Sendable closure
+Views/KnowledgeBattleView.swift:150:22: warning: main actor-isolated property 'choices' can not be mutated from a Sendable closure
+Views/KnowledgeBattleView.swift:151:22: warning: main actor-isolated property 'selectedIndex' can not be mutated from a Sendable closure
+Views/KnowledgeBattleView.swift:152:22: warning: main actor-isolated property 'isSending' can not be mutated from a Sendable closure
+Views/LoudnessChallengeView.swift:236:21: warning: initialization of immutable value 'integral' was never used; consider replacing with assignment to '_' or removing it
+Views/LoudnessChallengeView.swift:254:13: warning: mutation of captured var 'remaining' in concurrently-executing code
+Views/LoudnessChallengeView.swift:256:27: warning: sending 'remaining' risks causing data races; this is an error in the Swift 6 language mode
+Views/LoudnessChallengeView.swift:259:16: warning: reference to captured var 'remaining' in concurrently-executing code
+Views/LoudnessChallengeView.swift:260:17: warning: main actor-isolated property 'currentPhaseTimer' can not be referenced from a Sendable closure
+Views/LoudnessChallengeView.swift:262:21: warning: capture of 'completion' with non-Sendable type '() -> Void' in a '@Sendable' closure
+Views/LoudnessChallengeView.swift:295:19: warning: main actor-isolated property 'phase' can not be referenced from a Sendable closure
+Views/LoudnessChallengeView.swift:295:25: warning: main actor-isolated conformance of 'LoudnessPhase' to 'Equatable' cannot be used in nonisolated context; this is an error in the Swift 6 language mode
+Views/LoudnessChallengeView.swift:296:31: warning: main actor-isolated property 'startDate' can not be referenced from a Sendable closure
+Views/LoudnessChallengeView.swift:299:57: warning: main actor-isolated property 'meter' can not be referenced from a Sendable closure
+Views/LoudnessChallengeView.swift:299:63: warning: main actor-isolated property 'level' can not be referenced from a Sendable closure
+Views/LoudnessChallengeView.swift:300:13: warning: main actor-isolated property 'samples' can not be mutated from a Sendable closure
+Views/MapView.swift:380:10: warning: 'onChange(of:perform:)' was deprecated in iOS 17.0: Use `onChange` with a two or zero parameter action closure instead.
+Views/MapView.swift:407:10: warning: 'onChange(of:perform:)' was deprecated in iOS 17.0: Use `onChange` with a two or zero parameter action closure instead.
+Views/PushupChallengeView.swift:79:17: warning: capture of 'onTick' with non-Sendable type '() -> Void' in a '@Sendable' closure
+Views/ShakeChallengeView.swift:140:13: warning: mutation of captured var 'remaining' in concurrently-executing code
+Views/ShakeChallengeView.swift:149:21: warning: capture of 'completion' with non-Sendable type '() -> Void' in a '@Sendable' closure
+Views/SprintChallengeView.swift:145:13: warning: call to main actor-isolated instance method 'readyTick()' in a synchronous nonisolated context
+Views/SprintChallengeView.swift:170:13: warning: call to main actor-isolated instance method 'runningTick()' in a synchronous nonisolated context
+Views/SprintChallengeView.swift:192:13: warning: call to main actor-isolated instance method 'cooldownTick()' in a synchronous nonisolated context
+Views/TrophyRoadView.swift:166:22: warning: 'onChange(of:perform:)' was deprecated in iOS 17.0: Use `onChange` with a two or zero parameter action closure instead.
+Views/TrophyRoadView.swift:6:9: warning: immutable property will not be decoded because it is declared with an initial value which cannot be overwritten
+Views/UserProfileView.swift:194:56: warning: 'plotAreaFrame' was deprecated in iOS 17.0: renamed to 'plotFrame'
+Views/UserProfileView.swift:216:60: warning: 'plotAreaFrame' was deprecated in iOS 17.0: renamed to 'plotFrame'
+Views/UserProfileView.swift:246:60: warning: 'plotAreaFrame' was deprecated in iOS 17.0: renamed to 'plotFrame'
+WebSocket/GameSocketService.swift:121:32: warning: main actor-isolated property 'webSocketTask' can not be referenced from a Sendable closure
+WebSocket/GameSocketService.swift:122:26: warning: main actor-isolated property 'webSocketTask' can not be mutated from a Sendable closure
+WebSocket/GameSocketService.swift:123:26: warning: call to main actor-isolated instance method 'scheduleReconnect()' in a synchronous nonisolated context
+WebSocket/GameSocketService.swift:194:22: warning: main actor-isolated property 'webSocketTask' can not be mutated from a Sendable closure
+WebSocket/GameSocketService.swift:195:22: warning: call to main actor-isolated instance method 'scheduleReconnect()' in a synchronous nonisolated context
+WebSocket/GameSocketService.swift:264:26: warning: main actor-isolated property 'webSocketTask' can not be mutated from a Sendable closure
+WebSocket/GameSocketService.swift:265:26: warning: call to main actor-isolated instance method 'scheduleReconnect()' in a synchronous nonisolated context
+WebSocket/GameSocketService.swift:268:29: warning: main actor-isolated property 'pendingMessages' can not be referenced from a Sendable closure
+WebSocket/GameSocketService.swift:269:30: warning: main actor-isolated property 'pendingMessages' can not be mutated from a Sendable closure
+WebSocket/GameSocketService.swift:271:26: warning: main actor-isolated property 'pendingMessages' can not be mutated from a Sendable closure
+WebSocket/GameSocketService.swift:368:28: warning: main actor-isolated property 'webSocketTask' can not be referenced from a Sendable closure
+WebSocket/GameSocketService.swift:369:22: warning: main actor-isolated property 'webSocketTask' can not be mutated from a Sendable closure
+WebSocket/GameSocketService.swift:370:22: warning: call to main actor-isolated instance method 'scheduleReconnect()' in a synchronous nonisolated context
+WebSocket/GameSocketService.swift:373:28: warning: main actor-isolated property 'webSocketTask' can not be referenced from a Sendable closure
+WebSocket/GameSocketService.swift:377:26: warning: call to main actor-isolated instance method 'handleIncoming(text:)' in a synchronous nonisolated context
+WebSocket/GameSocketService.swift:384:18: warning: call to main actor-isolated instance method 'receive(on:)' in a synchronous nonisolated context
+WebSocket/GameSocketService.swift:551:9: warning: call to main actor-isolated instance method 'disconnect()' in a synchronous nonisolated context

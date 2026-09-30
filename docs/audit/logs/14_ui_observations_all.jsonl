@@ -1,0 +1,291 @@
+{"key":"onboardingShownOnSecondLaunch","value":"false","time":"2026-09-30T06:19:31Z","test":"GP02"}
+{"test":"GP03","key":"nearbyLabel","value":"5 Spieler in meiner Nähe","time":"2026-09-30T06:19:46Z"}
+{"time":"2026-09-30T06:20:01Z","test":"GP04","value":"FITNESS, 5 enabled=true","key":"category_FITNESS"}
+{"time":"2026-09-30T06:20:01Z","test":"GP04","key":"category_MUTPROBE","value":"MUTPROBE, 5 enabled=true"}
+{"time":"2026-09-30T06:20:02Z","value":"WISSEN, 5 enabled=true","key":"category_WISSEN","test":"GP04"}
+{"key":"category_IPHONE","time":"2026-09-30T06:20:02Z","value":"IPHONE, 7 enabled=true","test":"GP04"}
+{"key":"category_CUSTOMER","time":"2026-09-30T06:20:02Z","value":"CUSTOMER, 0 enabled=false","test":"GP04"}
+{"test":"GP05","key":"textInApp","value":"Wer hält länger einen Plank (Unterarmstütz)?","time":"2026-09-30T06:20:22Z"}
+{"test":"GP05","time":"2026-09-30T06:20:22Z","key":"textAtOpponent","value":"Wer hält länger einen Plank (Unterarmstütz)?"}
+{"key":"opponentGotCancelled","value":"true","test":"GP06","time":"2026-09-30T06:20:41Z"}
+{"test":"GP07","value":"true","key":"declinedBannerShown","time":"2026-09-30T06:21:00Z"}
+{"key":"requestsAtOpponent","value":"1","time":"2026-09-30T06:21:19Z","test":"GP08"}
+{"time":"2026-09-30T06:21:30Z","test":"GP08","value":"false","key":"secondRequestRejectedBanner"}
+{"key":"points","value":"200 -> 230","time":"2026-09-30T06:22:03Z","test":"GP10"}
+{"test":"GP10","value":"true","key":"chipUpdated","time":"2026-09-30T06:22:08Z"}
+{"test":"GP11","time":"2026-09-30T06:22:25Z","value":"230 -> 210","key":"points"}
+{"key":"conflictShowsLoseScreen","value":"true","test":"GP12","time":"2026-09-30T06:22:43Z"}
+{"test":"GP12","value":"true","key":"trashTalkVisible","time":"2026-09-30T06:22:44Z"}
+{"value":"[\"7\", \"8\", \"9\", \"10\", \"trophy.fill\", \"playerBoy\", \"person.fill\", \"person.fill\", \"person.fill\", \"person.fill\", \"person.fill\", \"person.fill\", \"person.fill\", \"person.fill\", \"person.fill\", \"person.fill\", \"person.fill\", \"person.fill\", \"person.fill\", \"person.fill\"]","time":"2026-09-30T06:23:00Z","test":"GP13","key":"answerButtons"}
+{"time":"2026-09-30T06:23:42Z","test":"GP14","value":"false","key":"resolvedAfter20s"}
+{"time":"2026-09-30T06:23:42Z","test":"GP14","value":"false","key":"canAnswerAgain"}
+{"value":"true","test":"GP14","time":"2026-09-30T06:23:42Z","key":"waitingTextVisible"}
+{"key":"loseScreen","value":"true","time":"2026-09-30T06:24:24Z","test":"GP15"}
+{"time":"2026-09-30T06:24:24Z","key":"metricsVisible","test":"GP15","value":"true"}
+{"test":"GP16","key":"expiredAfterSeconds","time":"2026-09-30T06:25:40Z","value":"64"}
+{"key":"popupGone","time":"2026-09-30T06:25:42Z","value":"true","test":"GP16"}
+{"value":"14","test":"GP17","key":"originalBattleId","time":"2026-09-30T06:26:09Z"}
+{"test":"GP17","key":"resultForOriginalBattle","value":"false","time":"2026-09-30T06:26:09Z"}
+{"value":"true","key":"popupAfterBackground","test":"GP18","time":"2026-09-30T06:26:30Z"}
+{"time":"2026-09-30T06:26:46Z","key":"notificationBannerVisible","test":"GP19","value":"false"}
+{"value":"true","key":"popupAfterReturn","test":"GP19","time":"2026-09-30T06:26:47Z"}
+{"test":"A11Y-login","key":"issueCount","value":"12","time":"2026-09-30T06:27:56Z"}
+{"key":"issue","test":"A11Y-login","value":"1|Contrast failed|48|Real-Life Battles. Überall.|","time":"2026-09-30T06:27:56Z"}
+{"time":"2026-09-30T06:27:56Z","test":"A11Y-login","value":"1|Contrast failed|48|Finde Spieler in deiner Nähe|","key":"issue"}
+{"value":"1|Contrast failed|48|Sammle Punkte & steig auf|","test":"A11Y-login","time":"2026-09-30T06:27:56Z","key":"issue"}
+{"key":"issue","test":"A11Y-login","time":"2026-09-30T06:27:56Z","value":"1|Contrast failed|48|Kompetitiv & fair|"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|ANMELDEN|","test":"A11Y-login","key":"issue","time":"2026-09-30T06:27:56Z"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|Sammle Punkte & steig auf|","test":"A11Y-login","key":"issue","time":"2026-09-30T06:27:56Z"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|Finde Spieler in deiner Nähe|","time":"2026-09-30T06:27:56Z","key":"issue","test":"A11Y-login"}
+{"test":"A11Y-login","key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|Real-Life Battles. Überall.|","time":"2026-09-30T06:27:56Z"}
+{"time":"2026-09-30T06:27:56Z","value":"65536|Dynamic Type font sizes are unsupported|48|Kompetitiv & fair|","test":"A11Y-login","key":"issue"}
+{"time":"2026-09-30T06:27:56Z","test":"A11Y-login","key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|CHALLENGR|"}
+{"time":"2026-09-30T06:27:56Z","key":"issue","test":"A11Y-login","value":"8|Label not human-readable|43|trophy.fill|trophy.fill"}
+{"test":"A11Y-login","key":"issue","value":"8|Label not human-readable|43|bolt.shield.fill|bolt.shield.fill","time":"2026-09-30T06:27:56Z"}
+{"value":"6","time":"2026-09-30T06:28:09Z","test":"A11Y-onboarding","key":"issueCount"}
+{"value":"4|Hit area is too small|9|ÜBERSPRINGEN|","time":"2026-09-30T06:28:09Z","test":"A11Y-onboarding","key":"issue"}
+{"value":"1|Contrast failed|48|Auf der Karte siehst du alle Spieler in einem Radius von 200 Metern um dich. Tippe auf einen Spieler, um ihn herauszufordern.|","time":"2026-09-30T06:28:09Z","test":"A11Y-onboarding","key":"issue"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|Finde Spieler in deiner Nähe|","time":"2026-09-30T06:28:09Z","test":"A11Y-onboarding","key":"issue"}
+{"value":"65536|Dynamic Type font sizes are unsupported|9|ÜBERSPRINGEN|","time":"2026-09-30T06:28:09Z","test":"A11Y-onboarding","key":"issue"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|Auf der Karte siehst du alle Spieler in einem Radius von 200 Metern um dich. Tippe auf einen Spieler, um ihn herauszufordern.|","time":"2026-09-30T06:28:09Z","test":"A11Y-onboarding","key":"issue"}
+{"value":"65536|Dynamic Type font sizes are unsupported|9|WEITER|","time":"2026-09-30T06:28:09Z","test":"A11Y-onboarding","key":"issue"}
+{"test":"A11Y-map","key":"issueCount","time":"2026-09-30T06:28:27Z","value":"29"}
+{"key":"issue","value":"4|Hit area is too small|9|Back|chevron.left","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"4|Hit area is too small|42|Legal|","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"1|Contrast failed|9|N|","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|21 Spieler in meiner Nähe|","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"65536|Dynamic Type font sizes are unsupported|9|N|","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|190|","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|gearshape.fill|gearshape.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|trophy.fill|trophy.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:28:27Z","test":"A11Y-map"}
+{"time":"2026-09-30T06:28:53Z","test":"A11Y-shop","value":"60","key":"issueCount"}
+{"key":"issue","value":"1|Contrast nearly passed|48|UNCOMMON|","test":"A11Y-shop","time":"2026-09-30T06:28:53Z"}
+{"key":"issue","value":"1|Contrast failed|9|KAUFEN|","test":"A11Y-shop","time":"2026-09-30T06:28:53Z"}
+{"test":"A11Y-shop","value":"1|Contrast failed|48|RARE|","key":"issue","time":"2026-09-30T06:28:53Z"}
+{"value":"1|Contrast nearly passed|48|250|","time":"2026-09-30T06:28:53Z","test":"A11Y-shop","key":"issue"}
+{"test":"A11Y-shop","key":"issue","value":"1|Contrast failed|9|KAUFEN|","time":"2026-09-30T06:28:53Z"}
+{"value":"1|Contrast failed|48|RARE|","test":"A11Y-shop","time":"2026-09-30T06:28:53Z","key":"issue"}
+{"test":"A11Y-shop","value":"1|Contrast nearly passed|48|300|","key":"issue","time":"2026-09-30T06:28:53Z"}
+{"value":"1|Contrast failed|9|KAUFEN|","key":"issue","test":"A11Y-shop","time":"2026-09-30T06:28:53Z"}
+{"key":"issue","test":"A11Y-shop","value":"1|Contrast failed|48|EPIC|","time":"2026-09-30T06:28:53Z"}
+{"key":"issue","value":"1|Contrast failed|48|400|","time":"2026-09-30T06:28:53Z","test":"A11Y-shop"}
+{"key":"issue","value":"1|Contrast failed|9|KAUFEN|","time":"2026-09-30T06:28:53Z","test":"A11Y-shop"}
+{"key":"issue","value":"1|Contrast failed|48|EPIC|","time":"2026-09-30T06:28:53Z","test":"A11Y-shop"}
+{"test":"A11Y-shop","value":"1|Contrast failed|48|600|","time":"2026-09-30T06:28:53Z","key":"issue"}
+{"value":"1|Contrast failed|9|KAUFEN|","test":"A11Y-shop","key":"issue","time":"2026-09-30T06:28:53Z"}
+{"test":"A11Y-shop","value":"1|Contrast failed|9|KAUFEN|","time":"2026-09-30T06:28:53Z","key":"issue"}
+{"value":"65536|Dynamic Type font sizes are unsupported|9|KAUFEN|","test":"A11Y-shop","time":"2026-09-30T06:28:53Z","key":"issue"}
+{"value":"65536|Dynamic Type font sizes are unsupported|9|KAUFEN|","key":"issue","time":"2026-09-30T06:28:53Z","test":"A11Y-shop"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|Streak Saver|","key":"issue","time":"2026-09-30T06:28:53Z","test":"A11Y-shop"}
+{"time":"2026-09-30T06:28:53Z","key":"issue","test":"A11Y-shop","value":"65536|Dynamic Type font sizes are unsupported|48|UNCOMMON|"}
+{"key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|EPIC|","time":"2026-09-30T06:28:53Z","test":"A11Y-shop"}
+{"time":"2026-09-30T06:28:53Z","key":"issue","test":"A11Y-shop","value":"65536|Dynamic Type font sizes are unsupported|48|400|"}
+{"key":"issue","time":"2026-09-30T06:28:53Z","value":"65536|Dynamic Type font sizes are unsupported|48|Trophy|","test":"A11Y-shop"}
+{"time":"2026-09-30T06:28:53Z","test":"A11Y-shop","key":"issue","value":"65536|Dynamic Type font sizes are unsupported|9|KAUFEN|"}
+{"test":"A11Y-shop","value":"65536|Dynamic Type font sizes are unsupported|48|Combo Booster|","key":"issue","time":"2026-09-30T06:28:53Z"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|UNCOMMON|","test":"A11Y-shop","time":"2026-09-30T06:28:53Z","key":"issue"}
+{"key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|RARE|","time":"2026-09-30T06:28:53Z","test":"A11Y-shop"}
+{"key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|200|","test":"A11Y-shop","time":"2026-09-30T06:28:53Z"}
+{"test":"A11Y-shop","value":"65536|Dynamic Type font sizes are unsupported|48|Full Stealth Potion|","key":"issue","time":"2026-09-30T06:28:53Z"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|Trophy Boost|","time":"2026-09-30T06:28:53Z","test":"A11Y-shop","key":"issue"}
+{"key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|250|","test":"A11Y-shop","time":"2026-09-30T06:28:53Z"}
+{"key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|COMMON|","time":"2026-09-30T06:28:53Z","test":"A11Y-shop"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|Coin|","test":"A11Y-shop","time":"2026-09-30T06:28:53Z","key":"issue"}
+{"time":"2026-09-30T06:28:53Z","value":"65536|Dynamic Type font sizes are unsupported|48|EPIC|","test":"A11Y-shop","key":"issue"}
+{"key":"issue","time":"2026-09-30T06:28:53Z","test":"A11Y-shop","value":"65536|Dynamic Type font sizes are unsupported|48|Rematch Ticket|"}
+{"test":"A11Y-shop","key":"issue","value":"65536|Dynamic Type font sizes are unsupported|9|KAUFEN|","time":"2026-09-30T06:28:53Z"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|Stealth Cloak|","time":"2026-09-30T06:28:53Z","test":"A11Y-shop","key":"issue"}
+{"time":"2026-09-30T06:28:53Z","value":"65536|Dynamic Type font sizes are unsupported|9|KAUFEN|","key":"issue","test":"A11Y-shop"}
+{"time":"2026-09-30T06:28:53Z","key":"issue","test":"A11Y-shop","value":"65536|Dynamic Type font sizes are unsupported|48|190 PUNKTE|"}
+{"key":"issue","test":"A11Y-shop","value":"65536|Dynamic Type font sizes are unsupported|48|150|","time":"2026-09-30T06:28:53Z"}
+{"test":"A11Y-shop","time":"2026-09-30T06:28:53Z","key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|300|"}
+{"time":"2026-09-30T06:28:53Z","key":"issue","test":"A11Y-shop","value":"65536|Dynamic Type font sizes are unsupported|48|100|"}
+{"key":"issue","time":"2026-09-30T06:28:53Z","value":"65536|Dynamic Type font sizes are unsupported|48|RARE|","test":"A11Y-shop"}
+{"key":"issue","test":"A11Y-shop","value":"65536|Dynamic Type font sizes are unsupported|48|Point Shield|","time":"2026-09-30T06:28:53Z"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|600|","test":"A11Y-shop","key":"issue","time":"2026-09-30T06:28:53Z"}
+{"time":"2026-09-30T06:28:53Z","test":"A11Y-shop","key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|800|"}
+{"time":"2026-09-30T06:28:53Z","test":"A11Y-shop","key":"issue","value":"65536|Dynamic Type font sizes are unsupported|9|KAUFEN|"}
+{"time":"2026-09-30T06:28:53Z","key":"issue","test":"A11Y-shop","value":"65536|Dynamic Type font sizes are unsupported|48|LEGENDARY|"}
+{"key":"issue","test":"A11Y-shop","value":"65536|Dynamic Type font sizes are unsupported|48|SHOP|","time":"2026-09-30T06:28:53Z"}
+{"key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|COMMON|","time":"2026-09-30T06:28:53Z","test":"A11Y-shop"}
+{"test":"A11Y-shop","key":"issue","time":"2026-09-30T06:28:53Z","value":"65536|Dynamic Type font sizes are unsupported|48|50|"}
+{"time":"2026-09-30T06:28:53Z","test":"A11Y-shop","value":"8|Label not human-readable|43|trophy.fill|trophy.fill","key":"issue"}
+{"time":"2026-09-30T06:28:53Z","test":"A11Y-shop","value":"8|Label not human-readable|43|trophy.fill|trophy.fill","key":"issue"}
+{"test":"A11Y-shop","value":"8|Label not human-readable|43|trophy.fill|trophy.fill","key":"issue","time":"2026-09-30T06:28:53Z"}
+{"key":"issue","time":"2026-09-30T06:28:53Z","test":"A11Y-shop","value":"8|Label not human-readable|43|trophy.fill|trophy.fill"}
+{"time":"2026-09-30T06:28:53Z","test":"A11Y-shop","value":"8|Label not human-readable|43|trophy.fill|trophy.fill","key":"issue"}
+{"value":"8|Label not human-readable|43|trophy.fill|trophy.fill","time":"2026-09-30T06:28:53Z","test":"A11Y-shop","key":"issue"}
+{"value":"8|Label not human-readable|43|trophy.fill|trophy.fill","time":"2026-09-30T06:28:53Z","key":"issue","test":"A11Y-shop"}
+{"test":"A11Y-shop","key":"issue","time":"2026-09-30T06:28:53Z","value":"8|Label not human-readable|43|trophy.fill|trophy.fill"}
+{"key":"issue","test":"A11Y-shop","time":"2026-09-30T06:28:53Z","value":"8|Label not human-readable|43|trophy.fill|trophy.fill"}
+{"test":"A11Y-shop","key":"issue","value":"8|Label not human-readable|43|trophy.fill|trophy.fill","time":"2026-09-30T06:28:53Z"}
+{"time":"2026-09-30T06:29:02Z","test":"A11Y-settings","value":"9","key":"issueCount"}
+{"key":"issue","test":"A11Y-settings","value":"65536|Dynamic Type font sizes are partially unsupported|9|Fertig|","time":"2026-09-30T06:29:02Z"}
+{"key":"issue","value":"8|Label not human-readable|48|1.0.0|","test":"A11Y-settings","time":"2026-09-30T06:29:02Z"}
+{"value":"1|Contrast nearly passed|48|Töne & Musik|","time":"2026-09-30T06:29:02Z","test":"A11Y-settings","key":"issue"}
+{"key":"issue","test":"A11Y-settings","time":"2026-09-30T06:29:02Z","value":"1|Contrast nearly passed|48|Benachrichtigungen|"}
+{"key":"issue","time":"2026-09-30T06:29:02Z","test":"A11Y-settings","value":"1|Contrast nearly passed|48|Account|"}
+{"test":"A11Y-settings","key":"issue","value":"1|Contrast nearly passed|48|Angemeldet als:|","time":"2026-09-30T06:29:02Z"}
+{"test":"A11Y-settings","time":"2026-09-30T06:29:02Z","value":"1|Contrast nearly passed|48|Über|","key":"issue"}
+{"key":"issue","test":"A11Y-settings","value":"1|Contrast nearly passed|48|1.0.0|","time":"2026-09-30T06:29:02Z"}
+{"test":"A11Y-settings","key":"issue","time":"2026-09-30T06:29:02Z","value":"1|Contrast nearly passed|48|Abmelden|"}
+{"key":"issueCount","test":"A11Y-profile","value":"30","time":"2026-09-30T06:29:17Z"}
+{"key":"issue","time":"2026-09-30T06:29:17Z","test":"A11Y-profile","value":"4|Hit area is too small|9|Go Up|chevron.up"}
+{"test":"A11Y-profile","key":"issue","value":"1|Contrast nearly passed|48|Online|","time":"2026-09-30T06:29:17Z"}
+{"key":"issue","test":"A11Y-profile","time":"2026-09-30T06:29:17Z","value":"1|Contrast nearly passed|48|190 PUNKTE|"}
+{"value":"1|Contrast nearly passed|48|TAGESSTREAK|","test":"A11Y-profile","key":"issue","time":"2026-09-30T06:29:17Z"}
+{"value":"1|Contrast nearly passed|48|CHALLENGES|","test":"A11Y-profile","key":"issue","time":"2026-09-30T06:29:17Z"}
+{"key":"issue","time":"2026-09-30T06:29:17Z","test":"A11Y-profile","value":"1|Contrast nearly passed|48|GEWONNEN|"}
+{"key":"issue","time":"2026-09-30T06:29:17Z","test":"A11Y-profile","value":"1|Contrast nearly passed|48|RANG|"}
+{"value":"1|Contrast nearly passed|48|PUNKTEVERLAUF|","test":"A11Y-profile","time":"2026-09-30T06:29:17Z","key":"issue"}
+{"key":"issue","time":"2026-09-30T06:29:17Z","value":"1|Contrast nearly passed|48|BADGES|","test":"A11Y-profile"}
+{"key":"issue","test":"A11Y-profile","time":"2026-09-30T06:29:17Z","value":"1|Contrast failed|48|Erster Sieg|"}
+{"key":"issue","test":"A11Y-profile","value":"65536|Dynamic Type font sizes are unsupported|48|Punchbag|","time":"2026-09-30T06:29:17Z"}
+{"time":"2026-09-30T06:29:17Z","key":"issue","test":"A11Y-profile","value":"65536|Dynamic Type font sizes are unsupported|48|190 PUNKTE|"}
+{"test":"A11Y-profile","key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|AUDITTESTER|","time":"2026-09-30T06:29:17Z"}
+{"key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|PUNKTEVERLAUF|","time":"2026-09-30T06:29:17Z","test":"A11Y-profile"}
+{"test":"A11Y-profile","value":"65536|Dynamic Type font sizes are unsupported|48|RANG|","key":"issue","time":"2026-09-30T06:29:17Z"}
+{"time":"2026-09-30T06:29:17Z","key":"issue","test":"A11Y-profile","value":"65536|Dynamic Type font sizes are unsupported|48|5|"}
+{"time":"2026-09-30T06:29:17Z","key":"issue","test":"A11Y-profile","value":"65536|Dynamic Type font sizes are unsupported|9|DU|"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|2|","time":"2026-09-30T06:29:17Z","test":"A11Y-profile","key":"issue"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|1 🔥|","test":"A11Y-profile","key":"issue","time":"2026-09-30T06:29:17Z"}
+{"key":"issue","test":"A11Y-profile","value":"65536|Dynamic Type font sizes are unsupported|48|GEWONNEN|","time":"2026-09-30T06:29:17Z"}
+{"value":"65536|Dynamic Type font sizes are partially unsupported|48|Erster Sieg|","key":"issue","test":"A11Y-profile","time":"2026-09-30T06:29:17Z"}
+{"key":"issue","time":"2026-09-30T06:29:17Z","test":"A11Y-profile","value":"65536|Dynamic Type font sizes are unsupported|48|BEARBEITEN|"}
+{"test":"A11Y-profile","key":"issue","time":"2026-09-30T06:29:17Z","value":"65536|Dynamic Type font sizes are unsupported|9|FREUNDE|"}
+{"test":"A11Y-profile","time":"2026-09-30T06:29:17Z","key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|TAGESSTREAK|"}
+{"test":"A11Y-profile","key":"issue","time":"2026-09-30T06:29:17Z","value":"65536|Dynamic Type font sizes are unsupported|48|CHALLENGES|"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|BADGES|","test":"A11Y-profile","key":"issue","time":"2026-09-30T06:29:17Z"}
+{"value":"65536|Dynamic Type font sizes are partially unsupported|48|Aktiv|","time":"2026-09-30T06:29:17Z","test":"A11Y-profile","key":"issue"}
+{"test":"A11Y-profile","value":"131072|Text clipped|48|Erster Sieg|","key":"issue","time":"2026-09-30T06:29:17Z"}
+{"key":"issue","value":"131072|Text clipped|48|1 🔥|","test":"A11Y-profile","time":"2026-09-30T06:29:17Z"}
+{"value":"8|Label not human-readable|43|trophy.fill|trophy.fill","time":"2026-09-30T06:29:17Z","key":"issue","test":"A11Y-profile"}
+{"key":"issueCount","time":"2026-09-30T06:29:35Z","test":"A11Y-incoming_challenge","value":"40"}
+{"value":"4|Hit area is too small|9|Back|chevron.left","key":"issue","time":"2026-09-30T06:29:35Z","test":"A11Y-incoming_challenge"}
+{"test":"A11Y-incoming_challenge","key":"issue","time":"2026-09-30T06:29:35Z","value":"4|Hit area is too small|42|Legal|"}
+{"test":"A11Y-incoming_challenge","key":"issue","time":"2026-09-30T06:29:35Z","value":"1|Contrast nearly passed|48|22 Spieler in meiner Nähe|"}
+{"test":"A11Y-incoming_challenge","value":"1|Contrast failed|9|N|","time":"2026-09-30T06:29:35Z","key":"issue"}
+{"time":"2026-09-30T06:29:35Z","key":"issue","test":"A11Y-incoming_challenge","value":"1|Contrast failed|48|CHALLENGE!|"}
+{"value":"1|Contrast failed|9|ANNEHMEN|","test":"A11Y-incoming_challenge","key":"issue","time":"2026-09-30T06:29:35Z"}
+{"value":"1|Contrast nearly passed|48|190|","time":"2026-09-30T06:29:35Z","key":"issue","test":"A11Y-incoming_challenge"}
+{"key":"issue","test":"A11Y-incoming_challenge","time":"2026-09-30T06:29:35Z","value":"65536|Dynamic Type font sizes are unsupported|48|GEGNERA11Y|"}
+{"value":"65536|Dynamic Type font sizes are unsupported|9|ABLEHNEN|","key":"issue","time":"2026-09-30T06:29:35Z","test":"A11Y-incoming_challenge"}
+{"value":"65536|Dynamic Type font sizes are unsupported|9|N|","key":"issue","time":"2026-09-30T06:29:35Z","test":"A11Y-incoming_challenge"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|CHALLENGE!|","key":"issue","test":"A11Y-incoming_challenge","time":"2026-09-30T06:29:35Z"}
+{"key":"issue","time":"2026-09-30T06:29:35Z","value":"65536|Dynamic Type font sizes are unsupported|48|Wer traut sich, 1 Minute lang nur in Reimen zu sprechen?|","test":"A11Y-incoming_challenge"}
+{"key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|190|","time":"2026-09-30T06:29:35Z","test":"A11Y-incoming_challenge"}
+{"key":"issue","value":"65536|Dynamic Type font sizes are unsupported|9|ANNEHMEN|","time":"2026-09-30T06:29:35Z","test":"A11Y-incoming_challenge"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|22 Spieler in meiner Nähe|","test":"A11Y-incoming_challenge","key":"issue","time":"2026-09-30T06:29:35Z"}
+{"test":"A11Y-incoming_challenge","value":"8|Label not human-readable|9|gearshape.fill|gearshape.fill","key":"issue","time":"2026-09-30T06:29:35Z"}
+{"test":"A11Y-incoming_challenge","value":"8|Label not human-readable|43|person.fill|person.fill","key":"issue","time":"2026-09-30T06:29:35Z"}
+{"value":"8|Label not human-readable|9|trophy.fill|trophy.fill","key":"issue","time":"2026-09-30T06:29:35Z","test":"A11Y-incoming_challenge"}
+{"test":"A11Y-incoming_challenge","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:29:35Z","key":"issue"}
+{"key":"issue","time":"2026-09-30T06:29:35Z","test":"A11Y-incoming_challenge","value":"8|Label not human-readable|9|person.fill|person.fill"}
+{"test":"A11Y-incoming_challenge","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:29:35Z","key":"issue"}
+{"test":"A11Y-incoming_challenge","key":"issue","time":"2026-09-30T06:29:35Z","value":"8|Label not human-readable|9|person.fill|person.fill"}
+{"test":"A11Y-incoming_challenge","key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:29:35Z"}
+{"test":"A11Y-incoming_challenge","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:29:35Z","key":"issue"}
+{"key":"issue","test":"A11Y-incoming_challenge","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:29:35Z"}
+{"value":"8|Label not human-readable|9|person.fill|person.fill","key":"issue","test":"A11Y-incoming_challenge","time":"2026-09-30T06:29:35Z"}
+{"test":"A11Y-incoming_challenge","value":"8|Label not human-readable|9|person.fill|person.fill","key":"issue","time":"2026-09-30T06:29:35Z"}
+{"test":"A11Y-incoming_challenge","key":"issue","time":"2026-09-30T06:29:35Z","value":"8|Label not human-readable|9|person.fill|person.fill"}
+{"test":"A11Y-incoming_challenge","key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:29:35Z"}
+{"time":"2026-09-30T06:29:35Z","value":"8|Label not human-readable|9|person.fill|person.fill","key":"issue","test":"A11Y-incoming_challenge"}
+{"time":"2026-09-30T06:29:35Z","key":"issue","test":"A11Y-incoming_challenge","value":"8|Label not human-readable|9|person.fill|person.fill"}
+{"test":"A11Y-incoming_challenge","key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:29:35Z"}
+{"time":"2026-09-30T06:29:35Z","value":"8|Label not human-readable|9|person.fill|person.fill","test":"A11Y-incoming_challenge","key":"issue"}
+{"time":"2026-09-30T06:29:35Z","test":"A11Y-incoming_challenge","key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill"}
+{"time":"2026-09-30T06:29:35Z","test":"A11Y-incoming_challenge","key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill"}
+{"time":"2026-09-30T06:29:35Z","value":"8|Label not human-readable|9|person.fill|person.fill","test":"A11Y-incoming_challenge","key":"issue"}
+{"time":"2026-09-30T06:29:35Z","value":"8|Label not human-readable|9|person.fill|person.fill","test":"A11Y-incoming_challenge","key":"issue"}
+{"key":"issue","time":"2026-09-30T06:29:35Z","value":"8|Label not human-readable|9|person.fill|person.fill","test":"A11Y-incoming_challenge"}
+{"test":"A11Y-incoming_challenge","key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","time":"2026-09-30T06:29:35Z"}
+{"time":"2026-09-30T06:29:35Z","key":"issue","value":"8|Label not human-readable|9|person.fill|person.fill","test":"A11Y-incoming_challenge"}
+{"key":"issueCount","value":"12","time":"2026-09-30T06:29:42Z","test":"A11Y-battle"}
+{"test":"A11Y-battle","key":"issue","time":"2026-09-30T06:29:42Z","value":"1|Contrast failed|48|CHALLENGE GESCHAFFT?|"}
+{"test":"A11Y-battle","key":"issue","time":"2026-09-30T06:29:42Z","value":"1|Contrast failed|48|✖|"}
+{"test":"A11Y-battle","value":"1|Contrast failed|48|AUDITTESTER|","time":"2026-09-30T06:29:42Z","key":"issue"}
+{"test":"A11Y-battle","value":"1|Contrast failed|48|GEGNERA11Y|","key":"issue","time":"2026-09-30T06:29:42Z"}
+{"key":"issue","test":"A11Y-battle","time":"2026-09-30T06:29:42Z","value":"65536|Dynamic Type font sizes are unsupported|48|AUDITTESTER|"}
+{"test":"A11Y-battle","time":"2026-09-30T06:29:42Z","value":"65536|Dynamic Type font sizes are unsupported|48|CHALLENGE GESCHAFFT?|","key":"issue"}
+{"test":"A11Y-battle","value":"65536|Dynamic Type font sizes are unsupported|48|Wer traut sich, 1 Minute lang nur in Reimen zu sprechen?|","time":"2026-09-30T06:29:42Z","key":"issue"}
+{"test":"A11Y-battle","value":"65536|Dynamic Type font sizes are unsupported|48|GEGNERA11Y|","key":"issue","time":"2026-09-30T06:29:42Z"}
+{"time":"2026-09-30T06:29:42Z","test":"A11Y-battle","key":"issue","value":"65536|Dynamic Type font sizes are unsupported|9|GESCHAFFT|"}
+{"test":"A11Y-battle","value":"65536|Dynamic Type font sizes are unsupported|48|MUTPROBE|","key":"issue","time":"2026-09-30T06:29:42Z"}
+{"time":"2026-09-30T06:29:42Z","key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|AUFGEBEN|","test":"A11Y-battle"}
+{"test":"A11Y-battle","time":"2026-09-30T06:29:42Z","value":"65536|Dynamic Type font sizes are unsupported|48|✖|","key":"issue"}
+{"test":"A11Y-lose_screen","value":"20","time":"2026-09-30T06:29:51Z","key":"issueCount"}
+{"key":"issue","value":"1|Contrast failed|48|BATTLE ERGEBNIS|","time":"2026-09-30T06:29:51Z","test":"A11Y-lose_screen"}
+{"value":"1|Contrast failed|48|NIEDERLAGE|","key":"issue","time":"2026-09-30T06:29:51Z","test":"A11Y-lose_screen"}
+{"test":"A11Y-lose_screen","key":"issue","value":"1|Contrast failed|48|AUDITTESTER|","time":"2026-09-30T06:29:51Z"}
+{"test":"A11Y-lose_screen","time":"2026-09-30T06:29:51Z","value":"1|Contrast failed|48|-19 PUNKTE|","key":"issue"}
+{"value":"1|Contrast nearly passed|48|GEGNERA11Y|","time":"2026-09-30T06:29:51Z","test":"A11Y-lose_screen","key":"issue"}
+{"time":"2026-09-30T06:29:51Z","key":"issue","test":"A11Y-lose_screen","value":"1|Contrast failed|48|+29 PUNKTE|"}
+{"time":"2026-09-30T06:29:51Z","test":"A11Y-lose_screen","value":"1|Contrast failed|48|-19 PUNKTE|","key":"issue"}
+{"value":"1|Contrast failed|48|TRASH TALK|","test":"A11Y-lose_screen","time":"2026-09-30T06:29:51Z","key":"issue"}
+{"key":"issue","test":"A11Y-lose_screen","value":"1|Contrast failed|9|ZURÜCK ZUR KARTE|","time":"2026-09-30T06:29:51Z"}
+{"time":"2026-09-30T06:29:51Z","test":"A11Y-lose_screen","key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|NIEDERLAGE|"}
+{"key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|AUDITTESTER|","test":"A11Y-lose_screen","time":"2026-09-30T06:29:51Z"}
+{"time":"2026-09-30T06:29:51Z","value":"65536|Dynamic Type font sizes are unsupported|48|BATTLE ERGEBNIS|","test":"A11Y-lose_screen","key":"issue"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|GEGNERA11Y|","test":"A11Y-lose_screen","key":"issue","time":"2026-09-30T06:29:51Z"}
+{"key":"issue","value":"65536|Dynamic Type font sizes are unsupported|48|KOPF HOCH, AUDITTESTER!|","time":"2026-09-30T06:29:51Z","test":"A11Y-lose_screen"}
+{"test":"A11Y-lose_screen","value":"65536|Dynamic Type font sizes are unsupported|48|-19 PUNKTE|","key":"issue","time":"2026-09-30T06:29:51Z"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|TRASH TALK|","test":"A11Y-lose_screen","key":"issue","time":"2026-09-30T06:29:51Z"}
+{"key":"issue","time":"2026-09-30T06:29:51Z","test":"A11Y-lose_screen","value":"65536|Dynamic Type font sizes are unsupported|48|-19 PUNKTE|"}
+{"test":"A11Y-lose_screen","key":"issue","value":"65536|Dynamic Type font sizes are unsupported|9|ZURÜCK ZUR KARTE|","time":"2026-09-30T06:29:51Z"}
+{"test":"A11Y-lose_screen","key":"issue","time":"2026-09-30T06:29:51Z","value":"65536|Dynamic Type font sizes are unsupported|48|+29 PUNKTE|"}
+{"value":"65536|Dynamic Type font sizes are unsupported|48|GG!|","time":"2026-09-30T06:29:51Z","test":"A11Y-lose_screen","key":"issue"}
+{"test":"FU01","key":"waitingOverlayRestoredAfterRelaunch","time":"2026-09-30T06:30:21Z","value":"false"}
+{"time":"2026-09-30T06:30:28Z","value":"true","test":"FU01","key":"rejectionBannerShown"}
+{"value":"false","test":"FU01","key":"appEntersBattleAfterRelaunch","time":"2026-09-30T06:30:35Z"}
+{"value":"false","test":"FU02","key":"battleRestoredAfterRelaunch","time":"2026-09-30T06:31:01Z"}
+{"time":"2026-09-30T06:31:05Z","value":"true","key":"winScreenAfterRelaunch","test":"FU02"}
+{"value":"9","time":"2026-09-30T06:31:20Z","key":"kaufenButtons","test":"SC01"}
+{"test":"SC01","time":"2026-09-30T06:31:23Z","key":"points","value":"203 -> 153"}
+{"test":"SC01","time":"2026-09-30T06:31:28Z","value":"false","key":"notEnoughToast"}
+{"key":"pointsAfterExpensive","test":"SC01","time":"2026-09-30T06:31:28Z","value":"153"}
+{"key":"soundToggle","value":"1 -> 1","time":"2026-09-30T06:31:42Z","test":"SC02"}
+{"value":"true","key":"loginScreenAfterLogout","time":"2026-09-30T06:31:44Z","test":"SC02"}
+{"test":"SC02","time":"2026-09-30T06:31:47Z","key":"logoutProbeTime","value":"1790749907.937427"}
+{"key":"profileHasPoints","value":"false","test":"SC03","time":"2026-09-30T06:32:06Z"}
+{"time":"2026-09-30T06:32:10Z","value":"false","test":"SC03","key":"friendsTitle"}
+{"key":"bannerShown","test":"SC04","value":"true","time":"2026-09-30T06:32:37Z"}
+{"time":"2026-09-30T06:32:42Z","test":"SC04","value":"true","key":"badgeShown"}
+{"key":"settingsSheetsVisible","test":"SC05","time":"2026-09-30T06:33:02Z","value":"0"}
+{"value":"true","test":"SC06","time":"2026-09-30T06:33:24Z","key":"popupStillVisibleAfterTapOutside"}
+{"value":"Noch keine Spieler in deiner Nähe","time":"2026-09-30T06:33:42Z","key":"nearbyLabel","test":"SC07"}
+{"test":"SC07","value":"false","time":"2026-09-30T06:33:42Z","key":"anyErrorMessageVisible"}
+{"key":"shopOfflineMessage","value":"true","test":"SC07","time":"2026-09-30T06:33:48Z"}
+{"test":"PERF03","time":"2026-09-30T06:40:40Z","value":"6","key":"completedRounds"}
+{"test":"RT01","time":"2026-09-30T06:40:57Z","key":"soundToggle","value":"1 -> 0"}
+{"time":"2026-09-30T06:41:23Z","key":"profilePointsText","test":"RT02","value":"false"}
+{"test":"RT02","key":"friendsVisible","value":"false","time":"2026-09-30T06:41:30Z"}
+{"test":"RT02","key":"trophyRoadVisible","value":"true","time":"2026-09-30T06:41:37Z"}
+{"test":"RT03","time":"2026-09-30T06:41:52Z","value":"true","key":"settingsVisibleAfterDoubleTap"}
+{"value":"false","key":"profilePointsText","time":"2026-09-30T06:43:25Z","test":"RT02"}
+{"value":"false","key":"friendsVisible","time":"2026-09-30T06:43:31Z","test":"RT02"}
+{"value":"true","key":"trophyRoadVisible","time":"2026-09-30T06:43:38Z","test":"RT02"}
+{"key":"profilePointsText","time":"2026-09-30T06:45:22Z","value":"true","test":"RT02"}
+{"key":"friendsVisible","value":"false","test":"RT02","time":"2026-09-30T06:45:33Z"}
+{"time":"2026-09-30T06:45:40Z","test":"RT02","key":"trophyRoadVisible","value":"true"}

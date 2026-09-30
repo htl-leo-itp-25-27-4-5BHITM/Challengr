@@ -1,0 +1,7 @@
+2045: battle created: id=21, status=REQUESTED, from=opp-sc02, to=audit-1
+2046: Sending WS payload to player audit-1: {
+2050:   "toPlayerId": "audit-1",
+2064:   "toPlayerId": "audit-1",
+2078:   "toPlayerId": "audit-1",
+2084: WebSocket open for player audit-1 (session=_Zxl6jJ_h2ou2HaVeJKqK3StDz0JDciKzxOEirG4)
+2085: Sending WS payload to player audit-1: {
