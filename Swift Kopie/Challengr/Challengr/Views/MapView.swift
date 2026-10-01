@@ -11,6 +11,21 @@ extension Color {
     static let challengrRed     = Color(red: 0.73, green: 0.12, blue: 0.20)   // #BA1F33
     static let challengrDark    = Color(red: 0.12, green: 0.00, blue: 0.05)   // #1E000E
     static let challengrSurface = Color(red: 0.98, green: 0.98, blue: 0.98)   // #F9F9F9
+
+    /// Schrift direkt auf dem System-Hintergrund: hell = Challengr-Dunkel, dunkel = Weiß.
+    /// (Auf den festen, hellen Spielkarten bleibt es beim festen challengrDark.)
+    static let challengrInk = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? .white
+            : UIColor(red: 0.12, green: 0.00, blue: 0.05, alpha: 1)
+    })
+
+    /// Markenrot, im Dark Mode etwas heller für genug Kontrast auf dunklem Grund.
+    static let challengrRedInk = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 1.00, green: 0.36, blue: 0.43, alpha: 1)
+            : UIColor(red: 0.73, green: 0.12, blue: 0.20, alpha: 1)
+    })
 }
 
 // MARK: - Models (Modelle)
@@ -59,8 +74,10 @@ struct MapView: View {
     
 
     @State private var allChallenges: [ChallengeDTO] = []
-    /// Newest battle-requested id; older async resolves must not overwrite it.
-    @State private var latestRequestedBattleId: Int64? = nil
+    /// Newest battle-requested id per direction; older async resolves must not overwrite it.
+    /// (Separate for incoming/outgoing – after a reconnect the server re-sends both.)
+    @State private var latestIncomingRequestId: Int64? = nil
+    @State private var latestOutgoingRequestId: Int64? = nil
 
     /// WebSocket
     @StateObject private var socket: GameSocketService
@@ -120,7 +137,7 @@ struct MapView: View {
     @State private var currentTargetCoordinate: CLLocationCoordinate2D? = nil
 
     
-    @State private var lastKnowledgeQuestion: (battleId: Int64, text: String, choices: [String])?
+    @State private var lastKnowledgeQuestion: (battleId: Int64, text: String, choices: [String], timeLimit: Int?)?
 
 
     /// Fallback (Default Map: Vienna)
@@ -925,9 +942,8 @@ struct MapView: View {
     /// Overlay that appears when another player challenges the local player.
     private var incomingChallengeOverlay: some View {
         Group {
-            if let challenge = incomingChallenge,
-               let battleId = currentBattleId {
-
+            if let challenge = incomingChallenge {
+                let battleId = challenge.battleId
                 let opponentAnnotation = annotations.first(where: { $0.playerId == challenge.fromId })
                 let opponentTitle = opponentAnnotation?.title ?? "Gegner \(challenge.fromId)"
                 let opponentName = cleanPlayerName(opponentTitle)
@@ -976,6 +992,7 @@ struct MapView: View {
                                     opponentId: challenge.fromId
                                 )
 
+                                currentBattleId = battleId
                                 incomingChallenge = nil
                                 activeFullScreen = .battle
                             }
@@ -988,7 +1005,6 @@ struct MapView: View {
                                 SoundManager.shared.play(.challengeClosed)
 
                                 incomingChallenge = nil
-                                currentBattleId = nil
                             }
                             .foregroundColor(.challengrRed)
                         }
@@ -1053,7 +1069,6 @@ struct MapView: View {
                             socket.sendUpdateBattleStatus(battleId: outgoing.battleId, status: "CANCELLED")
                             SoundManager.shared.play(.challengeClosed)
                             outgoingBattleInfo = nil
-                            currentBattleId = nil
                         }
                         .foregroundColor(.challengrRed)
                     }
@@ -1251,8 +1266,21 @@ struct MapView: View {
 
 
         socket.onChallengeReceived = { battleId, fromId, toId, challengeId, challengeText, challengeCategory, targetLat, targetLon in
-            guard toId == ownPlayerId || fromId == ownPlayerId else { return }
-            latestRequestedBattleId = battleId
+            let route = ChallengeRouter.route(fromId: fromId, toId: toId,
+                                              ownPlayerId: ownPlayerId, isInBattle: isInBattle)
+            switch route {
+            case .ignore:
+                return
+            case .declineBusy:
+                // Mitten im Battle: neue Anfrage nicht übernehmen, sonst hängt das laufende Battle.
+                print("Anfrage \(battleId) abgelehnt – wir sind gerade im Battle")
+                socket.sendUpdateBattleStatus(battleId: battleId, status: "DECLINED")
+                return
+            case .incoming:
+                latestIncomingRequestId = battleId
+            case .outgoing:
+                latestOutgoingRequestId = battleId
+            }
 
             Task { @MainActor in
                 let info = await resolveChallengeInfo(
@@ -1261,7 +1289,13 @@ struct MapView: View {
                     category: challengeCategory
                 )
                 // A newer request arrived while we were resolving -> drop this one.
-                guard latestRequestedBattleId == battleId else { return }
+                let latest = route == .incoming ? latestIncomingRequestId : latestOutgoingRequestId
+                guard latest == battleId else { return }
+                // Battle started meanwhile (z.B. anderes Popup angenommen) -> nicht mehr anzeigen.
+                if route == .incoming, isInBattle {
+                    socket.sendUpdateBattleStatus(battleId: battleId, status: "DECLINED")
+                    return
+                }
 
                 // Backend re-sends open requests after a reconnect – only alert once.
                 let alreadyShown = incomingChallenge?.battleId == battleId
@@ -1274,8 +1308,9 @@ struct MapView: View {
                     )
                 }
 
-                if toId == ownPlayerId {
-                    // Eingehende Challenge
+                // currentBattleId wird erst gesetzt, wenn das Battle wirklich startet –
+                // sonst könnte eine neue Anfrage ein laufendes Battle "kapern".
+                if route == .incoming {
                     incomingChallenge = (
                         battleId: battleId,
                         fromId: fromId,
@@ -1283,16 +1318,14 @@ struct MapView: View {
                         name: info.name,
                         category: info.category
                     )
-                    currentBattleId = battleId
-                } else if fromId == ownPlayerId {
-                    // Wir sind der Angreifer
+                } else {
+                    // Wir sind der Angreifer (auch nach einem Neustart vom Server nachgeliefert)
                     outgoingBattleInfo = (
                         battleId: battleId,
                         opponentId: toId,
                         challengeName: info.name,
                         category: info.category
                     )
-                    currentBattleId = battleId
                 }
 
                 if info.category != "Wissen" {
@@ -1305,6 +1338,33 @@ struct MapView: View {
                 } else {
                     currentTargetCoordinate = nil
                 }
+            }
+        }
+
+        // Nach einem Neustart mitten im Battle: Battle-Screen wiederherstellen (BUG-06).
+        socket.onBattleRunning = { battleId, fromId, toId, challengeId, challengeText, challengeCategory, status in
+            guard fromId == ownPlayerId || toId == ownPlayerId else { return }
+            // Kurzer Verbindungsabbruch im Battle-Screen → alles bleibt, wie es ist
+            guard !isInBattle, activeFullScreen == .none else { return }
+            // Sofort setzen, damit eine gleich folgende Wissensfrage zugeordnet werden kann
+            currentBattleId = battleId
+
+            Task { @MainActor in
+                let info = await resolveChallengeInfo(id: challengeId, text: challengeText, category: challengeCategory)
+                guard currentBattleId == battleId, !isInBattle, activeFullScreen == .none else { return }
+
+                let opponentId = fromId == ownPlayerId ? toId : fromId
+                let opponentTitle = annotations.first(where: { $0.playerId == opponentId })?.title ?? "Gegner \(opponentId)"
+                incomingChallenge = nil
+                outgoingBattleInfo = nil
+                activeBattleInfo = (
+                    challengeName: info.name,
+                    category: info.category,
+                    playerA: ownPlayerName,
+                    playerB: cleanPlayerName(opponentTitle),
+                    opponentId: opponentId
+                )
+                activeFullScreen = status == "READY_FOR_VOTING" ? .voting : .battle
             }
         }
 
@@ -1322,12 +1382,15 @@ struct MapView: View {
                       "currentBattleId:", currentBattleId as Any,
                       "incomingChallenge:", incomingChallenge as Any,
                       "outgoingBattleInfo:", outgoingBattleInfo as Any)
-            // Muss unser Battle sein
-            guard currentBattleId == battleId else { return }
+            // Muss eine unserer offenen Anfragen sein
+            let accepted = ChallengeRouter.acceptedRequest(battleId: battleId,
+                                                           incomingId: incomingChallenge?.battleId,
+                                                           outgoingId: outgoingBattleInfo?.battleId)
+            guard accepted != .ignore else { return }
+            currentBattleId = battleId
 
-            // Fall A: Wir wurden herausgefordert (incomingChallenge gesetzt)
             // Fall A: Wir wurden herausgefordert
-            if let challenge = incomingChallenge {
+            if accepted == .incoming, let challenge = incomingChallenge {
                 let opponentTitle =
                     annotations.first(where: { $0.playerId == challenge.fromId })?.title
                     ?? "Gegner \(challenge.fromId)"
@@ -1348,9 +1411,8 @@ struct MapView: View {
             }
 
 
-            // Fall B: Wir sind der Angreifer (outgoingBattleInfo gesetzt)
             // Fall B: Wir sind der Angreifer
-            if let outgoing = outgoingBattleInfo {
+            if accepted == .outgoing, let outgoing = outgoingBattleInfo {
                 let opponentTitle =
                     annotations.first(where: { $0.playerId == outgoing.opponentId })?.title
                     ?? "Gegner \(outgoing.opponentId)"
@@ -1427,7 +1489,7 @@ struct MapView: View {
             handleBattleClosed(battleId: battleId, status: status)
         }
         
-        socket.onKnowledgeQuestion = { battleId, challenge in
+        socket.onKnowledgeQuestion = { battleId, challenge, timeLimit in
             print("📩 Knowledge question erhalten:", battleId, challenge.text)
 
             guard battleId == currentBattleId else { return }
@@ -1435,7 +1497,8 @@ struct MapView: View {
             let payload = (
                 battleId: battleId,
                 text: challenge.text,
-                choices: challenge.choices ?? []
+                choices: challenge.choices ?? [],
+                timeLimit: timeLimit
             )
 
             // 1) State merken
@@ -1448,13 +1511,29 @@ struct MapView: View {
                 userInfo: [
                     "battleId": battleId,
                     "text": payload.text,
-                    "choices": payload.choices
+                    "choices": payload.choices,
+                    "timeLimit": payload.timeLimit as Any
                 ]
+            )
+        }
+
+        socket.onKnowledgeAnswerFeedback = { battleId, correct in
+            guard battleId == currentBattleId else { return }
+            NotificationCenter.default.post(
+                name: .knowledgeAnswerFeedback,
+                object: nil,
+                userInfo: ["battleId": battleId, "correct": correct]
             )
         }
 
 
 
+    }
+
+    /// Mitten in einem angenommenen Battle (inkl. Voting und "Ergebnis wird berechnet").
+    /// Bewusst nicht über activeBattleInfo: das bleibt nach dem Ergebnis gesetzt.
+    private var isInBattle: Bool {
+        activeFullScreen == .battle || activeFullScreen == .voting || activeOverlay == .resultPending
     }
 
     @MainActor

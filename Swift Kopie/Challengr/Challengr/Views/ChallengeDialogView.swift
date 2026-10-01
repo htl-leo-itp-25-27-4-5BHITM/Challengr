@@ -183,13 +183,15 @@ struct ChallengeDialogView: View {
             .frame(maxWidth: 300)
             .background(
                 RoundedRectangle(cornerRadius: 22)
-                    .fill(.ultraThinMaterial)
+                    .fill(.regularMaterial)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 22)
                     .stroke(.white.opacity(0.15), lineWidth: 1)
             )
             .shadow(radius: 20)
+            // Spielkarte im Marken-Look: Material und Texte bleiben auch im Dark Mode hell/dunkel.
+            .environment(\.colorScheme, .light)
         }
     }
 

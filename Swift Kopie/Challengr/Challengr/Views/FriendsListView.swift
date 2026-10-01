@@ -51,14 +51,14 @@ struct FriendsListView: View {
                 VStack(alignment: .leading, spacing: 18) {
                 Text("Freunde")
                     .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(challengrDark)
+                    .foregroundColor(.challengrInk)
 
                 HStack(spacing: 12) {
                     FriendActionButton(
                         icon: "person.badge.plus",
                         title: "Hinzufügen",
-                        foreground: challengrRed,
-                        background: challengrRed.opacity(0.12)
+                        foreground: .challengrRedInk,
+                        background: Color.challengrRedInk.opacity(0.14)
                         ,
                         action: {
                             showAddFriendSheet = true
@@ -68,8 +68,8 @@ struct FriendsListView: View {
                     FriendActionButton(
                         icon: "magnifyingglass",
                         title: "Suchen",
-                        foreground: challengrDark,
-                        background: challengrDark.opacity(0.08),
+                        foreground: .challengrInk,
+                        background: Color.challengrInk.opacity(0.10),
                         action: {
                             appliedSearch = searchText
                         }
@@ -88,6 +88,8 @@ struct FriendsListView: View {
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
                                 .stroke(challengrDark.opacity(0.12), lineWidth: 1)
                         )
+                        // Weißes Feld: Text/Platzhalter auch im Dark Mode dunkel
+                        .environment(\.colorScheme, .light)
                         .onSubmit {
                             appliedSearch = searchText
                         }

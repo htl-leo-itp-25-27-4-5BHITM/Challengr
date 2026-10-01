@@ -156,7 +156,7 @@ struct LoudnessChallengeView: View {
                 Spacer()
 
                 if phase == .ready {
-                    Text("Bereite dich vor – in \(countdown) Sekunden beginnt die Brüll Challenge!")
+                    Text("Bereite dich vor – in \(countdown) Sekunden beginnt die Brüll-Challenge!")
                         .font(.system(size: 14, weight: .medium, design: .rounded))
                         .foregroundColor(.white.opacity(0.8))
                         .multilineTextAlignment(.center)

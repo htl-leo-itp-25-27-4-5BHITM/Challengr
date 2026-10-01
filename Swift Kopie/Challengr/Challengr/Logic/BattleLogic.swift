@@ -25,11 +25,19 @@ extension BattleResultData {
         return true
     }
 
+    /// Nobody won and nobody lost points (z.B. beide falsch im Wissens-Battle).
+    var isDraw: Bool {
+        if let outcome { return outcome == "DRAW" }
+        return winnerId == nil && loserId == nil && trashTalk == "Unentschieden!"
+    }
+
     /// Did we win? Uses the id when available – names can be identical.
     func didWin(ownPlayerId: String, ownPlayerName: String) -> Bool {
         if let winnerId {
             return winnerId == ownPlayerId
         }
+        // Unentschieden/Konflikt: niemand hat gewonnen (auch wenn jemand "Niemand" heißt)
+        if isDraw || outcome == "CONFLICT" { return false }
         return winnerName == ownPlayerName
     }
 }
@@ -95,4 +103,38 @@ enum ChallengePicker {
     static func random(in category: String, from all: [ChallengeDTO]) -> ChallengeDTO? {
         challenges(in: category, from: all).randomElement()
     }
+}
+
+// MARK: - Incoming requests (BUG-02 / BUG-05)
+
+/// What the app does with a "battle-requested" message.
+enum ChallengeRoute: Equatable {
+    /// Someone challenges us – show the popup.
+    case incoming
+    /// Our own request (also re-sent after a reconnect) – show "Anfrage gesendet".
+    case outgoing
+    /// Someone challenges us while we are in a battle – decline automatically.
+    case declineBusy
+    /// Not our business.
+    case ignore
+}
+
+enum ChallengeRouter {
+    static func route(fromId: String, toId: String, ownPlayerId: String, isInBattle: Bool) -> ChallengeRoute {
+        if toId == ownPlayerId { return isInBattle ? .declineBusy : .incoming }
+        if fromId == ownPlayerId { return .outgoing }
+        return .ignore
+    }
+
+    /// Which of our pending requests did the server just mark as accepted?
+    static func acceptedRequest(battleId: Int64, incomingId: Int64?, outgoingId: Int64?) -> ChallengeRoute {
+        if battleId == incomingId { return .incoming }
+        if battleId == outgoingId { return .outgoing }
+        return .ignore
+    }
+}
+
+extension BattleHistoryDTO {
+    /// Beendet, aber ohne Gewinner (z.B. beide falsch im Wissens-Battle).
+    var isDraw: Bool { !won && status == "DONE" && (winnerName ?? "").isEmpty && pointsDelta == 0 }
 }
