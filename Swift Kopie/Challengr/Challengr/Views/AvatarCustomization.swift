@@ -16,18 +16,26 @@ struct AvatarPreset: Identifiable, Hashable {
     let id: String
     let title: String
     let imageName: String
+    /// Brustbild für runde Avatare (Map-Pin, Profil).
+    let avatarImageName: String
     let category: AvatarCategory
+    /// 3D-Figur, falls das Preset eine ist.
+    var character: GameCharacter? = nil
 }
 
-/// Central place for available 2D avatar presets.
-/// Keep this list in sync with assets in `Assets.xcassets`.
+/// Central place for available avatar presets.
+/// Outfits sind die 3D-Figuren dieses App-Builds (siehe `GameCharacter.own`).
 enum AvatarPresets {
-    static let all: [AvatarPreset] = [
-        AvatarPreset(id: "boy", title: "Boy", imageName: "playerBoy", category: .outfits),
-        AvatarPreset(id: "girl", title: "Girl", imageName: "playerGirl", category: .outfits),
-        AvatarPreset(id: "hacker", title: "Hacker", imageName: "hacker", category: .outfits),
-        AvatarPreset(id: "mage-girl", title: "Magierin", imageName: "mageGirl", category: .outfits)
-    ]
+    static let all: [AvatarPreset] = [GameCharacter.own].map { character in
+        AvatarPreset(
+            id: character.rawValue,
+            title: character.displayName,
+            imageName: character.imageName,
+            avatarImageName: character.avatarImageName,
+            category: .outfits,
+            character: character
+        )
+    }
 
     static func presets(for category: AvatarCategory) -> [AvatarPreset] {
         all.filter { $0.category == category }
@@ -37,15 +45,24 @@ enum AvatarPresets {
         all.first { $0.id == id }
     }
 
-    static let defaultPresetId = "boy"
+    static let defaultPresetId = GameCharacter.own.rawValue
+
+    /// Persisted preset; falls back to the default (e.g. for old 2D preset ids).
+    static func persistedPreset() -> AvatarPreset {
+        let id = UserDefaults.standard.string(forKey: AvatarCustomizationStore.presetKey)
+            ?? defaultPresetId
+        return preset(withId: id) ?? preset(withId: defaultPresetId)!
+    }
 
     /// Reads the persisted preset id and returns its `imageName`.
     /// Useful in views where we don't want to own an `ObservableObject`.
     static func persistedImageName() -> String {
-        let id = UserDefaults.standard.string(forKey: AvatarCustomizationStore.presetKey)
-            ?? defaultPresetId
-        return preset(withId: id)?.imageName
-            ?? preset(withId: defaultPresetId)!.imageName
+        persistedPreset().imageName
+    }
+
+    /// Brustbild des gespeicherten Presets (für runde Avatare).
+    static func persistedAvatarImageName() -> String {
+        persistedPreset().avatarImageName
     }
 }
 

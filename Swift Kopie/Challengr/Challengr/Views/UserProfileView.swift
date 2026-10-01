@@ -63,7 +63,7 @@ struct UserProfileView: View {
                     showCharacterEditor = true
                 } label: {
                     ZStack(alignment: .bottomTrailing) {
-                        Image(avatarStore.selectedPreset.imageName)
+                        Image(avatarStore.selectedPreset.avatarImageName)
                             .resizable()
                             .scaledToFill()
                             .frame(width: 100, height: 100)

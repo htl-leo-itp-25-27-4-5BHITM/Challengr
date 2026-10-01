@@ -347,7 +347,7 @@ private struct RankSectionView: View {
                     let x = width / 2 + xSin * (width * 0.28)
                     let y = CGFloat(slot) * stepHeight + 10
 
-                    Image("playerBoy")
+                    Image(AvatarPresets.persistedImageName())
                         .resizable()
                         .scaledToFit()
                         .frame(width: 56, height: 56)

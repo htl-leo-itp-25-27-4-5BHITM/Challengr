@@ -6,14 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXTargetDependency section */
-		C7E57A01000000000000A008 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 00AA7B682E9F7E61004DC66E /* Challengr */;
-			targetProxy = C7E57A01000000000000A001 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin PBXContainerItemProxy section */
 		C7E57A01000000000000A001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -198,6 +190,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C7E57A01000000000000A008 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 00AA7B682E9F7E61004DC66E /* Challengr */;
+			targetProxy = C7E57A01000000000000A001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		00AA7B722E9F7E65004DC66E /* Debug */ = {

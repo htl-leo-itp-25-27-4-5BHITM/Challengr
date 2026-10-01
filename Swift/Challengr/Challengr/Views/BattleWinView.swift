@@ -64,14 +64,14 @@ struct BattleWinView: View {
                     HStack(spacing: 20) {
                         resultPlayerCard(
                             name: data.winnerName,
-                            avatarName: avatarName(for: data.winnerName),
+                            character: character(for: data.winnerName),
                             pointsDelta: data.winnerPointsDelta,
                             isWinner: true
                         )
 
                         resultPlayerCard(
                             name: data.loserName,
-                            avatarName: avatarName(for: data.loserName),
+                            character: character(for: data.loserName),
                             pointsDelta: data.loserPointsDelta,
                             isWinner: false
                         )
@@ -152,18 +152,18 @@ struct BattleWinView: View {
 
     // MARK: - Helpers (Hilfsfunktionen)
 
-    /// Shows the local player's real chosen avatar; the opponent's actual
-    /// avatar isn't known server-side, so they always get the same neutral
-    /// fallback instead of a value that used to depend on who won.
-    private func avatarName(for playerName: String) -> String {
-        playerName == ownPlayerName ? AvatarPresets.persistedImageName() : "playerGirl"
+    /// Shows the local player's own character; the opponent's actual
+    /// character isn't known server-side, so they always get the other figure
+    /// instead of a value that used to depend on who won.
+    private func character(for playerName: String) -> GameCharacter {
+        GameCharacter.forPlayer(playerName, ownPlayerName: ownPlayerName)
     }
 
     // MARK: - Subviews (Unteransichten)
     // MARK: - Result Player Card (Ergebnis-Karte)
     private func resultPlayerCard(
         name: String,
-        avatarName: String,
+        character: GameCharacter,
         pointsDelta: Int,
         isWinner: Bool
     ) -> some View {
@@ -180,9 +180,7 @@ struct BattleWinView: View {
                     .stroke(color, lineWidth: 3)
                     .frame(width: 118, height: 178)
 
-                Image(avatarName)
-                    .resizable()
-                    .scaledToFill()
+                Character3DView(character: character)
                     .frame(width: 118, height: 178)
                     .clipShape(
                         RoundedRectangle(cornerRadius: 20)

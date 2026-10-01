@@ -17,7 +17,6 @@ struct BattleView: View {
     @State private var stripsAppeared = false
     @State private var vsAppeared = false
     @State private var vsFlash = false
-    @State private var idleBounce = false
 
     // MARK: - Body (UI-Aufbau)
     var body: some View {
@@ -83,11 +82,6 @@ struct BattleView: View {
         }
         withAnimation(.easeOut(duration: 0.6).delay(0.5)) {
             vsFlash = true
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
-                idleBounce = true
-            }
         }
     }
 
@@ -249,8 +243,8 @@ struct BattleView: View {
                     playerStrip(
                         name: playerLeft,
                         color: .challengrYellow,
-                        imageName: AvatarPresets.persistedImageName(),
-                        flip: false,
+                        character: AvatarPresets.persistedPreset().character ?? .own,
+                        facing: .right,
                         alignRight: false,
                         layout: layout
                     )
@@ -272,8 +266,8 @@ struct BattleView: View {
                     playerStrip(
                         name: playerRight,
                         color: .challengrRed,
-                        imageName: "playerGirl",
-                        flip: true,
+                        character: .opponent,
+                        facing: .left,
                         alignRight: true,
                         layout: layout
                     )
@@ -291,8 +285,8 @@ struct BattleView: View {
     private func playerStrip(
         name: String,
         color: Color,
-        imageName: String,
-        flip: Bool,
+        character: GameCharacter,
+        facing: Character3DView.Facing,
         alignRight: Bool,
         layout: BattleStageLayout
     ) -> some View {
@@ -315,14 +309,12 @@ struct BattleView: View {
                     .padding(.top, 10)
                     .padding(.bottom, 4)
 
-                CharacterAvatarView(imageName: imageName, flip: flip, bounce: idleBounce)
+                CharacterAvatarView(character: character, facing: facing)
                     .frame(width: modelSize.width, height: modelSize.height, alignment: .bottom)
-                    .shadow(color: .black.opacity(0.55), radius: 18, x: 0, y: 12)
                     .padding(.trailing, 6)
             } else {
-                CharacterAvatarView(imageName: imageName, flip: flip, bounce: idleBounce)
+                CharacterAvatarView(character: character, facing: facing)
                     .frame(width: modelSize.width, height: modelSize.height, alignment: .bottom)
-                    .shadow(color: .black.opacity(0.55), radius: 18, x: 0, y: 12)
                     .padding(.leading, 6)
 
                 Text(name.uppercased())
@@ -534,12 +526,11 @@ private struct ChamferedCard: Shape {
     }
 }
 
-/// A player's 2D character illustration, planted on a grounding shadow with a
-/// subtle idle breathing loop so the VS screen doesn't feel static.
+/// A player's 3D character, planted on a grounding shadow. The model brings its
+/// own idle animation, so the VS screen doesn't feel static.
 private struct CharacterAvatarView: View {
-    let imageName: String
-    let flip: Bool
-    let bounce: Bool
+    let character: GameCharacter
+    let facing: Character3DView.Facing
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -549,12 +540,7 @@ private struct CharacterAvatarView: View {
                 .blur(radius: 8)
                 .offset(y: 12)
 
-            Image(imageName)
-                .resizable()
-                .scaledToFit()
-                // Right-side fighter should face left; left-side fighter should face right.
-                .scaleEffect(x: flip ? -1 : 1, y: 1)
-                .scaleEffect(bounce ? 1.035 : 1.0, anchor: .bottom)
+            Character3DView(character: character, facing: facing)
         }
     }
 }

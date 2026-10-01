@@ -42,7 +42,7 @@ struct ChallengeDialogView: View {
                     .tracking(1.4)
                     .foregroundStyle(.challengrBlack)
 
-                MapAvatarPin(imageName: nil, ringColor: otherPlayerRankColor, isOwnPlayer: false)
+                MapAvatarPin(imageName: GameCharacter.opponent.avatarImageName, ringColor: otherPlayerRankColor, isOwnPlayer: false)
 
                 Text(otherPlayerName.uppercased())
                     .font(.system(size: 20, weight: .black, design: .rounded))

@@ -32,7 +32,8 @@ extension Color {
 
 /// Simple model to represent a player as a map annotation.
 struct PlayerAnnotation: Identifiable {
-    let id = UUID()
+    /// Stabil pro Spieler, damit Pins beim Aktualisieren nicht neu entstehen (Bewegung wird animiert).
+    var id: String { playerId }
     let playerId: String
     let coordinate: CLLocationCoordinate2D
     let title: String
@@ -85,6 +86,12 @@ struct MapView: View {
     /// Incoming friend requests (Banner + Badge), live via WebSocket.
     @StateObject private var friendsInbox = FriendsInboxStore()
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    // Lebendige Karte: Emoji-Blasen über Spielern und "neu in der Nähe"-Hinweise
+    @State private var pinBubbles: [String: String] = [:]
+    @State private var bubbleTask: Task<Void, Never>? = nil
+    @State private var knownNearbyIds: [String]? = nil
 
     /// Short info banner at the top of the map (z.B. "Anfrage abgelaufen").
     @State private var mapBanner: (icon: String, text: String)? = nil
@@ -176,9 +183,12 @@ struct MapView: View {
             centerCoordinate: CLLocationCoordinate2D(latitude: 48.2082, longitude: 16.3738),
             distance: 1000,
             heading: 0,
-            pitch: 0
+            pitch: MapView.mapPitch
         )
     )
+
+    /// Karte schräg von der Seite (isometrisch wirkend) statt direkt von oben.
+    static let mapPitch: Double = 55
     
     @State private var myVote: String? = nil
     @State private var opponentVote: String? = nil
@@ -271,7 +281,7 @@ struct MapView: View {
                                         centerCoordinate: startCoordinate,
                                         distance: 1000,
                                         heading: 0,
-                                        pitch: 0
+                                        pitch: MapView.mapPitch
                                     )
                                 )
                             )
@@ -404,7 +414,7 @@ struct MapView: View {
                 ownPlayerId: ownPlayerId,
                 data: UserProfileData(
                     name: ownPlayerName,
-                    avatarImageName: AvatarPresets.persistedImageName(),
+                    avatarImageName: AvatarPresets.persistedAvatarImageName(),
                     rankName: ownRankName,
                     dailyStreak: ownDailyStreak,
                     totalChallenges: ownTotalChallenges,
@@ -605,31 +615,35 @@ struct MapView: View {
                     .foregroundStyle(Color.blue.opacity(0.2))
                     .stroke(Color.blue.opacity(0.6), lineWidth: 2)
 
-                Annotation("Du", coordinate: ownCoordinate) {
-                    MapAvatarPin(
-                        imageName: AvatarPresets.persistedImageName(),
+                Annotation("Du", coordinate: ownCoordinate, anchor: .bottom) {
+                    MapCharacterPin(
+                        character: AvatarPresets.persistedPreset().character ?? .own,
                         ringColor: .challengrYellow,
-                        isOwnPlayer: true
+                        sonar: true,
+                        seed: ownPlayerId
                     )
                 }
             }
 
             // Annotations for all nearby players.
             ForEach(annotations) { annotation in
-                Annotation(annotation.title, coordinate: annotation.coordinate) {
-                    Button {
-                        if selectedPlayer?.id == annotation.id {
-                            showPlayerPopup.toggle()
-                        } else {
-                            selectedPlayer = annotation
-                            showPlayerPopup = true
+                Annotation(annotation.title, coordinate: annotation.coordinate, anchor: .bottom) {
+                    LivelyPin(seed: annotation.playerId, bubble: pinBubbles[annotation.playerId], bobs: false) {
+                        Button {
+                            if selectedPlayer?.id == annotation.id {
+                                showPlayerPopup.toggle()
+                            } else {
+                                selectedPlayer = annotation
+                                showPlayerPopup = true
+                            }
+                        } label: {
+                            MapCharacterPin(
+                                character: .opponent,
+                                ringColor: rankColor(for: annotation.rankName),
+                                seed: annotation.playerId
+                            )
                         }
-                    } label: {
-                        MapAvatarPin(
-                            imageName: nil,
-                            ringColor: rankColor(for: annotation.rankName),
-                            isOwnPlayer: false
-                        )
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -645,6 +659,7 @@ struct MapView: View {
         .accentColor(.challengrYellow)
         .ignoresSafeArea()
         .onAppear {
+            startBubbleLoop()
             setupSocket()
             seedInitialZoom()
             friendsInbox.start(playerId: ownPlayerId)
@@ -680,6 +695,7 @@ struct MapView: View {
             friendsInbox.consumeBanner()
         }
         .onDisappear {
+            bubbleTask?.cancel()
             friendsInbox.stop()
             nearbyRefreshTask?.cancel()
             nearbyRefreshTask = nil
@@ -738,7 +754,7 @@ struct MapView: View {
                         centerCoordinate: startCoordinate,
                         distance: 1000,
                         heading: 0,
-                        pitch: 0
+                        pitch: MapView.mapPitch
                     )
                 )
             )
@@ -786,7 +802,7 @@ struct MapView: View {
                     showProfile = true
                 } label: {
                     ZStack(alignment: .topTrailing) {
-                        Image(AvatarPresets.persistedImageName())
+                        Image(AvatarPresets.persistedAvatarImageName())
                             .resizable()
                             .scaledToFill()
                             .frame(width: 64, height: 64)
@@ -825,10 +841,17 @@ struct MapView: View {
     private var playerPopupOverlay: some View {
         Group {
             if let player = selectedPlayer, showPlayerPopup {
+              ZStack {
+                // Tipp irgendwo auf die Karte schließt das Popup
+                Color.clear
+                    .contentShape(Rectangle())
+                    .ignoresSafeArea()
+                    .onTapGesture { closePlayerPopup() }
+
                 VStack(spacing: 10) {
 
                     MapAvatarPin(
-                        imageName: nil,
+                        imageName: GameCharacter.opponent.avatarImageName,
                         ringColor: rankColor(for: player.rankName),
                         isOwnPlayer: false
                     )
@@ -872,8 +895,48 @@ struct MapView: View {
                 .shadow(radius: 15)
                 .padding(.top, 80)
                 .transition(.scale)
+              }
             }
         }
+    }
+
+    private func closePlayerPopup() {
+        withAnimation {
+            showPlayerPopup = false
+            selectedPlayer = nil
+        }
+    }
+
+    // MARK: - Lebendige Karte
+
+    /// Zeigt alle paar Sekunden über einem zufälligen Spieler kurz ein Emoji.
+    private func startBubbleLoop() {
+        bubbleTask?.cancel()
+        guard !reduceMotion else { return }
+        bubbleTask = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64.random(in: 3_000_000_000...6_000_000_000))
+                guard !Task.isCancelled, let target = annotations.randomElement() else { continue }
+                pinBubbles[target.playerId] = MapVibe.bubbles.randomElement()
+                try? await Task.sleep(nanoseconds: 2_200_000_000)
+                pinBubbles[target.playerId] = nil
+            }
+        }
+    }
+
+    /// Neue Spieler im Radius kurz ankündigen.
+    private func announceArrivals(_ players: [PlayerAnnotation]) {
+        let ids = players.map(\.playerId)
+        let arrivals = MapVibe.newArrivals(previous: knownNearbyIds, current: ids)
+        knownNearbyIds = ids
+        guard let first = arrivals.first,
+              let player = players.first(where: { $0.playerId == first }),
+              activeFullScreen == .none, !showPlayerPopup else { return }
+        let name = cleanPlayerName(player.title)
+        let text = arrivals.count == 1
+            ? "\(name) ist in deiner Nähe – fordere ihn heraus!"
+            : "\(name) und \(arrivals.count - 1) weitere sind in deiner Nähe!"
+        showMapBanner(icon: "bolt.fill", text: text)
     }
 
 
@@ -959,7 +1022,7 @@ struct MapView: View {
                             .tracking(1.4)
                             .foregroundColor(.challengrYellow)
 
-                        MapAvatarPin(imageName: nil, ringColor: opponentRingColor, isOwnPlayer: false)
+                        MapAvatarPin(imageName: GameCharacter.opponent.avatarImageName, ringColor: opponentRingColor, isOwnPlayer: false)
 
                         Text(opponentName.uppercased())
                             .font(.system(size: 20, weight: .black, design: .rounded))
@@ -1039,7 +1102,7 @@ struct MapView: View {
                             .tracking(1.2)
                             .foregroundColor(.challengrYellow)
 
-                        MapAvatarPin(imageName: nil, ringColor: outgoingRingColor, isOwnPlayer: false)
+                        MapAvatarPin(imageName: GameCharacter.opponent.avatarImageName, ringColor: outgoingRingColor, isOwnPlayer: false)
 
                         Text(opponentName.uppercased())
                             .font(.system(size: 18, weight: .black, design: .rounded))
@@ -1273,8 +1336,11 @@ struct MapView: View {
                 return
             case .declineBusy:
                 // Mitten im Battle: neue Anfrage nicht übernehmen, sonst hängt das laufende Battle.
-                print("Anfrage \(battleId) abgelehnt – wir sind gerade im Battle")
+                print("Anfrage \(battleId) automatisch abgelehnt – isInBattle: fullScreen=\(activeFullScreen), overlay=\(activeOverlay), battle=\(currentBattleId.map(String.init) ?? "nil")")
                 socket.sendUpdateBattleStatus(battleId: battleId, status: "DECLINED")
+                // Auch auf dem eigenen Handy anzeigen, damit man sieht, warum nichts kam
+                let fromName = cleanPlayerName(annotations.first(where: { $0.playerId == fromId })?.title ?? "Spieler")
+                showMapBanner(icon: "hand.raised.fill", text: "Anfrage von \(fromName) abgelehnt – du bist noch in einem Battle")
                 return
             case .incoming:
                 latestIncomingRequestId = battleId
@@ -1650,7 +1716,7 @@ struct MapView: View {
 
         let currentCamera = position.camera
         let heading = currentCamera?.heading ?? 0
-        let pitch = currentCamera?.pitch ?? 0
+        let pitch = currentCamera?.pitch ?? MapView.mapPitch
         if let distance = currentCamera?.distance {
             currentZoomDistance = distance
         }
@@ -1681,7 +1747,8 @@ struct MapView: View {
                 radius: 200.0
             )
 
-            annotations = players.map {
+            // Der eigene Spieler kommt mit – der hat schon seinen eigenen Pin
+            let updated = players.filter { $0.id != ownPlayerId && MapPlayerFilter.isVisible(name: $0.name) }.map {
                 PlayerAnnotation(
                     playerId: $0.id,
                     coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude),
@@ -1689,6 +1756,9 @@ struct MapView: View {
                     rankName: $0.rankName
                 )
             }
+            // Spieler gleiten zur neuen Position statt zu springen
+            withAnimation(.easeInOut(duration: 0.8)) { annotations = updated }
+            announceArrivals(updated)
 
             if let me = players.first(where: { $0.id == ownPlayerId }) {
                 ownPlayerName = me.name

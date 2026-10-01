@@ -27,6 +27,9 @@ struct SettingsView: View {
                             Text("Hintergrundmusik")
                         }
                     }
+                    .onChange(of: isMusicEnabled) { _, _ in
+                        SoundManager.shared.updateMusic()
+                    }
                 }
                 
                 Section(header: Text("Benachrichtigungen")) {

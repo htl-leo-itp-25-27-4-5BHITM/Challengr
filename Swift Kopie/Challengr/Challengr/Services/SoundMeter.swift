@@ -14,6 +14,7 @@ class SoundMeter: ObservableObject {
     func start() {
         isRunning = true
         maxLevel = -60.0
+        SoundManager.shared.setRecordingActive(true)
         
         let session = AVAudioSession.sharedInstance()
         
@@ -57,6 +58,7 @@ class SoundMeter: ObservableObject {
         recorder?.stop()
         timer?.invalidate()
         isRunning = false
+        SoundManager.shared.setRecordingActive(false)
     }
     
     func getMaxLevel() -> Float {

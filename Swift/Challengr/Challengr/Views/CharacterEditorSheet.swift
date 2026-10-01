@@ -29,12 +29,19 @@ struct CharacterEditorSheet: View {
                     .fill(Color(.systemBackground))
                     .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 6)
 
-                Image(store.selectedPreset.imageName)
-                    .resizable()
-                    .scaledToFit()
-                    .padding(18)
+                if let character = store.selectedPreset.character {
+                    Character3DView(character: character, allowsDragRotation: true)
+                        .padding(.vertical, 8)
+                        .accessibilityLabel(character.displayName)
+                        .accessibilityHint("Zum Drehen wischen")
+                } else {
+                    Image(store.selectedPreset.imageName)
+                        .resizable()
+                        .scaledToFit()
+                        .padding(18)
+                }
             }
-            .frame(height: 210)
+            .frame(height: 260)
             .padding(.horizontal, 20)
 
             // Category picker
@@ -68,7 +75,7 @@ struct CharacterEditorSheet: View {
                             .tracking(1.2)
                             .foregroundStyle(Color.secondary)
 
-                        Text("Für \(selectedCategory.rawValue) brauchen wir noch eigene 2D-Bilder.\nAktuell kannst du nur Outfits (Boy/Girl) auswählen.")
+                        Text("\(selectedCategory.rawValue) für \(GameCharacter.own.displayName) kommen bald.\nAktuell gibt es nur das Standard-Outfit.")
                             .font(.system(size: 12, weight: .medium, design: .rounded))
                             .foregroundStyle(Color.secondary)
                             .multilineTextAlignment(.center)
@@ -108,7 +115,7 @@ struct CharacterEditorSheet: View {
             .padding(.bottom, 14)
         }
         .onAppear {
-            // Always start in Outfits so the user can pick Boy/Girl immediately.
+            // Always start in Outfits so the user sees their character immediately.
             selectedCategory = .outfits
             store.load()
         }

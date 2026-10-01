@@ -82,9 +82,9 @@ struct CompassView: View {
     }
 }
 
-/// Circular avatar-style map pin. Shows the player's own avatar image when
-/// available; falls back to a generic silhouette (tinted by rank) for other
-/// players, since we don't know their chosen outfit server-side.
+/// Circular avatar-style map pin. Shows the player's character (own figure, or the
+/// opponent figure for other players – their real choice isn't known server-side);
+/// without an image it falls back to a generic silhouette.
 struct MapAvatarPin: View {
     let imageName: String?
     let ringColor: Color
