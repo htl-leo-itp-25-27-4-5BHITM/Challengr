@@ -399,9 +399,9 @@ struct UserProfileView: View {
                         }
 
                         HStack(spacing: 8) {
-                            Text(battle.won ? "Gewonnen" : "Verloren")
+                            Text(battle.won ? "Gewonnen" : battle.isDraw ? "Unentschieden" : "Verloren")
                                 .font(.caption)
-                                .foregroundColor(battle.won ? .challengrGreen : .challengrRed)
+                                .foregroundColor(battle.won ? .challengrGreen : battle.isDraw ? .secondary : .challengrRed)
 
                             Text("Δ \(battle.pointsDelta)")
                                 .font(.caption)

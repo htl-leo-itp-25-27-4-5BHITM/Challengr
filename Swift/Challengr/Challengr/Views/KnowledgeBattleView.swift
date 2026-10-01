@@ -1,10 +1,11 @@
 import SwiftUI
+import Combine
 
 struct KnowledgeBattleView: View {
     // MARK: - Input (Eingaben)
     let battleId: Int64
     let socket: GameSocketService
-    let initialQuestion: (battleId: Int64, text: String, choices: [String])?
+    let initialQuestion: (battleId: Int64, text: String, choices: [String], timeLimit: Int?)?
     let onClose: () -> Void
 
     // MARK: - State (State)
@@ -12,6 +13,18 @@ struct KnowledgeBattleView: View {
     @State private var choices: [String] = []
     @State private var selectedIndex: Int? = nil
     @State private var isSending = false
+    /// Backend hat die eigene Antwort als falsch gemeldet.
+    @State private var answerWasWrong = false
+    /// Zeitpunkt, an dem das Zeitlimit abläuft (nil = altes Backend ohne Zeitlimit).
+    @State private var deadline: Date? = nil
+    @State private var now = Date()
+
+    private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    private var secondsLeft: Int? {
+        guard let deadline else { return nil }
+        return KnowledgeTimer.secondsLeft(until: deadline, now: now)
+    }
 
     // MARK: - Body (UI-Aufbau)
     var body: some View {
@@ -35,6 +48,17 @@ struct KnowledgeBattleView: View {
                     Text("Wer kennt sich besser aus?")
                         .font(.system(size: 16, weight: .semibold, design: .rounded))
                         .foregroundColor(.white.opacity(0.8))
+
+                    if let secondsLeft {
+                        Text(secondsLeft > 0 ? "Noch \(secondsLeft) s" : "Zeit abgelaufen")
+                            .font(.system(size: 15, weight: .black, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundColor(secondsLeft <= 5 ? .challengrRed : .challengrYellow)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 6)
+                            .background(Capsule().fill(Color.white.opacity(0.08)))
+                            .accessibilityLabel(secondsLeft > 0 ? "Noch \(secondsLeft) Sekunden" : "Zeit abgelaufen")
+                    }
                 }
                 .padding(.top, 32)
 
@@ -67,7 +91,7 @@ struct KnowledgeBattleView: View {
                             .background(
                                 RoundedRectangle(cornerRadius: 16)
                                     .fill(selectedIndex == idx
-                                          ? Color.challengrYellow
+                                          ? (answerWasWrong ? Color.challengrRed : Color.challengrYellow)
                                           : Color.white.opacity(0.08))
                             )
                             .overlay(
@@ -79,9 +103,11 @@ struct KnowledgeBattleView: View {
                                         lineWidth: 2
                                     )
                             )
-                            .foregroundColor(selectedIndex == idx ? .black : .white)
+                            .foregroundColor(selectedIndex == idx ? (answerWasWrong ? .white : .black) : .white)
                         }
                         .buttonStyle(.plain)
+                        // Nur eine Antwort pro Spieler – danach ist die Auswahl gesperrt.
+                        .disabled(isSending || timeIsUp)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -99,16 +125,33 @@ struct KnowledgeBattleView: View {
                         .padding()
                         .background(
                             RoundedRectangle(cornerRadius: 18)
-                                .fill(selectedIndex == nil ? Color.gray : Color.challengrGreen)
+                                .fill(selectedIndex == nil || isSending || timeIsUp ? Color.gray : Color.challengrGreen)
                         )
                         .foregroundColor(.white)
                 }
-                .disabled(selectedIndex == nil || isSending)
+                .disabled(selectedIndex == nil || isSending || timeIsUp)
                 .padding(.horizontal, 32)
                 .padding(.top, 8)
 
-                if isSending {
+                if answerWasWrong {
+                    VStack(spacing: 4) {
+                        Text("FALSCH!")
+                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .foregroundColor(.challengrRed)
+                        Text("Jetzt kann nur noch dein Gegner gewinnen – antwortet er auch falsch, ist es unentschieden.")
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .foregroundColor(.white.opacity(0.75))
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal, 32)
+                    .padding(.top, 4)
+                } else if isSending {
                     Text("Antwort gesendet – warte auf Ergebnis …")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundColor(.white.opacity(0.7))
+                        .padding(.top, 4)
+                } else if timeIsUp {
+                    Text("Zeit abgelaufen – warte auf Ergebnis …")
                         .font(.system(size: 13, weight: .medium, design: .rounded))
                         .foregroundColor(.white.opacity(0.7))
                         .padding(.top, 4)
@@ -128,36 +171,45 @@ struct KnowledgeBattleView: View {
             }
         }
         .onAppear {
-            // 1) sofort vorhandene Frage setzen (falls schon da)
+            // Frage, die schon vor dem Öffnen des Screens ankam
             if let q = initialQuestion, q.battleId == battleId {
-                questionText = q.text
-                choices = q.choices
-            }
-
-            // 2) für weitere Fragen lauschen
-            NotificationCenter.default.addObserver(
-                forName: .knowledgeQuestionReceived,
-                object: nil,
-                queue: .main
-            ) { notif in
-                guard
-                    let userInfo = notif.userInfo,
-                    let bId = userInfo["battleId"] as? Int64,
-                    bId == battleId
-                else { return }
-
-                self.questionText = userInfo["text"] as? String ?? "Frage"
-                self.choices = userInfo["choices"] as? [String] ?? []
-                self.selectedIndex = nil
-                self.isSending = false
+                show(text: q.text, choices: q.choices, timeLimit: q.timeLimit)
             }
         }
-        .onDisappear {
-            NotificationCenter.default.removeObserver(
-                self,
-                name: .knowledgeQuestionReceived,
-                object: nil
-            )
+        .onReceive(NotificationCenter.default.publisher(for: .knowledgeQuestionReceived)) { notif in
+            guard let userInfo = notif.userInfo,
+                  let bId = userInfo["battleId"] as? Int64, bId == battleId else { return }
+            show(text: userInfo["text"] as? String ?? "Frage",
+                 choices: userInfo["choices"] as? [String] ?? [],
+                 timeLimit: userInfo["timeLimit"] as? Int)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .knowledgeAnswerFeedback)) { notif in
+            guard let userInfo = notif.userInfo,
+                  let bId = userInfo["battleId"] as? Int64, bId == battleId,
+                  let correct = userInfo["correct"] as? Bool, !correct else { return }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { answerWasWrong = true }
+            SoundManager.shared.play(.challengeClosed)
+        }
+        .onReceive(tick) { now = $0 }
+    }
+
+    private var timeIsUp: Bool { (secondsLeft ?? 1) <= 0 }
+
+    private func show(text: String, choices: [String], timeLimit: Int?) {
+        questionText = text
+        self.choices = choices
+        selectedIndex = nil
+        isSending = false
+        answerWasWrong = false
+        let start = Date()
+        now = start
+        deadline = timeLimit.map { start.addingTimeInterval(TimeInterval($0)) }
+    }
+}
+
+/// Countdown-Rechnung für das Wissens-Battle (testbar ohne UI).
+enum KnowledgeTimer {
+    static func secondsLeft(until deadline: Date, now: Date) -> Int {
+        max(0, Int(deadline.timeIntervalSince(now).rounded(.up)))
     }
 }

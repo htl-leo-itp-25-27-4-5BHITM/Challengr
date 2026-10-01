@@ -59,6 +59,7 @@ class GameSocketTest {
     @BeforeEach
     void cleanState() {
         GameSocket.resultWait = GameSocket.DEFAULT_RESULT_WAIT;
+        GameSocket.knowledgeTimeLimit = GameSocket.DEFAULT_KNOWLEDGE_TIME_LIMIT;
         // Keine offenen oder laufenden Battles aus anderen Tests
         QuarkusTransaction.requiringNew().run(() -> battleRepository.update(
                 "status = 'EXPIRED' where status not in ('DONE','EXPIRED','CANCELLED','DECLINED','ABANDONED')"));
@@ -325,7 +326,171 @@ class GameSocketTest {
         assertEquals(B, result.get("winnerId").asText());
     }
 
+    private static String answer(long battleId, int index) {
+        return "{\"type\":\"battle-answer\",\"battleId\":" + battleId + ",\"answerIndex\":" + index + "}";
+    }
+
+    @Test
+    void bothWrongAnswersEndInADraw() throws Exception {
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        long challengeId = wissenChallengeId();
+        int correct = challengeRepository.findById(challengeId).getCorrectIndex();
+        int before = points(A);
+
+        long battleId = createAcceptedBattle(attacker, defender, challengeId);
+
+        attacker.send(answer(battleId, (correct + 1) % 4));
+        JsonNode feedback = attacker.await("battle-answer-feedback", 5);
+        assertNotNull(feedback, "Spieler erfährt, dass seine Antwort falsch war");
+        assertFalse(feedback.get("correct").asBoolean());
+
+        defender.send(answer(battleId, (correct + 2) % 4));
+        JsonNode result = defender.await("battle-result", 5);
+        assertNotNull(result, "Beide falsch → das Battle endet trotzdem");
+        assertTrue(result.get("winnerId").isNull(), "Unentschieden: kein Gewinner");
+        assertEquals("DRAW", result.get("outcome").asText());
+        assertEquals(0, result.get("winnerPointsDelta").asInt());
+        assertNotNull(attacker.await("battle-result", 5));
+        assertEquals(before, points(A), "Unentschieden ändert keine Punkte");
+    }
+
+    @Test
+    void onlyTheFirstAnswerCounts() throws Exception {
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        long challengeId = wissenChallengeId();
+        int correct = challengeRepository.findById(challengeId).getCorrectIndex();
+
+        long battleId = createAcceptedBattle(attacker, defender, challengeId);
+
+        // Durchprobieren: erst falsch, dann richtig
+        attacker.send(answer(battleId, (correct + 1) % 4));
+        assertNotNull(attacker.await("battle-answer-feedback", 5));
+        attacker.send(answer(battleId, correct));
+        assertNull(attacker.await("battle-result", 1), "Zweite Antwort desselben Spielers wird ignoriert");
+
+        defender.send(answer(battleId, correct));
+        JsonNode result = attacker.await("battle-result", 5);
+        assertNotNull(result);
+        assertEquals(B, result.get("winnerId").asText());
+    }
+
+    @Test
+    void knowledgeBattleEndsAfterTimeLimit() throws Exception {
+        GameSocket.knowledgeTimeLimit = Duration.ofSeconds(1);
+        try {
+            WsTestClient attacker = connect(A);
+            WsTestClient defender = connect(B);
+
+            createAcceptedBattle(attacker, defender, wissenChallengeId());
+            JsonNode question = defender.await("battle-question", 5);
+            assertEquals(1, question.get("timeLimitSeconds").asInt(), "App bekommt das Zeitlimit für den Countdown");
+
+            // Niemand antwortet
+            JsonNode result = attacker.await("battle-result", 8);
+            assertNotNull(result, "Nach dem Zeitlimit gibt es ein Ergebnis");
+            assertTrue(result.get("winnerId").isNull());
+        } finally {
+            GameSocket.knowledgeTimeLimit = GameSocket.DEFAULT_KNOWLEDGE_TIME_LIMIT;
+        }
+    }
+
     // --------------------------------------------------- Anfragen / Status
+
+    @Test
+    void playerInABattleCannotBeChallenged() throws Exception {
+        WsTestClient attacker  = connect(A);
+        WsTestClient defender  = connect(B);
+        WsTestClient third     = connect(BYSTANDER);
+
+        long battleId = createAcceptedBattle(attacker, defender);
+
+        // Dritter fordert den Verteidiger mitten im Battle heraus
+        third.send("{\"type\":\"create-battle\",\"fromId\":\"" + BYSTANDER + "\",\"toId\":\"" + B + "\",\"challengeId\":1}");
+        JsonNode rejected = third.await("battle-rejected", 5);
+        assertNotNull(rejected, "Anfrage an einen Spieler im Battle wird abgelehnt");
+        assertTrue(rejected.get("reason").asText().contains("Battle"));
+        assertNull(defender.await("battle-requested", 1), "Verteidiger wird nicht gestört");
+
+        // Das laufende Battle lässt sich normal beenden
+        attacker.send(status(battleId, "DONE_SURRENDER"));
+        JsonNode result = defender.await("battle-result", 5);
+        assertNotNull(result);
+        assertEquals(B, result.get("winnerId").asText());
+
+        // Danach ist der Verteidiger wieder herausforderbar
+        third.send("{\"type\":\"create-battle\",\"fromId\":\"" + BYSTANDER + "\",\"toId\":\"" + B + "\",\"challengeId\":1}");
+        assertNotNull(defender.await("battle-requested", 5));
+    }
+
+    @Test
+    void playerInABattleCannotChallengeOthers() throws Exception {
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        connect(BYSTANDER);
+
+        createAcceptedBattle(attacker, defender);
+
+        attacker.send("{\"type\":\"create-battle\",\"fromId\":\"" + A + "\",\"toId\":\"" + BYSTANDER + "\",\"challengeId\":1}");
+        assertNotNull(attacker.await("battle-rejected", 5));
+    }
+
+    @Test
+    void runningBattleIsRestoredAfterReconnect() throws Exception {
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+
+        long battleId = createAcceptedBattle(attacker, defender);
+
+        // Verteidiger beendet die App mitten im Battle und startet neu
+        defender.close();
+        WsTestClient restarted = connect(B);
+        JsonNode running = restarted.await("battle-running", 5);
+        assertNotNull(running, "Laufendes Battle wird nach dem Neustart gemeldet");
+        assertEquals(battleId, running.get("battleId").asLong());
+        assertEquals(A, running.get("fromPlayerId").asText());
+
+        // Aufgeben nach dem Neustart beendet das Battle ganz normal
+        restarted.send(status(battleId, "DONE_SURRENDER"));
+        JsonNode result = attacker.await("battle-result", 5);
+        assertNotNull(result);
+        assertEquals(A, result.get("winnerId").asText());
+    }
+
+    @Test
+    void knowledgeQuestionIsResentAfterReconnect() throws Exception {
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+
+        createAcceptedBattle(attacker, defender, wissenChallengeId());
+        assertNotNull(defender.await("battle-question", 5));
+
+        defender.close();
+        WsTestClient restarted = connect(B);
+        assertNotNull(restarted.await("battle-running", 5));
+        assertNotNull(restarted.await("battle-question", 5), "Frage kommt nach dem Neustart erneut");
+    }
+
+    @Test
+    void ownOpenRequestIsRestoredAfterReconnect() throws Exception {
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+
+        long battleId = request(attacker, defender, 1L);
+
+        // Angreifer startet die App neu
+        attacker.close();
+        WsTestClient restarted = connect(A);
+        JsonNode restored = restarted.await("battle-requested", 5);
+        assertNotNull(restored, "Eigene offene Anfrage wird nach dem Neustart nachgeliefert");
+        assertEquals(battleId, restored.get("battleId").asLong());
+        assertEquals(A, restored.get("fromPlayerId").asText());
+
+        // Annahme erreicht die neue Verbindung
+        defender.send(status(battleId, "ACCEPTED"));
+        assertNotNull(restarted.awaitStatus("ACCEPTED", 5), "Annahme kommt nach dem Neustart an");
+    }
 
     @Test
     void cancelledRequestCannotBeAccepted() throws Exception {

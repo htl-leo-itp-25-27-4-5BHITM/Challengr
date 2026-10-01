@@ -31,6 +31,26 @@ public class BattleRepository implements PanacheRepository<Battle> {
                 toPlayerId, "REQUESTED", since).list();
     }
 
+    // REQUESTED battles sent by a player created after the given time (für erneute Zustellung an den Absender)
+    public List<Battle> findRequestedFromSince(String fromPlayerId, LocalDateTime since) {
+        return find("fromPlayer.id = ?1 AND status = ?2 AND createdAt >= ?3 ORDER BY createdAt ASC",
+                fromPlayerId, "REQUESTED", since).list();
+    }
+
+    // Laufende Battles eines Spielers (für Wiederherstellung nach einem App-Neustart)
+    public List<Battle> findRunningFor(String playerId, List<String> notRunningStatuses, LocalDateTime since) {
+        return find("status NOT IN ?1 AND coalesce(statusChangedAt, createdAt) >= ?2 "
+                        + "AND (fromPlayer.id = ?3 OR toPlayer.id = ?3) ORDER BY createdAt DESC",
+                notRunningStatuses, since, playerId).list();
+    }
+
+    // Spieler steckt in einem laufenden Battle (angenommen, nicht beendet, seit since aktiv)
+    public boolean existsRunningBattleFor(String playerId, List<String> notRunningStatuses, LocalDateTime since) {
+        return count("status NOT IN ?1 AND coalesce(statusChangedAt, createdAt) >= ?2 "
+                        + "AND (fromPlayer.id = ?3 OR toPlayer.id = ?3)",
+                notRunningStatuses, since, playerId) > 0;
+    }
+
     // Offene Anfrage zwischen zwei Spielern (egal in welche Richtung), jünger als since
     public boolean existsOpenRequestBetween(String a, String b, LocalDateTime since) {
         return count("status = ?1 AND createdAt >= ?2 AND "

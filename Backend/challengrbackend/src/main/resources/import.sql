@@ -116,7 +116,7 @@ INSERT INTO challenges (text, category_id, option_a, option_b, option_c, option_
 -- RANKS (unverändert)
 ---------------------------------------------------------
 INSERT INTO rank (name, min, max, color) VALUES
-                                             ('Quittttter', 0, 99, 'gray'),
+                                             ('Quitter', 0, 99, 'gray'),
                                              ('Punchbag', 100, 199, 'red'),
                                              ('Scrapper', 200, 349, 'green'),
                                              ('Contender', 350, 599, 'yellow'),

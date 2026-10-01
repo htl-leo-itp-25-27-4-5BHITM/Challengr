@@ -10,5 +10,6 @@ import Foundation
 
 extension Notification.Name {
     static let knowledgeQuestionReceived = Notification.Name("knowledgeQuestionReceived")
+    static let knowledgeAnswerFeedback = Notification.Name("knowledgeAnswerFeedback")
 }
 

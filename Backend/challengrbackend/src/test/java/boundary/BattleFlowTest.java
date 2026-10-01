@@ -44,11 +44,14 @@ class BattleFlowTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    /** Jeder Test startet ohne offene Anfragen (pro Spielerpaar ist nur eine erlaubt). */
+    /**
+     * Jeder Test startet ohne offene Anfragen (pro Spielerpaar ist nur eine erlaubt)
+     * und ohne laufende Battles (wer im Battle ist, kann nicht herausgefordert werden).
+     */
     @BeforeEach
     void closeOpenRequests() {
-        QuarkusTransaction.requiringNew().run(() ->
-                battleRepository.update("status = 'EXPIRED' where status = 'REQUESTED'"));
+        QuarkusTransaction.requiringNew().run(() -> battleRepository.update(
+                "status = 'EXPIRED' where status not in ('DONE','EXPIRED','CANCELLED','DECLINED','ABANDONED')"));
     }
 
     private Battle newRequest() {

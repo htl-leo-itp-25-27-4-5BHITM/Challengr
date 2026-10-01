@@ -27,6 +27,8 @@ final class GameSocketService: ObservableObject {
     var onChallengeReceived: ((Int64, String, String, Int64, String?, String?, Double?, Double?) -> Void)?
     /// Called when a battle reaches ACCEPTED (Aufgerufen bei Status ACCEPTED)
     var onBattleAccepted: ((Int64) -> Void)?
+    /// Laufendes Battle nach einem Neustart: battleId, fromId, toId, challengeId, text, category, status
+    var onBattleRunning: ((Int64, String, String, Int64, String?, String?, String) -> Void)?
     /// Called when the battle is ready for voting (Bereit fürs Voting)
     var onReadyForVoting: ((Int64) -> Void)?
     /// Called on generic status updates (Generische Status-Updates)
@@ -36,7 +38,10 @@ final class GameSocketService: ObservableObject {
     /// Called when battle is pending (Battle pending)
     var onBattlePending: ((Int64) -> Void)?
     /// Called when a knowledge question arrives (Wissensfrage empfangen)
-    var onKnowledgeQuestion: ((Int64, ChallengeDTO) -> Void)?
+    /// battleId, question, time limit in seconds (nil for old backends)
+    var onKnowledgeQuestion: ((Int64, ChallengeDTO, Int?) -> Void)?
+    /// battleId, correct – the player's own answer was checked (wrong answers only)
+    var onKnowledgeAnswerFeedback: ((Int64, Bool) -> Void)?
 
     // MARK: - Realtime social / map callbacks
 
@@ -420,6 +425,19 @@ final class GameSocketService: ObservableObject {
                 }
             }
 
+            if type == "battle-running" {
+                let battleId    = (json["battleId"] as? NSNumber)?.int64Value ?? 0
+                let fromId      = parsePlayerId(json["fromPlayerId"])
+                let toId        = parsePlayerId(json["toPlayerId"])
+                let challengeId = (json["challengeId"] as? NSNumber)?.int64Value ?? 0
+                let challengeText     = json["challengeText"] as? String
+                let challengeCategory = json["challengeCategory"] as? String
+                let status      = json["status"] as? String ?? "ACCEPTED"
+                DispatchQueue.main.async {
+                    self.onBattleRunning?(battleId, fromId, toId, challengeId, challengeText, challengeCategory, status)
+                }
+            }
+
             // Friends realtime events
             if type == "friend-request-created" {
                 let requestId = (json["requestId"] as? NSNumber)?.int64Value ?? 0
@@ -505,6 +523,7 @@ final class GameSocketService: ObservableObject {
                 result.battleId = (json["battleId"] as? NSNumber)?.int64Value
                 result.winnerId = json["winnerId"] as? String
                 result.loserId  = json["loserId"] as? String
+                result.outcome  = json["outcome"] as? String
 
                 DispatchQueue.main.async {
                     self.onBattleResult?(result)
@@ -537,8 +556,18 @@ final class GameSocketService: ObservableObject {
                     correctIndex: correct
                 )
 
+                let timeLimit = (json["timeLimitSeconds"] as? NSNumber)?.intValue
+
                 DispatchQueue.main.async {
-                    self.onKnowledgeQuestion?(battleId, dto)
+                    self.onKnowledgeQuestion?(battleId, dto, timeLimit)
+                }
+            }
+
+            if type == "battle-answer-feedback" {
+                let battleId = (json["battleId"] as? NSNumber)?.int64Value ?? 0
+                let correct  = json["correct"] as? Bool ?? false
+                DispatchQueue.main.async {
+                    self.onKnowledgeAnswerFeedback?(battleId, correct)
                 }
             }
 

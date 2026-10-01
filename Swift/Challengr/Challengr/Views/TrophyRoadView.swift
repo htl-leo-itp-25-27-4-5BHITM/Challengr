@@ -100,15 +100,15 @@ struct TrophyRoadView: View {
             if let currentRank {
                 Text(currentRank.name.uppercased())
                     .font(.system(size: 24, weight: .black, design: .rounded))
-                    .foregroundColor(.challengrBlack)
+                    .foregroundColor(.challengrInk)
 
                 Text("\(playerPoints) TROPHÄEN")
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .foregroundColor(.challengrBlack.opacity(0.7))
+                    .foregroundColor(.challengrInk.opacity(0.7))
             } else {
                 Text("\(playerPoints) TROPHÄEN")
                     .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .foregroundColor(.challengrBlack.opacity(0.7))
+                    .foregroundColor(.challengrInk.opacity(0.7))
             }
         }
     }

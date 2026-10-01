@@ -56,6 +56,13 @@ public class BattleService {
                 LocalDateTime.now().minus(REQUEST_TIMEOUT))) {
             throw new BattleRejectedException("Mit diesem Spieler läuft schon eine offene Challenge");
         }
+        // Wer mitten im Battle steckt, kann keine neue Anfrage bekommen oder schicken
+        if (isInRunningBattle(toPlayerId)) {
+            throw new BattleRejectedException("Spieler ist gerade in einem Battle");
+        }
+        if (isInRunningBattle(fromPlayerId)) {
+            throw new BattleRejectedException("Du bist gerade in einem Battle");
+        }
 
         Player from = playerRepository.findById(fromPlayerId);
         if (from == null) {
@@ -227,6 +234,47 @@ public class BattleService {
             }
         }
         return pending;
+    }
+
+    /** Offene, noch gültige Anfragen, die ein Spieler selbst geschickt hat (nach Reconnect wiederherstellen). */
+    @Transactional
+    public List<Battle> findPendingRequestsFrom(String fromPlayerId, LocalDateTime now) {
+        List<Battle> pending = battleRepository.findRequestedFromSince(fromPlayerId, now.minus(REQUEST_TIMEOUT));
+        for (Battle b : pending) {
+            b.getToPlayer().getId();
+            b.getChallenge().getText();
+            if (b.getChallenge().getChallengeCategory() != null) {
+                b.getChallenge().getChallengeCategory().getName();
+            }
+        }
+        return pending;
+    }
+
+    /** Laufende Battles eines Spielers, z.B. um sie nach einem App-Neustart wieder anzuzeigen. */
+    @Transactional
+    public List<Battle> findRunningBattlesFor(String playerId) {
+        List<String> notRunning = new java.util.ArrayList<>(FINAL_STATUSES);
+        notRunning.add("REQUESTED");
+        List<Battle> running = battleRepository.findRunningFor(playerId, notRunning,
+                LocalDateTime.now().minus(ACTIVE_BATTLE_TIMEOUT));
+        for (Battle b : running) {
+            b.getFromPlayer().getId();
+            b.getToPlayer().getId();
+            b.getChallenge().getText();
+            if (b.getChallenge().getChallengeCategory() != null) {
+                b.getChallenge().getChallengeCategory().getName();
+            }
+        }
+        return running;
+    }
+
+    /** Angenommen und noch nicht beendet (abgelaufene Battles bricht der Timeout-Job ab). */
+    @Transactional
+    public boolean isInRunningBattle(String playerId) {
+        List<String> notRunning = new java.util.ArrayList<>(FINAL_STATUSES);
+        notRunning.add("REQUESTED");
+        return battleRepository.existsRunningBattleFor(playerId, notRunning,
+                LocalDateTime.now().minus(ACTIVE_BATTLE_TIMEOUT));
     }
 
     static boolean isExpired(Battle battle, LocalDateTime now) {

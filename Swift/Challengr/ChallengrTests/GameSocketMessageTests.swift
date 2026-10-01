@@ -135,7 +135,8 @@ final class GameSocketMessageTests: XCTestCase {
 
     func testKnowledgeQuestionWithoutAnswer() async {
         let exp = expectation(description: "question")
-        socket.onKnowledgeQuestion = { battleId, challenge in
+        socket.onKnowledgeQuestion = { battleId, challenge, timeLimit in
+            XCTAssertNil(timeLimit, "Altes Backend ohne Zeitlimit")
             XCTAssertEqual(battleId, 4)
             XCTAssertEqual(challenge.choices?.count, 4)
             XCTAssertNil(challenge.correctIndex, "Backend schickt die Antwort nicht mehr")
@@ -145,6 +146,43 @@ final class GameSocketMessageTests: XCTestCase {
         {"type":"battle-question","battleId":4,"challenge":{"id":7,"text":"2+2?","category":"Wissen",
          "choices":["3","4","5","22"]}}
         """)
+        await fulfillment(of: [exp], timeout: 2)
+    }
+
+    func testKnowledgeQuestionCarriesTimeLimit() async {
+        let exp = expectation(description: "question")
+        socket.onKnowledgeQuestion = { _, _, timeLimit in
+            XCTAssertEqual(timeLimit, 30)
+            exp.fulfill()
+        }
+        socket.handleIncoming(text: #"{"type":"battle-question","battleId":4,"timeLimitSeconds":30,"challenge":{"id":7,"text":"2+2?","category":"Wissen","choices":["3","4","5","22"]}}"#)
+        await fulfillment(of: [exp], timeout: 2)
+    }
+
+    func testRunningBattleAfterRestart() async {
+        let exp = expectation(description: "running")
+        socket.onBattleRunning = { battleId, fromId, toId, challengeId, text, category, status in
+            XCTAssertEqual(battleId, 14)
+            XCTAssertEqual(fromId, "a")
+            XCTAssertEqual(toId, "me")
+            XCTAssertEqual(challengeId, 5)
+            XCTAssertEqual(text, "Plank")
+            XCTAssertEqual(category, "Fitness")
+            XCTAssertEqual(status, "ACCEPTED")
+            exp.fulfill()
+        }
+        socket.handleIncoming(text: #"{"type":"battle-running","battleId":14,"fromPlayerId":"a","toPlayerId":"me","challengeId":5,"challengeText":"Plank","challengeCategory":"Fitness","status":"ACCEPTED"}"#)
+        await fulfillment(of: [exp], timeout: 2)
+    }
+
+    func testWrongAnswerFeedback() async {
+        let exp = expectation(description: "feedback")
+        socket.onKnowledgeAnswerFeedback = { battleId, correct in
+            XCTAssertEqual(battleId, 4)
+            XCTAssertFalse(correct)
+            exp.fulfill()
+        }
+        socket.handleIncoming(text: #"{"type":"battle-answer-feedback","battleId":4,"correct":false}"#)
         await fulfillment(of: [exp], timeout: 2)
     }
 

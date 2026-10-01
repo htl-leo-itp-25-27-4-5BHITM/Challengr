@@ -226,11 +226,16 @@ public class GameSocket {
 
     /** JSON für "battle-requested" (auch für erneute Zustellung nach Reconnect). */
     static String buildBattleRequestedPayload(Battle battle) {
+        return buildBattlePayload("battle-requested", battle);
+    }
+
+    /** Gleicher Aufbau wie battle-requested; type z.B. "battle-running" nach einem Neustart. */
+    static String buildBattlePayload(String type, Battle battle) {
         String categoryName = battle.getChallenge().getChallengeCategory() != null
                 ? battle.getChallenge().getChallengeCategory().getName() : "";
         return """
     {
-      "type": "battle-requested",
+      "type": "%s",
       "battleId": %d,
       "fromPlayerId": "%s",
       "toPlayerId": "%s",
@@ -243,6 +248,7 @@ public class GameSocket {
       "targetLongitude": %s
     }
     """.formatted(
+                type,
                 battle.getId(),
                 escapeJsonStatic(battle.getFromPlayer().getId()),
                 escapeJsonStatic(battle.getToPlayer().getId()),
@@ -262,11 +268,27 @@ public class GameSocket {
         return Math.max(0, BattleService.REQUEST_TIMEOUT.toSeconds() - age);
     }
 
-    /** Offene Anfragen nach (Re-)Connect erneut zustellen – sonst gehen sie verloren. */
+    /**
+     * Offene Anfragen nach (Re-)Connect erneut zustellen – sonst gehen sie verloren.
+     * Auch eigene, noch offene Anfragen: so zeigt die App nach einem Neustart wieder
+     * "Anfrage gesendet" und wechselt bei Annahme ins Battle.
+     */
     private void deliverPendingRequests(String playerId) {
         try {
-            for (Battle b : battleService.findPendingRequestsFor(playerId, LocalDateTime.now())) {
+            LocalDateTime now = LocalDateTime.now();
+            for (Battle b : battleService.findPendingRequestsFrom(playerId, now)) {
                 sendToPlayer(playerId, buildBattleRequestedPayload(b));
+            }
+            for (Battle b : battleService.findPendingRequestsFor(playerId, now)) {
+                sendToPlayer(playerId, buildBattleRequestedPayload(b));
+            }
+            // Laufendes Battle (z.B. App wurde mitten im Battle beendet) wieder anzeigen –
+            // sonst wäre der Spieler bis zum Timeout für neue Challenges gesperrt.
+            for (Battle b : battleService.findRunningBattlesFor(playerId)) {
+                sendToPlayer(playerId, buildBattlePayload("battle-running", b));
+                if (isKnowledgeBattle(b) && !hasAnswered(b.getId(), playerId)) {
+                    sendToPlayer(playerId, buildKnowledgeQuestionPayload(b));
+                }
             }
         } catch (Exception e) {
             System.out.println("deliverPendingRequests fehlgeschlagen für " + playerId + ": " + e.getMessage());
@@ -496,11 +518,13 @@ public class GameSocket {
         }
 
         String metricsJson = buildMetricsJson(battle, winnerId, loserId);
+        String outcome = isConflict ? "CONFLICT" : winnerId != null ? "WIN" : "DRAW";
 
         String payload = """
         {
             "type": "battle-result",
             "battleId": %d,
+            "outcome": "%s",
             "winnerId": %s,
             "winnerName": "%s",
             "winnerAvatar": "opponentAvatar",
@@ -513,6 +537,7 @@ public class GameSocket {
         }
         """.formatted(
                 battleId,
+                outcome,
                 jsonStringOrNull(winnerId),
                 escapeJson(winnerName),
                 winnerDelta,
@@ -828,6 +853,19 @@ public class GameSocket {
 
     private static final Map<Long, Map<String, Integer>> BATTLE_ANSWERS = new ConcurrentHashMap<>();
 
+    /** So lange haben beide Zeit zum Antworten (die App zeigt den Countdown an). */
+    static final Duration DEFAULT_KNOWLEDGE_TIME_LIMIT = Duration.ofSeconds(30);
+    /** Nur in Tests verkürzt. */
+    static volatile Duration knowledgeTimeLimit = DEFAULT_KNOWLEDGE_TIME_LIMIT;
+    /** Puffer für Netzwerk-Verzögerung, bevor das Zeitlimit greift. */
+    static final Duration KNOWLEDGE_GRACE = Duration.ofSeconds(3);
+
+    /**
+     * Jeder Spieler hat genau eine Antwort (kein Durchprobieren).
+     * - Die erste richtige Antwort gewinnt.
+     * - Beide falsch → Unentschieden.
+     * - Zeitlimit abgelaufen ohne richtige Antwort → Unentschieden.
+     */
     private void handleBattleAnswer(JsonNode msg, String playerId) {
         Long battleId   = requireLong(msg, "battleId");
         int answerIndex = requireLong(msg, "answerIndex").intValue();
@@ -867,10 +905,12 @@ public class GameSocket {
 
         boolean isCorrect = (answerIndex == correctIndex);
 
-        // Antwort speichern (falls du später Stats brauchst)
-        BATTLE_ANSWERS
-                .computeIfAbsent(battleId, id -> new ConcurrentHashMap<>())
-                .put(playerId, answerIndex);
+        // Nur die erste Antwort pro Spieler zählt
+        Map<String, Integer> answers = BATTLE_ANSWERS.computeIfAbsent(battleId, id -> new ConcurrentHashMap<>());
+        if (answers.putIfAbsent(playerId, answerIndex) != null) {
+            System.out.println("battle-answer: " + playerId + " hat in Battle " + battleId + " schon geantwortet, ignoriere");
+            return;
+        }
 
         System.out.printf("battle-answer: battle %d, player %s -> %d (korrekt=%s)%n",
                 battleId, playerId, answerIndex, isCorrect);
@@ -879,10 +919,40 @@ public class GameSocket {
             // Der erste, der korrekt ist, gewinnt sofort
             sendPendingToBoth(battle);
             computeAndBroadcastResult(battle, List.of(playerId));
-        } else {
-            // Falsche Antwort: einfach ignorieren, anderer kann noch gewinnen
-            System.out.println("battle-answer: falsche Antwort, Battle läuft weiter");
+            return;
         }
+
+        // Falsch: dem Spieler Bescheid geben, der Gegner kann noch gewinnen
+        sendToPlayer(playerId, """
+            {
+              "type": "battle-answer-feedback",
+              "battleId": %d,
+              "correct": false
+            }
+            """.formatted(battleId));
+
+        if (bothAnsweredWrong(battle, answers, correctIndex)) {
+            System.out.println("battle-answer: beide falsch → Unentschieden in Battle " + battleId);
+            sendPendingToBoth(battle);
+            computeAndBroadcastResult(battle, List.of(NOBODY));
+        }
+    }
+
+    static boolean bothAnsweredWrong(Battle battle, Map<String, Integer> answers, int correctIndex) {
+        Integer from = answers.get(battle.getFromPlayer().getId());
+        Integer to   = answers.get(battle.getToPlayer().getId());
+        return from != null && to != null && from != correctIndex && to != correctIndex;
+    }
+
+    /** Zeitlimit abgelaufen, ohne dass jemand richtig lag → Unentschieden. */
+    private void finishKnowledgeBattleAfterTimeLimit(Long battleId) {
+        Battle battle = battleService.findById(battleId);
+        if (battle == null || !isRunning(battle)) {
+            return; // schon ausgewertet oder abgebrochen
+        }
+        System.out.println("Wissens-Battle " + battleId + ": Zeitlimit abgelaufen → Unentschieden");
+        sendPendingToBoth(battle);
+        computeAndBroadcastResult(battle, List.of(NOBODY));
     }
 
     private boolean isKnowledgeBattle(Battle battle) {
@@ -893,13 +963,35 @@ public class GameSocket {
         return "Wissen".equalsIgnoreCase(name);
     }
 
+    private static boolean hasAnswered(Long battleId, String playerId) {
+        Map<String, Integer> answers = BATTLE_ANSWERS.get(battleId);
+        return answers != null && answers.containsKey(playerId);
+    }
+
     private void sendKnowledgeQuestion(Battle battle) {
+        String json = buildKnowledgeQuestionPayload(battle);
+
+        sendToPlayer(battle.getFromPlayer().getId(), json);
+        sendToPlayer(battle.getToPlayer().getId(), json);
+
+        Long battleId = battle.getId();
+        RESULT_TIMEOUTS.schedule(() -> {
+            try {
+                finishKnowledgeBattleAfterTimeLimit(battleId);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, knowledgeTimeLimit.plus(KNOWLEDGE_GRACE).toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    private String buildKnowledgeQuestionPayload(Battle battle) {
         var challenge = battle.getChallenge();
 
         String json = """
     {
       "type": "battle-question",
       "battleId": %d,
+      "timeLimitSeconds": %d,
       "challenge": {
         "id": %d,
         "text": "%s",
@@ -909,6 +1001,7 @@ public class GameSocket {
     }
     """.formatted(
                 battle.getId(),
+                knowledgeTimeLimit.toSeconds(),
                 challenge.getId(),
                 escapeJson(challenge.getText()),
                 escapeJson(challenge.getChallengeCategory().getName()),
@@ -918,9 +1011,7 @@ public class GameSocket {
                 escapeJson(challenge.getOptionD())
         );
         // correctIndex wird bewusst NICHT mitgeschickt – das Backend prüft die Antwort selbst.
-
-        sendToPlayer(battle.getFromPlayer().getId(), json);
-        sendToPlayer(battle.getToPlayer().getId(), json);
+        return json;
     }
 
     // ---------------------------------------------------------

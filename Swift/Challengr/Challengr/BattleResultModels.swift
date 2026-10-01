@@ -29,4 +29,6 @@ struct BattleResultData {
     var battleId: Int64? = nil
     var winnerId: String? = nil
     var loserId: String? = nil
+    /// "WIN", "DRAW" oder "CONFLICT" (nil bei alten Backends).
+    var outcome: String? = nil
 }

@@ -137,7 +137,7 @@ struct PushupChallengeView: View {
                     .foregroundColor(.challengrYellow)
                     .padding(.top, 40)
                 
-                Text("Lege das Handy auf den Boden unters Gesicht! Gehe unter 25cm Abstand.")
+                Text("Lege das Handy auf den Boden unters Gesicht! Gehe unter 25 cm Abstand.")
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(.white.opacity(0.8))
                     .multilineTextAlignment(.center)

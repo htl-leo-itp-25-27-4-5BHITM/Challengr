@@ -49,18 +49,23 @@ struct BattleLoseView: View {
                         .tracking(2)
                         .foregroundColor(.challengrRed.opacity(0.9))
 
-                    Text("NIEDERLAGE")
+                    Text(data.isDraw ? "UNENTSCHIEDEN" : "NIEDERLAGE")
                         .font(.system(size: 32, weight: .black, design: .rounded))
-                        .tracking(3)
-                        .foregroundColor(.challengrRed)
-                        .shadow(color: .challengrRed.opacity(0.6), radius: 14, x: 0, y: 0)
+                        .tracking(data.isDraw ? 1 : 3)
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
+                        .foregroundColor(data.isDraw ? .challengrYellow : .challengrRed)
+                        .shadow(color: (data.isDraw ? Color.challengrYellow : .challengrRed).opacity(0.6), radius: 14, x: 0, y: 0)
 
-                    Text("KOPF HOCH, \(data.loserName.uppercased())!")
+                    Text(data.isDraw
+                         ? "Keiner hat gewonnen – es gibt keine Punkte."
+                         : "KOPF HOCH, \(data.loserName.uppercased())!")
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .multilineTextAlignment(.center)
                         .foregroundColor(.white.opacity(0.85))
 
-                    // Spieler nebeneinander
+                    // Spieler nebeneinander (bei Unentschieden gibt es keinen Gewinner/Verlierer)
+                    if !data.isDraw {
                     HStack(spacing: 20) {
                         resultPlayerCard(
                             name: data.loserName,
@@ -75,6 +80,7 @@ struct BattleLoseView: View {
                             pointsDelta: data.winnerPointsDelta,
                             isLoser: false
                         )
+                    }
                     }
 
                     // Punkte-Verlust

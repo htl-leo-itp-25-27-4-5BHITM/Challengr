@@ -36,7 +36,10 @@ struct BattleView: View {
                         // (We intentionally push the stage down; there's free space below.)
                         Spacer(minLength: 44)
 
-                        battleStage(stageHeight: cappedStageHeight(for: geo.size))
+                        battleStage(layout: BattleStageLayout(
+                            stageWidth: geo.size.width - BattleStageLayout.horizontalInsets,
+                            stageHeight: cappedStageHeight(for: geo.size)
+                        ))
                     }
                     .padding(.top, 6)
                     .padding(.horizontal, 16)
@@ -89,10 +92,9 @@ struct BattleView: View {
     }
 
     private func cappedStageHeight(for size: CGSize) -> CGFloat {
-        // Keep stage responsive so header + stage + bottomBar fit on small screens.
-        // Rough cap: 38% of available height, but within sensible bounds.
-        let proposed = size.height * 0.44
-        return min(max(proposed, 240), 360)
+        // Header, Abstand und Button-Leiste brauchen zusammen ca. 320 pt –
+        // der Rest gehört der Bühne, damit sich Karten und Titel nicht überdecken.
+        min(max(size.height - 320, 280), 560)
     }
 
     private var vsaBackground: some View {
@@ -240,7 +242,7 @@ struct BattleView: View {
     // MARK: - Subviews (Unteransichten)
     // MARK: - Battle stage (Kampf-Bühne)
 
-    private func battleStage(stageHeight: CGFloat) -> some View {
+    private func battleStage(layout: BattleStageLayout) -> some View {
         ZStack {
             VStack {
                 HStack {
@@ -250,7 +252,7 @@ struct BattleView: View {
                         imageName: AvatarPresets.persistedImageName(),
                         flip: false,
                         alignRight: false,
-                        compact: stageHeight < 300
+                        layout: layout
                     )
                     .offset(x: stripsAppeared ? 0 : -260)
                     .opacity(stripsAppeared ? 1 : 0)
@@ -273,7 +275,7 @@ struct BattleView: View {
                         imageName: "playerGirl",
                         flip: true,
                         alignRight: true,
-                        compact: stageHeight < 300
+                        layout: layout
                     )
                     .offset(x: stripsAppeared ? 0 : 260)
                     .opacity(stripsAppeared ? 1 : 0)
@@ -282,7 +284,7 @@ struct BattleView: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
         }
-        .frame(height: stageHeight)
+        .frame(height: layout.stageHeight)
         .padding(.top, 4)
     }
 
@@ -292,11 +294,11 @@ struct BattleView: View {
         imageName: String,
         flip: Bool,
         alignRight: Bool,
-        compact: Bool
+        layout: BattleStageLayout
     ) -> some View {
-        let modelSize = compact ? CGSize(width: 200, height: 155) : CGSize(width: 250, height: 185)
-        let stripHeight = modelSize.height + 34
-        let nameFont: CGFloat = compact ? 12 : 13
+        let modelSize = layout.avatarSize
+        let stripHeight = layout.stripHeight
+        let nameFont: CGFloat = layout.compact ? 12 : 13
 
         return HStack(alignment: .bottom, spacing: 12) {
             if alignRight {
@@ -307,7 +309,8 @@ struct BattleView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.45)
                     .allowsTightening(true)
-                    .frame(minWidth: 110, maxWidth: 170, alignment: .leading)
+                    .frame(maxWidth: layout.nameMaxWidth, alignment: .leading)
+                    .layoutPriority(1)
                     .padding(.leading, 16)
                     .padding(.top, 10)
                     .padding(.bottom, 4)
@@ -329,13 +332,15 @@ struct BattleView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.45)
                     .allowsTightening(true)
-                    .frame(minWidth: 110, maxWidth: 170, alignment: .trailing)
+                    .frame(maxWidth: layout.nameMaxWidth, alignment: .trailing)
+                    .layoutPriority(1)
                     .padding(.trailing, 16)
                     .padding(.top, 10)
                     .padding(.bottom, 4)
             }
         }
         .frame(height: stripHeight)
+        .frame(maxWidth: layout.stageWidth, alignment: alignRight ? .trailing : .leading)
         .background {
             ZStack {
                 battleStripBackground(color: color, alignRight: alignRight)
@@ -456,6 +461,45 @@ struct BattleView: View {
         .opacity(vsAppeared ? 1 : 0)
         .accessibilityLabel("VS")
     }
+}
+
+/// Größen der Spielerkarten aus dem verfügbaren Platz.
+/// Früher waren sie fest (Avatar 250 pt + Name min. 110 pt ≈ 394 pt) und liefen
+/// auf allen iPhones rechts über den Rand; die Karten überdeckten zudem den Titel.
+struct BattleStageLayout: Equatable {
+    /// Äußeres Padding (2 × 16) + Bühnen-Padding (2 × 8).
+    static let horizontalInsets: CGFloat = 48
+    static let vsHeight: CGFloat = 66
+    static let nameMinWidth: CGFloat = 72
+    /// Name-Padding (16) + Abstand (12) + Avatar-Padding (6).
+    static let stripChrome: CGFloat = 34
+    static let avatarAspect: CGFloat = 250.0 / 185.0
+    static let maxAvatarWidth: CGFloat = 250
+
+    let stageWidth: CGFloat
+    let stageHeight: CGFloat
+    let avatarSize: CGSize
+    let stripHeight: CGFloat
+    let nameMaxWidth: CGFloat
+    let compact: Bool
+
+    init(stageWidth: CGFloat, stageHeight: CGFloat) {
+        self.stageWidth = stageWidth
+        self.stageHeight = stageHeight
+        // Zwei Karten + VS-Abzeichen übereinander müssen in die Bühne passen
+        let maxStripHeight = (stageHeight - Self.vsHeight) / 2
+        let maxAvatarHeight = max(80, maxStripHeight - 34)
+        let maxAvatarWidth = max(90, stageWidth - Self.nameMinWidth - Self.stripChrome)
+        let width = min(Self.maxAvatarWidth, maxAvatarWidth, maxAvatarHeight * Self.avatarAspect)
+        let height = width / Self.avatarAspect
+        avatarSize = CGSize(width: width, height: height)
+        stripHeight = height + 34
+        nameMaxWidth = max(Self.nameMinWidth, stageWidth - width - Self.stripChrome)
+        compact = height < 160
+    }
+
+    /// Breite einer ganzen Spielerkarte (Avatar + Name + Abstände).
+    var stripWidth: CGFloat { avatarSize.width + Self.nameMinWidth + Self.stripChrome }
 }
 
 /// Card shape with one corner chamfered off, angled toward the VS badge.
