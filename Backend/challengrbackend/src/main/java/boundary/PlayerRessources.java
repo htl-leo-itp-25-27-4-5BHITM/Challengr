@@ -5,6 +5,7 @@ import boundary.dto.PlayerDTO;
 import boundary.dto.PlayerPointsHistoryDTO;
 import boundary.dto.PlayerLoudnessBestDTO;
 import boundary.dto.PlayerProfileDTO;
+import control.CharacterCatalog;
 import control.PlayerRepository;
 import entity.Battle;
 import entity.Player;
@@ -17,6 +18,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
+import java.util.Map;
 
 @Path("/api/players")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -44,14 +46,7 @@ public class PlayerRessources {
     public PlayerDTO createPlayer(Player player) {
         Player saved = playerRepository.createPlayer(player);
 
-        return new PlayerDTO(
-                saved.getId(),
-                saved.getName(),
-                saved.getLatitude(),
-                saved.getLongitude(),
-                saved.getPoints(),
-                battleService.rankNameForPoints(saved.getPoints())
-        );
+        return toDTO(saved);
     }
 
     @PUT
@@ -85,14 +80,7 @@ public class PlayerRessources {
         GameSocket.emitPlayerPositionUpdated(player.getId(),
                 positionEventRecipients(player.getId(), oldLat, oldLon, player.getLatitude(), player.getLongitude()));
 
-        return new PlayerDTO(
-                player.getId(),
-                player.getName(),
-                player.getLatitude(),
-                player.getLongitude(),
-                player.getPoints(),
-                battleService.rankNameForPoints(player.getPoints())
-        );
+        return toDTO(player);
     }
 
     @GET
@@ -102,14 +90,7 @@ public class PlayerRessources {
         if (player == null) {
             throw new WebApplicationException("Player not found", 404);
         }
-        return new PlayerDTO(
-                player.getId(),
-                player.getName(),
-                player.getLatitude(),
-                player.getLongitude(),
-                player.getPoints(),
-                battleService.rankNameForPoints(player.getPoints())
-        );
+        return toDTO(player);
     }
 
     @GET
@@ -228,14 +209,7 @@ public class PlayerRessources {
                     );
                     return dist <= radius;
                 })
-                .map(p -> new PlayerDTO(
-                        p.getId(),
-                        p.getName(),
-                        p.getLatitude(),
-                        p.getLongitude(),
-                        p.getPoints(),
-                        battleService.rankNameForPoints(p.getPoints())
-                ))
+                .map(p -> toDTO(p))
                 .toList();
     }
 
@@ -310,6 +284,62 @@ public class PlayerRessources {
             this.pointsDelta = pointsDelta;
             this.won = won;
         }
+    }
+
+    private PlayerDTO toDTO(Player p) {
+        return new PlayerDTO(
+                p.getId(),
+                p.getName(),
+                p.getLatitude(),
+                p.getLongitude(),
+                p.getPoints(),
+                battleService.rankNameForPoints(p.getPoints()),
+                p.getCharacter()
+        );
+    }
+
+    private int countWins(Player player) {
+        return (int) playerRepository.findDoneBattlesForPlayer(player).stream()
+                .filter(b -> b.getWinner() != null && b.getWinner().getId().equals(player.getId()))
+                .count();
+    }
+
+    /** Eine Figur mit Freischalt-Stand für diesen Spieler. */
+    public record CharacterUnlockDTO(String id, String name, int winsRequired, int wins,
+                                     boolean unlocked, boolean selected) {}
+
+    @GET
+    @Path("/{id}/characters")
+    public List<CharacterUnlockDTO> getCharacters(@PathParam("id") String id) {
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new NotFoundException();
+        }
+        int wins = countWins(player);
+        return CharacterCatalog.ALL.stream()
+                .map(e -> new CharacterUnlockDTO(e.id(), e.name(), e.winsRequired(), wins,
+                        wins >= e.winsRequired(), e.id().equals(player.getCharacter())))
+                .toList();
+    }
+
+    /** Figur wählen – nur bekannte und freigeschaltete Figuren. Body: {"character": "hayato"} */
+    @PUT
+    @Path("/{id}/character")
+    @Transactional
+    public PlayerDTO selectCharacter(@PathParam("id") String id, Map<String, String> body) {
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new WebApplicationException("Player not found", 404);
+        }
+        String character = body == null ? null : body.get("character");
+        var entry = CharacterCatalog.find(character)
+                .orElseThrow(() -> new WebApplicationException("Unbekannte Figur: " + character, 400));
+        if (countWins(player) < entry.winsRequired()) {
+            throw new WebApplicationException(
+                    entry.name() + " ist erst ab " + entry.winsRequired() + " Siegen freigeschaltet", 403);
+        }
+        player.setCharacter(entry.id());
+        return toDTO(player);
     }
 
     @GET

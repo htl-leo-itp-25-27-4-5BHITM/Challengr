@@ -149,6 +149,7 @@ public class GameSocket {
                 case "camera-result"        -> handleMetricResult(msg, playerId, MetricResults.Kind.CAMERA, "score");
                 case "shake-result"         -> handleMetricResult(msg, playerId, MetricResults.Kind.SHAKE, "shakes");
                 case "pushup-result"        -> handleMetricResult(msg, playerId, MetricResults.Kind.PUSHUP, "reps");
+                case "send-emote"           -> handleEmote(msg, playerId);
                 default -> sendError(session, "Unknown type");
             }
         } catch (Exception e) {
@@ -157,6 +158,57 @@ public class GameSocket {
         }
     }
 
+
+    // -------------------- Emotes ----------------------------
+
+    /** Erlaubte Emotes – nur diese werden weitergeleitet (kein Freitext, keine Beleidigungen). */
+    static final List<String> EMOTES = List.of("🔥", "😤", "💪", "👀", "🏆", "😂", "👋", "🥊");
+
+    /** Mindestabstand zwischen zwei Emotes eines Spielers (gegen Spam). */
+    static final Duration EMOTE_COOLDOWN = Duration.ofMillis(1500);
+
+    private static final Map<String, Long> LAST_EMOTE_AT = new ConcurrentHashMap<>();
+
+    /**
+     * Emote an einen Spieler schicken: {"type":"send-emote","toId":"…","emoji":"🔥","battleId":12?}
+     * Mit battleId nur an den Gegner im laufenden Battle, sonst an den angetippten Spieler auf der Karte.
+     */
+    private void handleEmote(JsonNode msg, String senderId) {
+        String toId  = msg.path("toId").asText(null);
+        String emoji = msg.path("emoji").asText(null);
+        Long battleId = msg.hasNonNull("battleId") ? msg.get("battleId").asLong() : null;
+        if (senderId == null || toId == null || toId.equals(senderId) || !EMOTES.contains(emoji)) {
+            System.out.println("send-emote ignoriert: " + msg);
+            return;
+        }
+        if (battleId != null) {
+            Battle battle = battleService.findById(battleId);
+            if (battle == null || !isParticipant(battle, senderId) || !isParticipant(battle, toId)) {
+                System.out.println("send-emote ignoriert: kein gemeinsames Battle " + battleId);
+                return;
+            }
+        }
+        long now = System.currentTimeMillis();
+        Long last = LAST_EMOTE_AT.get(senderId);
+        if (last != null && now - last < EMOTE_COOLDOWN.toMillis()) {
+            return; // zu schnell hintereinander
+        }
+        LAST_EMOTE_AT.put(senderId, now);
+
+        sendToPlayer(toId, """
+        {
+          "type": "emote",
+          "fromId": "%s",
+          "emoji": "%s",
+          "battleId": %s
+        }
+        """.formatted(escapeJson(senderId), escapeJson(emoji), battleId == null ? "null" : battleId.toString()));
+    }
+
+    /** Nur für Tests: Cooldown zurücksetzen. */
+    static void resetEmoteCooldowns() {
+        LAST_EMOTE_AT.clear();
+    }
 
     // -------------------- create-battle ----------------------
 
@@ -231,6 +283,14 @@ public class GameSocket {
 
     /** Gleicher Aufbau wie battle-requested; type z.B. "battle-running" nach einem Neustart. */
     static String buildBattlePayload(String type, Battle battle) {
+        return buildBattlePayload(type, battle, null);
+    }
+
+    /**
+     * @param submitted nur bei "battle-running": hat dieser Spieler sein Ergebnis schon abgegeben?
+     *                  Dann zeigt die App "Ergebnis wird berechnet" statt die Challenge neu zu starten.
+     */
+    static String buildBattlePayload(String type, Battle battle, Boolean submitted) {
         String categoryName = battle.getChallenge().getChallengeCategory() != null
                 ? battle.getChallenge().getChallengeCategory().getName() : "";
         return """
@@ -245,7 +305,11 @@ public class GameSocket {
       "status": "%s",
       "expiresInSeconds": %d,
       "targetLatitude": %s,
-      "targetLongitude": %s
+      "targetLongitude": %s,
+      "fromName": "%s",
+      "toName": "%s",
+      "fromCharacter": %s,
+      "toCharacter": %s%s
     }
     """.formatted(
                 type,
@@ -258,8 +322,25 @@ public class GameSocket {
                 escapeJsonStatic(battle.getStatus()),
                 secondsUntilExpiry(battle),
                 battle.getTargetLatitude() != null ? battle.getTargetLatitude().toString() : "null",
-                battle.getTargetLongitude() != null ? battle.getTargetLongitude().toString() : "null"
+                battle.getTargetLongitude() != null ? battle.getTargetLongitude().toString() : "null",
+                escapeJsonStatic(battle.getFromPlayer().getName()),
+                escapeJsonStatic(battle.getToPlayer().getName()),
+                jsonStringOrNullStatic(battle.getFromPlayer().getCharacter()),
+                jsonStringOrNullStatic(battle.getToPlayer().getCharacter()),
+                submitted == null ? "" : ",\n      \"submitted\": " + submitted
         );
+    }
+
+    static String jsonStringOrNullStatic(String value) {
+        return value == null ? "null" : "\"" + escapeJsonStatic(value) + "\"";
+    }
+
+    /** Hat der Spieler in diesem laufenden Battle schon sein Ergebnis/seine Stimme abgegeben? */
+    private boolean hasSubmitted(Battle battle, String playerId) {
+        Long id = battle.getId();
+        if (isKnowledgeBattle(battle)) return hasAnswered(id, playerId);
+        if (METRIC_RESULTS.value(id, playerId) != null) return true;
+        return BATTLE_VOTES.hasVoted(id, playerId);
     }
 
     static long secondsUntilExpiry(Battle battle) {
@@ -285,7 +366,7 @@ public class GameSocket {
             // Laufendes Battle (z.B. App wurde mitten im Battle beendet) wieder anzeigen –
             // sonst wäre der Spieler bis zum Timeout für neue Challenges gesperrt.
             for (Battle b : battleService.findRunningBattlesFor(playerId)) {
-                sendToPlayer(playerId, buildBattlePayload("battle-running", b));
+                sendToPlayer(playerId, buildBattlePayload("battle-running", b, hasSubmitted(b, playerId)));
                 if (isKnowledgeBattle(b) && !hasAnswered(b.getId(), playerId)) {
                     sendToPlayer(playerId, buildKnowledgeQuestionPayload(b));
                 }
@@ -533,7 +614,13 @@ public class GameSocket {
             "loserName": "%s",
             "loserAvatar": "ownAvatar",
             "loserPointsDelta": %d,
-            "trashTalk": "%s"%s
+            "trashTalk": "%s",
+            "fromId": "%s",
+            "fromName": "%s",
+            "fromCharacter": %s,
+            "toId": "%s",
+            "toName": "%s",
+            "toCharacter": %s%s
         }
         """.formatted(
                 battleId,
@@ -545,6 +632,12 @@ public class GameSocket {
                 escapeJson(loserName),
                 loserDelta,
                 escapeJson(trashTalk),
+                escapeJson(fromId),
+                escapeJson(battle.getFromPlayer().getName()),
+                jsonStringOrNullStatic(battle.getFromPlayer().getCharacter()),
+                escapeJson(toId),
+                escapeJson(battle.getToPlayer().getName()),
+                jsonStringOrNullStatic(battle.getToPlayer().getCharacter()),
                 metricsJson
         );
 

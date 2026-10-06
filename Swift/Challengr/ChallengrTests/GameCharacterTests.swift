@@ -11,8 +11,19 @@ final class GameCharacterTests: XCTestCase {
     }
 
     func testResultScreensPickCharacterByPlayerName() {
-        XCTAssertEqual(GameCharacter.forPlayer("Ich", ownPlayerName: "Ich"), GameCharacter.own)
-        XCTAssertEqual(GameCharacter.forPlayer("Gegner", ownPlayerName: "Ich"), GameCharacter.opponent)
+        // Ohne Backend-Daten: eigene Figur bzw. Ersatz-Figur
+        let old = BattleResultData(winnerName: "Ich", winnerAvatar: "", winnerPointsDelta: 10,
+                                   loserName: "Gegner", loserAvatar: "", loserPointsDelta: -10,
+                                   trashTalk: "", metrics: nil)
+        XCTAssertEqual(old.character(forPlayerName: "Ich", ownPlayerName: "Ich"), GameCharacter.current)
+        XCTAssertEqual(old.character(forPlayerName: "Gegner", ownPlayerName: "Ich"), GameCharacter.opponent)
+
+        // Mit Backend-Daten: die echte Figur des Gegners
+        var real = old
+        real.participants = BattleParticipants(fromId: "a", toId: "me", fromName: "Gegner", toName: "Ich",
+                                               fromCharacter: .hayato, toCharacter: .ragnar)
+        XCTAssertEqual(real.character(forPlayerName: "Gegner", ownPlayerName: "Ich"), .hayato)
+        XCTAssertEqual(real.character(forPlayerName: "Ich", ownPlayerName: "Ich"), .ragnar)
     }
 
     func testEveryCharacterHasModelAndImages() {
@@ -47,8 +58,8 @@ final class GameCharacterTests: XCTestCase {
         XCTAssertEqual(lights, 2)
     }
 
-    func testOutfitPresetIsOwnCharacter() {
-        XCTAssertEqual(AvatarPresets.presets(for: .outfits).map(\.character), [GameCharacter.own])
+    func testOutfitPresetsAreAllCharacters() {
+        XCTAssertEqual(AvatarPresets.presets(for: .outfits).compactMap(\.character), GameCharacter.allCases)
     }
 
     func testOldTwoDPresetFallsBackToOwnCharacter() {

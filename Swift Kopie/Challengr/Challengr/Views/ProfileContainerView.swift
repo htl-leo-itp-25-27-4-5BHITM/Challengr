@@ -4,6 +4,8 @@ import MapKit
 
 struct ProfileContainerView: View {
     let ownPlayerId: String
+    /// 0 = DU, 1 = FREUNDE (z.B. aus dem Karten-Menü)
+    var initialTab: Int = 0
     let data: UserProfileData
     let pointsHistory: [PlayerPointsHistoryDTO]
     let battleHistory: [BattleHistoryDTO]
@@ -51,6 +53,7 @@ struct ProfileContainerView: View {
             
             TabView(selection: $selectedTab) {
                 UserProfileView(
+                    playerId: ownPlayerId,
                     data: data,
                     pointsHistory: pointsHistory,
                     battleHistory: battleHistory,
@@ -60,26 +63,20 @@ struct ProfileContainerView: View {
                 )
                 .tag(0)
 
-                Group {
-                    if let currentCoordinate {
-                        FriendsListView(
-                            ownPlayerId: ownPlayerId,
-                            currentCoordinate: currentCoordinate,
-                            allChallenges: allChallenges,
-                            socket: socket
-                        )
-                    } else {
-                        Text("Standort benötigt für Freunde in der Nähe.")
-                            .foregroundColor(.secondary)
-                            .padding()
-                    }
-                }
+                // Auch ohne Standort erreichbar – nur "In der Nähe" braucht ihn (BUG-13)
+                FriendsListView(
+                    ownPlayerId: ownPlayerId,
+                    currentCoordinate: currentCoordinate,
+                    allChallenges: allChallenges,
+                    socket: socket
+                )
                 .tag(1)
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             // The scroll views inside handle their own scrolling
         }
         .background(Color(.systemGroupedBackground).edgesIgnoringSafeArea(.all))
+        .onAppear { selectedTab = initialTab }
     }
 }
 

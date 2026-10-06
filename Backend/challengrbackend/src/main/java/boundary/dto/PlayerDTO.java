@@ -6,5 +6,6 @@ public record PlayerDTO(
         double latitude,
         double longitude,
         int points,
-        String rankName   // NEU
+        String rankName,  // NEU
+        String character  // gewählte Spielfigur, null = App-Standard
 ) {}

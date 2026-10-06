@@ -152,11 +152,9 @@ struct BattleWinView: View {
 
     // MARK: - Helpers (Hilfsfunktionen)
 
-    /// Shows the local player's own character; the opponent's actual
-    /// character isn't known server-side, so they always get the other figure
-    /// instead of a value that used to depend on who won.
+    /// Echte Figur des Spielers (vom Server); ohne Angabe eigene bzw. Ersatz-Figur.
     private func character(for playerName: String) -> GameCharacter {
-        GameCharacter.forPlayer(playerName, ownPlayerName: ownPlayerName)
+        data.character(forPlayerName: playerName, ownPlayerName: ownPlayerName)
     }
 
     // MARK: - Subviews (Unteransichten)

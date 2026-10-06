@@ -31,4 +31,65 @@ struct BattleResultData {
     var loserId: String? = nil
     /// "WIN", "DRAW" oder "CONFLICT" (nil bei alten Backends).
     var outcome: String? = nil
+    /// Beide Spieler mit Name und Figur (nil bei alten Backends).
+    var participants: BattleParticipants? = nil
+}
+
+/// Beide Spieler eines Battles mit Name und Figur (vom Backend in battle-requested/-running/-result).
+struct BattleParticipants: Equatable {
+    let fromId: String
+    let toId: String
+    var fromName: String? = nil
+    var toName: String? = nil
+    var fromCharacter: GameCharacter? = nil
+    var toCharacter: GameCharacter? = nil
+
+    /// Aus einer Backend-Nachricht; nil, wenn die Spieler-Ids fehlen (alte Backends).
+    static func parse(_ json: [String: Any], fromKey: String = "fromPlayerId", toKey: String = "toPlayerId") -> BattleParticipants? {
+        func id(_ value: Any?) -> String? {
+            if let s = value as? String, !s.isEmpty { return s }
+            if let n = value as? NSNumber { return n.stringValue }
+            return nil
+        }
+        guard let from = id(json[fromKey]), let to = id(json[toKey]) else { return nil }
+        func name(_ key: String) -> String? { (json[key] as? String).flatMap { $0.isEmpty ? nil : $0 } }
+        return BattleParticipants(
+            fromId: from,
+            toId: to,
+            fromName: name("fromName"),
+            toName: name("toName"),
+            fromCharacter: GameCharacter.from(serverId: json["fromCharacter"] as? String),
+            toCharacter: GameCharacter.from(serverId: json["toCharacter"] as? String)
+        )
+    }
+
+    func opponentId(ownId: String) -> String { fromId == ownId ? toId : fromId }
+    func opponentName(ownId: String) -> String? { fromId == ownId ? toName : fromName }
+    func opponentCharacter(ownId: String) -> GameCharacter? { fromId == ownId ? toCharacter : fromCharacter }
+}
+
+/// Zusatzinfos zu einem laufenden Battle nach einem Neustart.
+struct RunningBattleExtras: Equatable {
+    var targetLatitude: Double? = nil
+    var targetLongitude: Double? = nil
+    /// Hat man sein Ergebnis/seine Stimme schon abgegeben? Dann nur noch aufs Ergebnis warten.
+    var submitted = false
+}
+
+extension BattleResultData {
+    /// Figur zu einem Spielernamen auf den Ergebnis-Karten.
+    /// Mit Backend-Daten die echte Figur, sonst eigene Figur bzw. Ersatz-Figur für den Gegner.
+    func character(forPlayerName name: String, ownPlayerName: String) -> GameCharacter {
+        if let p = participants {
+            if name == p.fromName, let c = p.fromCharacter { return c }
+            if name == p.toName, let c = p.toCharacter { return c }
+        }
+        return name == ownPlayerName ? GameCharacter.current : GameCharacter.opponent
+    }
+
+    /// Bei Konflikt/Unentschieden schickt das Backend "Niemand" als Namen – hier die echten.
+    func playerNames(ownPlayerName: String) -> (own: String, opponent: String)? {
+        guard let p = participants, let from = p.fromName, let to = p.toName else { return nil }
+        return from == ownPlayerName ? (from, to) : (to, from)
+    }
 }

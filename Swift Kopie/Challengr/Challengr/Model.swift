@@ -27,6 +27,8 @@ struct PlayerDTO: Codable, Identifiable {
     let longitude: Double
     let points: Int
     let rankName: String
+    /// Gewählte Spielfigur (z.B. "sir-brecht"); nil bei Spielern ohne Wahl oder alten Backends.
+    var character: String? = nil
 }
 
 // MARK: - Challenge DTOs (Challenge-DTOs)

@@ -62,6 +62,13 @@ final class GameSocketService: ObservableObject {
     }
     
     var onBattleResult: ((BattleResultData) -> Void)?
+    /// Emote von einem anderen Spieler: fromId, emoji, battleId (nil = auf der Karte)
+    var onEmote: ((String, String, Int64?) -> Void)?
+
+    /// Spieler (Name + Figur) je Battle, aus battle-requested/-running. Nur auf dem Main-Thread lesen.
+    private(set) var participantsByBattle: [Int64: BattleParticipants] = [:]
+    /// Zielpunkt und Abgabe-Status laufender Battles nach einem Neustart.
+    private(set) var runningExtras: [Int64: RunningBattleExtras] = [:]
 
     private func claimSocketOwnership() {
         Self.ownershipQueue.sync {
@@ -293,6 +300,13 @@ final class GameSocketService: ObservableObject {
         send(json: payload)
     }
     
+    /// Emote an einen Spieler: im Battle (battleId) an den Gegner, sonst an den angetippten Spieler auf der Karte.
+    func sendEmote(toId: String, emoji: String, battleId: Int64? = nil) {
+        var payload: [String: Any] = ["type": "send-emote", "toId": toId, "emoji": emoji]
+        if let battleId { payload["battleId"] = battleId }
+        send(json: payload)
+    }
+
     func sendKnowledgeAnswer(battleId: Int64, answerIndex: Int) {
         let payload: [String: Any] = [
             "type": "battle-answer",
@@ -419,8 +433,10 @@ final class GameSocketService: ObservableObject {
                 let targetLon   = json["targetLongitude"] as? Double
 
                 print("🔹 battle-requested battle=\(battleId) challenge=\(challengeId) targetLat=\(targetLat as Any), targetLon=\(targetLon as Any)")
+                let participants = BattleParticipants.parse(json)
 
                 DispatchQueue.main.async {
+                    if let participants { self.participantsByBattle[battleId] = participants }
                     self.onChallengeReceived?(battleId, fromId, toId, challengeId, challengeText, challengeCategory, targetLat, targetLon)
                 }
             }
@@ -433,7 +449,15 @@ final class GameSocketService: ObservableObject {
                 let challengeText     = json["challengeText"] as? String
                 let challengeCategory = json["challengeCategory"] as? String
                 let status      = json["status"] as? String ?? "ACCEPTED"
+                let participants = BattleParticipants.parse(json)
+                let extras = RunningBattleExtras(
+                    targetLatitude: json["targetLatitude"] as? Double,
+                    targetLongitude: json["targetLongitude"] as? Double,
+                    submitted: json["submitted"] as? Bool ?? false
+                )
                 DispatchQueue.main.async {
+                    if let participants { self.participantsByBattle[battleId] = participants }
+                    self.runningExtras[battleId] = extras
                     self.onBattleRunning?(battleId, fromId, toId, challengeId, challengeText, challengeCategory, status)
                 }
             }
@@ -524,9 +548,20 @@ final class GameSocketService: ObservableObject {
                 result.winnerId = json["winnerId"] as? String
                 result.loserId  = json["loserId"] as? String
                 result.outcome  = json["outcome"] as? String
+                result.participants = BattleParticipants.parse(json, fromKey: "fromId", toKey: "toId")
 
                 DispatchQueue.main.async {
                     self.onBattleResult?(result)
+                }
+            }
+
+            if type == "emote" {
+                let fromId = parsePlayerId(json["fromId"])
+                let emoji = json["emoji"] as? String ?? ""
+                let battleId = (json["battleId"] as? NSNumber)?.int64Value
+                guard !emoji.isEmpty else { return }
+                DispatchQueue.main.async {
+                    self.onEmote?(fromId, emoji, battleId)
                 }
             }
 

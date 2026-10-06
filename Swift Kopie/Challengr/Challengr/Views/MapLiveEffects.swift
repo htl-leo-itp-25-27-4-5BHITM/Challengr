@@ -129,9 +129,6 @@ struct LivelyPin<Content: View>: View {
 
 /// Reine Rechenlogik der Karten-Effekte (testbar).
 enum MapVibe {
-    /// Emojis für die Blasen über anderen Spielern.
-    static let bubbles = ["⚡", "🔥", "💪", "👀", "🏆", "😤", "🥊"]
-
     /// 0…1, eine Welle alle 2 Sekunden; `offset` verschiebt die zweite Welle.
     static func ripplePhase(time: TimeInterval, offset: Double = 0, period: Double = 2) -> Double {
         let x = (time / period + offset).truncatingRemainder(dividingBy: 1)
@@ -163,5 +160,92 @@ enum MapVibe {
         var h: UInt64 = 5381
         for b in s.utf8 { h = (h &* 33) &+ UInt64(b) }
         return Int(h % UInt64(Int.max))
+    }
+}
+
+// MARK: - Emotes
+
+/// Emotes, die man schicken kann (muss zur Liste im Backend passen: GameSocket.EMOTES).
+enum Emotes {
+    static let all = ["🔥", "😤", "💪", "👀", "🏆", "😂", "👋", "🥊"]
+    /// Kurze Auswahl für die Karte (Begrüßen/Necken).
+    static let map = ["👋", "🔥", "😤", "💪"]
+    /// Wie lange eine Emote-Blase sichtbar bleibt.
+    static let visibleSeconds: Double = 2.5
+}
+
+/// Ein angezeigtes Emote; die id sorgt dafür, dass dasselbe Emoji zweimal hintereinander neu aufploppt.
+struct EmoteEvent: Equatable {
+    let id = UUID()
+    let emoji: String
+}
+
+/// Sprechblase mit Emote über einer Figur (Battle).
+struct EmoteBubble: View {
+    let event: EmoteEvent?
+
+    var body: some View {
+        ZStack {
+            if let event {
+                Text(event.emoji)
+                    .font(.system(size: 34))
+                    .padding(10)
+                    .background(Circle().fill(.white))
+                    .overlay(Circle().stroke(Color.challengrDark.opacity(0.2), lineWidth: 1))
+                    .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
+                    .id(event.id)
+                    .transition(.scale(scale: 0.2, anchor: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.55), value: event)
+        .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Hotspot
+
+/// Hotspot auf der Karte: schwebende 3D-Münze über einem Bodenring. Grau mit Haken, wenn heute erledigt.
+struct HotspotMarker: View {
+    let name: String
+    let checkedIn: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1 / 20, paused: reduceMotion || checkedIn)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            let hover = (reduceMotion || checkedIn) ? 0 : CGFloat(sin(t * 2.4) * 4)
+            let pulse = MapVibe.ripplePhase(time: t, period: 1.6)
+            ZStack(alignment: .bottom) {
+                if !checkedIn && !reduceMotion {
+                    Ellipse()
+                        .stroke(Color.challengrYellow.opacity(0.9 * (1 - pulse)), lineWidth: 3)
+                        .frame(width: 44 + 50 * pulse, height: (44 + 50 * pulse) * 0.36)
+                        .offset(y: (44 + 50 * pulse) * 0.18 - 9)
+                }
+                Ellipse()
+                    .fill(Color.black.opacity(0.3))
+                    .frame(width: 34, height: 11)
+                    .blur(radius: 2)
+                Image("MenuCoin")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 50, height: 50)
+                    .saturation(checkedIn ? 0 : 1)
+                    .opacity(checkedIn ? 0.75 : 1)
+                    .offset(y: -16 + hover)
+                    .overlay(alignment: .topTrailing) {
+                        if checkedIn {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(.white, Color.challengrGreen)
+                                .offset(x: 4, y: -16)
+                        }
+                    }
+            }
+            .frame(width: 100, height: 76, alignment: .bottom)
+        }
+        .accessibilityElement()
+        .accessibilityLabel("Hotspot \(name)\(checkedIn ? ", heute erledigt" : "")")
     }
 }

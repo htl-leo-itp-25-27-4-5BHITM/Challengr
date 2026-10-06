@@ -23,7 +23,7 @@ final class FriendsViewModel: ObservableObject {
     private var lastCoordinate: CLLocationCoordinate2D? = nil
     private var lastRadiusMeters: Double? = nil
 
-    func loadAll(ownPlayerId: String, coordinate: CLLocationCoordinate2D, radiusMeters: Double) async {
+    func loadAll(ownPlayerId: String, coordinate: CLLocationCoordinate2D?, radiusMeters: Double) async {
         isLoadingNearby = true
         errorText = nil
         defer { isLoadingNearby = false }
@@ -45,14 +45,19 @@ final class FriendsViewModel: ObservableObject {
 
             let friendIdSet = Set(friendDTOs.map { $0.id })
 
-            let players = try await playerService.loadNearbyPlayers(
-                currentPlayerId: ownPlayerId,
-                latitude: coordinate.latitude,
-                longitude: coordinate.longitude,
-                radius: radiusMeters
-            )
-            // Exclude already-friended players from the nearby suggestions.
-            nearbyPlayers = players.filter { !friendIdSet.contains($0.id) }
+            // "In der Nähe" nur mit Standort – der Rest der Seite geht auch ohne (BUG-13)
+            if let coordinate {
+                let players = try await playerService.loadNearbyPlayers(
+                    currentPlayerId: ownPlayerId,
+                    latitude: coordinate.latitude,
+                    longitude: coordinate.longitude,
+                    radius: radiusMeters
+                )
+                // Exclude already-friended players (and ourselves) from the nearby suggestions.
+                nearbyPlayers = players.filter { !friendIdSet.contains($0.id) && $0.id != ownPlayerId }
+            } else {
+                nearbyPlayers = []
+            }
 
             let outgoing = try await friendsService.loadOutgoingPendingRequests(playerId: ownPlayerId)
             pendingOutgoingToPlayerIds = Set(outgoing.map { $0.toPlayerId })
@@ -154,9 +159,8 @@ final class FriendsViewModel: ObservableObject {
 
     private func refreshIfPossible() async {
         guard let pid = lastOwnPlayerId,
-              let coord = lastCoordinate,
               let radius = lastRadiusMeters else { return }
 
-        await loadAll(ownPlayerId: pid, coordinate: coord, radiusMeters: radius)
+        await loadAll(ownPlayerId: pid, coordinate: lastCoordinate, radiusMeters: radius)
     }
 }

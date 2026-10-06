@@ -134,6 +134,20 @@ enum ChallengeRouter {
     }
 }
 
+// MARK: - Restore after restart (BUG-06)
+
+/// Wohin die App nach einem Neustart mitten im Battle springt.
+enum BattleRestore {
+    enum Screen: Equatable { case battle, voting, waitForResult }
+
+    /// Wer sein Ergebnis/seine Stimme schon abgegeben hat, wartet nur noch aufs Ergebnis –
+    /// sonst könnte man eine iPhone-Challenge neu starten oder im falschen Screen landen.
+    static func screen(status: String, submitted: Bool) -> Screen {
+        if submitted { return .waitForResult }
+        return status == "READY_FOR_VOTING" ? .voting : .battle
+    }
+}
+
 extension BattleHistoryDTO {
     /// Beendet, aber ohne Gewinner (z.B. beide falsch im Wissens-Battle).
     var isDraw: Bool { !won && status == "DONE" && (winnerName ?? "").isEmpty && pointsDelta == 0 }

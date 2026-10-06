@@ -3,6 +3,8 @@ import SwiftUI
 struct CharacterEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var store: AvatarCustomizationStore
+    /// Für das Speichern am Server und den Freischalt-Stand.
+    var playerId: String = ""
 
     @State private var selectedCategory: AvatarCategory = .outfits
     @State private var detent: PresentationDetent = .large
@@ -44,6 +46,13 @@ struct CharacterEditorSheet: View {
             .frame(height: 260)
             .padding(.horizontal, 20)
 
+            if let character = store.selectedPreset.character {
+                Text(character.tagline.uppercased())
+                    .font(.system(size: 11, weight: .black, design: .rounded))
+                    .tracking(1.2)
+                    .foregroundStyle(Color.secondary)
+            }
+
             // Category picker
             Picker("Kategorie", selection: $selectedCategory) {
                 ForEach(AvatarCategory.allCases) { cat in
@@ -75,7 +84,7 @@ struct CharacterEditorSheet: View {
                             .tracking(1.2)
                             .foregroundStyle(Color.secondary)
 
-                        Text("\(selectedCategory.rawValue) für \(GameCharacter.own.displayName) kommen bald.\nAktuell gibt es nur das Standard-Outfit.")
+                        Text("\(selectedCategory.rawValue) für \(store.selectedPreset.title) kommen bald.\nAktuell gibt es nur das Standard-Outfit.")
                             .font(.system(size: 12, weight: .medium, design: .rounded))
                             .foregroundStyle(Color.secondary)
                             .multilineTextAlignment(.center)
@@ -85,6 +94,14 @@ struct CharacterEditorSheet: View {
                     .padding(.top, 28)
                     .padding(.bottom, 10)
                 }
+            }
+
+            if let error = store.errorMessage {
+                Text(error)
+                    .font(.footnote)
+                    .foregroundColor(.red)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
             }
 
             // Actions
@@ -106,10 +123,12 @@ struct CharacterEditorSheet: View {
                 }
                 .buttonStyle(.plain)
 
-                GamePrimaryButton(title: "Speichern", color: .challengrGreen) {
-                    store.save()
-                    dismiss()
+                GamePrimaryButton(title: store.isSaving ? "…" : "Speichern", color: .challengrGreen) {
+                    Task {
+                        if await store.saveToServer(playerId: playerId) { dismiss() }
+                    }
                 }
+                .disabled(store.isSaving)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 14)
@@ -118,7 +137,9 @@ struct CharacterEditorSheet: View {
             // Always start in Outfits so the user sees their character immediately.
             selectedCategory = .outfits
             store.load()
+            store.errorMessage = nil
         }
+        .task { await store.loadUnlocks(playerId: playerId) }
         .presentationDetents([.medium, .large], selection: $detent)
         .presentationDragIndicator(.visible)
         .background(Color(.systemGroupedBackground))
@@ -126,8 +147,11 @@ struct CharacterEditorSheet: View {
 
     private func presetTile(_ preset: AvatarPreset) -> some View {
         let isSelected = store.selectedPresetId == preset.id
+        let locked = preset.character.map { !store.isUnlocked($0) } ?? false
 
         return Button {
+            // Gesperrte Figuren nicht wählbar (ohne .disabled, damit das Schloss gut lesbar bleibt)
+            guard !locked else { return }
             store.selectedPresetId = preset.id
         } label: {
             VStack(spacing: 10) {
@@ -139,6 +163,21 @@ struct CharacterEditorSheet: View {
                         .resizable()
                         .scaledToFit()
                         .padding(12)
+                        // Gesperrte Figuren als Silhouette
+                        .colorMultiply(locked ? .black : .white)
+                        .opacity(locked ? 0.55 : 1)
+
+                    if locked, let character = preset.character {
+                        VStack(spacing: 4) {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 22, weight: .bold))
+                            Text(store.progressText(character))
+                                .font(.system(size: 11, weight: .black, design: .rounded))
+                        }
+                        .foregroundColor(.white)
+                        .padding(8)
+                        .background(Capsule().fill(Color.black.opacity(0.65)))
+                    }
                 }
                 .frame(height: 120)
                 .overlay(
@@ -155,5 +194,6 @@ struct CharacterEditorSheet: View {
             .padding(8)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(locked ? "\(preset.title), gesperrt, \(preset.character.map(store.progressText) ?? "")" : preset.title)
     }
 }

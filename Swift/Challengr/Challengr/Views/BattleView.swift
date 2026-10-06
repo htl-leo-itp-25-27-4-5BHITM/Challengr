@@ -8,6 +8,13 @@ struct BattleView: View {
     let category: String
     let playerLeft: String
     let playerRight: String
+    /// Figur des Gegners (vom Server); ohne Angabe die Ersatz-Figur.
+    var opponentCharacter: GameCharacter = .opponent
+    /// Zuletzt gesendetes eigenes Emote und zuletzt empfangenes vom Gegner (Blasen über den Figuren).
+    var ownEmote: EmoteEvent? = nil
+    var opponentEmote: EmoteEvent? = nil
+    /// nil = keine Emotes (z.B. Vorschau)
+    var onSendEmote: ((String) -> Void)? = nil
     let onClose: () -> Void
     let onSurrender: () -> Void
     let onFinished: () -> Void
@@ -17,6 +24,7 @@ struct BattleView: View {
     @State private var stripsAppeared = false
     @State private var vsAppeared = false
     @State private var vsFlash = false
+    @State private var showEmotePicker = false
 
     // MARK: - Body (UI-Aufbau)
     var body: some View {
@@ -266,7 +274,7 @@ struct BattleView: View {
                     playerStrip(
                         name: playerRight,
                         color: .challengrRed,
-                        character: .opponent,
+                        character: opponentCharacter,
                         facing: .left,
                         alignRight: true,
                         layout: layout
@@ -277,6 +285,11 @@ struct BattleView: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
+
+            // Emote-Auswahl über allem (sonst liegt das VS-Logo darüber)
+            emoteControl
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .zIndex(10)
         }
         .frame(height: layout.stageHeight)
         .padding(.top, 4)
@@ -310,10 +323,16 @@ struct BattleView: View {
                     .padding(.bottom, 4)
 
                 CharacterAvatarView(character: character, facing: facing)
+                    .overlay(alignment: .top) {
+                        EmoteBubble(event: alignRight ? opponentEmote : ownEmote).offset(y: 4)
+                    }
                     .frame(width: modelSize.width, height: modelSize.height, alignment: .bottom)
                     .padding(.trailing, 6)
             } else {
                 CharacterAvatarView(character: character, facing: facing)
+                    .overlay(alignment: .top) {
+                        EmoteBubble(event: alignRight ? opponentEmote : ownEmote).offset(y: 4)
+                    }
                     .frame(width: modelSize.width, height: modelSize.height, alignment: .bottom)
                     .padding(.leading, 6)
 
@@ -397,6 +416,45 @@ struct BattleView: View {
                 }
                 .stroke(Color.white.opacity(0.05), lineWidth: 3)
             }
+        }
+    }
+
+    /// Emoji-Button links neben dem VS – klappt die Emote-Auswahl auf.
+    @ViewBuilder
+    private var emoteControl: some View {
+        if let onSendEmote {
+            HStack(spacing: 6) {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { showEmotePicker.toggle() }
+                } label: {
+                    Image(systemName: showEmotePicker ? "xmark" : "face.smiling.inverse")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.challengrDark)
+                        .frame(width: 44, height: 44)
+                        .background(Circle().fill(Color.challengrYellow))
+                        .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
+                }
+                .accessibilityLabel(showEmotePicker ? "Emotes schließen" : "Emote senden")
+
+                if showEmotePicker {
+                    HStack(spacing: 2) {
+                        ForEach(Emotes.all, id: \.self) { emoji in
+                            Button {
+                                onSendEmote(emoji)
+                                withAnimation { showEmotePicker = false }
+                            } label: {
+                                Text(emoji).font(.system(size: 24)).frame(width: 34, height: 40)
+                            }
+                            .accessibilityLabel("Emote \(emoji)")
+                        }
+                    }
+                    .padding(.horizontal, 6)
+                    .background(Capsule().fill(Color.white))
+                    .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
+                    .transition(.scale(scale: 0.3, anchor: .leading).combined(with: .opacity))
+                }
+            }
+            .padding(.leading, 10)
         }
     }
 

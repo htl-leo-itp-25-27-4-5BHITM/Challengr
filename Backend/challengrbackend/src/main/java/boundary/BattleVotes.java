@@ -45,6 +45,11 @@ public class BattleVotes {
         votes.remove(battleId);
     }
 
+    public synchronized boolean hasVoted(Long battleId, String playerId) {
+        Map<String, String> byPlayer = votes.get(battleId);
+        return byPlayer != null && byPlayer.containsKey(playerId);
+    }
+
     public synchronized int count(Long battleId) {
         Map<String, String> byPlayer = votes.get(battleId);
         return byPlayer == null ? 0 : byPlayer.size();

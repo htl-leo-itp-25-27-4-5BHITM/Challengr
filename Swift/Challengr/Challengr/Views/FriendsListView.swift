@@ -9,7 +9,8 @@ struct FriendsListView: View {
 
     // MVP inputs
     let ownPlayerId: String
-    let currentCoordinate: CLLocationCoordinate2D
+    /// nil = kein Standort: Freunde, Anfragen und Geschenke gehen trotzdem, nur "In der Nähe" fehlt.
+    let currentCoordinate: CLLocationCoordinate2D?
     var allChallenges: [ChallengeDTO] = []
     var socket: GameSocketService? = nil
     var radiusMeters: Double = 250
@@ -33,7 +34,7 @@ struct FriendsListView: View {
 
     init(
         ownPlayerId: String,
-        currentCoordinate: CLLocationCoordinate2D,
+        currentCoordinate: CLLocationCoordinate2D?,
         allChallenges: [ChallengeDTO] = [],
         socket: GameSocketService? = nil,
         radiusMeters: Double = 250
@@ -208,7 +209,12 @@ struct FriendsListView: View {
                             .foregroundColor(.red)
                     }
 
-                    if !vm.isLoadingNearby && vm.nearbyPlayers.isEmpty {
+                    if currentCoordinate == nil {
+                        Text("Standort aktivieren, um Spieler in der Nähe zu sehen.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 6)
+                    } else if !vm.isLoadingNearby && vm.nearbyPlayers.isEmpty {
                         Text("Niemand in deinem Radius gefunden.")
                             .font(.footnote)
                             .foregroundColor(.secondary)
@@ -372,6 +378,7 @@ struct FriendsListView: View {
     }
 
     private func distanceToFriend(_ friend: PlayerDTO) -> Double? {
+        guard let currentCoordinate else { return nil }
         let friendLocation = CLLocation(latitude: friend.latitude, longitude: friend.longitude)
         let ownLocation = CLLocation(latitude: currentCoordinate.latitude, longitude: currentCoordinate.longitude)
         return ownLocation.distance(from: friendLocation)

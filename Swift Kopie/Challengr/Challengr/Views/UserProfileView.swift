@@ -35,6 +35,7 @@ private extension String {
 // MARK: - View (UI)
 
 struct UserProfileView: View {
+    var playerId: String = ""
     let data: UserProfileData
     let pointsHistory: [PlayerPointsHistoryDTO]
     let battleHistory: [BattleHistoryDTO]
@@ -134,7 +135,7 @@ struct UserProfileView: View {
         }
         .background(Color(.systemGroupedBackground))
         .sheet(isPresented: $showCharacterEditor) {
-            CharacterEditorSheet(store: avatarStore)
+            CharacterEditorSheet(store: avatarStore, playerId: playerId)
         }
     }
 

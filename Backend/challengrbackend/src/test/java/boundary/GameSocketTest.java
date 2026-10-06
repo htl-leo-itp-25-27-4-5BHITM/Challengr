@@ -492,6 +492,104 @@ class GameSocketTest {
         assertNotNull(restarted.awaitStatus("ACCEPTED", 5), "Annahme kommt nach dem Neustart an");
     }
 
+    private void setCharacter(String playerId, String character) {
+        QuarkusTransaction.requiringNew().run(() -> playerRepository.findById(playerId).setCharacter(character));
+    }
+
+    @Test
+    void battlePayloadsCarryNamesAndCharacters() throws Exception {
+        setCharacter(A, "ragnar");
+        setCharacter(B, "sir-brecht");
+        try {
+            WsTestClient attacker = connect(A);
+            WsTestClient defender = connect(B);
+            attacker.send(create(1L));
+            JsonNode requested = defender.await("battle-requested", 5);
+            assertNotNull(requested);
+            assertEquals("ragnar", requested.get("fromCharacter").asText());
+            assertEquals("sir-brecht", requested.get("toCharacter").asText());
+            assertFalse(requested.get("fromName").asText().isEmpty(), "Name des Herausforderers fehlt");
+        } finally {
+            setCharacter(A, null);
+            setCharacter(B, null);
+        }
+    }
+
+    @Test
+    void restoredBattleKnowsWhetherResultWasAlreadySent() throws Exception {
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        long battleId = createAcceptedBattle(attacker, defender);
+        attacker.send(status(battleId, "READY_FOR_VOTING"));
+        assertNotNull(defender.awaitStatus("READY_FOR_VOTING", 5));
+
+        // Verteidiger stimmt ab und startet dann neu
+        defender.send("{\"type\":\"battle-vote\",\"battleId\":" + battleId + ",\"winnerId\":\"" + B + "\"}");
+        Thread.sleep(300);
+        defender.close();
+        JsonNode running = connect(B).await("battle-running", 5);
+        assertNotNull(running);
+        assertTrue(running.get("submitted").asBoolean(), "Stimme ist schon abgegeben → Ergebnis abwarten");
+
+        // Angreifer hat noch nicht abgestimmt
+        attacker.close();
+        JsonNode runningA = connect(A).await("battle-running", 5);
+        assertNotNull(runningA);
+        assertFalse(runningA.get("submitted").asBoolean());
+    }
+
+    @Test
+    void conflictResultNamesBothPlayers() throws Exception {
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        long battleId = createAcceptedBattle(attacker, defender);
+        attacker.send("{\"type\":\"battle-vote\",\"battleId\":" + battleId + ",\"winnerId\":\"" + A + "\"}");
+        defender.send("{\"type\":\"battle-vote\",\"battleId\":" + battleId + ",\"winnerId\":\"" + B + "\"}");
+
+        JsonNode result = attacker.await("battle-result", 5);
+        assertNotNull(result);
+        assertEquals("CONFLICT", result.get("outcome").asText());
+        assertEquals(A, result.get("fromId").asText());
+        assertEquals(B, result.get("toId").asText());
+        assertNotEquals("Niemand", result.get("fromName").asText());
+        assertNotEquals("Niemand", result.get("toName").asText());
+    }
+
+    private static String emote(String to, String emoji, Long battleId) {
+        return "{\"type\":\"send-emote\",\"toId\":\"" + to + "\",\"emoji\":\"" + emoji + "\""
+                + (battleId == null ? "" : ",\"battleId\":" + battleId) + "}";
+    }
+
+    @Test
+    void emotesReachTheOpponentOnly() throws Exception {
+        GameSocket.resetEmoteCooldowns();
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        long battleId = createAcceptedBattle(attacker, defender);
+
+        attacker.send(emote(B, "🔥", battleId));
+        JsonNode got = defender.await("emote", 5);
+        assertNotNull(got, "Gegner bekommt das Emote");
+        assertEquals("🔥", got.get("emoji").asText());
+        assertEquals(A, got.get("fromId").asText());
+        assertEquals(battleId, got.get("battleId").asLong());
+    }
+
+    @Test
+    void unknownEmojiAndSpamAreIgnored() throws Exception {
+        GameSocket.resetEmoteCooldowns();
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+
+        attacker.send(emote(B, "du bist doof", null));
+        assertNull(defender.await("emote", 1), "Freitext wird nicht weitergeleitet");
+
+        attacker.send(emote(B, "👋", null));
+        assertNotNull(defender.await("emote", 3), "Emote auf der Karte kommt an");
+        attacker.send(emote(B, "👋", null));
+        assertNull(defender.await("emote", 1), "zweites Emote sofort danach wird gedrosselt");
+    }
+
     @Test
     void cancelledRequestCannotBeAccepted() throws Exception {
         WsTestClient attacker = connect(A);

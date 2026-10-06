@@ -159,13 +159,9 @@ struct KnowledgeBattleView: View {
 
                 Spacer()
 
-                // Close
-                Button {
-                    onClose()
-                } label: {
-                    Text("Schließen")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.7))
+                // Raus nur durch Aufgeben; nach der Antwort wartet man aufs Ergebnis
+                if !isSending && !timeIsUp {
+                    ChallengeSurrenderButton(battleId: battleId, socket: socket, onSurrendered: onClose)
                         .padding(.bottom, 20)
                 }
             }

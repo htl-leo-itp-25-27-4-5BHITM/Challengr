@@ -108,20 +108,11 @@ struct CheckInSpotView: View {
                         .foregroundColor(.white.opacity(0.8))
                 }
 
-                Button {
-                    onClose()
-                } label: {
-                    Text("Schließen")
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 24)
-                        .background(
-                            RoundedRectangle(cornerRadius: 18)
-                                .fill(Color.black.opacity(0.6))
-                        )
+                // Raus nur durch Aufgeben – sonst hängt man im Battle (nach Ziel erreicht: Ergebnis kommt)
+                if !hasCompleted {
+                    ChallengeSurrenderButton(battleId: battleId, socket: socket, onSurrendered: onClose)
+                        .padding(.bottom, 30)
                 }
-                .padding(.bottom, 30)
             }
             .padding(.horizontal, 20)
         }

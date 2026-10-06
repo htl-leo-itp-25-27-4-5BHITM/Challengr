@@ -49,7 +49,7 @@ struct BattleLoseView: View {
                         .tracking(2)
                         .foregroundColor(.challengrRed.opacity(0.9))
 
-                    Text(data.isDraw ? "UNENTSCHIEDEN" : "NIEDERLAGE")
+                    Text(data.isDraw ? "UNENTSCHIEDEN" : isConflict ? "KONFLIKT" : "NIEDERLAGE")
                         .font(.system(size: 32, weight: .black, design: .rounded))
                         .tracking(data.isDraw ? 1 : 3)
                         .minimumScaleFactor(0.7)
@@ -59,13 +59,33 @@ struct BattleLoseView: View {
 
                     Text(data.isDraw
                          ? "Keiner hat gewonnen – es gibt keine Punkte."
+                         : isConflict
+                         ? "Ihr habt unterschiedlich abgestimmt – keine Einigung."
                          : "KOPF HOCH, \(data.loserName.uppercased())!")
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .multilineTextAlignment(.center)
                         .foregroundColor(.white.opacity(0.85))
 
-                    // Spieler nebeneinander (bei Unentschieden gibt es keinen Gewinner/Verlierer)
-                    if !data.isDraw {
+                    // Konflikt: beide Spieler mit echtem Namen (das Backend schickt sonst "Niemand")
+                    if isConflict, let names = data.playerNames(ownPlayerName: ownPlayerName) {
+                    HStack(spacing: 20) {
+                        resultPlayerCard(
+                            name: names.own,
+                            character: character(for: names.own),
+                            pointsDelta: data.loserPointsDelta,
+                            isLoser: true
+                        )
+                        resultPlayerCard(
+                            name: names.opponent,
+                            character: character(for: names.opponent),
+                            pointsDelta: data.winnerPointsDelta,
+                            isLoser: true
+                        )
+                    }
+                    }
+
+                    // Spieler nebeneinander (bei Unentschieden/Konflikt gibt es keinen Gewinner/Verlierer)
+                    if !data.isDraw && !isConflict {
                     HStack(spacing: 20) {
                         resultPlayerCard(
                             name: data.loserName,
@@ -196,11 +216,11 @@ struct BattleLoseView: View {
 
     // MARK: - Helpers (Hilfsfunktionen)
 
-    /// Shows the local player's own character; the opponent's actual
-    /// character isn't known server-side, so they always get the other figure
-    /// instead of a value that used to depend on who won.
+    private var isConflict: Bool { data.outcome == "CONFLICT" }
+
+    /// Echte Figur des Spielers (vom Server); ohne Angabe eigene bzw. Ersatz-Figur.
     private func character(for playerName: String) -> GameCharacter {
-        GameCharacter.forPlayer(playerName, ownPlayerName: ownPlayerName)
+        data.character(forPlayerName: playerName, ownPlayerName: ownPlayerName)
     }
 
     // MARK: - Subviews (Unteransichten)

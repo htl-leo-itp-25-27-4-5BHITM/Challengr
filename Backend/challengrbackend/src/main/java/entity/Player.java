@@ -37,6 +37,10 @@ public class Player {
      */
     private Instant banUntil;
 
+    /** Gewählte Spielfigur (z.B. "sir-brecht"); null = App-Standard. */
+    @Column(length = 32)
+    private String character;
+
     @Column(length = 1024)
     private String banReason;
 
@@ -136,5 +140,13 @@ public class Player {
 
     public void setBanReason(String banReason) {
         this.banReason = banReason;
+    }
+
+    public String getCharacter() {
+        return character;
+    }
+
+    public void setCharacter(String character) {
+        this.character = character;
     }
 }

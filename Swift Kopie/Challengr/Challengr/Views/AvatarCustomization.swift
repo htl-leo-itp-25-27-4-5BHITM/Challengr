@@ -24,9 +24,9 @@ struct AvatarPreset: Identifiable, Hashable {
 }
 
 /// Central place for available avatar presets.
-/// Outfits sind die 3D-Figuren dieses App-Builds (siehe `GameCharacter.own`).
+/// Outfits sind die 3D-Figuren; ob eine Figur freigeschaltet ist, entscheidet der Server.
 enum AvatarPresets {
-    static let all: [AvatarPreset] = [GameCharacter.own].map { character in
+    static let all: [AvatarPreset] = GameCharacter.allCases.map { character in
         AvatarPreset(
             id: character.rawValue,
             title: character.displayName,
@@ -66,8 +66,15 @@ enum AvatarPresets {
     }
 }
 
-final class AvatarCustomizationStore: ObservableObject {
+/// Bewusst `nonisolated`: mit der Projekt-Einstellung "Default Actor Isolation = MainActor"
+/// lief das Freigeben sonst über einen Back-Deploy-Shim, der abstürzte (malloc-Fehler im deinit).
+nonisolated final class AvatarCustomizationStore: ObservableObject {
     static let presetKey = "avatarPresetId"
+
+    /// Freischalt-Stand pro Figur (vom Server). Leer = noch nicht geladen.
+    @Published var unlocks: [String: CharacterUnlockDTO] = [:]
+    @Published var errorMessage: String? = nil
+    @Published var isSaving = false
 
     private var storedPresetId: String {
         get {
@@ -97,5 +104,41 @@ final class AvatarCustomizationStore: ObservableObject {
 
     func save() {
         storedPresetId = selectedPresetId
+    }
+
+    /// Ist die Figur wählbar? Ohne Serverdaten gelten nur die Start-Figuren als frei.
+    func isUnlocked(_ character: GameCharacter) -> Bool {
+        unlocks[character.rawValue]?.unlocked ?? (character.winsRequired == 0)
+    }
+
+    /// "1/3 Siege" o.ä. für gesperrte Figuren.
+    func progressText(_ character: GameCharacter) -> String {
+        let wins = unlocks[character.rawValue]?.wins ?? 0
+        return "\(min(wins, character.winsRequired))/\(character.winsRequired) Siege"
+    }
+
+    @MainActor
+    func loadUnlocks(playerId: String, service: CharacterService = CharacterService()) async {
+        guard !playerId.isEmpty, let list = try? await service.loadCharacters(playerId: playerId) else { return }
+        unlocks = Dictionary(uniqueKeysWithValues: list.map { ($0.id, $0) })
+    }
+
+    /// Speichert die Wahl am Server und erst bei Erfolg lokal.
+    @MainActor
+    func saveToServer(playerId: String, service: CharacterService = CharacterService()) async -> Bool {
+        guard let character = selectedPreset.character else { save(); return true }
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            if !playerId.isEmpty {
+                try await service.selectCharacter(playerId: playerId, character: character)
+            }
+            save()
+            errorMessage = nil
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
     }
 }
