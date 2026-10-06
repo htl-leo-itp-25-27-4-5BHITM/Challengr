@@ -279,6 +279,7 @@ struct MapView: View {
     // MARK: - Body (UI-Aufbau)
 
     @State private var compassAngle: Angle = .zero
+    @State private var lastMapCamera: MapCamera? = nil
     
     var body: some View {
         
@@ -349,19 +350,19 @@ struct MapView: View {
                     // RECHTS: nur der Kompass – Einstellungen und Shop sind im Haupt-Menü
                     VStack(spacing: 8) {
                         CompassView(angle: compassAngle) {
+                            // position.camera ist leer, solange die Karte dem Standort folgt –
+                            // deshalb die zuletzt gemeldete Kamera nehmen.
+                            guard let cam = lastMapCamera ?? position.camera else { return }
+                            SoundManager.shared.play(.tap)
                             withAnimation(.easeOut(duration: 0.35)) {
-                                guard let cam = position.camera else { return }
-
-                                let newCam = MapCamera(
+                                position = .camera(MapCamera(
                                     centerCoordinate: cam.centerCoordinate,
                                     distance: cam.distance,
                                     heading: 0,
                                     pitch: cam.pitch
-                                )
-                                position = .camera(newCam)
+                                ))
                             }
                         }
-                        .frame(width: 36, height: 36)
                     }
                 }
                 .padding(.top, 28)
@@ -378,7 +379,7 @@ struct MapView: View {
             }
 
 
-                    // 3) UNTERER BEREICH (wie Pokémon GO): Profil links, Menü-Münze mittig
+                    // 3) UNTERER BEREICH: Menü-Münze mittig, Profil rechts
                     profileButton
                     hotspotCheckinChip
                     mainMenu
@@ -695,6 +696,8 @@ struct MapView: View {
                 }
             }
         }
+        // Kein eingebauter MapKit-Kompass – wir haben einen eigenen
+        .mapControls { }
         .mapStyle(
             .standard(
                 elevation: .realistic,
@@ -749,9 +752,12 @@ struct MapView: View {
         }
         /// React to location updates
         .onReceive(locationHelper.$userLocation, perform: handleLocation)
+        // Kompass während des Drehens laufend nachführen (nicht erst am Ende der Geste)
+        .onMapCameraChange(frequency: .continuous) { ctx in
+            compassAngle = .degrees(ctx.camera.heading)    // 0 = Norden
+            lastMapCamera = ctx.camera
+        }
         .onMapCameraChange { ctx in
-                let heading = ctx.camera.heading    // 0 = Norden
-                compassAngle = .degrees(heading)
                 if !isProgrammaticCameraUpdate {
                     currentZoomDistance = ctx.camera.distance
                     if !hasCapturedInitialZoom {
@@ -849,6 +855,7 @@ struct MapView: View {
         VStack {
             Spacer()
             HStack {
+                Spacer()
                 Button {
                     reloadOwnPlayerData()
                     profileStartTab = 0
@@ -877,8 +884,7 @@ struct MapView: View {
                     }
                 }
                 .padding(.bottom, 32)
-                .padding(.leading, 20)
-                Spacer()
+                .padding(.trailing, 20)
             }
         }
     }
@@ -1035,8 +1041,12 @@ struct MapView: View {
 
     /// Beim ersten Erscheinen der Karte ist die Spieler-Id evtl. noch leer → beim Standort-Update nachladen.
     private func loadHotspotsIfNeeded() {
-        guard hotspots.isEmpty, !ownPlayerId.isEmpty,
-              lastHotspotLoad.map({ Date().timeIntervalSince($0) > 20 }) ?? true else { return }
+        guard !ownPlayerId.isEmpty else { return }
+        let firstLoadMissing = hotspots.isEmpty && (lastHotspotLoad.map { Date().timeIntervalSince($0) > 20 } ?? true)
+        // Nach Mitternacht kann man wieder einchecken → Stand neu holen
+        let newDay = lastHotspotLoad.map { HotspotSchedule.isStale(loadedAt: $0) } ?? false
+        guard firstLoadMissing || newDay else { return }
+        if newDay { announcedHotspotIds.removeAll() }
         Task { await loadHotspots() }
     }
 
@@ -1153,9 +1163,16 @@ struct MapView: View {
 
                         switch state {
                         case .checkedIn:
-                            Label("Heute erledigt – morgen wieder!", systemImage: "checkmark.circle.fill")
-                                .font(.system(size: 13, weight: .bold, design: .rounded))
-                                .foregroundStyle(Color.challengrGreen)
+                            VStack(spacing: 4) {
+                                Label("Heute erledigt", systemImage: "checkmark.circle.fill")
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .foregroundStyle(Color.challengrGreen)
+                                TimelineView(.periodic(from: .now, by: 30)) { context in
+                                    Text("Wieder einchecken in \(HotspotSchedule.remainingText(until: HotspotSchedule.nextCheckin(after: context.date), now: context.date))")
+                                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(.challengrBlack.opacity(0.7))
+                                }
+                            }
                         case .inRange:
                             Button {
                                 Task { await checkIn(hotspot) }

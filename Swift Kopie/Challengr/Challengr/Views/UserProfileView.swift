@@ -54,75 +54,15 @@ struct UserProfileView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
-                Capsule()
-                    .fill(Color.secondary.opacity(0.4))
-                    .frame(width: 40, height: 5)
-                    .padding(.top, 8)
+            VStack(spacing: 14) {
+                profileHero
 
-                Button {
-                    showCharacterEditor = true
-                } label: {
-                    ZStack(alignment: .bottomTrailing) {
-                        Image(avatarStore.selectedPreset.avatarImageName)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 100, height: 100)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle().stroke(Color.challengrYellow, lineWidth: 4)
-                            )
-                            .shadow(radius: 10)
-
-                        Text("BEARBEITEN")
-                            .font(.system(size: 10, weight: .black, design: .rounded))
-                            .tracking(1)
-                            .foregroundColor(.challengrDark)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(
-                                Capsule()
-                                    .fill(Color.challengrYellow)
-                            )
-                            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
-                            .offset(x: 14, y: 10)
-                    }
+                HStack(spacing: 10) {
+                    GameStatTile(icon: "flame.fill", value: "\(data.dailyStreak)", title: "Streak", color: .orange)
+                    GameStatTile(icon: "flag.checkered", value: "\(data.totalChallenges)", title: "Challenges", color: .white)
+                    GameStatTile(icon: "trophy.fill", value: "\(data.wonChallenges)", title: "Siege", color: .challengrYellow)
+                    GameStatTile(icon: "percent", value: winRateText, title: "Siegquote", color: .challengrGreen)
                 }
-                .buttonStyle(.plain)
-
-                Text(data.name.uppercased())
-                    .font(.system(size: 24, weight: .black, design: .rounded))
-                    .tracking(1)
-
-                statusChip
-
-                HStack(spacing: 6) {
-                    Image(systemName: "trophy.fill")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.challengrYellow)
-                    Text("\(data.points) PUNKTE")
-                        .font(.system(size: 16, weight: .black, design: .rounded))
-                        .tracking(0.5)
-                        .foregroundColor(.secondary)
-                }
-
-                VStack(spacing: 12) {
-                    HStack(spacing: 12) {
-                        StatBox(title: "Tagesstreak",
-                                value: "\(data.dailyStreak) 🔥")
-                        StatBox(title: "Challenges",
-                                value: "\(data.totalChallenges)")
-                    }
-
-                    HStack(spacing: 12) {
-                        StatBox(title: "Gewonnen",
-                                value: "\(data.wonChallenges)")
-                        StatBox(title: "Rang",
-                                value: data.rankName,
-                                valueColor: rankColor)
-                    }
-                }
-                .padding(.top, 8)
 
                 pointsChart
 
@@ -130,12 +70,67 @@ struct UserProfileView: View {
 
                 battleDetailList(for: selectedDate)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
             .padding(.bottom, 24)
         }
-        .background(Color(.systemGroupedBackground))
-        .sheet(isPresented: $showCharacterEditor) {
+        .background(GameStyle.background.ignoresSafeArea())
+        .sheet(isPresented: $showCharacterEditor, onDismiss: { avatarStore.load() }) {
             CharacterEditorSheet(store: avatarStore, playerId: playerId)
+        }
+    }
+
+    // MARK: - Hero (Figur, Name, Rang)
+
+    private var winRateText: String {
+        guard data.totalChallenges > 0 else { return "–" }
+        return "\(Int((Double(data.wonChallenges) / Double(data.totalChallenges) * 100).rounded()))%"
+    }
+
+    /// Bühne mit der eigenen 3D-Figur (zum Drehen wischen), darunter Name, Rang und Punkte.
+    private var profileHero: some View {
+        ZStack(alignment: .bottom) {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(RadialGradient(colors: [rankColor.opacity(0.55), Color.challengrDark.opacity(0.9)],
+                                     center: .top, startRadius: 10, endRadius: 300))
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(rankColor.opacity(0.6), lineWidth: 2)
+
+            VStack(spacing: 8) {
+                Character3DView(character: avatarStore.selectedPreset.character ?? .current, allowsDragRotation: true)
+                    .frame(height: 210)
+                    .accessibilityLabel("Deine Figur")
+                    .accessibilityHint("Zum Drehen wischen")
+
+                Text(data.name.uppercased())
+                    .font(.system(size: 26, weight: .black, design: .rounded))
+                    .tracking(1)
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+
+                HStack(spacing: 8) {
+                    Text(data.rankName.uppercased())
+                        .font(.system(size: 12, weight: .black, design: .rounded))
+                        .tracking(1)
+                        .foregroundColor(.challengrDark)
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(Capsule().fill(rankColor))
+                    Label("\(data.points)", systemImage: "trophy.fill")
+                        .font(.system(size: 14, weight: .black, design: .rounded))
+                        .foregroundColor(.challengrYellow)
+                    statusChip
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+        }
+        .frame(height: 340)
+        .overlay(alignment: .topTrailing) {
+            GamePillButton(icon: "paintbrush.pointed.fill", title: "Figur") {
+                showCharacterEditor = true
+            }
+            .padding(14)
         }
     }
 
@@ -232,7 +227,7 @@ struct UserProfileView: View {
                             .padding(.vertical, 6)
                             .background(
                                 RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color(.systemBackground))
+                                    .fill(GameStyle.panelFill)
                                     .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
                             )
                             .offset(x: -6, y: -36)
@@ -260,7 +255,7 @@ struct UserProfileView: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.systemBackground))
+                .fill(GameStyle.panelFill)
                 .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
         )
         .padding(.top, 12)
@@ -275,14 +270,14 @@ struct UserProfileView: View {
                 .fill(status.isOnline ? Color.challengrGreen : Color.gray)
                 .frame(width: 8, height: 8)
             Text(status.text)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.white.opacity(0.8))
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.vertical, 5)
         .background(
             Capsule()
-                .fill(Color(.systemBackground))
+                .fill(GameStyle.panelFill)
                 .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
         )
     }
@@ -320,17 +315,18 @@ struct UserProfileView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.systemBackground))
+                                .fill(GameStyle.panelFill)
                                 .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
                         )
                     }
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.systemBackground))
+                .fill(GameStyle.panelFill)
                 .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
         )
     }
@@ -413,7 +409,7 @@ struct UserProfileView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.systemBackground))
+                            .fill(GameStyle.panelFill)
                             .shadow(color: .black.opacity(0.06), radius: 6, x: 0, y: 3)
                     )
                 }
@@ -422,7 +418,7 @@ struct UserProfileView: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.systemBackground))
+                .fill(GameStyle.panelFill)
                 .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
         )
         .padding(.top, 8)
@@ -632,7 +628,7 @@ struct StatBox: View {
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(Color(.systemBackground))
+                .fill(GameStyle.panelFill)
                 .shadow(color: .black.opacity(0.08),
                         radius: 6, x: 0, y: 3)
         )

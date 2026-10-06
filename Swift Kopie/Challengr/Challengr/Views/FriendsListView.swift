@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 struct FriendsListView: View {
     private let challengrRed = Color(red: 0.73, green: 0.12, blue: 0.20)
     private let challengrDark = Color(red: 0.12, green: 0.00, blue: 0.05)
-    private let cardBackground = Color.white
+    private let cardBackground = GameStyle.panelFill
 
     // MVP inputs
     let ownPlayerId: String
@@ -19,7 +19,6 @@ struct FriendsListView: View {
 
     @State private var searchText: String = ""
     @State private var appliedSearch: String = ""
-    @State private var selectedBondLevel: Int = 0
 
     @State private var showAddFriendSheet: Bool = false
     @State private var showIncomingPopup: Bool = false
@@ -50,73 +49,47 @@ struct FriendsListView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                Text("Freunde")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(.challengrInk)
-
-                HStack(spacing: 12) {
-                    FriendActionButton(
-                        icon: "person.badge.plus",
-                        title: "Hinzufügen",
-                        foreground: .challengrRedInk,
-                        background: Color.challengrRedInk.opacity(0.14)
-                        ,
-                        action: {
-                            showAddFriendSheet = true
-                        }
-                    )
-
-                    FriendActionButton(
-                        icon: "magnifyingglass",
-                        title: "Suchen",
-                        foreground: .challengrInk,
-                        background: Color.challengrInk.opacity(0.10),
-                        action: {
-                            appliedSearch = searchText
-                        }
-                    )
-                }
-
-                VStack(alignment: .leading, spacing: 12) {
-                    TextField("Freund suchen", text: $searchText)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(challengrDark.opacity(0.12), lineWidth: 1)
-                        )
-                        // Weißes Feld: Text/Platzhalter auch im Dark Mode dunkel
-                        .environment(\.colorScheme, .light)
-                        .onSubmit {
-                            appliedSearch = searchText
-                        }
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Freundschaftslevel filtern")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.secondary)
-
-                        Picker("Freundschaftslevel", selection: $selectedBondLevel) {
-                            Text("Alle").tag(0)
-                            Text("1").tag(1)
-                            Text("2").tag(2)
-                            Text("3").tag(3)
-                            Text("4").tag(4)
-                            Text("5").tag(5)
-                        }
-                        .pickerStyle(.segmented)
+                // Kopf: Titel + Hinzufügen
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("FREUNDE")
+                            .font(.system(size: 28, weight: .black, design: .rounded))
+                            .tracking(1)
+                            .foregroundColor(.white)
+                        Text(vm.friends.count == 1 ? "1 Freund" : "\(vm.friends.count) Freunde")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .foregroundColor(GameStyle.secondaryText)
+                    }
+                    Spacer()
+                    GamePillButton(icon: "person.badge.plus", title: "Hinzufügen") {
+                        showAddFriendSheet = true
                     }
                 }
 
+                // Suche (filtert schon beim Tippen)
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(GameStyle.secondaryText)
+                    TextField("Freund suchen", text: $searchText)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .foregroundColor(.white)
+                        .onChange(of: searchText) { _, value in appliedSearch = value }
+                    if !searchText.isEmpty {
+                        Button { searchText = "" } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundColor(GameStyle.secondaryText)
+                        }
+                        .accessibilityLabel("Suche löschen")
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 11)
+                .background(Capsule().fill(GameStyle.panelFill))
+                .overlay(Capsule().stroke(GameStyle.panelStroke, lineWidth: 1))
+
                 if !vm.incomingGifts.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Geschenke")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.secondary)
+                        GameSectionHeader(title: "Geschenke", count: vm.incomingGifts.count)
 
                         ForEach(vm.incomingGifts) { gift in
                             GiftInboxRow(
@@ -136,17 +109,29 @@ struct FriendsListView: View {
                     }
                 }
 
-                // Friends list
+                // Freunde
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Deine Freunde")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.secondary)
+                    GameSectionHeader(title: "Deine Freunde", count: filteredFriends.count)
 
                     if vm.friends.isEmpty {
-                        Text("Noch keine Freunde. Füge Leute aus deiner Nähe hinzu.")
+                        VStack(spacing: 8) {
+                            Image(systemName: "person.2.fill")
+                                .font(.system(size: 26, weight: .bold))
+                                .foregroundColor(.challengrYellow)
+                            Text("Noch keine Freunde")
+                                .font(.system(size: 15, weight: .black, design: .rounded))
+                                .foregroundColor(.white)
+                            Text("Füge Leute aus deiner Nähe hinzu oder lade sie per QR-Code ein.")
+                                .font(.footnote)
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(GameStyle.secondaryText)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .gamePanel(padding: 18)
+                    } else if filteredFriends.isEmpty {
+                        Text("Kein Freund passt zu „\(appliedSearch)“.")
                             .font(.footnote)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 8)
+                            .foregroundColor(GameStyle.secondaryText)
                     } else {
                         ForEach(filteredFriends) { friend in
                             let distanceMeters = distanceToFriend(friend)
@@ -154,9 +139,6 @@ struct FriendsListView: View {
                                 player: friend,
                                 distanceText: distanceLabel(for: distanceMeters),
                                 isNearby: isNearbyForBattle(distanceMeters),
-                                challengrRed: challengrRed,
-                                challengrDark: challengrDark,
-                                cardBackground: cardBackground,
                                 showsBattleAction: isNearbyForBattle(distanceMeters) && socket != nil && !allChallenges.isEmpty,
                                 onBattle: {
                                     selectedBattleFriend = friend
@@ -175,22 +157,15 @@ struct FriendsListView: View {
                         }
                     }
                 }
-                .padding(.top, 6)
 
-                // Nearby suggestions
+                // In der Nähe
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text("In der Nähe")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.secondary)
-
-                        Spacer()
-
+                        GameSectionHeader(title: "In der Nähe", count: vm.nearbyPlayers.isEmpty ? nil : vm.nearbyPlayers.count)
                         if vm.isLoadingNearby {
-                            ProgressView()
-                                .scaleEffect(0.9)
+                            ProgressView().tint(.white).scaleEffect(0.8)
                         } else {
-                            Button("Neu laden") {
+                            Button {
                                 Task {
                                     await vm.loadAll(
                                         ownPlayerId: ownPlayerId,
@@ -198,35 +173,34 @@ struct FriendsListView: View {
                                         radiusMeters: radiusMeters
                                     )
                                 }
+                            } label: {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 14, weight: .black))
+                                    .foregroundColor(.white.opacity(0.8))
                             }
-                            .font(.system(size: 13, weight: .semibold))
+                            .accessibilityLabel("Neu laden")
                         }
                     }
 
                     if let error = vm.errorText {
                         Text(error)
                             .font(.footnote)
-                            .foregroundColor(.red)
+                            .foregroundColor(.challengrRed)
                     }
 
                     if currentCoordinate == nil {
                         Text("Standort aktivieren, um Spieler in der Nähe zu sehen.")
                             .font(.footnote)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 6)
+                            .foregroundColor(GameStyle.secondaryText)
                     } else if !vm.isLoadingNearby && vm.nearbyPlayers.isEmpty {
                         Text("Niemand in deinem Radius gefunden.")
                             .font(.footnote)
-                            .foregroundColor(.secondary)
-                            .padding(.vertical, 6)
+                            .foregroundColor(GameStyle.secondaryText)
                     }
 
                     ForEach(vm.nearbyPlayers) { player in
                         NearbyPlayerRow(
                             player: player,
-                            challengrRed: challengrRed,
-                            challengrDark: challengrDark,
-                            cardBackground: cardBackground,
                             isPending: vm.pendingOutgoingToPlayerIds.contains(player.id)
                         ) {
                             Task {
@@ -235,7 +209,6 @@ struct FriendsListView: View {
                         }
                     }
                 }
-                .padding(.top, 10)
 
                 Spacer(minLength: 12)
             }
@@ -244,7 +217,8 @@ struct FriendsListView: View {
                 .padding(.bottom, 20)
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .background(GameStyle.background.ignoresSafeArea())
+        .scrollContentBackground(.hidden)
         .sheet(isPresented: $showAddFriendSheet) {
             AddFriendSheet(
                 ownPlayerId: ownPlayerId,
@@ -563,90 +537,56 @@ private struct FriendRow: View {
     let player: PlayerDTO
     let distanceText: String
     let isNearby: Bool
-    let challengrRed: Color
-    let challengrDark: Color
-    let cardBackground: Color
     let showsBattleAction: Bool
     let onBattle: () -> Void
     let onSendGift: () -> Void
     let onRemove: () -> Void
 
+    @State private var confirmRemove = false
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 12) {
-                NavigationLink {
-                    FriendProfileView(friend: player)
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "person.crop.circle.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 46, height: 46)
-                            .foregroundColor(challengrDark.opacity(0.75))
-                            .padding(6)
-                            .background(challengrDark.opacity(0.08))
-                            .clipShape(Circle())
+        HStack(spacing: 12) {
+            NavigationLink {
+                FriendProfileView(friend: player)
+            } label: {
+                HStack(spacing: 12) {
+                    CharacterBadge(character: GameCharacter.from(serverId: player.character) ?? .opponent,
+                                   ringColor: isNearby ? .challengrGreen : .challengrYellow)
 
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(player.name)
-                                .font(.system(size: 17, weight: .bold))
-                                .foregroundColor(challengrDark)
-
-                            Text("Punkte: \(player.points)")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(challengrDark.opacity(0.75))
-
-                            Text(distanceText)
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(isNearby ? .green : challengrDark.opacity(0.72))
-                        }
-
-                        Spacer(minLength: 0)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(player.name)
+                            .font(.system(size: 16, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                        Text("\(player.rankName) · \(player.points) P")
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundColor(GameStyle.secondaryText)
+                        Label(distanceText, systemImage: isNearby ? "location.fill" : "location")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(isNearby ? .challengrGreen : GameStyle.secondaryText)
                     }
+                    Spacer(minLength: 0)
                 }
-                .buttonStyle(.plain)
-
-                Button(action: onRemove) {
-                    Image(systemName: "person.fill.xmark")
-                        .font(.system(size: 14, weight: .black))
-                        .foregroundColor(.white)
-                        .padding(10)
-                        .background(Circle().fill(Color.red.opacity(0.9)))
-                }
-                .buttonStyle(.plain)
-                .buttonStyle(.borderless)
             }
+            .buttonStyle(.plain)
 
-            HStack(spacing: 10) {
-                FriendActionButton(
-                    icon: "gift.fill",
-                    title: "Geschenk",
-                    foreground: challengrRed,
-                    background: challengrRed.opacity(0.12),
-                    action: onSendGift
-                )
-
-                if showsBattleAction {
-                    FriendActionButton(
-                        icon: "bolt.fill",
-                        title: "Battlen",
-                        foreground: .green,
-                        background: Color.green.opacity(0.14),
-                        action: onBattle
-                    )
-                }
+            if showsBattleAction {
+                GamePillButton(icon: "bolt.fill", color: .challengrGreen, textColor: .white, action: onBattle)
+                    .accessibilityLabel("\(player.name) herausfordern")
+            }
+            GamePillButton(icon: "gift.fill", color: .challengrRed, textColor: .white, action: onSendGift)
+                .accessibilityLabel("Geschenk an \(player.name)")
+        }
+        .gamePanel(padding: 12, cornerRadius: 18, highlight: isNearby ? .challengrGreen : nil)
+        .contextMenu {
+            Button(role: .destructive) { confirmRemove = true } label: {
+                Label("Freund entfernen", systemImage: "person.fill.xmark")
             }
         }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(cardBackground)
-                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 6)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(challengrDark.opacity(0.08), lineWidth: 1)
-        )
+        .confirmationDialog("\(player.name) als Freund entfernen?", isPresented: $confirmRemove, titleVisibility: .visible) {
+            Button("Entfernen", role: .destructive, action: onRemove)
+            Button("Abbrechen", role: .cancel) {}
+        }
     }
 }
 
@@ -736,33 +676,6 @@ private struct IncomingFriendRequestSheet: View {
             Spacer(minLength: 8)
         }
         .background(Color(.systemBackground))
-    }
-}
-
-struct FriendActionButton: View {
-    let icon: String
-    let title: String
-    let foreground: Color
-    let background: Color
-    var action: (() -> Void)? = nil
-
-    var body: some View {
-        Button {
-            action?()
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
-                Text(title)
-                    .font(.system(size: 14, weight: .semibold))
-            }
-            .foregroundColor(foreground)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(background)
-            .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
     }
 }
 
@@ -871,61 +784,31 @@ private struct GiftOpenedSheet: View {
 
 private struct NearbyPlayerRow: View {
     let player: PlayerDTO
-    let challengrRed: Color
-    let challengrDark: Color
-    let cardBackground: Color
     let isPending: Bool
     let onRequest: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 52, height: 52)
-                    .foregroundColor(challengrDark.opacity(0.75))
-                    .padding(6)
-                    .background(challengrDark.opacity(0.08))
-                    .clipShape(Circle())
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(player.name)
-                        .font(.system(size: 19, weight: .bold))
-                        .foregroundColor(challengrDark)
-
-                    Text("Punkte: \(player.points)")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(challengrDark.opacity(0.8))
-                }
-
-                Spacer()
-
-                Button {
-                    onRequest()
-                } label: {
-                    Text(isPending ? "GESENDET" : "ANFRAGEN")
-                        .font(.system(size: 12, weight: .black, design: .rounded))
-                        .tracking(0.8)
-                        .foregroundColor(isPending ? .secondary : challengrDark)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .background(
-                            Capsule()
-                                .fill(isPending ? Color.gray.opacity(0.12) : challengrRed.opacity(0.18))
-                        )
-                }
-                .buttonStyle(.plain)
-                .disabled(isPending)
+        HStack(spacing: 12) {
+            CharacterBadge(character: GameCharacter.from(serverId: player.character) ?? .opponent,
+                           ringColor: .white.opacity(0.5), size: 46)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(player.name)
+                    .font(.system(size: 15, weight: .black, design: .rounded))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                Text("\(player.rankName) · \(player.points) P")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundColor(GameStyle.secondaryText)
+            }
+            Spacer()
+            if isPending {
+                Label("Gesendet", systemImage: "checkmark")
+                    .font(.system(size: 12, weight: .black, design: .rounded))
+                    .foregroundColor(GameStyle.secondaryText)
+            } else {
+                GamePillButton(icon: "person.badge.plus", title: "Anfragen", action: onRequest)
             }
         }
-        .padding(14)
-        .background(cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(challengrRed.opacity(0.16), lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 4)
+        .gamePanel(padding: 12, cornerRadius: 18)
     }
 }

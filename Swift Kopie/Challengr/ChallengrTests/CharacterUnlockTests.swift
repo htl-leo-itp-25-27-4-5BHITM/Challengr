@@ -5,39 +5,44 @@ import XCTest
 @MainActor
 final class CharacterUnlockTests: XCTestCase {
 
-    private func unlock(_ id: String, _ unlocked: Bool, wins: Int = 0, required: Int = 0) -> CharacterUnlockDTO {
-        CharacterUnlockDTO(id: id, name: id, winsRequired: required, wins: wins, unlocked: unlocked, selected: false)
+    private func unlock(_ id: String, _ unlocked: Bool, progress: Int = 0, required: Int = 0, type: String = "WINS") -> CharacterUnlockDTO {
+        CharacterUnlockDTO(id: id, name: id, requirement: type, required: required, progress: progress, unlocked: unlocked, selected: false)
     }
 
     func testIdsMatchTheBackend() {
-        XCTAssertEqual(GameCharacter.allCases.map(\.rawValue), ["sir-brecht", "ragnar", "hayato"])
-        XCTAssertEqual(GameCharacter.hayato.winsRequired, 3)
+        XCTAssertEqual(GameCharacter.allCases.map(\.rawValue),
+                       ["junge", "maedchen", "sir-brecht", "ragnar", "hayato", "kage", "kai", "merlo", "lyra", "kaeptn-rex"])
+        XCTAssertEqual(GameCharacter.hayato.requirement, .wins(5))
+        XCTAssertEqual(GameCharacter.lyra.requirement, .checkins(5))
+        XCTAssertEqual(GameCharacter.allCases.filter { $0.requirement == .none }, [.junge, .maedchen], "nur Junge und Mädchen frei")
         XCTAssertNil(GameCharacter.from(serverId: "godzilla"))
         XCTAssertNil(GameCharacter.from(serverId: nil))
     }
 
     func testStoreUsesServerUnlocksAndStartersAreFreeOffline() {
         let store = AvatarCustomizationStore()
-        XCTAssertTrue(store.isUnlocked(.ragnar), "Start-Figur ohne Serverdaten frei")
-        XCTAssertFalse(store.isUnlocked(.hayato), "Hayato ohne Serverdaten gesperrt")
+        XCTAssertTrue(store.isUnlocked(.maedchen), "Start-Figur ohne Serverdaten frei")
+        XCTAssertFalse(store.isUnlocked(.sirBrecht), "Roster-Figur ohne Serverdaten gesperrt")
 
-        store.unlocks = ["hayato": unlock("hayato", false, wins: 1, required: 3)]
-        XCTAssertEqual(store.progressText(.hayato), "1/3 Siege")
-        store.unlocks = ["hayato": unlock("hayato", true, wins: 5, required: 3)]
+        store.unlocks = ["hayato": unlock("hayato", false, progress: 1, required: 5)]
+        XCTAssertEqual(store.progressText(.hayato), "1/5 Siege")
+        store.unlocks = ["lyra": unlock("lyra", false, progress: 2, required: 5, type: "CHECKINS")]
+        XCTAssertEqual(store.progressText(.lyra), "2/5 Check-ins")
+        store.unlocks = ["hayato": unlock("hayato", true, progress: 9, required: 5)]
         XCTAssertTrue(store.isUnlocked(.hayato))
-        XCTAssertEqual(store.progressText(.hayato), "3/3 Siege")
+        XCTAssertEqual(store.progressText(.hayato), "5/5 Siege")
     }
 
     func testUnlockBannerOnlyForNewUnlocks() {
         let defaults = UserDefaults(suiteName: "unlock-test-\(UUID())")!
         // Erster Abgleich: nichts ankündigen
-        XCTAssertEqual(CharacterUnlockTracker.newlyUnlocked([unlock("sir-brecht", true), unlock("hayato", false)], defaults: defaults), [])
+        XCTAssertEqual(CharacterUnlockTracker.newlyUnlocked([unlock("junge", true), unlock("hayato", false)], defaults: defaults), [])
         // Keine Änderung
-        XCTAssertEqual(CharacterUnlockTracker.newlyUnlocked([unlock("sir-brecht", true), unlock("hayato", false)], defaults: defaults), [])
+        XCTAssertEqual(CharacterUnlockTracker.newlyUnlocked([unlock("junge", true), unlock("hayato", false)], defaults: defaults), [])
         // Hayato neu frei
-        XCTAssertEqual(CharacterUnlockTracker.newlyUnlocked([unlock("sir-brecht", true), unlock("hayato", true)], defaults: defaults), [.hayato])
+        XCTAssertEqual(CharacterUnlockTracker.newlyUnlocked([unlock("junge", true), unlock("hayato", true)], defaults: defaults), [.hayato])
         // Nur einmal
-        XCTAssertEqual(CharacterUnlockTracker.newlyUnlocked([unlock("sir-brecht", true), unlock("hayato", true)], defaults: defaults), [])
+        XCTAssertEqual(CharacterUnlockTracker.newlyUnlocked([unlock("junge", true), unlock("hayato", true)], defaults: defaults), [])
     }
 
     func testParticipantsFromBackendMessage() {

@@ -22,9 +22,11 @@ struct MapMainMenu: View {
         ZStack(alignment: .bottom) {
             if isOpen {
                 // Tipp daneben schließt das Menü
+                // Tipp daneben schließt nur – nie öffnen (sonst ging es während der
+                // Schließ-Animation durch einen weiteren Tipp wieder auf)
                 Color.black.opacity(0.35)
                     .ignoresSafeArea()
-                    .onTapGesture { toggle() }
+                    .onTapGesture { close() }
                     .transition(.opacity)
             }
 
@@ -76,9 +78,10 @@ struct MapMainMenu: View {
 
     private func menuButton(_ item: MapMenuItem) -> some View {
         Button {
-            toggle()
+            close()
             item.action()
         } label: {
+            // Nur Symbole – die Namen stehen in der Bedienungshilfe (VoiceOver)
             VStack(spacing: 4) {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: item.systemImage)
@@ -97,16 +100,15 @@ struct MapMainMenu: View {
                             .offset(x: 6, y: -4)
                     }
                 }
-                Text(item.title.uppercased())
-                    .font(.system(size: 10, weight: .black, design: .rounded))
-                    .tracking(0.5)
-                    .foregroundColor(.white)
-                    .shadow(color: .black.opacity(0.6), radius: 2)
-                    .fixedSize()
             }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(item.title)
+    }
+
+    private func close() {
+        guard isOpen else { return }
+        toggle()
     }
 
     private func toggle() {

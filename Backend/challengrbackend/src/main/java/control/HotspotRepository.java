@@ -24,6 +24,11 @@ public class HotspotRepository {
                 .getSingleResult() > 0;
     }
 
+    public long countForPlayer(String playerId) {
+        return em.createQuery("SELECT COUNT(c) FROM HotspotCheckin c WHERE c.playerId = :p", Long.class)
+                .setParameter("p", playerId).getSingleResult();
+    }
+
     public void persist(HotspotCheckin checkin) {
         em.persist(checkin);
     }

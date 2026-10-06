@@ -28,8 +28,10 @@ struct CharacterEditorSheet: View {
             // Preview
             ZStack {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color(.systemBackground))
-                    .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 6)
+                    .fill(RadialGradient(colors: [Color.challengrYellow.opacity(0.35), GameStyle.panelFill],
+                                         center: .top, startRadius: 10, endRadius: 260))
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(GameStyle.panelStroke, lineWidth: 1)
 
                 if let character = store.selectedPreset.character {
                     Character3DView(character: character, allowsDragRotation: true)
@@ -142,7 +144,8 @@ struct CharacterEditorSheet: View {
         .task { await store.loadUnlocks(playerId: playerId) }
         .presentationDetents([.medium, .large], selection: $detent)
         .presentationDragIndicator(.visible)
-        .background(Color(.systemGroupedBackground))
+        .background(GameStyle.background.ignoresSafeArea())
+        .environment(\.colorScheme, .dark)
     }
 
     private func presetTile(_ preset: AvatarPreset) -> some View {
@@ -157,7 +160,7 @@ struct CharacterEditorSheet: View {
             VStack(spacing: 10) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color(.systemBackground))
+                        .fill(GameStyle.panelFill)
 
                     Image(preset.imageName)
                         .resizable()

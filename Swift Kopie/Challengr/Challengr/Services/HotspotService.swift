@@ -78,3 +78,35 @@ enum HotspotState: Equatable {
         return d <= hotspot.radiusMeters ? .inRange : .tooFar(meters: Int(d.rounded()))
     }
 }
+
+/// Wann man wieder einchecken kann: ab Mitternacht österreichischer Zeit (wie am Server).
+enum HotspotSchedule {
+    static let zone = TimeZone(identifier: "Europe/Vienna")!
+
+    static func nextCheckin(after now: Date = Date()) -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = zone
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: now)!
+        return calendar.startOfDay(for: tomorrow)
+    }
+
+    /// "7 Std 12 Min", "12 Min", "gleich"
+    static func remainingText(until date: Date, now: Date = Date()) -> String {
+        let seconds = max(0, Int(date.timeIntervalSince(now)))
+        let h = seconds / 3600, m = (seconds % 3600) / 60
+        if h > 0 { return "\(h) Std \(m) Min" }
+        if m > 0 { return "\(m) Min" }
+        return "gleich"
+    }
+
+    /// Kurz für den Marker: "7:12" bzw. "0:05"
+    static func shortText(until date: Date, now: Date = Date()) -> String {
+        let seconds = max(0, Int(date.timeIntervalSince(now)))
+        return String(format: "%d:%02d", seconds / 3600, (seconds % 3600) / 60)
+    }
+
+    /// Nach Mitternacht sind die "heute schon eingecheckt"-Daten vom Server veraltet.
+    static func isStale(loadedAt: Date, now: Date = Date()) -> Bool {
+        now >= nextCheckin(after: loadedAt)
+    }
+}

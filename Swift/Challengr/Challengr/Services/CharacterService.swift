@@ -4,8 +4,10 @@ import Foundation
 struct CharacterUnlockDTO: Codable, Equatable {
     let id: String
     let name: String
-    let winsRequired: Int
-    let wins: Int
+    /// NONE, WINS, KNOWLEDGE_WINS, CHECKINS, POINTS
+    let requirement: String
+    let required: Int
+    let progress: Int
     let unlocked: Bool
     let selected: Bool
 }

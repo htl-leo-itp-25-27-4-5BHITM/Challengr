@@ -4,18 +4,27 @@ import Foundation
 /// und als daraus gerendertes Bild (ganze Figur + Brustbild für runde Avatare).
 /// Die Ids (rawValue) und Freischalt-Regeln müssen zum Backend passen (`CharacterCatalog`).
 enum GameCharacter: String, CaseIterable, Identifiable {
+    // Start-Figuren (von Anfang an frei)
+    case junge = "junge"
+    case maedchen = "maedchen"
+    // Roster (freischaltbar)
     case sirBrecht = "sir-brecht"
     case ragnar = "ragnar"
     case hayato = "hayato"
+    case kage = "kage"
+    case kai = "kai"
+    case merlo = "merlo"
+    case lyra = "lyra"
+    case kaeptnRex = "kaeptn-rex"
 
-    /// Start-Figur dieses App-Builds, bis man eine andere wählt. Swift = Sir Brecht, Swift Kopie = Ragnar.
-    static let own: GameCharacter = .ragnar
+    /// Start-Figur dieses App-Builds, bis man eine andere wählt. Swift = Junge, Swift Kopie = Mädchen.
+    static let own: GameCharacter = .maedchen
 
     /// Die aktuell gewählte Figur (lokal gespeichert und mit dem Server abgeglichen).
     static var current: GameCharacter { AvatarPresets.persistedPreset().character ?? own }
 
     /// Ersatz, wenn der Server die Figur eines Gegners nicht kennt (z.B. alte App-Version).
-    static var opponent: GameCharacter { current == .sirBrecht ? .ragnar : .sirBrecht }
+    static var opponent: GameCharacter { current == .junge ? .maedchen : .junge }
 
     /// Figur zu einer Id vom Server; unbekannt oder nil → nil.
     static func from(serverId: String?) -> GameCharacter? {
@@ -26,34 +35,61 @@ enum GameCharacter: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
+        case .junge:     return "Junge"
+        case .maedchen:  return "Mädchen"
         case .sirBrecht: return "Sir Brecht"
         case .ragnar:    return "Ragnar"
         case .hayato:    return "Hayato"
+        case .kage:      return "Kage"
+        case .kai:       return "Kai"
+        case .merlo:     return "Merlo"
+        case .lyra:      return "Lyra"
+        case .kaeptnRex: return "Käpt'n Rex"
         }
     }
 
     /// Klasse und Rolle, wie im Figuren-Roster.
     var tagline: String {
         switch self {
-        case .sirBrecht: return "Ritter · Tank"
-        case .ragnar:    return "Wikinger · Berserker"
-        case .hayato:    return "Samurai · Duellant"
+        case .junge, .maedchen: return "Starter · Allrounder"
+        case .sirBrecht:        return "Ritter · Tank"
+        case .ragnar:           return "Wikinger · Berserker"
+        case .hayato:           return "Samurai · Duellant"
+        case .kage:             return "Ninja · Assassine"
+        case .kai:              return "Streetfighter · Allrounder"
+        case .merlo:            return "Magier · Wissen"
+        case .lyra:             return "Waldläuferin · Ausdauer"
+        case .kaeptnRex:        return "Pirat · Glücksritter"
         }
     }
 
-    /// Gewonnene Battles, ab denen die Figur wählbar ist (der Server prüft das verbindlich).
-    var winsRequired: Int {
+    /// Wofür man die Figur bekommt (der Server prüft das verbindlich).
+    var requirement: UnlockRequirement {
         switch self {
-        case .sirBrecht, .ragnar: return 0
-        case .hayato:             return 3
+        case .junge, .maedchen: return .none
+        case .sirBrecht:        return .wins(1)
+        case .ragnar:           return .wins(3)
+        case .hayato:           return .wins(5)
+        case .kage:             return .wins(10)
+        case .kai:              return .wins(20)
+        case .merlo:            return .knowledgeWins(3)
+        case .lyra:             return .checkins(5)
+        case .kaeptnRex:        return .points(350)
         }
     }
 
     var sceneName: String {
         switch self {
+        case .junge:     return "Junge"
+        case .maedchen:  return "Maedchen"
         case .sirBrecht: return "SirBrecht"
         case .ragnar:    return "Ragnar"
         case .hayato:    return "Hayato"
+        case .kage:      return "Kage"
+        case .kai:       return "Kai"
+        case .merlo:     return "Merlo"
+        case .lyra:      return "Lyra"
+        case .kaeptnRex: return "Rex"
         }
     }
 
@@ -66,4 +102,32 @@ enum GameCharacter: String, CaseIterable, Identifiable {
     /// Animation für die Karte: aus dem 3D-Modell gerendert (schräg von oben), Bilder nebeneinander.
     var mapSheetName: String { sceneName + "MapSheet" }
     static let mapSheetFrames = 16
+}
+
+/// Freischalt-Bedingung einer Figur – gleiche Typen wie im Backend (`CharacterCatalog.Requirement`).
+enum UnlockRequirement: Equatable {
+    case none
+    case wins(Int)
+    case knowledgeWins(Int)
+    case checkins(Int)
+    case points(Int)
+
+    var required: Int {
+        switch self {
+        case .none: return 0
+        case .wins(let n), .knowledgeWins(let n), .checkins(let n), .points(let n): return n
+        }
+    }
+
+    /// z.B. "3 Siege", "5 Check-ins" – für gesperrte Figuren im Editor.
+    func text(progress: Int? = nil) -> String {
+        let p = progress.map { "\(min($0, required))/" } ?? ""
+        switch self {
+        case .none:                 return "Frei"
+        case .wins(let n):          return "\(p)\(n) \(n == 1 && progress == nil ? "Sieg" : "Siege")"
+        case .knowledgeWins(let n): return "\(p)\(n) Wissens-Siege"
+        case .checkins(let n):      return "\(p)\(n) Check-ins"
+        case .points(let n):        return "\(p)\(n) Punkte"
+        }
+    }
 }

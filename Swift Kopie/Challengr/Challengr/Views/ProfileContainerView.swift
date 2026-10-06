@@ -45,11 +45,8 @@ struct ProfileContainerView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
-            .background(Color(.systemGroupedBackground))
-            
-            Divider().padding(.vertical, 8)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
             
             TabView(selection: $selectedTab) {
                 UserProfileView(
@@ -75,7 +72,9 @@ struct ProfileContainerView: View {
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             // The scroll views inside handle their own scrolling
         }
-        .background(Color(.systemGroupedBackground).edgesIgnoringSafeArea(.all))
+        .background(GameStyle.background.ignoresSafeArea())
+        // Spiel-Look: immer dunkel (Charts, Textfelder, System-Farben passen sich an)
+        .environment(\.colorScheme, .dark)
         .onAppear { selectedTab = initialTab }
     }
 }
@@ -90,19 +89,17 @@ private struct ProfileSegmentButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(isSelected ? .white : textColor.opacity(0.7))
+                .font(.system(size: 14, weight: .black, design: .rounded))
+                .tracking(1)
+                .foregroundColor(isSelected ? .challengrDark : .white.opacity(0.75))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
                 .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(isSelected ? activeColor : Color.white)
+                    Capsule().fill(isSelected ? Color.challengrYellow : GameStyle.panelFill)
                 )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(activeColor.opacity(isSelected ? 0 : 0.28), lineWidth: 1)
-                )
+                .overlay(Capsule().stroke(isSelected ? Color.clear : GameStyle.panelStroke, lineWidth: 1))
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

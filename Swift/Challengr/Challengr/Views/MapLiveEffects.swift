@@ -212,7 +212,8 @@ struct HotspotMarker: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 20, paused: reduceMotion || checkedIn)) { context in
+        // Erledigt: nur noch jede halbe Minute neu zeichnen (Countdown), sonst flüssig schweben
+        TimelineView(.animation(minimumInterval: checkedIn ? 30 : 1 / 20, paused: reduceMotion && !checkedIn)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let hover = (reduceMotion || checkedIn) ? 0 : CGFloat(sin(t * 2.4) * 4)
             let pulse = MapVibe.ripplePhase(time: t, period: 1.6)
@@ -240,6 +241,19 @@ struct HotspotMarker: View {
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundStyle(.white, Color.challengrGreen)
                                 .offset(x: 4, y: -16)
+                        }
+                    }
+                    .overlay(alignment: .top) {
+                        // Countdown bis man wieder einchecken kann
+                        if checkedIn {
+                            Label(HotspotSchedule.shortText(until: HotspotSchedule.nextCheckin(after: context.date), now: context.date),
+                                  systemImage: "clock.fill")
+                                .font(.system(size: 10, weight: .black, design: .rounded))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                .background(Capsule().fill(Color.challengrDark.opacity(0.85)))
+                                .fixedSize()
+                                .offset(y: -34)
                         }
                     }
             }

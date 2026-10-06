@@ -34,6 +34,9 @@ public class PlayerRessources {
     BattleService battleService;
 
     @Inject
+    control.HotspotRepository hotspotRepository;
+
+    @Inject
     EntityManager em;
 
     @GET
@@ -298,14 +301,20 @@ public class PlayerRessources {
         );
     }
 
-    private int countWins(Player player) {
-        return (int) playerRepository.findDoneBattlesForPlayer(player).stream()
+    /** Fortschritt für die Freischalt-Regeln: Siege, Wissens-Siege, Hotspot-Check-ins, Punkte. */
+    private CharacterCatalog.Progress progressOf(Player player) {
+        var won = playerRepository.findDoneBattlesForPlayer(player).stream()
                 .filter(b -> b.getWinner() != null && b.getWinner().getId().equals(player.getId()))
+                .toList();
+        int knowledgeWins = (int) won.stream()
+                .filter(b -> b.getCategory() != null && "Wissen".equalsIgnoreCase(b.getCategory().getName()))
                 .count();
+        int checkins = (int) hotspotRepository.countForPlayer(player.getId());
+        return new CharacterCatalog.Progress(won.size(), knowledgeWins, checkins, player.getPoints());
     }
 
     /** Eine Figur mit Freischalt-Stand für diesen Spieler. */
-    public record CharacterUnlockDTO(String id, String name, int winsRequired, int wins,
+    public record CharacterUnlockDTO(String id, String name, String requirement, int required, int progress,
                                      boolean unlocked, boolean selected) {}
 
     @GET
@@ -315,10 +324,11 @@ public class PlayerRessources {
         if (player == null) {
             throw new NotFoundException();
         }
-        int wins = countWins(player);
+        var progress = progressOf(player);
         return CharacterCatalog.ALL.stream()
-                .map(e -> new CharacterUnlockDTO(e.id(), e.name(), e.winsRequired(), wins,
-                        wins >= e.winsRequired(), e.id().equals(player.getCharacter())))
+                .map(e -> new CharacterUnlockDTO(e.id(), e.name(), e.requirement().name(), e.required(),
+                        Math.min(progress.of(e.requirement()), Math.max(e.required(), 0)),
+                        CharacterCatalog.isUnlocked(e, progress), e.id().equals(player.getCharacter())))
                 .toList();
     }
 
@@ -334,9 +344,8 @@ public class PlayerRessources {
         String character = body == null ? null : body.get("character");
         var entry = CharacterCatalog.find(character)
                 .orElseThrow(() -> new WebApplicationException("Unbekannte Figur: " + character, 400));
-        if (countWins(player) < entry.winsRequired()) {
-            throw new WebApplicationException(
-                    entry.name() + " ist erst ab " + entry.winsRequired() + " Siegen freigeschaltet", 403);
+        if (!CharacterCatalog.isUnlocked(entry, progressOf(player))) {
+            throw new WebApplicationException(entry.name() + " ist noch gesperrt", 403);
         }
         player.setCharacter(entry.id());
         return toDTO(player);

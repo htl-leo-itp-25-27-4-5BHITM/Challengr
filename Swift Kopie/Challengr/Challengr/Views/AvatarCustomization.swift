@@ -108,13 +108,12 @@ nonisolated final class AvatarCustomizationStore: ObservableObject {
 
     /// Ist die Figur wählbar? Ohne Serverdaten gelten nur die Start-Figuren als frei.
     func isUnlocked(_ character: GameCharacter) -> Bool {
-        unlocks[character.rawValue]?.unlocked ?? (character.winsRequired == 0)
+        unlocks[character.rawValue]?.unlocked ?? (character.requirement == .none)
     }
 
-    /// "1/3 Siege" o.ä. für gesperrte Figuren.
+    /// "1/3 Siege", "2/5 Check-ins" … für gesperrte Figuren.
     func progressText(_ character: GameCharacter) -> String {
-        let wins = unlocks[character.rawValue]?.wins ?? 0
-        return "\(min(wins, character.winsRequired))/\(character.winsRequired) Siege"
+        character.requirement.text(progress: unlocks[character.rawValue]?.progress ?? 0)
     }
 
     @MainActor
