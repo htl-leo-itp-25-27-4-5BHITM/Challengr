@@ -21,7 +21,7 @@ final class ChallengesService {
 
         print("Lade Kategorie '\(category)' von:", url.absoluteString)
 
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await API.data(from: url)
 
         if let http = response as? HTTPURLResponse {
             print("HTTP Status:", http.statusCode)
@@ -37,7 +37,7 @@ final class ChallengesService {
     /// Loads a single challenge by id (Einzelne Challenge per ID laden)
     func loadChallenge(id: Int64) async throws -> ChallengeDTO {
         let url = baseURL.appendingPathComponent("id").appendingPathComponent(String(id))
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await API.data(from: url)
 
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
             throw URLError(.badServerResponse)

@@ -35,7 +35,7 @@ final class ShopService {
 
     func loadItems() async throws -> [ShopItemDTO] {
         let url = baseURL.appendingPathComponent("items")
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await API.data(from: url)
         return try JSONDecoder().decode([ShopItemDTO].self, from: data)
     }
 
@@ -44,7 +44,7 @@ final class ShopService {
             .appendingPathComponent("players")
             .appendingPathComponent(playerId)
             .appendingPathComponent("items")
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await API.data(from: url)
         return try JSONDecoder().decode([PlayerItemDTO].self, from: data)
     }
 
@@ -59,7 +59,7 @@ final class ShopService {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(PurchaseRequestDTO(itemCode: itemCode))
 
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await API.data(for: request)
         return try JSONDecoder().decode(PurchaseResultDTO.self, from: data)
     }
 }

@@ -31,7 +31,7 @@ final class RankService {
 
     func loadRanks() async throws -> [TrophyRank] {
         let url = baseURL.appendingPathComponent("api/ranks")
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await API.data(from: url)
         return try JSONDecoder().decode([TrophyRank].self, from: data)
     }
 }

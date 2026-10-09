@@ -26,7 +26,7 @@ final class PlayerLocationService {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(dto)
 
-        _ = try await URLSession.shared.data(for: request)
+        _ = try await API.data(for: request)
     }
 
     /// Creates a new player (Erstellt neuen Spieler)
@@ -43,7 +43,7 @@ final class PlayerLocationService {
             PlayerRequestDTO(id: nil, name: name, keycloakId: keycloakId, latitude: latitude, longitude: longitude)
         )
 
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await API.data(for: request)
         return try JSONDecoder().decode(PlayerDTO.self, from: data)
     }
 
@@ -72,7 +72,7 @@ final class PlayerLocationService {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
 
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await API.data(for: request)
         return try JSONDecoder().decode([PlayerDTO].self, from: data)
     }
     
@@ -84,7 +84,18 @@ final class PlayerLocationService {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
 
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await API.data(for: request)
+        return try JSONDecoder().decode(PlayerDTO.self, from: data)
+    }
+
+    /// "Unsichtbar": nicht mehr bei anderen auf der Karte (Standortschutz)
+    func setInvisible(id: String, invisible: Bool) async throws -> PlayerDTO {
+        var request = URLRequest(url: baseURL.appendingPathComponent(id).appendingPathComponent("visibility"))
+        request.httpMethod = "PUT"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["invisible": invisible])
+        let (data, response) = try await API.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
         return try JSONDecoder().decode(PlayerDTO.self, from: data)
     }
 
@@ -94,7 +105,7 @@ final class PlayerLocationService {
             .appendingPathComponent(id)
             .appendingPathComponent("streak")
 
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await API.data(from: url)
         return try JSONDecoder().decode(Int.self, from: data)
     }
 
@@ -116,7 +127,7 @@ extension PlayerLocationService {
             .appendingPathComponent(id)
             .appendingPathComponent("points")
 
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await API.data(from: url)
         let dto = try JSONDecoder().decode(PlayerPointsDTO.self, from: data)
         return dto.points
     }
@@ -126,7 +137,7 @@ extension PlayerLocationService {
         let url = baseURL
             .appendingPathComponent(id)
             .appendingPathComponent("stats")
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await API.data(from: url)
         return try JSONDecoder().decode(PlayerStatsDTO.self, from: data)
     }
 
@@ -135,7 +146,7 @@ extension PlayerLocationService {
         let url = baseURL
             .appendingPathComponent(id)
             .appendingPathComponent("points-history")
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await API.data(from: url)
         return try JSONDecoder().decode([PlayerPointsHistoryDTO].self, from: data)
     }
 
@@ -146,7 +157,7 @@ extension PlayerLocationService {
         let url = baseURL
             .appendingPathComponent(id)
             .appendingPathComponent("battles")
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await API.data(from: url)
 
         if let httpResponse = response as? HTTPURLResponse {
             if httpResponse.statusCode == 404 {
@@ -177,7 +188,7 @@ extension PlayerLocationService {
         let url = baseURL
             .appendingPathComponent(id)
             .appendingPathComponent("profile")
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await API.data(from: url)
         return try JSONDecoder().decode(PlayerProfileDTO.self, from: data)
     }
 
@@ -187,7 +198,7 @@ extension PlayerLocationService {
         let url = baseURL
             .appendingPathComponent(id)
             .appendingPathComponent("loudness-best")
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await API.data(from: url)
         let dto = try JSONDecoder().decode(PlayerLoudnessBestDTO.self, from: data)
         return dto.bestLoudness
     }
@@ -202,7 +213,7 @@ extension PlayerLocationService {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(PlayerLoudnessBestDTO(bestLoudness: best))
 
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await API.data(for: request)
         let dto = try JSONDecoder().decode(PlayerLoudnessBestDTO.self, from: data)
         return dto.bestLoudness
     }

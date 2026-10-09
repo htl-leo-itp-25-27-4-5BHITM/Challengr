@@ -34,7 +34,7 @@ final class CharacterService {
 
     func loadCharacters(playerId: String) async throws -> [CharacterUnlockDTO] {
         let url = baseURL.appendingPathComponent(playerId).appendingPathComponent("characters")
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await API.data(from: url)
         return try JSONDecoder().decode([CharacterUnlockDTO].self, from: data)
     }
 
@@ -45,7 +45,7 @@ final class CharacterService {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(["character": character.rawValue])
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await API.data(for: request)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             let message = String(data: data, encoding: .utf8).flatMap { $0.isEmpty ? nil : $0 }
             throw CharacterServiceError.rejected(message ?? "Figur konnte nicht gespeichert werden (\(http.statusCode))",

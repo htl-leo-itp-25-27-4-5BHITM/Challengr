@@ -43,7 +43,7 @@ final class FriendsService {
             FriendRequestCreateDTO(fromPlayerId: fromPlayerId, toPlayerId: toPlayerId)
         )
 
-        let (_, response) = try await URLSession.shared.data(for: request)
+        let (_, response) = try await API.data(for: request)
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
             throw URLError(.badServerResponse)
         }
@@ -54,7 +54,7 @@ final class FriendsService {
         components.queryItems = [URLQueryItem(name: "playerId", value: playerId)]
         guard let url = components.url else { return [] }
 
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await API.data(from: url)
         return try JSONDecoder().decode([FriendRequestDTO].self, from: data)
     }
 
@@ -63,7 +63,7 @@ final class FriendsService {
         components.queryItems = [URLQueryItem(name: "playerId", value: playerId)]
         guard let url = components.url else { return [] }
 
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await API.data(from: url)
         return try JSONDecoder().decode([FriendRequestDTO].self, from: data)
     }
 
@@ -76,7 +76,7 @@ final class FriendsService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
 
-        let (_, response) = try await URLSession.shared.data(for: request)
+        let (_, response) = try await API.data(for: request)
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
             throw URLError(.badServerResponse)
         }
@@ -91,7 +91,7 @@ final class FriendsService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
 
-        let (_, response) = try await URLSession.shared.data(for: request)
+        let (_, response) = try await API.data(for: request)
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
             throw URLError(.badServerResponse)
         }
@@ -102,7 +102,7 @@ final class FriendsService {
         components.queryItems = [URLQueryItem(name: "playerId", value: playerId)]
         guard let url = components.url else { return [] }
 
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await API.data(from: url)
         return try JSONDecoder().decode([FriendDTO].self, from: data)
     }
 
@@ -117,7 +117,7 @@ final class FriendsService {
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
 
-        let (_, response) = try await URLSession.shared.data(for: request)
+        let (_, response) = try await API.data(for: request)
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
             throw URLError(.badServerResponse)
         }
@@ -132,7 +132,7 @@ final class FriendsService {
             FriendGiftCreateDTO(fromPlayerId: fromPlayerId, toPlayerId: toPlayerId)
         )
 
-        let (_, response) = try await URLSession.shared.data(for: request)
+        let (_, response) = try await API.data(for: request)
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
             throw URLError(.badServerResponse)
         }
@@ -143,7 +143,7 @@ final class FriendsService {
         components.queryItems = [URLQueryItem(name: "playerId", value: playerId)]
         guard let url = components.url else { return [] }
 
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await API.data(from: url)
         return try JSONDecoder().decode([FriendGiftDTO].self, from: data)
     }
 
@@ -161,7 +161,7 @@ final class FriendsService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
 
-        let (_, response) = try await URLSession.shared.data(for: request)
+        let (_, response) = try await API.data(for: request)
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
             throw URLError(.badServerResponse)
         }

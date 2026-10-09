@@ -41,23 +41,24 @@ final class FriendsViewModel: ObservableObject {
                     friendDTOs.append(dto)
                 }
             }
-            friends = friendDTOs
-
             let friendIdSet = Set(friendDTOs.map { $0.id })
 
             // "In der Nähe" nur mit Standort – der Rest der Seite geht auch ohne (BUG-13)
+            var players: [PlayerDTO] = []
             if let coordinate {
-                let players = try await playerService.loadNearbyPlayers(
+                players = try await playerService.loadNearbyPlayers(
                     currentPlayerId: ownPlayerId,
                     latitude: coordinate.latitude,
                     longitude: coordinate.longitude,
                     radius: radiusMeters
                 )
-                // Exclude already-friended players (and ourselves) from the nearby suggestions.
-                nearbyPlayers = players.filter { !friendIdSet.contains($0.id) && $0.id != ownPlayerId }
-            } else {
-                nearbyPlayers = []
             }
+            // Fremde Profile kommen ohne Standort (Datenschutz); ist ein Freund in der Nähe,
+            // liefert "nearby" seine gerundete Position – daraus entsteht "In deiner Nähe".
+            let nearbyById = Dictionary(players.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            friends = friendDTOs.map { nearbyById[$0.id] ?? $0 }
+            // Exclude already-friended players (and ourselves) from the nearby suggestions.
+            nearbyPlayers = players.filter { !friendIdSet.contains($0.id) && $0.id != ownPlayerId }
 
             let outgoing = try await friendsService.loadOutgoingPendingRequests(playerId: ownPlayerId)
             pendingOutgoingToPlayerIds = Set(outgoing.map { $0.toPlayerId })

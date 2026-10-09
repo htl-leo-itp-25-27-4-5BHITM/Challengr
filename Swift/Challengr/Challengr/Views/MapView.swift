@@ -2122,13 +2122,14 @@ struct MapView: View {
             )
 
             // Der eigene Spieler kommt mit – der hat schon seinen eigenen Pin
-            let updated = players.filter { $0.id != ownPlayerId && MapPlayerFilter.isVisible(name: $0.name) }.map {
-                PlayerAnnotation(
-                    playerId: $0.id,
-                    coordinate: CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude),
-                    title: "\($0.name) · \($0.rankName)",
-                    rankName: $0.rankName,
-                    character: GameCharacter.from(serverId: $0.character)
+            let updated = players.filter { $0.id != ownPlayerId && MapPlayerFilter.isVisible(name: $0.name) }.compactMap { p -> PlayerAnnotation? in
+                guard let lat = p.latitude, let lon = p.longitude else { return nil }
+                return PlayerAnnotation(
+                    playerId: p.id,
+                    coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
+                    title: "\(p.name) · \(p.rankName)",
+                    rankName: p.rankName,
+                    character: GameCharacter.from(serverId: p.character)
                 )
             }
             // Spieler gleiten zur neuen Position statt zu springen

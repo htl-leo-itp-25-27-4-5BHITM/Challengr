@@ -7,6 +7,10 @@ struct SettingsView: View {
     @AppStorage("isSoundEnabled") private var isSoundEnabled = true
     @AppStorage("isMusicEnabled") private var isMusicEnabled = true
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
+    /// Stand vom Server (nil = noch nicht geladen)
+    @State private var isInvisible: Bool? = nil
+    @State private var privacyError: String? = nil
+    private let playerService = PlayerLocationService()
 
     var body: some View {
         NavigationView {
@@ -47,6 +51,21 @@ struct SettingsView: View {
                     }
                 }
                 
+                Section(header: Text("Privatsphäre"),
+                        footer: Text("Andere sehen dich nur in der Nähe (bis 300 m) und nur ungefähr (ca. 50 m genau). Unsichtbar tauchst du bei niemandem auf der Karte auf.")) {
+                    Toggle(isOn: Binding(get: { isInvisible ?? false }, set: { setInvisible($0) })) {
+                        HStack {
+                            Image(systemName: "eye.slash.fill")
+                                .foregroundColor(.purple)
+                            Text("Unsichtbar auf der Karte")
+                        }
+                    }
+                    .disabled(isInvisible == nil || auth.playerId == nil)
+                    if let privacyError {
+                        Text(privacyError).font(.caption).foregroundColor(.red)
+                    }
+                }
+
                 Section(header: Text("Account")) {
                     VStack(alignment: .leading, spacing: 5) {
                         Text("Angemeldet als:")
@@ -82,9 +101,31 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Einstellungen")
+            .task { await loadVisibility() }
             .navigationBarItems(trailing: Button("Fertig") {
                 dismiss()
             })
+        }
+    }
+
+    private func loadVisibility() async {
+        guard let id = auth.playerId, let me = try? await playerService.loadPlayerById(id: id) else { return }
+        isInvisible = me.invisible ?? false
+    }
+
+    private func setInvisible(_ invisible: Bool) {
+        guard let id = auth.playerId else { return }
+        let previous = isInvisible
+        isInvisible = invisible
+        privacyError = nil
+        Task {
+            do {
+                let me = try await playerService.setInvisible(id: id, invisible: invisible)
+                isInvisible = me.invisible ?? invisible
+            } catch {
+                isInvisible = previous
+                privacyError = "Konnte nicht gespeichert werden – bitte nochmal versuchen."
+            }
         }
     }
 }

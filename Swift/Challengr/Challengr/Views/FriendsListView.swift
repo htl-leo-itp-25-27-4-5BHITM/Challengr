@@ -352,8 +352,8 @@ struct FriendsListView: View {
     }
 
     private func distanceToFriend(_ friend: PlayerDTO) -> Double? {
-        guard let currentCoordinate else { return nil }
-        let friendLocation = CLLocation(latitude: friend.latitude, longitude: friend.longitude)
+        guard let currentCoordinate, let lat = friend.latitude, let lon = friend.longitude else { return nil }
+        let friendLocation = CLLocation(latitude: lat, longitude: lon)
         let ownLocation = CLLocation(latitude: currentCoordinate.latitude, longitude: currentCoordinate.longitude)
         return ownLocation.distance(from: friendLocation)
     }

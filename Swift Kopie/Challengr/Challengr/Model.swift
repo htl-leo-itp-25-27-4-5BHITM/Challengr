@@ -23,14 +23,17 @@ struct PlayerRequestDTO: Codable {
 struct PlayerDTO: Codable, Identifiable {
     let id: String
     let name: String
-    let latitude: Double
-    let longitude: Double
+    /// Eigenes Konto: genau; "nearby": gerundet (~50 m); fremdes Profil: nil (Standortschutz)
+    let latitude: Double?
+    let longitude: Double?
     let points: Int
     let rankName: String
     /// Gewählte Spielfigur (z.B. "sir-brecht"); nil bei Spielern ohne Wahl oder alten Backends.
     var character: String? = nil
     /// Liga-Trophäen (Quiz-Show und Real-Life gemeinsam; nil bei alten Backends)
     var trophies: Int? = nil
+    /// "Unsichtbar" (nur beim eigenen Konto gesetzt)
+    var invisible: Bool? = nil
 }
 
 // MARK: - Challenge DTOs (Challenge-DTOs)
@@ -92,13 +95,11 @@ struct BackendConfig {
         return baseURL.appendingPathComponent(normalized)
     }
 
-    static func gameWebSocketURL(playerId: String) -> URL {
+    /// Wer verbunden ist, ergibt sich aus dem Login-Token (Authorization-Header), nicht aus der URL.
+    static func gameWebSocketURL() -> URL {
         var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
         components.scheme = baseURL.scheme == "https" ? "wss" : "ws"
         components.path = "/ws/game"
-        components.queryItems = [
-            URLQueryItem(name: "playerId", value: String(playerId))
-        ]
         return components.url!
     }
 }

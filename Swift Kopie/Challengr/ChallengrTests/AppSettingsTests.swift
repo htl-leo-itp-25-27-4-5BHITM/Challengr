@@ -109,11 +109,9 @@ final class AppSettingsTests: XCTestCase {
                        "https://it220257.cloud.htl-leonding.ac.at/api/players", "Führender Slash wird entfernt")
     }
 
-    func testWebSocketUrlUsesSecureSocketAndEncodesId() {
-        let url = BackendConfig.gameWebSocketURL(playerId: "a b&c")
+    func testWebSocketUrlUsesSecureSocket() {
+        let url = BackendConfig.gameWebSocketURL()
         XCTAssertEqual(url.scheme, "wss")
         XCTAssertEqual(url.path, "/ws/game")
-        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
-        XCTAssertEqual(items?.first(where: { $0.name == "playerId" })?.value, "a b&c")
     }
 }

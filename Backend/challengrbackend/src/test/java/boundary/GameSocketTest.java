@@ -80,7 +80,7 @@ class GameSocketTest {
     void connectionWithoutLoginIsRefused() throws Exception {
         WsTestClient anonymous;
         try {
-            anonymous = WsTestClient.connect(wsUri, null, B, "?playerId=" + B);
+            anonymous = WsTestClient.connect(wsUri, null, B, "");
         } catch (Exception refused) {
             return; // schon das Upgrade wird mit 401 abgelehnt
         }

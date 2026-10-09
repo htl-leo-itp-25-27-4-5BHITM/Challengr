@@ -102,8 +102,22 @@ final class GameSocketService: ObservableObject {
     private func openConnectionIfNeeded() {
         guard webSocketTask == nil else { return }
 
-        let url = BackendConfig.gameWebSocketURL(playerId: playerId)
-        let task = urlSession.webSocketTask(with: url)
+        // Login beim Verbindungsaufbau (A4): abgelaufenes Token vorher erneuern
+        if AuthSession.shared.needsRefresh() {
+            Task { [weak self] in
+                await AuthSession.shared.refreshIfNeeded()
+                await MainActor.run { self?.openAuthorizedConnection() }
+            }
+            return
+        }
+        openAuthorizedConnection()
+    }
+
+    private func openAuthorizedConnection() {
+        guard webSocketTask == nil, !isManualDisconnect else { return }
+        var request = URLRequest(url: BackendConfig.gameWebSocketURL())
+        AuthSession.shared.authorize(&request)
+        let task = urlSession.webSocketTask(with: request)
         webSocketTask = task
         task.resume()
 

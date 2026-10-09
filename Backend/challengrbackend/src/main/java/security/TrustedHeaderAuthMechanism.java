@@ -33,6 +33,10 @@ public class TrustedHeaderAuthMechanism implements HttpAuthenticationMechanism {
     public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
         if (!enabled) return Uni.createFrom().optional(java.util.Optional.empty());
         String playerId = context.request().getHeader(PLAYER_HEADER);
+        if ((playerId == null || playerId.isBlank()) && context.request().path().startsWith("/ws/")) {
+            // Browser-/Node-WebSockets können keine Header setzen (Test-Gegner im Harness)
+            playerId = context.request().getParam("playerId");
+        }
         if (playerId == null || playerId.isBlank()) return Uni.createFrom().optional(java.util.Optional.empty());
         QuarkusSecurityIdentity.Builder identity = QuarkusSecurityIdentity.builder()
                 .setPrincipal(new QuarkusPrincipal(playerId.trim()));

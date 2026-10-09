@@ -41,7 +41,7 @@ final class HotspotService {
     func load(playerId: String) async throws -> [HotspotDTO] {
         var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
         components.queryItems = [URLQueryItem(name: "playerId", value: playerId)]
-        let (data, _) = try await URLSession.shared.data(from: components.url!)
+        let (data, _) = try await API.data(from: components.url!)
         return try JSONDecoder().decode([HotspotDTO].self, from: data)
     }
 
@@ -52,7 +52,7 @@ final class HotspotService {
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "playerId": playerId, "latitude": coordinate.latitude, "longitude": coordinate.longitude
         ])
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await API.data(for: request)
         let code = (response as? HTTPURLResponse)?.statusCode ?? 0
         switch code {
         case 200..<300: return try JSONDecoder().decode(HotspotCheckinResult.self, from: data)

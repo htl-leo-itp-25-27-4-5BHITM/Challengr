@@ -20,12 +20,37 @@ final class KeycloakAuthService: NSObject, ObservableObject {
 
     @Published var accessToken:  String? = nil
     @Published var idToken:      String? = nil
+    private var refreshToken:    String? = nil
     @Published var playerId:     String?  = nil
     @Published var playerName:   String  = ""
     @Published var keycloakUserId: String? = nil
 
     // MARK: - PKCE helpers
     private var codeVerifier: String = ""
+
+    override init() {
+        super.init()
+        #if DEBUG
+        // Nur UI-Tests im Test-Harness (lokales Backend ohne Keycloak, Login über X-Player-Id)
+        let env = ProcessInfo.processInfo.environment
+        if let pid = env["AUDIT_PLAYER_ID"], !pid.isEmpty {
+            playerId = pid
+            playerName = env["AUDIT_PLAYER_NAME"] ?? "AuditTester"
+            keycloakUserId = pid
+            isAuthenticated = true
+        }
+        #endif
+        // Abgelaufener Login (Refresh fehlgeschlagen, 401) → zurück zum Login
+        NotificationCenter.default.addObserver(forName: .authExpired, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.handleExpiredLogin() }
+        }
+    }
+
+    private func handleExpiredLogin() {
+        guard isAuthenticated else { return }
+        clearSession()
+        errorMessage = "Deine Anmeldung ist abgelaufen – bitte neu anmelden."
+    }
 
     private func generateCodeVerifier() -> String {
         var bytes = [UInt8](repeating: 0, count: 64)
@@ -116,8 +141,7 @@ final class KeycloakAuthService: NSObject, ObservableObject {
         do {
             let (data, _) = try await URLSession.shared.data(for: req)
             let json = try JSONDecoder().decode(TokenResponse.self, from: data)
-            accessToken = json.access_token
-            idToken = json.id_token
+            apply(json)
             parseToken(json.access_token)
             if playerId == nil {
                 await ensurePlayerId()
@@ -127,6 +151,40 @@ final class KeycloakAuthService: NSObject, ObservableObject {
             errorMessage = "Token-Fehler: \(error.localizedDescription)"
         }
         isLoading = false
+    }
+
+    /// Neue Tokens übernehmen und an alle Anfragen weitergeben.
+    private func apply(_ json: TokenResponse) {
+        accessToken = json.access_token
+        if let id = json.id_token { idToken = id }
+        if let refresh = json.refresh_token { refreshToken = refresh }
+        AuthSession.shared.update(accessToken: json.access_token, expiresIn: json.expires_in.map(TimeInterval.init))
+        AuthSession.shared.setRefresher { [weak self] in
+            await self?.refresh() ?? false
+        }
+    }
+
+    /// Access-Token mit dem Refresh-Token erneuern (Keycloak gibt nur wenige Minuten gültige Tokens aus).
+    func refresh() async -> Bool {
+        guard let refreshToken else { return false }
+        var body = URLComponents()
+        body.queryItems = [
+            .init(name: "grant_type",    value: "refresh_token"),
+            .init(name: "client_id",     value: clientId),
+            .init(name: "refresh_token", value: refreshToken),
+        ]
+        var req = URLRequest(url: URL(string: "\(keycloakBase)/protocol/openid-connect/token")!)
+        req.httpMethod = "POST"
+        req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        req.httpBody = body.query?.data(using: .utf8)
+        do {
+            let (data, response) = try await URLSession.shared.data(for: req)
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else { return false }
+            apply(try JSONDecoder().decode(TokenResponse.self, from: data))
+            return true
+        } catch {
+            return false
+        }
     }
 
     // MARK: - JWT-Payload parsen (playerId + name)
@@ -221,7 +279,9 @@ final class KeycloakAuthService: NSObject, ObservableObject {
     }
 
     private func clearSession() {
+        AuthSession.shared.clear()
         accessToken     = nil
+        refreshToken    = nil
         idToken         = nil
         playerId        = nil
         playerName      = ""
@@ -245,6 +305,9 @@ extension KeycloakAuthService: ASWebAuthenticationPresentationContextProviding {
 private struct TokenResponse: Decodable {
     let access_token: String
     let id_token: String?
+    let refresh_token: String?
+    /// Gültigkeit des Access-Tokens in Sekunden
+    let expires_in: Int?
 }
 
 // MARK: - Data Base64URL Helpers
