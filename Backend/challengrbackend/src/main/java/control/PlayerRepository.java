@@ -84,6 +84,13 @@ public class PlayerRepository {
                 .orElse(null);
     }
 
+    /** A5: zuletzt aktiv setzen (null = offline). */
+    @Transactional
+    public void setLastSeen(String playerId, java.time.Instant at) {
+        Player p = em.find(Player.class, playerId);
+        if (p != null) p.setLastSeenAt(at);
+    }
+
     @Transactional
     public Player save(Player player) {
         if (player.getId() == null) {

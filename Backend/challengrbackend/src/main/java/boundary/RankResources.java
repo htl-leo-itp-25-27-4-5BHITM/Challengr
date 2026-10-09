@@ -14,6 +14,7 @@ import java.util.List;
 @Path("/api/ranks")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@jakarta.annotation.security.PermitAll // bewusst öffentlich: Stammdaten ohne persönliche Daten
 public class RankResources {
     @Inject
     RankRepository rankRepository;

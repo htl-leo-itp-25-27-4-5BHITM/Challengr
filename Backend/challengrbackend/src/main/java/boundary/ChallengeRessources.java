@@ -1,5 +1,8 @@
 package boundary;
 
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+import security.CurrentPlayer;
 import boundary.dto.ChallengeDTO;
 import boundary.dto.ChallengeCreateDTO;
 import control.ChallengeCategoriesRepository;
@@ -23,8 +26,9 @@ public class ChallengeRessources {
     @Inject
     ChallengeCategoriesRepository categoriesRepository;
 
-    // Dashboard (Verwaltung) – enthält die richtige Antwort
+    // Dashboard (Verwaltung) – enthält die richtige Antwort, deshalb nur für Admins
     @GET
+    @RolesAllowed(CurrentPlayer.ADMIN_ROLE)
     public List<ChallengeDTO> findAllChallenges() {
         return challengeRepository.getAllChallenges()
                 .stream()
@@ -33,6 +37,7 @@ public class ChallengeRessources {
     }
 
     @POST
+    @RolesAllowed(CurrentPlayer.ADMIN_ROLE)
     public ChallengeDTO createChallenge(ChallengeCreateDTO dto) {
         if (dto == null) {
             throw new WebApplicationException("Missing body", 400);
@@ -81,6 +86,7 @@ public class ChallengeRessources {
 
     @GET
     @Path("/id/{id}")
+    @PermitAll
     public ChallengeDTO findChallengeById(@PathParam("id") long id) {
         Challenges ch = challengeRepository.findById(id);
         if (ch == null) {
@@ -92,6 +98,7 @@ public class ChallengeRessources {
 
     @GET
     @Path("/{kategorie}")
+    @PermitAll
     public List<ChallengeDTO> findChallengesByKat(@PathParam("kategorie") String kategorie) {
         return challengeRepository.findChallengesByKat(kategorie)
                 .stream()

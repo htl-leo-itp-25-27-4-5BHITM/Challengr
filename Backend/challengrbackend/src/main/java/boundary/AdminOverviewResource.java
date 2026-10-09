@@ -1,7 +1,7 @@
 package boundary;
 
 import control.AdminOverviewService;
-import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -15,7 +15,7 @@ import java.util.List;
 
 @Path("/api/admin/overview")
 @Produces(MediaType.APPLICATION_JSON)
-@PermitAll // TODO: restrict to admin role once dashboard uses Bearer tokens
+@RolesAllowed("admin") // A3: nur Admins (Keycloak-Realm-Rolle "admin"), Dashboard schickt das Token
 public class AdminOverviewResource {
 
     private static final DateTimeFormatter AT_FORMAT =

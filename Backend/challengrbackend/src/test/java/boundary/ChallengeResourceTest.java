@@ -70,7 +70,7 @@ class ChallengeResourceTest {
 
     @Test
     void dashboardListStillContainsTheAnswer() {
-        List<Map<String, Object>> all = given()
+        List<Map<String, Object>> all = Login.admin()
                 .when().get("/api/challenges")
                 .then().statusCode(200)
                 .extract().jsonPath().getList("$");
@@ -81,8 +81,16 @@ class ChallengeResourceTest {
     }
 
     @Test
+    void answersAndCreatingAreAdminOnly() {
+        given().when().get("/api/challenges").then().statusCode(401);
+        Login.as("demo-1").when().get("/api/challenges").then().statusCode(403);
+        Login.as("demo-1").contentType("application/json").body("{\"text\":\"x\",\"category\":\"Fitness\"}")
+                .when().post("/api/challenges").then().statusCode(403);
+    }
+
+    @Test
     void createKnowledgeChallenge() {
-        given().contentType("application/json")
+        Login.admin().contentType("application/json")
                 .body("""
                         {"text":"Test-Frage?","category":"Wissen","choices":["a","b","c","d"],"correctIndex":2}
                         """)
@@ -94,17 +102,17 @@ class ChallengeResourceTest {
 
     @Test
     void createRejectsInvalidInput() {
-        given().contentType("application/json").body("{\"category\":\"Fitness\"}")
+        Login.admin().contentType("application/json").body("{\"category\":\"Fitness\"}")
                 .when().post("/api/challenges").then().statusCode(400);
 
-        given().contentType("application/json").body("{\"text\":\"x\",\"category\":\"Gibtsnicht\"}")
+        Login.admin().contentType("application/json").body("{\"text\":\"x\",\"category\":\"Gibtsnicht\"}")
                 .when().post("/api/challenges").then().statusCode(400);
 
-        given().contentType("application/json")
+        Login.admin().contentType("application/json")
                 .body("{\"text\":\"x\",\"category\":\"Wissen\",\"choices\":[\"a\",\"b\"],\"correctIndex\":0}")
                 .when().post("/api/challenges").then().statusCode(400);
 
-        given().contentType("application/json")
+        Login.admin().contentType("application/json")
                 .body("{\"text\":\"x\",\"category\":\"Wissen\",\"choices\":[\"a\",\"b\",\"c\",\"d\"],\"correctIndex\":7}")
                 .when().post("/api/challenges").then().statusCode(400);
     }

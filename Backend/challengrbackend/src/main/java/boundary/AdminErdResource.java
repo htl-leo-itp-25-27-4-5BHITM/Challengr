@@ -1,6 +1,6 @@
 package boundary;
 
-import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -32,7 +32,7 @@ import java.util.Set;
  */
 @Path("/api/admin/erd")
 @Produces(MediaType.APPLICATION_JSON)
-@PermitAll // Dashboard currently calls this without a Bearer token.
+@RolesAllowed("admin") // A3: nur Admins (Keycloak-Realm-Rolle "admin"), Dashboard schickt das Token
 public class AdminErdResource {
 
     @Inject

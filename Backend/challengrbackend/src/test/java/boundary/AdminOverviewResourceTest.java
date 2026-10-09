@@ -29,8 +29,12 @@ class AdminOverviewResourceTest {
         banned.setBanReason("test");
         playerRepository.createPlayer(banned);
 
+        // A3: ohne Login 401, normaler Spieler 403, Admin 200
+        given().when().get("/api/admin/overview").then().statusCode(401);
+        Login.as("demo-1").when().get("/api/admin/overview").then().statusCode(403);
+
         // act + assert
-        given()
+        Login.admin()
                 .when().get("/api/admin/overview")
                 .then()
                 .statusCode(200)

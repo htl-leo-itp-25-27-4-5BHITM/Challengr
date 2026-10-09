@@ -1,5 +1,8 @@
 package boundary;
 
+import io.quarkus.security.Authenticated;
+import jakarta.annotation.security.PermitAll;
+import security.CurrentPlayer;
 import control.PlayerRepository;
 import control.ShopRepository;
 import entity.Player;
@@ -16,7 +19,11 @@ import java.util.List;
 @Path("/api/shop")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@Authenticated
 public class ShopResources {
+
+    @Inject
+    CurrentPlayer me;
 
     @Inject
     ShopRepository shopRepository;
@@ -24,8 +31,10 @@ public class ShopResources {
     @Inject
     PlayerRepository playerRepository;
 
+    /** Katalog ist öffentlich. */
     @GET
     @Path("/items")
+    @PermitAll
     public List<ShopItem> getItems() {
         return shopRepository.getAllItems();
     }
@@ -33,6 +42,7 @@ public class ShopResources {
     @GET
     @Path("/players/{playerId}/items")
     public List<PlayerItemDTO> getOwnedItems(@PathParam("playerId") String playerId) {
+        me.requireSelf(playerId);
         return shopRepository.getOwnedItems(playerId).stream()
                 .map(pi -> new PlayerItemDTO(pi.getItem().getCode(), pi.getQuantity()))
                 .toList();
@@ -42,6 +52,7 @@ public class ShopResources {
     @Path("/players/{playerId}/purchase")
     @Transactional
     public Response purchase(@PathParam("playerId") String playerId, PurchaseRequest request) {
+        me.requireSelf(playerId); // nie für fremde Konten einkaufen
         if (request == null || request.itemCode == null || request.itemCode.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(new PurchaseResultDTO(false, "itemCode fehlt", 0, null, 0))

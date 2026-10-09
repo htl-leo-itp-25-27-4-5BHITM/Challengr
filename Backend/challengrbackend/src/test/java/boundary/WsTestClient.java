@@ -3,6 +3,7 @@ package boundary;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.websocket.ClientEndpoint;
+import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
@@ -13,8 +14,20 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 /** Einfacher WebSocket-Client für Tests: sammelt alle empfangenen Nachrichten. */
-@ClientEndpoint
+@ClientEndpoint(configurator = WsTestClient.LoginHeader.class)
 public class WsTestClient {
+
+    /** Login wie in Dev/Test: X-Player-Id-Header beim Upgrade (in Prod: Keycloak-Token). */
+    // Der Configurator läuft auf einem anderen Thread → statisch, Verbindungsaufbau synchronisiert
+    private static volatile String login;
+
+    public static class LoginHeader extends ClientEndpointConfig.Configurator {
+        @Override
+        public void beforeRequest(java.util.Map<String, List<String>> headers) {
+            String id = login;
+            if (id != null) headers.put("X-Player-Id", List.of(id));
+        }
+    }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -32,8 +45,19 @@ public class WsTestClient {
 
     static WsTestClient connect(URI wsHttpUri, String playerId) throws Exception {
         WsTestClient client = new WsTestClient(playerId);
-        URI uri = URI.create(wsHttpUri.toString().replaceFirst("^http", "ws") + "?playerId=" + playerId);
-        client.session = ContainerProvider.getWebSocketContainer().connectToServer(client, uri);
+        return connect(wsHttpUri, playerId, playerId, "");
+    }
+
+    /** Verbindet mit Login {@code loginId} (null = ohne Login) und optional einer URL-Angabe. */
+    static synchronized WsTestClient connect(URI wsHttpUri, String loginId, String playerId, String query) throws Exception {
+        WsTestClient client = new WsTestClient(playerId);
+        URI uri = URI.create(wsHttpUri.toString().replaceFirst("^http", "ws") + query);
+        login = loginId;
+        try {
+            client.session = ContainerProvider.getWebSocketContainer().connectToServer(client, uri);
+        } finally {
+            login = null;
+        }
         return client;
     }
 

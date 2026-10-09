@@ -47,6 +47,10 @@ public class FriendRequestRepository {
         return request;
     }
 
+    public FriendRequest findById(Long id) {
+        return id == null ? null : em.find(FriendRequest.class, id);
+    }
+
     public FriendRequest findByPair(String fromPlayerId, String toPlayerId) {
         return em.createQuery(
                         "SELECT r FROM FriendRequest r WHERE r.fromPlayerId = :from AND r.toPlayerId = :to",

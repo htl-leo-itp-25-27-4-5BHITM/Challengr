@@ -6,6 +6,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 @Path("/")
+@jakarta.annotation.security.PermitAll // bewusst öffentlich: Stammdaten ohne persönliche Daten
 public class RootResource {
 
     @GET

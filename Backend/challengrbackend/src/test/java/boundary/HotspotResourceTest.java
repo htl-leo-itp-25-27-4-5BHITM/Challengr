@@ -15,14 +15,14 @@ class HotspotResourceTest {
 
     private String newPlayer(String prefix) {
         String id = prefix + "-" + System.nanoTime();
-        given().contentType("application/json")
+        Login.as(id).contentType("application/json")
                 .body("{\"id\":\"" + id + "\",\"name\":\"" + id + "\",\"latitude\":" + LAT + ",\"longitude\":" + LON + "}")
                 .when().post("/api/players").then().statusCode(anyOf(is(200), is(204)));
         return id;
     }
 
     private io.restassured.response.Response checkin(String player, double lat, double lon) {
-        return given().contentType("application/json")
+        return Login.as(player).contentType("application/json")
                 .body("{\"playerId\":\"" + player + "\",\"latitude\":" + lat + ",\"longitude\":" + lon + "}")
                 .when().post("/api/hotspots/htl-leonding/checkin");
     }
@@ -30,7 +30,7 @@ class HotspotResourceTest {
     @Test
     void checkinOncePerDayInsideRadius() {
         String a = newPlayer("hs-a");
-        int before = given().when().get("/api/players/" + a).then().extract().path("points");
+        int before = Login.as(a).when().get("/api/players/" + a).then().extract().path("points");
 
         // zu weit weg (ca. 1 km)
         checkin(a, LAT + 0.01, LON).then().statusCode(403);
@@ -44,7 +44,7 @@ class HotspotResourceTest {
         // nochmal am selben Tag
         checkin(a, LAT, LON).then().statusCode(409);
 
-        given().when().get("/api/hotspots?playerId=" + a).then().statusCode(200)
+        Login.as(a).when().get("/api/hotspots?playerId=" + a).then().statusCode(200)
                 .body("find { it.id == 'htl-leonding' }.checkedInToday", is(true));
 
         // zweiter Spieler ist sicher nicht mehr der Erste
@@ -56,7 +56,7 @@ class HotspotResourceTest {
 
     @Test
     void unknownHotspotOrPlayer() {
-        given().contentType("application/json").body("{\"playerId\":\"x\",\"latitude\":1,\"longitude\":1}")
+        Login.as("x").contentType("application/json").body("{\"playerId\":\"x\",\"latitude\":1,\"longitude\":1}")
                 .when().post("/api/hotspots/mond/checkin").then().statusCode(404);
         checkin("gibts-nicht-" + System.nanoTime(), LAT, LON).then().statusCode(404);
     }

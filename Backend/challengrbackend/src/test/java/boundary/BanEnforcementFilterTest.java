@@ -30,7 +30,7 @@ class BanEnforcementFilterTest {
         org.junit.jupiter.api.Assertions.assertNotNull(persisted.getBanUntil());
 
         given()
-        .header(BanEnforcementService.PLAYER_ID_HEADER, pid)
+        .header(security.TrustedHeaderAuthMechanism.PLAYER_HEADER, pid)
                 .when().get("/api/friends/list?playerId=" + pid)
                 .then()
                 .statusCode(403)
@@ -47,7 +47,7 @@ class BanEnforcementFilterTest {
         // The friends list endpoint will still fail because friendship data is missing,
         // but the important part is: not 403.
         given()
-        .header(BanEnforcementService.PLAYER_ID_HEADER, pid)
+        .header(security.TrustedHeaderAuthMechanism.PLAYER_HEADER, pid)
                 .when().get("/api/friends/list?playerId=" + pid)
                 .then()
                 .statusCode(not(403));

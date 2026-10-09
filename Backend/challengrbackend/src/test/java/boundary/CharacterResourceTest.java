@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class CharacterResourceTest {
 
     private String newPlayer(String id, double lat, double lon) {
-        given().contentType("application/json")
+        Login.as(id).contentType("application/json")
                 .body("{\"id\":\"" + id + "\",\"name\":\"" + id + "\",\"latitude\":" + lat + ",\"longitude\":" + lon + "}")
                 .when().post("/api/players")
                 .then().statusCode(anyOf(is(200), is(204)));
@@ -30,7 +30,7 @@ class CharacterResourceTest {
     void newPlayerHasOnlyTheStartersUnlocked() {
         String id = newPlayer("char-new-" + System.nanoTime(), 48.3, 14.3);
 
-        List<Map<String, Object>> list = given().when().get("/api/players/" + id + "/characters")
+        List<Map<String, Object>> list = Login.as(id).when().get("/api/players/" + id + "/characters")
                 .then().statusCode(200).extract().jsonPath().getList("$");
 
         Map<String, Boolean> unlocked = new java.util.HashMap<>();
@@ -51,10 +51,10 @@ class CharacterResourceTest {
     void lockedOrUnknownCharacterCannotBeSelected() {
         String id = newPlayer("char-lock-" + System.nanoTime(), 48.3, 14.3);
 
-        given().contentType("application/json").body(body("sir-brecht"))
+        Login.as(id).contentType("application/json").body(body("sir-brecht"))
                 .when().put("/api/players/" + id + "/character")
                 .then().statusCode(403);
-        given().contentType("application/json").body(body("godzilla"))
+        Login.as(id).contentType("application/json").body(body("godzilla"))
                 .when().put("/api/players/" + id + "/character")
                 .then().statusCode(400);
     }
@@ -64,11 +64,11 @@ class CharacterResourceTest {
         String me = newPlayer("char-me-" + System.nanoTime(), 47.1, 15.1);
         String other = newPlayer("char-other-" + System.nanoTime(), 47.1001, 15.1001);
 
-        given().contentType("application/json").body(body("maedchen"))
+        Login.as(other).contentType("application/json").body(body("maedchen"))
                 .when().put("/api/players/" + other + "/character")
                 .then().statusCode(200).body("character", is("maedchen"));
 
-        given().when().get("/api/players/nearby?playerId=" + me + "&latitude=47.1&longitude=15.1&radius=200")
+        Login.as(me).when().get("/api/players/nearby?playerId=" + me + "&latitude=47.1&longitude=15.1&radius=200")
                 .then().statusCode(200)
                 .body("find { it.id == '" + other + "' }.character", is("maedchen"));
     }

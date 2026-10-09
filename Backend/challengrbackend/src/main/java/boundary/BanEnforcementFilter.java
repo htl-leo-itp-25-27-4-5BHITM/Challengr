@@ -19,11 +19,8 @@ import java.util.Map;
 /**
  * Blocks banned players from using the API.
  *
- * Contract:
- * - Client sends the current player's id via header "X-Player-Id".
- * - If that player has banUntil in the future, we abort with 403 and a JSON body.
- *
- * NOTE: This is intentionally lightweight and works even without OIDC wiring.
+ * Der Spieler kommt aus dem Login (Keycloak-Token bzw. in Dev/Test aus dem X-Player-Id-Login),
+ * nicht mehr aus einem frei setzbaren Header. Ist er gesperrt, gibt es 403 mit JSON-Body.
  */
 @Provider
 @Priority(Priorities.AUTHORIZATION)
@@ -32,10 +29,11 @@ public class BanEnforcementFilter implements ContainerRequestFilter {
 
     private static final Logger LOG = Logger.getLogger(BanEnforcementFilter.class);
 
-    public static final String PLAYER_ID_HEADER = "X-Player-Id";
-
     @Inject
     EntityManager em;
+
+    @Inject
+    io.quarkus.security.identity.SecurityIdentity identity;
 
     @Override
     public void filter(ContainerRequestContext ctx) {
@@ -45,7 +43,7 @@ public class BanEnforcementFilter implements ContainerRequestFilter {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debugf("BanEnforcementFilter path=%s header[%s]=%s", path, PLAYER_ID_HEADER, ctx.getHeaderString(PLAYER_ID_HEADER));
+            LOG.debugf("BanEnforcementFilter path=%s", path);
         }
 
         // Only enforce on API routes.
@@ -59,7 +57,7 @@ public class BanEnforcementFilter implements ContainerRequestFilter {
         }
         // No further allow-list here. We only enforce when a client presents a player id.
 
-        String playerId = trimToNull(ctx.getHeaderString(PLAYER_ID_HEADER));
+        String playerId = identity == null || identity.isAnonymous() ? null : trimToNull(identity.getPrincipal().getName());
         if (playerId == null) {
             return; // no user context presented
         }

@@ -8,6 +8,7 @@ import entity.Challenges;
 import entity.Player;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.websocket.CloseReason;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
@@ -81,22 +82,25 @@ public class GameSocket {
     @Inject
     BattleService battleService;
 
+    @Inject
+    control.PlayerRepository playerRepository;
+
     // ---------------------------------------------------------
     // Lifecycle
     // ---------------------------------------------------------
 
     @OnOpen
     public void onOpen(Session session) {
-        // playerId aus Query-Param lesen: ?playerId=123
-        var params = session.getRequestParameterMap().get("playerId");
-        if (params == null || params.isEmpty()) {
+        // Wer verbunden ist, kommt NUR aus dem Login (Keycloak-Token beim Upgrade geprüft).
+        // Ein ?playerId= in der URL wird ignoriert – sonst könnte man fremde Sessions übernehmen.
+        String playerId = playerIdOf(session);
+        if (playerId == null) {
             try {
-                System.out.println("WebSocket rejected: missing playerId for session " + session.getId());
-                session.close();
+                System.out.println("WebSocket rejected: no login (session " + session.getId() + ")");
+                session.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "login required"));
             } catch (IOException ignored) {}
             return;
         }
-        String playerId = params.get(0);
         Session previousSession = SESSIONS.put(playerId, session);
         if (previousSession != null && !previousSession.getId().equals(session.getId())) {
             SESSION_TO_PLAYER.remove(previousSession.getId());
@@ -110,17 +114,43 @@ public class GameSocket {
                     + " (old=" + previousSession.getId() + ", new=" + session.getId() + ")");
         }
         SESSION_TO_PLAYER.put(session.getId(), playerId);
+        CompletableFuture.runAsync(() -> touchLastSeen(playerId, java.time.Instant.now()), MESSAGE_WORKERS);
         System.out.println("WebSocket open for player " + playerId + " (session=" + session.getId() + ")");
 
         // Anfragen, die ankamen während der Spieler offline war, nachliefern
         CompletableFuture.runAsync(() -> deliverPendingRequests(playerId), MESSAGE_WORKERS);
     }
 
+    /** Spieler-ID aus dem Login der Verbindung; null = nicht angemeldet. */
+    static String playerIdOf(Session session) {
+        var principal = session.getUserPrincipal();
+        String name = principal == null ? null : principal.getName();
+        return name == null || name.isBlank() ? null : name;
+    }
+
+    /** Hat der Spieler gerade eine offene Verbindung? (zählt für "nearby" als aktiv) */
+    public static boolean isOnline(String playerId) {
+        Session s = playerId == null ? null : SESSIONS.get(playerId);
+        return s != null && s.isOpen();
+    }
+
+    private void touchLastSeen(String playerId, java.time.Instant at) {
+        try {
+            playerRepository.setLastSeen(playerId, at);
+        } catch (Exception e) {
+            System.out.println("lastSeen konnte nicht gesetzt werden: " + e.getMessage());
+        }
+    }
+
     @OnClose
     public void onClose(Session session) {
         // Session aus Maps entfernen
         SESSIONS.entrySet().removeIf(e -> e.getValue().getId().equals(session.getId()));
-        SESSION_TO_PLAYER.remove(session.getId());
+        String closedPlayer = SESSION_TO_PLAYER.remove(session.getId());
+        // App zu bzw. abgemeldet → offline, die letzte Position bleibt nicht auf der Karte stehen (A5)
+        if (closedPlayer != null && !SESSIONS.containsKey(closedPlayer)) {
+            CompletableFuture.runAsync(() -> touchLastSeen(closedPlayer, null), MESSAGE_WORKERS);
+        }
         System.out.println("WebSocket closed: " + session.getId());
     }
 
@@ -217,7 +247,9 @@ public class GameSocket {
     // -------------------- create-battle ----------------------
 
     private void handleCreateBattle(JsonNode msg, String senderId) {
-        String fromId    = playerIdField(msg, "fromId");
+        // Absender ist immer der angemeldete Spieler der Session; "fromId" darf höchstens dasselbe sagen
+        String claimedFrom = playerIdField(msg, "fromId");
+        String fromId    = senderId != null ? senderId : claimedFrom;
         String toId      = playerIdField(msg, "toId");
         Long challengeId = msg.hasNonNull("challengeId") ? msg.get("challengeId").asLong() : null;
         control.BattleMode mode = control.BattleMode.from(msg.path("mode").asText(null));
@@ -226,7 +258,7 @@ public class GameSocket {
                 fromId, toId, mode, challengeId);
 
         // Nur im eigenen Namen herausfordern
-        if (senderId != null && fromId != null && !senderId.equals(fromId)) {
+        if (senderId == null || (claimedFrom != null && !senderId.equals(claimedFrom))) {
             sendBattleRejected(senderId, toId, "Ungültiger Absender");
             return;
         }

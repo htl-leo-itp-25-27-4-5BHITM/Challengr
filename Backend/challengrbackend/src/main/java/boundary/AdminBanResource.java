@@ -2,7 +2,7 @@ package boundary;
 
 import control.BanService;
 import entity.Player;
-import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -19,7 +19,7 @@ import java.util.Map;
 @Path("/api/admin/players")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@PermitAll // TODO tighten to admin role once Dashboard sends Bearer tokens
+@RolesAllowed("admin") // A3: nur Admins (Keycloak-Realm-Rolle "admin"), Dashboard schickt das Token
 public class AdminBanResource {
 
     @Inject

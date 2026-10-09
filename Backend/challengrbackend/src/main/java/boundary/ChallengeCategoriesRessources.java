@@ -16,6 +16,7 @@ import java.util.List;
 @Path("/api/challenges/categories")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@jakarta.annotation.security.PermitAll // bewusst öffentlich: Stammdaten ohne persönliche Daten
 public class ChallengeCategoriesRessources {
     @Inject
     ChallengeCategoriesRepository categoriesRepository;

@@ -29,9 +29,16 @@ public class ProdSecretsGuard {
     @ConfigProperty(name = "challengr.guard.datasource-password")
     String datasourcePassword;
 
+    @ConfigProperty(name = "challengr.auth.trust-player-header", defaultValue = "false")
+    boolean trustPlayerHeader;
+
     @PostConstruct
     void check() {
         if (!enabled) return;
+        if (trustPlayerHeader) {
+            // Der X-Player-Id-Login ist nur für Dev/Test – in Prod könnte sich sonst jeder als jeder ausgeben
+            throw new IllegalStateException("challengr.auth.trust-player-header darf in Prod nicht aktiv sein");
+        }
         check(Map.of("KEYCLOAK_CLIENT_SECRET", keycloakClientSecret,
                       "QUARKUS_DATASOURCE_PASSWORD", datasourcePassword));
     }

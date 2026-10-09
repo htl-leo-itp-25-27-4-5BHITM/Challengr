@@ -48,6 +48,13 @@ public class Player {
     @Column(length = 1024)
     private String banReason;
 
+    /** Zuletzt aktiv (Position, Anfrage, WebSocket). Wer länger weg ist, taucht bei "nearby" nicht auf. */
+    private Instant lastSeenAt;
+
+    /** "Unsichtbar": weder bei nearby noch per WebSocket für andere sichtbar. */
+    @Column(columnDefinition = "boolean default false not null")
+    private boolean invisible = false;
+
     public Player(String name, double longitude, double latitude) {
         this.name = name;
         this.longitude = longitude;
@@ -169,5 +176,21 @@ public class Player {
 
     public void setTrophiesFor(control.BattleMode mode, int value) {
         if (mode.isRanked()) trophies = value;
+    }
+
+    public Instant getLastSeenAt() {
+        return lastSeenAt;
+    }
+
+    public void setLastSeenAt(Instant lastSeenAt) {
+        this.lastSeenAt = lastSeenAt;
+    }
+
+    public boolean isInvisible() {
+        return invisible;
+    }
+
+    public void setInvisible(boolean invisible) {
+        this.invisible = invisible;
     }
 }

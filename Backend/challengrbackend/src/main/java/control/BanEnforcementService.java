@@ -10,8 +10,6 @@ import java.time.Instant;
 @ApplicationScoped
 public class BanEnforcementService {
 
-    public static final String PLAYER_ID_HEADER = "X-Player-Id";
-
     @Inject
     EntityManager em;
 

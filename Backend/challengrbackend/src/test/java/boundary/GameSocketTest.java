@@ -74,6 +74,43 @@ class GameSocketTest {
         for (WsTestClient c : clients) c.close();
     }
 
+    // ---------------------------------------------------------------- A4: nur mit Login
+
+    @Test
+    void connectionWithoutLoginIsRefused() throws Exception {
+        WsTestClient anonymous;
+        try {
+            anonymous = WsTestClient.connect(wsUri, null, B, "?playerId=" + B);
+        } catch (Exception refused) {
+            return; // schon das Upgrade wird mit 401 abgelehnt
+        }
+        clients.add(anonymous);
+        long deadline = System.currentTimeMillis() + 3000;
+        while (anonymous.session.isOpen() && System.currentTimeMillis() < deadline) Thread.sleep(50);
+        assertFalse(anonymous.session.isOpen(), "ohne Login wird die Verbindung geschlossen");
+    }
+
+    @Test
+    void foreignPlayerIdInTheUrlDoesNotTakeOverTheSession() throws Exception {
+        WsTestClient realB = connect(B);
+        WsTestClient bystander = connect(BYSTANDER);
+        // Angemeldet als A, aber ?playerId=B in der URL
+        WsTestClient attacker = WsTestClient.connect(wsUri, A, B, "?playerId=" + B);
+        clients.add(attacker);
+        Thread.sleep(300);
+        assertTrue(realB.session.isOpen(), "die Session von B bleibt bestehen");
+
+        // Was der Angreifer schickt, gilt als A – auch mit gefälschtem fromId wird abgelehnt
+        attacker.send("{\"type\":\"create-battle\",\"fromId\":\"" + B + "\",\"toId\":\"" + BYSTANDER + "\",\"challengeId\":1}");
+        assertNotNull(attacker.await("battle-rejected", 3), "fremder Absender wird abgelehnt");
+        assertNull(bystander.await("battle-requested", 1), "keine Anfrage im Namen von B");
+
+        attacker.send("{\"type\":\"create-battle\",\"toId\":\"" + BYSTANDER + "\",\"challengeId\":1}");
+        var request = bystander.await("battle-requested", 3);
+        assertNotNull(request);
+        assertEquals(A, request.path("fromPlayerId").asText(), "Session gehört dem angemeldeten Spieler A");
+    }
+
     // ---------------------------------------------------------------- helpers
 
     private String create(long challengeId) {
@@ -867,7 +904,7 @@ class GameSocketTest {
         WsTestClient nearby = connect(B);
         WsTestClient far    = connect("far-away");
 
-        given()
+        Login.as(A)
                 .contentType("application/json")
                 .body("{\"id\":\"" + A + "\",\"name\":\"EigenerSpieler\",\"latitude\":48.268340,\"longitude\":14.251390,\"points\":0}")
                 .when().put("/api/players/" + A)

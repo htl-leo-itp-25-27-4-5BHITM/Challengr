@@ -1,5 +1,7 @@
 package boundary;
 
+import io.quarkus.security.Authenticated;
+import security.CurrentPlayer;
 import boundary.dto.FriendRequestCreateDTO;
 import boundary.dto.FriendRequestDTO;
 import boundary.dto.FriendDTO;
@@ -21,7 +23,11 @@ import java.util.List;
 @Path("/api/friends")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@Authenticated // A2: alles nur im eigenen Namen
 public class FriendRequestResource {
+
+    @Inject
+    CurrentPlayer me;
 
     @Inject
     FriendRequestRepository friendRequestRepository;
@@ -35,11 +41,8 @@ public class FriendRequestResource {
     @Inject
     BanEnforcementService banEnforcement;
 
-    @Inject
-    HttpHeaders headers;
-
     private void enforceNotBanned() {
-        banEnforcement.assertNotBanned(headers.getHeaderString(BanEnforcementService.PLAYER_ID_HEADER));
+        banEnforcement.assertNotBanned(me.id());
     }
 
     @POST
@@ -49,6 +52,7 @@ public class FriendRequestResource {
         if (dto == null) {
             throw new WebApplicationException("Missing body", 400);
         }
+        me.requireSelf(dto.fromPlayerId());
         FriendRequest request = friendRequestRepository.create(dto.fromPlayerId(), dto.toPlayerId());
         GameSocket.emitFriendRequestCreated(request.getId(), request.getFromPlayerId(), request.getToPlayerId());
         return toDTO(request);
@@ -60,6 +64,7 @@ public class FriendRequestResource {
         if (playerId == null || playerId.isBlank()) {
             throw new WebApplicationException("playerId is required", 400);
         }
+        me.requireSelf(playerId);
         return friendRequestRepository.findOutgoing(playerId).stream().map(this::toDTO).toList();
     }
 
@@ -69,6 +74,7 @@ public class FriendRequestResource {
         if (playerId == null || playerId.isBlank()) {
             throw new WebApplicationException("playerId is required", 400);
         }
+        me.requireSelf(playerId);
         return friendRequestRepository.findIncoming(playerId).stream().map(this::toDTO).toList();
     }
 
@@ -76,6 +82,7 @@ public class FriendRequestResource {
     @Path("/requests/{id}/accept")
     public FriendRequestDTO accept(@PathParam("id") Long id) {
         enforceNotBanned();
+        requireRecipient(id);
         FriendRequest updated = friendRequestRepository.updateStatus(id, FriendRequest.Status.ACCEPTED);
         if (updated == null) {
             throw new WebApplicationException("Request not found", 404);
@@ -93,6 +100,7 @@ public class FriendRequestResource {
     @Path("/requests/{id}/decline")
     public FriendRequestDTO decline(@PathParam("id") Long id) {
         enforceNotBanned();
+        requireRecipient(id);
         FriendRequest updated = friendRequestRepository.updateStatus(id, FriendRequest.Status.DECLINED);
         if (updated == null) {
             throw new WebApplicationException("Request not found", 404);
@@ -108,6 +116,7 @@ public class FriendRequestResource {
         if (playerId == null || playerId.isBlank()) {
             throw new WebApplicationException("playerId is required", 400);
         }
+        me.requireSelf(playerId);
         return friendshipRepository.listFriendIds(playerId).stream().map(FriendDTO::new).toList();
     }
 
@@ -118,6 +127,7 @@ public class FriendRequestResource {
         if (dto == null) {
             throw new WebApplicationException("Missing body", 400);
         }
+        me.requireSelf(dto.fromPlayerId());
         if (!friendshipRepository.areFriends(dto.fromPlayerId(), dto.toPlayerId())) {
             throw new WebApplicationException("Gift can only be sent to friends", 400);
         }
@@ -132,6 +142,7 @@ public class FriendRequestResource {
         if (playerId == null || playerId.isBlank()) {
             throw new WebApplicationException("playerId is required", 400);
         }
+        me.requireSelf(playerId);
         return friendGiftRepository.findIncomingPending(playerId).stream().map(this::toDTO).toList();
     }
 
@@ -142,6 +153,7 @@ public class FriendRequestResource {
         if (playerId == null || playerId.isBlank()) {
             throw new WebApplicationException("playerId is required", 400);
         }
+        me.requireSelf(playerId);
         try {
             FriendGift updated = friendGiftRepository.claim(id, playerId);
             if (updated == null) {
@@ -161,6 +173,7 @@ public class FriendRequestResource {
         if (playerId == null || playerId.isBlank() || friendId == null || friendId.isBlank()) {
             throw new WebApplicationException("playerId and friendId are required", 400);
         }
+        me.requireSelf(playerId);
         boolean removed = friendshipRepository.remove(playerId, friendId);
         if (!removed) {
             throw new WebApplicationException("Friendship not found", 404);
@@ -176,7 +189,17 @@ public class FriendRequestResource {
         if (playerId == null || playerId.isBlank()) {
             throw new WebApplicationException("playerId is required", 400);
         }
+        me.requireSelf(playerId);
         return friendRequestRepository.findIncoming(playerId).size();
+    }
+
+    /** Annehmen/Ablehnen darf nur der Empfänger der Anfrage. */
+    private void requireRecipient(Long requestId) {
+        FriendRequest request = friendRequestRepository.findById(requestId);
+        if (request == null) {
+            throw new WebApplicationException("Request not found", 404);
+        }
+        me.requireSelf(request.getToPlayerId());
     }
 
     private FriendRequestDTO toDTO(FriendRequest r) {

@@ -1,5 +1,7 @@
 package boundary;
 
+import io.quarkus.security.Authenticated;
+import security.CurrentPlayer;
 import control.HotspotCatalog;
 import control.HotspotRepository;
 import control.PlayerRepository;
@@ -17,7 +19,11 @@ import java.util.List;
 @Path("/api/hotspots")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@Authenticated
 public class HotspotResource {
+
+    @Inject
+    CurrentPlayer me;
 
     @Inject
     HotspotRepository hotspotRepository;
@@ -33,7 +39,9 @@ public class HotspotResource {
     public record CheckinResultDTO(String hotspotId, int points, boolean firstOfDay, int totalPoints) {}
 
     @GET
-    public List<HotspotDTO> list(@QueryParam("playerId") String playerId) {
+    public List<HotspotDTO> list(@QueryParam("playerId") String requested) {
+        // Eingecheckt-Status nur für das eigene Konto
+        String playerId = me.id();
         LocalDate today = HotspotCatalog.today();
         return HotspotCatalog.ALL.stream()
                 .map(h -> new HotspotDTO(h.id(), h.name(), h.latitude(), h.longitude(), h.radiusMeters(),
@@ -53,6 +61,7 @@ public class HotspotResource {
         if (req == null || req.playerId() == null || req.latitude() == null || req.longitude() == null) {
             throw new WebApplicationException("playerId, latitude und longitude fehlen", 400);
         }
+        me.requireSelf(req.playerId());
         Player player = playerRepository.findById(req.playerId());
         if (player == null) {
             throw new WebApplicationException("Player not found", 404);

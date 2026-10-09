@@ -9,7 +9,10 @@ import static io.restassured.RestAssured.given;
 class ExampleResourceTest {
     @Test
     void testPlayersEndpoint() {
-        given()
+        // Liste aller Spieler (mit Standort) nur für Admins
+        given().when().get("/api/players").then().statusCode(401);
+        given().header("X-Player-Id", "demo-1").when().get("/api/players").then().statusCode(403);
+        given().header("X-Player-Id", "test-admin").header("X-Player-Roles", "admin")
                 .when().get("/api/players")
                 .then()
                 .statusCode(200);

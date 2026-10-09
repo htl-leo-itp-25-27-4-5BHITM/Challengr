@@ -11,7 +11,11 @@ import entity.Battle;
 import entity.Player;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import control.LocationPrivacy;
+import io.quarkus.security.Authenticated;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import security.CurrentPlayer;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
@@ -23,6 +27,7 @@ import java.util.Map;
 @Path("/api/players")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@Authenticated // A2: nur mit Login; schreibende Aktionen nur aufs eigene Konto (CurrentPlayer)
 public class PlayerRessources {
 
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -39,21 +44,41 @@ public class PlayerRessources {
     @Inject
     EntityManager em;
 
+    @Inject
+    CurrentPlayer me;
+
+    /** Alle Spieler inkl. Standort – nur für Admins (Dashboard). */
     @GET
+    @RolesAllowed(CurrentPlayer.ADMIN_ROLE)
     public List<Player> findAllPlayers() {
         return playerRepository.getAllPlayers();
     }
 
+    /** Eigenes Konto anlegen: die ID ist immer die aus dem Login (Keycloak "sub"). */
     @POST
     @Transactional
-    public PlayerDTO createPlayer(Player player) {
-        Player saved = playerRepository.createPlayer(player);
-
-        return toDTO(saved);
+    public PlayerDTO createPlayer(Player body) {
+        String id = me.id();
+        if (body != null && body.getId() != null && !body.getId().isBlank() && !body.getId().equals(id)) {
+            throw new ForbiddenException("Nur das eigene Konto kann angelegt werden");
+        }
+        // Nur Name und Position übernehmen – Punkte, Trophäen, Sperren usw. setzt nie der Client
+        Player clean = new Player();
+        clean.setId(id);
+        clean.setName(body == null ? null : body.getName());
+        if (body != null) {
+            clean.setLatitude(body.getLatitude());
+            clean.setLongitude(body.getLongitude());
+        }
+        clean.setLastSeenAt(java.time.Instant.now());
+        Player saved = playerRepository.createPlayer(clean);
+        return toOwnDTO(saved);
     }
 
     @PUT
     public void updatePlayerPos(Player player) {
+        if (player == null || player.getId() == null) throw new WebApplicationException("player id fehlt", 400);
+        me.requireSelf(player.getId());
         playerRepository.updatePlayerPos(player);
     }
 
@@ -61,6 +86,7 @@ public class PlayerRessources {
     @Path("/{id}")
     @Transactional
     public PlayerDTO updatePlayer(@PathParam("id") String id, PlayerDTO dto) {
+        me.requireSelf(id);
         Player player = playerRepository.findById(id);
         if (player == null) {
             throw new WebApplicationException("Player not found", 404);
@@ -74,16 +100,42 @@ public class PlayerRessources {
         double oldLat = player.getLatitude();
         double oldLon = player.getLongitude();
 
-        player.setLatitude(dto.latitude());
-        player.setLongitude(dto.longitude());
+        if (dto.latitude() != null && dto.longitude() != null) {
+            player.setLatitude(dto.latitude());
+            player.setLongitude(dto.longitude());
+        }
+        player.setLastSeenAt(java.time.Instant.now());
         // Punkte kommen aus Battles → hier NICHT setzen
 
-        // Realtime: nur Spieler in der Nähe (alte + neue Position) informieren,
-        // damit sie den Spieler kommen und gehen sehen.
-        GameSocket.emitPlayerPositionUpdated(player.getId(),
-                positionEventRecipients(player.getId(), oldLat, oldLon, player.getLatitude(), player.getLongitude()));
+        // Realtime: nur Spieler in der Nähe (alte + neue Position) informieren, damit sie den
+        // Spieler kommen und gehen sehen – unsichtbare Spieler verraten nichts.
+        if (!player.isInvisible()) {
+            GameSocket.emitPlayerPositionUpdated(player.getId(),
+                    positionEventRecipients(player.getId(), oldLat, oldLon, player.getLatitude(), player.getLongitude()));
+        }
 
-        return toDTO(player);
+        return toOwnDTO(player);
+    }
+
+    /** "Unsichtbar" schalten. Body: {"invisible": true} */
+    @PUT
+    @Path("/{id}/visibility")
+    @Transactional
+    public PlayerDTO setVisibility(@PathParam("id") String id, Map<String, Boolean> body) {
+        me.requireSelf(id);
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new WebApplicationException("Player not found", 404);
+        }
+        boolean invisible = body != null && Boolean.TRUE.equals(body.get("invisible"));
+        boolean changed = player.isInvisible() != invisible;
+        player.setInvisible(invisible);
+        if (changed && LocationPrivacy.hasPosition(player)) {
+            // Andere in der Nähe aktualisieren ihre Karte (Spieler verschwindet bzw. taucht auf)
+            GameSocket.emitPlayerPositionUpdated(player.getId(), positionEventRecipients(player.getId(),
+                    player.getLatitude(), player.getLongitude(), player.getLatitude(), player.getLongitude()));
+        }
+        return toOwnDTO(player);
     }
 
     @GET
@@ -93,7 +145,8 @@ public class PlayerRessources {
         if (player == null) {
             throw new WebApplicationException("Player not found", 404);
         }
-        return toDTO(player);
+        // Fremde Profile ohne Standort (A5)
+        return me.isSelf(id) || me.isAdmin() ? toOwnDTO(player) : toPublicDTO(player);
     }
 
     @GET
@@ -133,6 +186,7 @@ public class PlayerRessources {
     @Path("/{id}/profile")
     @Transactional
     public PlayerProfileDTO updateProfile(@PathParam("id") String id, PlayerProfileDTO dto) {
+        me.requireSelf(id);
         Player player = playerRepository.findById(id);
         if (player == null) {
             throw new WebApplicationException("Player not found", 404);
@@ -166,6 +220,7 @@ public class PlayerRessources {
         @PathParam("id") String id,
             PlayerLoudnessBestDTO dto
     ) {
+        me.requireSelf(id);
         Player player = playerRepository.findById(id);
         if (player == null) {
             throw new WebApplicationException("Player not found", 404);
@@ -184,6 +239,12 @@ public class PlayerRessources {
         return new PlayerLoudnessBestDTO(player.getBestLoudness());
     }
 
+    /**
+     * Spieler in der Nähe (A5): Mittelpunkt ist die serverseitig gespeicherte eigene Position,
+     * der Radius ist auf 300 m begrenzt, nur aktive und sichtbare Spieler, Koordinaten gerundet.
+     * Die Query-Parameter latitude/longitude/playerId werden aus Kompatibilitätsgründen angenommen,
+     * aber nicht mehr als Mittelpunkt bzw. Identität verwendet.
+     */
     @GET
     @Path("/nearby")
     public List<PlayerDTO> getNearbyPlayers(
@@ -192,28 +253,29 @@ public class PlayerRessources {
             @QueryParam("longitude") double longitude,
             @QueryParam("radius") double radius
     ) {
+        Player self = playerRepository.findById(me.id());
+        if (self == null || !LocationPrivacy.hasPosition(self)) {
+            return List.of();
+        }
+        double limit = LocationPrivacy.clampRadius(radius);
+        java.time.Instant now = java.time.Instant.now();
+
         List<Player> allPlayers = em.createQuery(
                 "SELECT p FROM Player p", Player.class
         ).getResultList();
 
         return allPlayers.stream()
-                .filter(p -> {
-                    if (p.getLatitude() == 0 || p.getLongitude() == 0) {
-                        return false;
-                    }
-                    if (p.getId().equals(playerId)) {
-                        return false;
-                    }
-                    double dist = distance(
-                            latitude,
-                            longitude,
-                            p.getLatitude(),
-                            p.getLongitude()
-                    );
-                    return dist <= radius;
-                })
-                .map(p -> toDTO(p))
+                .filter(p -> !p.getId().equals(self.getId()))
+                .filter(p -> LocationPrivacy.visibleToOthers(p, now) || isOnlineAndVisible(p, now))
+                .filter(p -> distance(self.getLatitude(), self.getLongitude(), p.getLatitude(), p.getLongitude()) <= limit)
+                .map(this::toNearbyDTO)
                 .toList();
+    }
+
+    /** Mit offenem WebSocket gilt ein Spieler als aktiv, auch wenn er sich gerade nicht bewegt. */
+    private static boolean isOnlineAndVisible(Player p, java.time.Instant now) {
+        return GameSocket.isOnline(p.getId()) && !p.isInvisible() && LocationPrivacy.hasPosition(p)
+                && (p.getBanUntil() == null || !p.getBanUntil().isAfter(now));
     }
 
     // Haversine in Metern
@@ -291,17 +353,22 @@ public class PlayerRessources {
         }
     }
 
-    private PlayerDTO toDTO(Player p) {
-        return new PlayerDTO(
-                p.getId(),
-                p.getName(),
-                p.getLatitude(),
-                p.getLongitude(),
-                p.getPoints(),
-                battleService.rankNameForPoints(p.getTrophies()),
-                p.getCharacter(),
-                p.getTrophies()
-        );
+    /** Eigenes Konto: genaue Position und Sichtbarkeit. */
+    private PlayerDTO toOwnDTO(Player p) {
+        return new PlayerDTO(p.getId(), p.getName(), p.getLatitude(), p.getLongitude(), p.getPoints(),
+                battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), p.isInvisible());
+    }
+
+    /** Fremdes Profil: ohne Standort. */
+    private PlayerDTO toPublicDTO(Player p) {
+        return new PlayerDTO(p.getId(), p.getName(), null, null, p.getPoints(),
+                battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), null);
+    }
+
+    /** Spieler in der Nähe: nur gerundete Position. */
+    private PlayerDTO toNearbyDTO(Player p) {
+        return new PlayerDTO(p.getId(), p.getName(), LocationPrivacy.coarse(p.getLatitude()), LocationPrivacy.coarse(p.getLongitude()),
+                p.getPoints(), battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), null);
     }
 
     /** Fortschritt für die Freischalt-Regeln: Siege, Wissens-Siege, Hotspot-Check-ins, Punkte. */
@@ -343,6 +410,7 @@ public class PlayerRessources {
     @Path("/{id}/character")
     @Transactional
     public PlayerDTO selectCharacter(@PathParam("id") String id, Map<String, String> body) {
+        me.requireSelf(id);
         Player player = playerRepository.findById(id);
         if (player == null) {
             throw new WebApplicationException("Player not found", 404);
@@ -354,7 +422,7 @@ public class PlayerRessources {
             throw new WebApplicationException(entry.name() + " ist noch gesperrt", 403);
         }
         player.setCharacter(entry.id());
-        return toDTO(player);
+        return toOwnDTO(player);
     }
 
     @GET
