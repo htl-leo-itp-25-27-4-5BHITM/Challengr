@@ -50,6 +50,9 @@ public class PlayerRessources {
     @Inject
     control.AccountDeletionService accountDeletion;
 
+    @Inject
+    control.BlockRepository blockRepository;
+
     /** Alle Spieler inkl. Standort – nur für Admins (Dashboard). */
     @GET
     @RolesAllowed(CurrentPlayer.ADMIN_ROLE)
@@ -68,7 +71,9 @@ public class PlayerRessources {
         // Nur Name und Position übernehmen – Punkte, Trophäen, Sperren usw. setzt nie der Client
         Player clean = new Player();
         clean.setId(id);
-        clean.setName(body == null ? null : body.getName());
+        String name = body == null ? null : body.getName();
+        // B2: anstößige Namen (kommen aus der Keycloak-Registrierung) werden ersetzt
+        clean.setName(control.NameFilter.isOffensive(name) ? control.NameFilter.replacementFor(id) : name);
         if (body != null) {
             clean.setLatitude(body.getLatitude());
             clean.setLongitude(body.getLongitude());
@@ -96,7 +101,10 @@ public class PlayerRessources {
         }
 
         // Name optional mit updaten, falls gewünscht:
-        if (dto.name() != null) {
+        if (dto.name() != null && !dto.name().equals(player.getName())) {
+            if (control.NameFilter.isOffensive(dto.name())) {
+                throw new WebApplicationException("Dieser Name ist nicht erlaubt", 400);
+            }
             player.setName(dto.name());
         }
 
@@ -272,6 +280,7 @@ public class PlayerRessources {
         }
         double limit = LocationPrivacy.clampRadius(radius);
         java.time.Instant now = java.time.Instant.now();
+        java.util.Set<String> blocked = blockRepository.blockedWith(self.getId()); // B2: in beide Richtungen
 
         List<Player> allPlayers = em.createQuery(
                 "SELECT p FROM Player p", Player.class
@@ -279,6 +288,7 @@ public class PlayerRessources {
 
         return allPlayers.stream()
                 .filter(p -> !p.getId().equals(self.getId()))
+                .filter(p -> !blocked.contains(p.getId()))
                 .filter(p -> LocationPrivacy.visibleToOthers(p, now) || isOnlineAndVisible(p, now))
                 .filter(p -> distance(self.getLatitude(), self.getLongitude(), p.getLatitude(), p.getLongitude()) <= limit)
                 .map(this::toNearbyDTO)

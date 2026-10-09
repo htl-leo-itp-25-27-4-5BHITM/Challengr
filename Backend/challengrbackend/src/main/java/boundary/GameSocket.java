@@ -85,6 +85,9 @@ public class GameSocket {
     @Inject
     control.PlayerRepository playerRepository;
 
+    @Inject
+    control.BlockRepository blockRepository;
+
     // ---------------------------------------------------------
     // Lifecycle
     // ---------------------------------------------------------
@@ -234,8 +237,11 @@ public class GameSocket {
         String emoji = msg.path("emoji").asText(null);
         Long battleId = msg.hasNonNull("battleId") ? msg.get("battleId").asLong() : null;
         if (senderId == null || toId == null || toId.equals(senderId) || !EMOTES.contains(emoji)) {
-            System.out.println("send-emote ignoriert: " + msg);
+            System.out.println("send-emote ignoriert (ungültig)");
             return;
+        }
+        if (blockRepository.blockedEitherWay(senderId, toId)) {
+            return; // B2: blockiert → nichts zustellen
         }
         if (battleId != null) {
             Battle battle = battleService.findById(battleId);

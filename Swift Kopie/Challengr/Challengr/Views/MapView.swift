@@ -997,6 +997,16 @@ struct MapView: View {
                     RoundedRectangle(cornerRadius: 18)
                         .stroke(.white.opacity(0.15), lineWidth: 1)
                 )
+                // Melden / Blockieren (Apple-Regel 1.2)
+                .overlay(alignment: .topTrailing) {
+                    PlayerSafetyMenu(playerId: player.playerId, playerName: cleanPlayerName(player.title)) {
+                        let blockedId = player.playerId
+                        closePlayerPopup()
+                        withAnimation { annotations.removeAll { $0.playerId == blockedId } }
+                        showMapBanner(icon: "hand.raised.fill", text: "Blockiert – ihr seht euch nicht mehr")
+                    }
+                    .padding(4)
+                }
                 .shadow(radius: 15)
                 .padding(.top, 80)
                 .transition(.scale)

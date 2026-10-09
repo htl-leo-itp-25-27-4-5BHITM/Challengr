@@ -4,6 +4,7 @@ import SwiftUI
 /// Shows a placeholder avatar plus name, points and rank based on `PlayerDTO`.
 struct FriendProfileView: View {
     let friend: PlayerDTO
+    @Environment(\.dismiss) private var dismiss
 
     private let challengrDark = Color(red: 0.12, green: 0.00, blue: 0.05)
 
@@ -44,6 +45,11 @@ struct FriendProfileView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Profil")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                PlayerSafetyMenu(playerId: friend.id, playerName: friend.name, onBlocked: { dismiss() }, tint: .primary)
+            }
+        }
     }
 }
 

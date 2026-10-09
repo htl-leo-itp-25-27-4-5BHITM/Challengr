@@ -1,0 +1,48 @@
+<div class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="crumbs">Admin <span>/</span> Meldungen</div>
+    <h1>Meldungen</h1>
+    <div class="subtitle">Was Spieler in der App gemeldet haben. Sperren gilt sofort (Login und Spiel).</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="report-toolbar">
+    <button type="button" class="btn" (click)="toggleAll()">
+      {{ showAll ? 'Nur offene zeigen' : 'Alle zeigen' }}
+    </button>
+    <span class="count">{{ reports.length }} {{ showAll ? 'Meldungen' : 'offen' }}</span>
+  </div>
+
+  @if (error) {
+    <div class="report-error">{{ error }}</div>
+  }
+
+  @if (reports.length === 0 && !error) {
+    <div class="card empty">Keine {{ showAll ? '' : 'offenen ' }}Meldungen 🎉</div>
+  }
+
+  @for (r of reports; track r.id) {
+    <div class="card report" [class.resolved]="r.status === 'RESOLVED'">
+      <div class="report-head">
+        <span class="reason">{{ reasonText(r.reason) }}</span>
+        <span class="date">{{ r.createdAt | date: 'dd.MM.yyyy HH:mm' }}</span>
+      </div>
+      <div class="report-body">
+        <div><strong>Gemeldet:</strong> {{ r.reportedName ?? r.reportedId }}
+          @if (isBanned(r)) { <span class="banned">gesperrt bis {{ r.reportedBanUntil | date: 'dd.MM. HH:mm' }}</span> }
+        </div>
+        <div class="muted"><strong>Von:</strong> {{ r.reporterName ?? r.reporterId }}</div>
+        @if (r.comment) { <p class="comment">„{{ r.comment }}“</p> }
+      </div>
+      @if (r.status === 'OPEN') {
+        <div class="report-actions">
+          <button type="button" class="btn danger" [disabled]="busyId === r.id" (click)="ban(r, 24)">24 h sperren</button>
+          <button type="button" class="btn danger" [disabled]="busyId === r.id" (click)="ban(r, 24 * 7)">7 Tage sperren</button>
+          <button type="button" class="btn" [disabled]="busyId === r.id" (click)="resolve(r)">Erledigt</button>
+        </div>
+      }
+    </div>
+  }
+</div>

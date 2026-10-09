@@ -64,6 +64,15 @@ struct SettingsView: View {
                         }
                     }
                     .disabled(isInvisible == nil || auth.playerId == nil)
+                    NavigationLink {
+                        BlockedPlayersView()
+                    } label: {
+                        HStack {
+                            Image(systemName: "hand.raised.fill")
+                                .foregroundColor(.red)
+                            Text("Blockierte Spieler")
+                        }
+                    }
                     if let privacyError {
                         Text(privacyError).font(.caption).foregroundColor(.red)
                     }

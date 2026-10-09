@@ -67,6 +67,10 @@ public class AccountDeletionService {
                 .setParameter("id", playerId).executeUpdate();
         em.createQuery("DELETE FROM PlayerItem i WHERE i.playerId = :id")
                 .setParameter("id", playerId).executeUpdate();
+        em.createQuery("DELETE FROM PlayerBlock x WHERE x.blockerId = :id OR x.blockedId = :id")
+                .setParameter("id", playerId).executeUpdate();
+        em.createQuery("DELETE FROM PlayerReport r WHERE r.reporterId = :id OR r.reportedId = :id")
+                .setParameter("id", playerId).executeUpdate();
 
         em.remove(em.contains(player) ? player : em.merge(player));
         LOG.infof("Konto %s gelöscht", playerId);

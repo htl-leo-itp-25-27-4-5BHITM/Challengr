@@ -12,10 +12,11 @@ import { Dashboard } from './features/dashboard/dashboard';
 import { Users } from './features/users/users';
 import { Challenges } from './features/challenges/challenges';
 import { Erd } from './features/erd/erd';
+import { Reports } from './features/reports/reports';
 import { FormsModule } from '@angular/forms';
 
 @NgModule({
-  declarations: [App, Layout, Header, Dashboard, Users, Challenges, Erd],
+  declarations: [App, Layout, Header, Dashboard, Users, Challenges, Erd, Reports],
   imports: [BrowserModule, AppRoutingModule, FormsModule, HttpClientModule],
   providers: [
     provideBrowserGlobalErrorListeners(),

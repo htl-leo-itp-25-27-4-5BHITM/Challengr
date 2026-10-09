@@ -19,6 +19,9 @@ public class BattleService {
     BattleRepository battleRepository;
 
     @Inject
+    control.BlockRepository blockRepository;
+
+    @Inject
     PlayerRepository playerRepository;
 
     @Inject
@@ -92,6 +95,10 @@ public class BattleService {
         }
         if (fromPlayerId.equals(toPlayerId)) {
             throw new BattleRejectedException("Du kannst dich nicht selbst herausfordern");
+        }
+        // B2: blockiert (egal von wem) → keine Herausforderung möglich
+        if (blockRepository.blockedEitherWay(fromPlayerId, toPlayerId)) {
+            throw new BattleRejectedException("Dieser Spieler ist nicht erreichbar");
         }
         if (battleRepository.existsOpenRequestBetween(fromPlayerId, toPlayerId,
                 LocalDateTime.now().minus(REQUEST_TIMEOUT))) {

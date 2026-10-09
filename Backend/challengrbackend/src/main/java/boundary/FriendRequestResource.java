@@ -30,6 +30,9 @@ public class FriendRequestResource {
     CurrentPlayer me;
 
     @Inject
+    control.BlockRepository blocks;
+
+    @Inject
     FriendRequestRepository friendRequestRepository;
 
     @Inject
@@ -53,6 +56,9 @@ public class FriendRequestResource {
             throw new WebApplicationException("Missing body", 400);
         }
         me.requireSelf(dto.fromPlayerId());
+        if (blocks.blockedEitherWay(dto.fromPlayerId(), dto.toPlayerId())) {
+            throw new WebApplicationException("Dieser Spieler ist nicht erreichbar", 403);
+        }
         FriendRequest request = friendRequestRepository.create(dto.fromPlayerId(), dto.toPlayerId());
         GameSocket.emitFriendRequestCreated(request.getId(), request.getFromPlayerId(), request.getToPlayerId());
         return toDTO(request);
