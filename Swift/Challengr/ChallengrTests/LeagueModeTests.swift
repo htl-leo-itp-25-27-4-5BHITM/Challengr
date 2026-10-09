@@ -1,4 +1,5 @@
 import XCTest
+import SceneKit
 @testable import Challengr
 
 /// Liga (Wissen / Real-Life) und Friendly: Modus, Quiz-Show und Server-Nachrichten.
@@ -161,6 +162,26 @@ final class LeagueModeTests: XCTestCase {
         XCTAssertEqual(model.phase, .intro)
         XCTAssertEqual(model.ownScore, 0)
         XCTAssertNil(model.question)
+    }
+
+    // MARK: - 3D-Studio
+
+    func testQuizmasterIsNeverOneOfThePlayers() {
+        XCTAssertEqual(QuizStageView.host(own: .junge, opponent: .maedchen), .merlo)
+        XCTAssertEqual(QuizStageView.host(own: .merlo, opponent: .maedchen), .sirBrecht)
+        XCTAssertEqual(QuizStageView.host(own: .merlo, opponent: .sirBrecht), .kaeptnRex)
+    }
+
+    func testStudioBuildsWithAllThreeFigures() throws {
+        let studio = try XCTUnwrap(QuizStudio.build(own: .junge, opponent: .maedchen, host: .merlo))
+        XCTAssertNotNil(studio.camera.camera)
+        XCTAssertLessThan(studio.ownActor.position.x, 0, "eigenes Pult links")
+        XCTAssertGreaterThan(studio.opponentActor.position.x, 0, "Gegner rechts")
+        // Ereignisse laufen ohne Absturz durch
+        for kind: QuizStageEvent.Kind in [.intro, .question(round: 1), .answered(own: true),
+                                          .reveal(ownCorrect: true, opponentCorrect: false), .finished(ownWins: nil)] {
+            studio.play(kind)
+        }
     }
 
     // MARK: - Server-Nachrichten

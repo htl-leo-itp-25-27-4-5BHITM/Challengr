@@ -16,6 +16,8 @@ struct QuizShowView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var introAppeared = false
     @State private var pointsPop = false
+    /// Was das 3D-Studio gerade spielt
+    @State private var stageEvent = QuizStageEvent(kind: .intro, id: 0)
 
     private static let answerColors: [Color] = [.challengrRed, .blue, .challengrYellow, .challengrGreen]
     private static let letters = ["A", "B", "C", "D"]
@@ -24,13 +26,13 @@ struct QuizShowView: View {
         ZStack {
             background
 
-            VStack(spacing: 14) {
-                scoreboard
-                    .padding(.top, 8)
+            VStack(spacing: 12) {
+                studio
+                    .frame(height: model.phase == .intro ? 380 : 210)
+                    .padding(.top, 4)
 
                 switch model.phase {
                 case .intro:
-                    Spacer()
                     intro
                     Spacer()
                 case .question, .reveal:
@@ -58,9 +60,84 @@ struct QuizShowView: View {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.6)) { introAppeared = true }
         }
         .onChange(of: model.lastResult) { _, result in
-            guard result != nil else { return }
+            guard let result else { return }
             feedbackForReveal()
+            stage(.reveal(ownCorrect: model.myRoundPoints > 0, opponentCorrect: model.opponentRoundPoints > 0))
+            if result.last {
+                let ownWins: Bool? = model.ownScore == model.opponentScore ? nil : model.ownScore > model.opponentScore
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { stage(.finished(ownWins: ownWins)) }
+            }
         }
+        .onChange(of: model.question?.round) { _, round in
+            if let round { stage(.question(round: round)) }
+        }
+        .onChange(of: model.myAnswer) { _, answer in
+            if answer != nil { stage(.answered(own: true)) }
+        }
+        .onChange(of: model.opponentAnswered) { _, answered in
+            if answered { stage(.answered(own: false)) }
+        }
+    }
+
+    private func stage(_ kind: QuizStageEvent.Kind) {
+        stageEvent = QuizStageEvent(kind: kind, id: stageEvent.id + 1)
+    }
+
+    // MARK: - 3D-Studio mit Punktestand über den Pulten
+
+    private var studio: some View {
+        QuizStageView(ownCharacter: ownCharacter, opponentCharacter: opponentCharacter, event: stageEvent)
+            .overlay(alignment: .top) {
+                HStack(alignment: .top) {
+                    scoreSign(name: ownName, score: model.ownScore,
+                              roundPoints: model.phase == .reveal ? model.myRoundPoints : nil,
+                              color: .challengrYellow, answered: model.myAnswer != nil && model.phase == .question)
+                    Spacer()
+                    scoreSign(name: opponentName, score: model.opponentScore,
+                              roundPoints: model.phase == .reveal ? model.opponentRoundPoints : nil,
+                              color: .challengrRed, answered: model.opponentAnswered && model.phase == .question)
+                }
+                .padding(.horizontal, 6)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.purple.opacity(0.6), lineWidth: 2))
+    }
+
+    /// Namensschild mit Punktestand (wie die Anzeige an einem TV-Pult)
+    private func scoreSign(name: String, score: Int, roundPoints: Int?, color: Color, answered: Bool) -> some View {
+        VStack(spacing: 1) {
+            HStack(spacing: 4) {
+                Text(name.uppercased())
+                    .font(.system(size: 10, weight: .black, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                if answered {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white, Color.challengrGreen)
+                        .transition(.scale)
+                }
+            }
+            .foregroundColor(.white.opacity(0.85))
+            Text("\(score)")
+                .font(.system(size: 22, weight: .black, design: .rounded))
+                .monospacedDigit()
+                .foregroundColor(color)
+                .contentTransition(.numericText())
+                .animation(.spring(response: 0.6), value: score)
+            if let roundPoints {
+                Text("+\(roundPoints)")
+                    .font(.system(size: 11, weight: .black, design: .rounded))
+                    .foregroundColor(roundPoints > 0 ? .challengrGreen : .white.opacity(0.5))
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .frame(width: 104)
+        .padding(.vertical, 6)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.black.opacity(0.55)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(color.opacity(0.8), lineWidth: 1.5))
+        .padding(.top, 6)
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Hintergrund mit drehenden Scheinwerfern
@@ -83,63 +160,10 @@ struct QuizShowView: View {
         .allowsHitTesting(false)
     }
 
-    // MARK: - Punktestand
-
-    private var scoreboard: some View {
-        HStack(spacing: 10) {
-            playerScore(name: ownName, character: ownCharacter, score: model.ownScore,
-                        roundPoints: model.phase == .reveal ? model.myRoundPoints : nil, color: .challengrYellow)
-            Text("VS")
-                .font(.system(size: 16, weight: .black, design: .rounded))
-                .foregroundColor(.white.opacity(0.7))
-            playerScore(name: opponentName, character: opponentCharacter, score: model.opponentScore,
-                        roundPoints: model.phase == .reveal ? model.opponentRoundPoints : nil, color: .challengrRed,
-                        answered: model.phase == .question && model.opponentAnswered)
-        }
-    }
-
-    private func playerScore(name: String, character: GameCharacter, score: Int, roundPoints: Int?,
-                             color: Color, answered: Bool = false) -> some View {
-        VStack(spacing: 4) {
-            ZStack(alignment: .bottomTrailing) {
-                CharacterBadge(character: character, ringColor: color, size: 46)
-                if answered {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.white, Color.challengrGreen)
-                        .transition(.scale)
-                }
-            }
-            Text(name.uppercased())
-                .font(.system(size: 11, weight: .black, design: .rounded))
-                .foregroundColor(.white.opacity(0.85))
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-            Text("\(score)")
-                .font(.system(size: 22, weight: .black, design: .rounded))
-                .foregroundColor(color)
-                .contentTransition(.numericText())
-                .animation(.spring(response: 0.6), value: score)
-            if let roundPoints {
-                Text(roundPoints > 0 ? "+\(roundPoints)" : "+0")
-                    .font(.system(size: 12, weight: .black, design: .rounded))
-                    .foregroundColor(roundPoints > 0 ? .challengrGreen : .white.opacity(0.5))
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .gamePanel(padding: 10, cornerRadius: 18)
-        .accessibilityElement(children: .combine)
-    }
-
     // MARK: - Intro
 
     private var intro: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "brain.head.profile")
-                .font(.system(size: 56, weight: .bold))
-                .foregroundStyle(.purple, .challengrYellow)
-                .scaleEffect(introAppeared ? 1 : 0.3)
+        VStack(spacing: 12) {
             Text("QUIZ-SHOW")
                 .font(.system(size: 44, weight: .black, design: .rounded))
                 .tracking(2)
@@ -205,7 +229,7 @@ struct QuizShowView: View {
             .multilineTextAlignment(.center)
             .foregroundColor(.challengrDark)
             .minimumScaleFactor(0.6)
-            .frame(maxWidth: .infinity, minHeight: 110)
+            .frame(maxWidth: .infinity, minHeight: 84)
             .padding(16)
             .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Color.white))
             .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color.purple, lineWidth: 3))
@@ -255,7 +279,7 @@ struct QuizShowView: View {
                 }
             }
             .padding(.horizontal, 10)
-            .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
             .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(fill))
             .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color.white, lineWidth: isMine ? 3 : 0))
