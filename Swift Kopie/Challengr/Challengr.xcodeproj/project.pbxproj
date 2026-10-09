@@ -331,10 +331,10 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDocumentTypes = "( { CFBundleTypeName = \"Challengr Friend Invite\"; LSHandlerRank = Owner; LSItemContentTypes = (\"at.htl.leonding.challengr.friend-invite\"); } )";
 				INFOPLIST_KEY_CFBundleURLTypes = "( { CFBundleURLSchemes = (challengr); } )";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Die App benötigt Zugriff auf die Kamera, um für die Liegestütz-Challenge dein Gesicht zu erkennen.";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Die App benötigt Ihren Standort, um ihn auf der Karte anzuzeigen.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "need your location";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Diese App benötigt ihr mikrofon";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Challengr nutzt die Kamera für Kamera-Challenges (Farben finden, Liegestütze zählen) und zum Scannen von Freundes-QR-Codes. Die Bilder werden nur auf deinem iPhone ausgewertet und nie hochgeladen.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Challengr zeigt dich auf der Karte und findet Gegner und Hotspots in deiner Nähe.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Für die Lautstärke-Challenge misst Challengr, wie laut es gerade ist. Es wird nichts aufgenommen oder gespeichert.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -355,7 +355,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -371,10 +371,10 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDocumentTypes = "( { CFBundleTypeName = \"Challengr Friend Invite\"; LSHandlerRank = Owner; LSItemContentTypes = (\"at.htl.leonding.challengr.friend-invite\"); } )";
 				INFOPLIST_KEY_CFBundleURLTypes = "( { CFBundleURLSchemes = (challengr); } )";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Die App benötigt Zugriff auf die Kamera, um für die Liegestütz-Challenge dein Gesicht zu erkennen.";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Die App benötigt Ihren Standort, um ihn auf der Karte anzuzeigen.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "need your location";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Diese App benötigt ihr mikrofon";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Challengr nutzt die Kamera für Kamera-Challenges (Farben finden, Liegestütze zählen) und zum Scannen von Freundes-QR-Codes. Die Bilder werden nur auf deinem iPhone ausgewertet und nie hochgeladen.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Challengr zeigt dich auf der Karte und findet Gegner und Hotspots in deiner Nähe.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Für die Lautstärke-Challenge misst Challengr, wie laut es gerade ist. Es wird nichts aufgenommen oder gespeichert.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -395,7 +395,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
