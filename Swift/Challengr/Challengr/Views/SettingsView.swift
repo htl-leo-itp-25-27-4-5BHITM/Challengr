@@ -64,6 +64,13 @@ struct SettingsView: View {
                         }
                     }
                     .disabled(isInvisible == nil || auth.playerId == nil)
+                    Link(destination: BackendConfig.privacyPolicyURL) {
+                        HStack {
+                            Image(systemName: "doc.text.fill")
+                                .foregroundColor(.blue)
+                            Text("Datenschutzerklärung")
+                        }
+                    }
                     NavigationLink {
                         BlockedPlayersView()
                     } label: {

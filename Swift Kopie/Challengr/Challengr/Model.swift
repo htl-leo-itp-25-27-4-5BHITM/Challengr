@@ -95,6 +95,9 @@ struct BackendConfig {
         return baseURL.appendingPathComponent(normalized)
     }
 
+    /// Datenschutzerklärung (öffentlich, ohne Login; liefert das Dashboard aus)
+    static var privacyPolicyURL: URL { cloudBaseURL.appendingPathComponent("datenschutz.html") }
+
     /// Wer verbunden ist, ergibt sich aus dem Login-Token (Authorization-Header), nicht aus der URL.
     static func gameWebSocketURL() -> URL {
         var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
