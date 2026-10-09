@@ -33,6 +33,24 @@ struct BattleResultData {
     var outcome: String? = nil
     /// Beide Spieler mit Name und Figur (nil bei alten Backends).
     var participants: BattleParticipants? = nil
+    /// Liga oder Friendly
+    var mode: BattleMode = .friendly
+    /// Endstand der Quiz-Show (nur Liga Wissen)
+    var quizFromScore: Int? = nil
+    var quizToScore: Int? = nil
+
+    /// "+28 🏆" in der Liga, im Friendly nur "–" (es geht um nichts).
+    func deltaLabel(_ delta: Int) -> String {
+        mode.isRanked ? "\(delta >= 0 ? "+" : "")\(delta) 🏆" : "FRIENDLY"
+    }
+
+    /// "Basti 320 : 210 Mia" – Endstand der Quiz-Show, nil außerhalb der Liga Wissen.
+    var quizScoreLine: String? {
+        guard let from = quizFromScore, let to = quizToScore else { return nil }
+        let fromName = participants?.fromName ?? "Herausforderer"
+        let toName = participants?.toName ?? "Gegner"
+        return "\(fromName) \(from) : \(to) \(toName)"
+    }
 }
 
 /// Beide Spieler eines Battles mit Name und Figur (vom Backend in battle-requested/-running/-result).

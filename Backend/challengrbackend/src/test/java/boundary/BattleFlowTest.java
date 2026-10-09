@@ -241,7 +241,7 @@ class BattleFlowTest {
             return new String[] { a.getId(), b.getId() };
         });
 
-        Battle battle = battleService.createRequestedBattle(ids[0], ids[1], 1L);
+        Battle battle = battleService.createRequestedBattle(ids[0], ids[1], null, control.BattleMode.RANKED_REALLIFE);
         battleService.finalizeResult(battle.getId(), ids[1]);
 
         Battle done = battleService.findById(battle.getId());

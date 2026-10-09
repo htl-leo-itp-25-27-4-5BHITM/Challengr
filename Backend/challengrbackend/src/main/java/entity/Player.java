@@ -21,6 +21,14 @@ public class Player {
     // NEU: Punkte, Default 0
     private int points = 200;
 
+    /** Liga Wissen (Quiz-Show). */
+    @Column(columnDefinition = "integer default 200 not null")
+    private int knowledgeTrophies = 200;
+
+    /** Liga Real-Life (vom Handy gemessene Challenges). */
+    @Column(columnDefinition = "integer default 200 not null")
+    private int realLifeTrophies = 200;
+
     private int consecutiveConflicts = 0;
 
     @Column(length = 255)
@@ -148,5 +156,38 @@ public class Player {
 
     public void setCharacter(String character) {
         this.character = character;
+    }
+
+    public int getKnowledgeTrophies() {
+        return knowledgeTrophies;
+    }
+
+    public void setKnowledgeTrophies(int knowledgeTrophies) {
+        this.knowledgeTrophies = knowledgeTrophies;
+    }
+
+    public int getRealLifeTrophies() {
+        return realLifeTrophies;
+    }
+
+    public void setRealLifeTrophies(int realLifeTrophies) {
+        this.realLifeTrophies = realLifeTrophies;
+    }
+
+    /** Trophäen der Liga eines Modus (Friendly → 0). */
+    public int trophiesFor(control.BattleMode mode) {
+        return switch (mode) {
+            case RANKED_KNOWLEDGE -> knowledgeTrophies;
+            case RANKED_REALLIFE -> realLifeTrophies;
+            case FRIENDLY -> 0;
+        };
+    }
+
+    public void setTrophiesFor(control.BattleMode mode, int value) {
+        switch (mode) {
+            case RANKED_KNOWLEDGE -> knowledgeTrophies = value;
+            case RANKED_REALLIFE -> realLifeTrophies = value;
+            case FRIENDLY -> { }
+        }
     }
 }

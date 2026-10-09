@@ -107,6 +107,13 @@ struct MapView: View {
     @State private var knownNearbyIds: [String]? = nil
     /// Figur des Gegners im laufenden Battle
     @State private var battleOpponentCharacter: GameCharacter? = nil
+    /// Modus des laufenden Battles (Liga Wissen → Quiz-Show, Friendly → Geschafft ohne Voting)
+    @State private var battleMode: BattleMode = .friendly
+    /// Friendly: selbst "Geschafft" gemeldet bzw. der Gegner hat es geschafft
+    @State private var friendlyWaiting = false
+    @State private var opponentFinished = false
+    /// Quiz-Show lebt hier, damit keine Frage verloren geht, bevor der Screen offen ist
+    @StateObject private var quizModel: QuizShowModel
 
     /// Short info banner at the top of the map (z.B. "Anfrage abgelaufen").
     @State private var mapBanner: (icon: String, text: String)? = nil
@@ -148,6 +155,8 @@ struct MapView: View {
     @State private var ownTotalChallenges: Int = 0
     @State private var ownWonChallenges: Int = 0
     @State private var ownPoints: Int = 0
+    /// Liga-Stände (Trophäen + Rang) für Wissen und Real-Life
+    @State private var ownLeague: (knowledge: Int?, realLife: Int?, knowledgeRank: String?, realLifeRank: String?) = (nil, nil, nil, nil)
     @State private var pointsHistory: [PlayerPointsHistoryDTO] = []
     @State private var battleHistory: [BattleHistoryDTO] = []
     @State private var profileStatusText: String? = nil
@@ -179,6 +188,7 @@ struct MapView: View {
         _ownPlayerName = State(initialValue: resolvedPlayerName)
         _locationHelper = StateObject(wrappedValue: LocationHelper(playerId: resolvedPlayerId, playerName: resolvedPlayerName))
         _socket = StateObject(wrappedValue: GameSocketService(playerId: resolvedPlayerId))
+        _quizModel = StateObject(wrappedValue: QuizShowModel(ownPlayerId: resolvedPlayerId))
     }
 
     init(ownPlayerId: String, ownPlayerName: String, auth: KeycloakAuthService) {
@@ -189,6 +199,7 @@ struct MapView: View {
         _ownPlayerName = State(initialValue: resolvedPlayerName)
         _locationHelper = StateObject(wrappedValue: LocationHelper(playerId: ownPlayerId, playerName: resolvedPlayerName))
         _socket = StateObject(wrappedValue: GameSocketService(playerId: ownPlayerId))
+        _quizModel = StateObject(wrappedValue: QuizShowModel(ownPlayerId: ownPlayerId))
     }
 
     
@@ -428,7 +439,11 @@ struct MapView: View {
                     dailyStreak: ownDailyStreak,
                     totalChallenges: ownTotalChallenges,
                     wonChallenges: ownWonChallenges,
-                    points: ownPoints
+                    points: ownPoints,
+                    knowledgeTrophies: ownLeague.knowledge,
+                    realLifeTrophies: ownLeague.realLife,
+                    knowledgeRank: ownLeague.knowledgeRank,
+                    realLifeRank: ownLeague.realLifeRank
                 ),
                 pointsHistory: pointsHistory,
                 battleHistory: battleHistory,
@@ -439,6 +454,13 @@ struct MapView: View {
                 socket: socket,
                 currentCoordinate: ownCoordinate
             )
+        }
+        .onChange(of: currentBattleId) { _, battleId in
+            guard let battleId else { return }
+            battleMode = socket.modeByBattle[battleId] ?? .friendly
+            friendlyWaiting = false
+            opponentFinished = false
+            if battleMode == .rankedKnowledge { quizModel.start(battleId: battleId) }
         }
         .onChange(of: showProfile) { isShown in
             if isShown {
@@ -470,6 +492,18 @@ struct MapView: View {
                 if let info = activeBattleInfo,
                    let battleId = currentBattleId {
 
+                    if battleMode == .rankedKnowledge {
+                        QuizShowView(
+                            model: quizModel,
+                            battleId: battleId,
+                            ownName: ownPlayerName,
+                            opponentName: info.playerB,
+                            ownCharacter: GameCharacter.current,
+                            opponentCharacter: battleOpponentCharacter ?? .opponent,
+                            socket: socket,
+                            onSurrendered: { activeFullScreen = .none; activeOverlay = .resultPending }
+                        )
+                    } else {
                     switch BattleScreen.forChallenge(category: info.category, name: info.challengeName) {
                     case .knowledge:
                         KnowledgeBattleView(
@@ -559,6 +593,7 @@ struct MapView: View {
 
                     case .generic:
                         genericBattleView(info: info)
+                    }
                     }
 
                 } else {
@@ -1284,6 +1319,7 @@ struct MapView: View {
                         otherPlayerId: player.playerId,
                         otherPlayerName: cleanPlayerName(player.title),
                         otherPlayerRankColor: rankColor(for: player.rankName),
+                        otherPlayerCharacter: opponentCharacter(player.playerId, battleId: nil),
                         ownPlayerId: ownPlayerId,
                         allChallenges: allChallenges,
                         socket: socket
@@ -1294,6 +1330,21 @@ struct MapView: View {
                 .transition(.scale)
             }
         }
+    }
+
+    /// Modus einer Anfrage: Liga Wissen / Liga Real-Life / Friendly.
+    private func modeBadge(_ mode: BattleMode) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: mode.icon)
+            Text(mode.title.uppercased()).tracking(0.8)
+            if mode.isRanked { Image(systemName: "trophy.fill").foregroundColor(.challengrYellow) }
+        }
+        .font(.system(size: 12, weight: .black, design: .rounded))
+        .foregroundColor(.white)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Capsule().fill(mode.color))
+        .accessibilityLabel("Modus: \(mode.title)")
     }
 
     /// Small circular category badge (icon + tint), used in challenge overlays.
@@ -1357,7 +1408,11 @@ struct MapView: View {
                             .font(.system(size: 20, weight: .black, design: .rounded))
                             .foregroundColor(.challengrDark)
 
-                        categoryBadge(for: challenge.category)
+                        HStack(spacing: 8) {
+                            let mode = socket.modeByBattle[battleId] ?? .friendly
+                            modeBadge(mode)
+                            if mode == .friendly { categoryBadge(for: challenge.category) }
+                        }
 
                         Text(challenge.name)
                             .font(.system(size: 15, weight: .bold, design: .rounded))
@@ -1438,6 +1493,8 @@ struct MapView: View {
                             .font(.system(size: 18, weight: .black, design: .rounded))
                             .foregroundColor(.challengrDark)
 
+                        modeBadge(socket.modeByBattle[outgoing.battleId] ?? .friendly)
+
                         Text(outgoing.challengeName)
                             .font(.system(size: 14, weight: .bold, design: .rounded))
                             .multilineTextAlignment(.center)
@@ -1498,13 +1555,13 @@ struct MapView: View {
                 activeOverlay = .resultPending
             },
             onFinished: {
-                if let battleId = currentBattleId {
-                    socket.sendUpdateBattleStatus(
-                        battleId: battleId,
-                        status: "READY_FOR_VOTING"
-                    )
-                }
-            }
+                // Kein Voting mehr: "Geschafft" melden; haben es beide geschafft → Unentschieden
+                guard let battleId = currentBattleId, !friendlyWaiting else { return }
+                socket.sendFriendlyFinished(battleId: battleId)
+                friendlyWaiting = true
+            },
+            waitingForOpponent: friendlyWaiting,
+            opponentFinished: opponentFinished
         )
     }
 
@@ -1557,53 +1614,6 @@ struct MapView: View {
             .presentationBackground(.clear)
     }
 
-    /// Fullscreen battle screen displayed after accepting a challenge.
-    private var battleScreen: some View {
-        Group {
-            if let info = activeBattleInfo,
-               let battleId = currentBattleId {
-                BattleView(
-                    challengeName: info.challengeName,
-                    category: info.category,
-                    playerLeft: info.playerA,
-                    playerRight: info.playerB,
-                    opponentCharacter: battleOpponentCharacter ?? .opponent,
-                    ownEmote: ownBattleEmote,
-                    opponentEmote: opponentBattleEmote,
-                    onSendEmote: { emoji in sendBattleEmote(emoji, opponentId: info.opponentId) },
-                    onClose: {
-                        activeFullScreen = .none
-                    },
-                    onSurrender: {
-                        socket.sendUpdateBattleStatus(
-                            battleId: battleId,
-                            status: "DONE_SURRENDER"
-                        )
-                        // optional: socket.sendVote(battleId: battleId, winnerName: info.playerB)
-                        activeFullScreen = .none
-                    },
-                    onFinished: {
-                            // NEU: statt direkt Voting öffnen
-                            if let battleId = currentBattleId {
-                                socket.sendUpdateBattleStatus(
-                                    battleId: battleId,
-                                    status: "READY_FOR_VOTING"
-                                )
-                            }
-                        }
-                    
-                )
-            } else {
-                EmptyView()
-            }
-        }
-    }
-
-
-
-
-
-
     // MARK: - Data loading & flow (Daten laden & Ablauf)
 
     /// Reloads profile-related data for the current player (Profildaten neu laden)
@@ -1631,6 +1641,7 @@ struct MapView: View {
                 await MainActor.run {
                     ownPlayerName      = name
                     ownRankName        = rank
+                    ownLeague          = (me.knowledgeTrophies, me.realLifeTrophies, me.knowledgeRank, me.realLifeRank)
                     ownPoints          = points
                     ownDailyStreak     = streak
                     ownTotalChallenges = stats.totalChallenges
@@ -1926,6 +1937,25 @@ struct MapView: View {
                     "timeLimit": payload.timeLimit as Any
                 ]
             )
+        }
+
+        socket.onQuizQuestion = { question in
+            guard question.battleId == currentBattleId else { return }
+            quizModel.receive(question)
+        }
+
+        socket.onQuizRoundResult = { result in
+            guard result.battleId == currentBattleId else { return }
+            quizModel.receive(result)
+        }
+
+        socket.onQuizOpponentAnswered = { battleId, round in
+            quizModel.opponentDidAnswer(battleId: battleId, round: round)
+        }
+
+        socket.onOpponentFinished = { battleId in
+            guard battleId == currentBattleId else { return }
+            opponentFinished = true
         }
 
         socket.onKnowledgeAnswerFeedback = { battleId, correct in

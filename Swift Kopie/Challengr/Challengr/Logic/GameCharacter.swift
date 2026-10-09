@@ -74,7 +74,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .kai:              return .wins(20)
         case .merlo:            return .knowledgeWins(3)
         case .lyra:             return .checkins(5)
-        case .kaeptnRex:        return .points(350)
+        case .kaeptnRex:        return .trophies(350)
         }
     }
 
@@ -110,12 +110,13 @@ enum UnlockRequirement: Equatable {
     case wins(Int)
     case knowledgeWins(Int)
     case checkins(Int)
-    case points(Int)
+    /// Trophäen in der besseren Liga
+    case trophies(Int)
 
     var required: Int {
         switch self {
         case .none: return 0
-        case .wins(let n), .knowledgeWins(let n), .checkins(let n), .points(let n): return n
+        case .wins(let n), .knowledgeWins(let n), .checkins(let n), .trophies(let n): return n
         }
     }
 
@@ -125,9 +126,9 @@ enum UnlockRequirement: Equatable {
         switch self {
         case .none:                 return "Frei"
         case .wins(let n):          return "\(p)\(n) \(n == 1 && progress == nil ? "Sieg" : "Siege")"
-        case .knowledgeWins(let n): return "\(p)\(n) Wissens-Siege"
+        case .knowledgeWins(let n): return "\(p)\(n) Quiz-Siege"
         case .checkins(let n):      return "\(p)\(n) Check-ins"
-        case .points(let n):        return "\(p)\(n) Punkte"
+        case .trophies(let n):      return "\(p)\(n) Trophäen"
         }
     }
 }

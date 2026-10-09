@@ -44,7 +44,10 @@ struct TrophyRoadView: View {
 
     // MARK: - State (State)
     @State private var trophyRanks: [TrophyRank] = []
+    /// Trophäen der gerade gezeigten Liga
     @State private var playerPoints: Int = 0
+    @State private var league: BattleMode = .rankedKnowledge
+    @State private var trophiesByLeague: [BattleMode: Int] = [:]
 
     // MARK: - Services (Services)
     private let rankService = RankService()
@@ -141,6 +144,17 @@ struct TrophyRoadView: View {
                     .foregroundColor(.challengrBlack.opacity(0.5))
                     .padding(.top, 16)
 
+                Picker("Liga", selection: $league) {
+                    ForEach([BattleMode.rankedKnowledge, .rankedRealLife]) { mode in
+                        Label(mode.title, systemImage: mode.icon).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 16)
+                .onChange(of: league) { _, mode in
+                    if let trophies = trophiesByLeague[mode] { playerPoints = trophies }
+                }
+
                 ScrollViewReader { proxy in
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(spacing: 24) {
@@ -211,12 +225,19 @@ struct TrophyRoadView: View {
         do {
             async let ranksAsync = rankService.loadRanks()
             async let pointsAsync = playerService.loadPlayerPoints(id: playerId)
+            async let playerAsync = try? playerService.loadPlayerById(id: playerId)
 
             let (ranks, points) = try await (ranksAsync, pointsAsync)
+            let player = await playerAsync
 
             await MainActor.run {
                 self.trophyRanks = ranks
-                self.playerPoints = points
+                var byLeague: [BattleMode: Int] = [:]
+                byLeague[.rankedKnowledge] = player?.knowledgeTrophies
+                byLeague[.rankedRealLife] = player?.realLifeTrophies
+                self.trophiesByLeague = byLeague
+                // Alte Server ohne Ligen: Punkte wie bisher
+                self.playerPoints = byLeague[league] ?? points
             }
         } catch {
             print("Fehler beim Laden:", error)
@@ -406,7 +427,7 @@ private struct RankSectionView: View {
                     .font(.system(size: 16, weight: .black, design: .rounded))
                     .foregroundColor(.white)
 
-                Text("\(rank.min) – \(rank.max) PUNKTE")
+                Text("\(rank.min) – \(rank.max) TROPHÄEN")
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundColor(.white.opacity(0.9))
 

@@ -1,8 +1,8 @@
 -- Spieler
-INSERT INTO player (id, name, longitude, latitude, points, consecutiveConflicts) VALUES
-                                                                                 ('demo-1', 'EigenerSpieler', 14.251389, 48.268333, 800, 0),
-                                                                                 ('demo-2', 'ZweiterSpieler', 14.251400, 48.268300, 200, 0),
-                                                                                 ('3', 'WebappSpieler', 14.251385, 48.268639, 200, 0);
+INSERT INTO player (id, name, longitude, latitude, points, knowledgeTrophies, realLifeTrophies, consecutiveConflicts) VALUES
+                                                                                 ('demo-1', 'EigenerSpieler', 14.251389, 48.268333, 800, 800, 800, 0),
+                                                                                 ('demo-2', 'ZweiterSpieler', 14.251400, 48.268300, 200, 200, 200, 0),
+                                                                                 ('3', 'WebappSpieler', 14.251385, 48.268639, 200, 200, 200, 0);
 
 -- Kategorien (NEU: ohne Suchen, dafür iPhone & Customer)
 INSERT INTO challenge_categories (name, description) VALUES
@@ -124,6 +124,41 @@ INSERT INTO rank (name, min, max, color) VALUES
                                              ('Brawler', 950, 1399, 'red'),
                                              ('Dueler', 1400, 1999, 'purple'),
                                              ('Challengr', 2000, 2800, 'yellow');
+
+---------------------------------------------------------
+-- WISSEN: zusätzliche Fragen für die Quiz-Show (Liga Wissen, 4 Fragen pro Battle)
+---------------------------------------------------------
+INSERT INTO challenges (text, category_id, option_a, option_b, option_c, option_d, correct_index) VALUES
+    ('Was ist die Hauptstadt von Österreich?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Graz', 'Wien', 'Linz', 'Salzburg', 1),
+    ('Wie viele Bundesländer hat Österreich?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), '7', '8', '9', '10', 2),
+    ('Welcher ist der höchste Berg Österreichs?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Großglockner', 'Dachstein', 'Wildspitze', 'Zugspitze', 0),
+    ('Welcher Fluss fließt durch Linz?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Inn', 'Donau', 'Mur', 'Enns', 1),
+    ('Wie viele Seiten hat ein Sechseck?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), '5', '6', '7', '8', 1),
+    ('Was ist 7 × 8?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), '54', '56', '58', '64', 1),
+    ('Welcher Planet ist der Sonne am nächsten?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Venus', 'Mars', 'Merkur', 'Erde', 2),
+    ('Wie lautet die chemische Formel von Wasser?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'CO2', 'H2O', 'O2', 'NaCl', 1),
+    ('In welchem Jahr fiel die Berliner Mauer?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), '1985', '1989', '1991', '1995', 1),
+    ('Wer malte die Mona Lisa?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Michelangelo', 'Van Gogh', 'Leonardo da Vinci', 'Picasso', 2),
+    ('Wie viele Kontinente gibt es?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), '5', '6', '7', '8', 2),
+    ('Wofür steht HTML?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'HyperText Markup Language', 'High Tech Modern Language', 'Home Tool Markup Language', 'Hyper Transfer Main Link', 0),
+    ('Wie viele Bits hat ein Byte?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), '4', '8', '16', '32', 1),
+    ('Welche Programmiersprache läuft direkt im Webbrowser?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Swift', 'Java', 'JavaScript', 'C', 2),
+    ('Welches ist das größte Tier der Welt?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Afrikanischer Elefant', 'Blauwal', 'Giraffe', 'Weißer Hai', 1),
+    ('Wie viele Spieler einer Fußballmannschaft stehen auf dem Feld?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), '9', '10', '11', '12', 2),
+    ('Welches Organ pumpt das Blut durch den Körper?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Lunge', 'Leber', 'Herz', 'Niere', 2),
+    ('Was ist die Hauptstadt von Frankreich?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Lyon', 'Paris', 'Marseille', 'Nizza', 1),
+    ('Welcher Komponist wurde in Salzburg geboren?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Beethoven', 'Mozart', 'Bach', 'Haydn', 1),
+    ('Wie heißt der längste Fluss Europas?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Donau', 'Rhein', 'Wolga', 'Elbe', 2),
+    ('Was ist die Wurzel aus 144?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), '10', '11', '12', '14', 2),
+    ('Welche Farbe entsteht aus Blau und Gelb?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Grün', 'Orange', 'Lila', 'Braun', 0),
+    ('Wie viele Tage hat ein Schaltjahr?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), '364', '365', '366', '367', 2),
+    ('Welches Gas nehmen Pflanzen bei der Photosynthese auf?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Sauerstoff', 'Stickstoff', 'Kohlendioxid', 'Helium', 2),
+    ('In welcher Stadt steht der Stephansdom?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Graz', 'Wien', 'Innsbruck', 'Linz', 1),
+    ('Welcher Ozean ist der größte?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Atlantik', 'Indischer Ozean', 'Pazifik', 'Arktischer Ozean', 2),
+    ('Was misst man in Hertz?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Frequenz', 'Stromstärke', 'Temperatur', 'Druck', 0),
+    ('Wer entwickelte die Relativitätstheorie?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'Newton', 'Einstein', 'Tesla', 'Curie', 1),
+    ('Wie viele Ecken hat ein Würfel?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), '6', '8', '10', '12', 1),
+    ('Welches Land hat die meisten Einwohner?', (SELECT id FROM challenge_categories WHERE name = 'Wissen'), 'China', 'Indien', 'USA', 'Indonesien', 1);
 
 ---------------------------------------------------------
 -- SHOP ITEMS

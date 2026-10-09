@@ -64,6 +64,15 @@ final class GameSocketService: ObservableObject {
     var onBattleResult: ((BattleResultData) -> Void)?
     /// Emote von einem anderen Spieler: fromId, emoji, battleId (nil = auf der Karte)
     var onEmote: ((String, String, Int64?) -> Void)?
+    /// Quiz-Show (Liga Wissen)
+    var onQuizQuestion: ((QuizQuestion) -> Void)?
+    var onQuizRoundResult: ((QuizRoundResult) -> Void)?
+    var onQuizOpponentAnswered: ((Int64, Int) -> Void)?
+    /// Friendly: der Gegner hat "Geschafft" getippt
+    var onOpponentFinished: ((Int64) -> Void)?
+
+    /// Modus je Battle (aus battle-requested/-running). Nur auf dem Main-Thread lesen.
+    private(set) var modeByBattle: [Int64: BattleMode] = [:]
 
     /// Spieler (Name + Figur) je Battle, aus battle-requested/-running. Nur auf dem Main-Thread lesen.
     private(set) var participantsByBattle: [Int64: BattleParticipants] = [:]
@@ -211,14 +220,26 @@ final class GameSocketService: ObservableObject {
 
     // MARK: - Send messages (Senden)
 
-    func sendCreateBattle(fromId: String, toId: String, challengeId: Int64) {
-        let payload: [String: Any] = [
+    /// Herausfordern. Liga: der Server wählt die Challenge (challengeId nil). Friendly: gewählte Challenge.
+    func sendCreateBattle(fromId: String, toId: String, mode: BattleMode = .friendly, challengeId: Int64? = nil) {
+        var payload: [String: Any] = [
             "type": "create-battle",
             "fromId": fromId,
             "toId": toId,
-            "challengeId": challengeId
+            "mode": mode.rawValue
         ]
+        if let challengeId { payload["challengeId"] = challengeId }
         send(json: payload)
+    }
+
+    /// Antwort in der Quiz-Show (Runde ab 1).
+    func sendQuizAnswer(battleId: Int64, round: Int, answerIndex: Int) {
+        send(json: ["type": "quiz-answer", "battleId": battleId, "round": round, "answerIndex": answerIndex])
+    }
+
+    /// Friendly ohne Messung: "Geschafft" – schaffen es beide, ist es unentschieden.
+    func sendFriendlyFinished(battleId: Int64) {
+        send(json: ["type": "friendly-finished", "battleId": battleId])
     }
 
     func sendUpdateBattleStatus(battleId: Int64, status: String) {
@@ -434,9 +455,11 @@ final class GameSocketService: ObservableObject {
 
                 print("🔹 battle-requested battle=\(battleId) challenge=\(challengeId) targetLat=\(targetLat as Any), targetLon=\(targetLon as Any)")
                 let participants = BattleParticipants.parse(json)
+                let mode = BattleMode(serverValue: json["mode"] as? String)
 
                 DispatchQueue.main.async {
                     if let participants { self.participantsByBattle[battleId] = participants }
+                    self.modeByBattle[battleId] = mode
                     self.onChallengeReceived?(battleId, fromId, toId, challengeId, challengeText, challengeCategory, targetLat, targetLon)
                 }
             }
@@ -455,8 +478,10 @@ final class GameSocketService: ObservableObject {
                     targetLongitude: json["targetLongitude"] as? Double,
                     submitted: json["submitted"] as? Bool ?? false
                 )
+                let mode = BattleMode(serverValue: json["mode"] as? String)
                 DispatchQueue.main.async {
                     if let participants { self.participantsByBattle[battleId] = participants }
+                    self.modeByBattle[battleId] = mode
                     self.runningExtras[battleId] = extras
                     self.onBattleRunning?(battleId, fromId, toId, challengeId, challengeText, challengeCategory, status)
                 }
@@ -549,10 +574,34 @@ final class GameSocketService: ObservableObject {
                 result.loserId  = json["loserId"] as? String
                 result.outcome  = json["outcome"] as? String
                 result.participants = BattleParticipants.parse(json, fromKey: "fromId", toKey: "toId")
+                result.mode = BattleMode(serverValue: json["mode"] as? String)
+                if let quiz = json["quiz"] as? [String: Any] {
+                    result.quizFromScore = quiz["fromScore"] as? Int
+                    result.quizToScore = quiz["toScore"] as? Int
+                }
 
                 DispatchQueue.main.async {
                     self.onBattleResult?(result)
                 }
+            }
+
+            if type == "quiz-question", let q = QuizQuestion.parse(json) {
+                DispatchQueue.main.async { self.onQuizQuestion?(q) }
+            }
+
+            if type == "quiz-round-result", let r = QuizRoundResult.parse(json) {
+                DispatchQueue.main.async { self.onQuizRoundResult?(r) }
+            }
+
+            if type == "quiz-opponent-answered" {
+                let battleId = (json["battleId"] as? NSNumber)?.int64Value ?? 0
+                let round = json["round"] as? Int ?? 0
+                DispatchQueue.main.async { self.onQuizOpponentAnswered?(battleId, round) }
+            }
+
+            if type == "opponent-finished" {
+                let battleId = (json["battleId"] as? NSNumber)?.int64Value ?? 0
+                DispatchQueue.main.async { self.onOpponentFinished?(battleId) }
             }
 
             if type == "emote" {

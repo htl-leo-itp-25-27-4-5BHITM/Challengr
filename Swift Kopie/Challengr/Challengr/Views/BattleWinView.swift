@@ -77,11 +77,23 @@ struct BattleWinView: View {
                         )
                     }
 
-                    // Punkte-Gewinn hervorgehoben
-                    Text("+\(data.winnerPointsDelta) PUNKTE")
-                        .font(.system(size: 22, weight: .black, design: .rounded))
-                        .foregroundColor(.challengrGreen)
+                    if let quiz = data.quizScoreLine {
+                        Label(quiz, systemImage: "brain.head.profile")
+                            .font(.system(size: 14, weight: .black, design: .rounded))
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+
+                    // Trophäen-Gewinn hervorgehoben (Liga) bzw. Friendly-Hinweis
+                    Text(data.mode.trophyText(delta: data.winnerPointsDelta).uppercased())
+                        .font(.system(size: data.mode.isRanked ? 22 : 16, weight: .black, design: .rounded))
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(data.mode.isRanked ? .challengrGreen : .white.opacity(0.8))
                         .padding(.top, 4)
+                    if data.mode.isRanked && data.winnerPointsDelta > 0 {
+                        Text("+\(data.winnerPointsDelta) Punkte für Shop & Co.")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .foregroundColor(.challengrYellow)
+                    }
 
                     if let metrics = data.metrics {
                         let rows = metricRows(from: metrics)
@@ -207,7 +219,7 @@ struct BattleWinView: View {
                 .tracking(1)
                 .foregroundColor(color)
 
-            Text("\(pointsDelta >= 0 ? "+" : "")\(pointsDelta) PUNKTE")
+            Text(data.deltaLabel(pointsDelta))
                 .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .foregroundColor(color.opacity(0.9))
         }

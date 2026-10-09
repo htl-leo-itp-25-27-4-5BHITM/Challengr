@@ -19,21 +19,21 @@ public final class CharacterCatalog {
         KNOWLEDGE_WINS,
         /** Check-ins an Hotspots */
         CHECKINS,
-        /** Punktestand */
-        POINTS
+        /** Trophäen in der besseren Liga */
+        TROPHIES
     }
 
     public record Entry(String id, String name, Requirement requirement, int required) {}
 
     /** Was ein Spieler bisher erreicht hat – daraus ergibt sich, was frei ist. */
-    public record Progress(int wins, int knowledgeWins, int checkins, int points) {
+    public record Progress(int wins, int knowledgeWins, int checkins, int trophies) {
         public int of(Requirement r) {
             return switch (r) {
                 case NONE -> 0;
                 case WINS -> wins;
                 case KNOWLEDGE_WINS -> knowledgeWins;
                 case CHECKINS -> checkins;
-                case POINTS -> points;
+                case TROPHIES -> trophies;
             };
         }
     }
@@ -48,7 +48,7 @@ public final class CharacterCatalog {
             new Entry("kai", "Kai", Requirement.WINS, 20),
             new Entry("merlo", "Merlo", Requirement.KNOWLEDGE_WINS, 3),
             new Entry("lyra", "Lyra", Requirement.CHECKINS, 5),
-            new Entry("kaeptn-rex", "Käpt'n Rex", Requirement.POINTS, 350)
+            new Entry("kaeptn-rex", "Käpt'n Rex", Requirement.TROPHIES, 350)
     );
 
     private CharacterCatalog() {}

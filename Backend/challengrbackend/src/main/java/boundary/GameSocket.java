@@ -2,7 +2,9 @@ package boundary;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import entity.Battle;
+import entity.Challenges;
 import entity.Player;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -150,6 +152,8 @@ public class GameSocket {
                 case "shake-result"         -> handleMetricResult(msg, playerId, MetricResults.Kind.SHAKE, "shakes");
                 case "pushup-result"        -> handleMetricResult(msg, playerId, MetricResults.Kind.PUSHUP, "reps");
                 case "send-emote"           -> handleEmote(msg, playerId);
+                case "quiz-answer"          -> handleQuizAnswer(msg, playerId);
+                case "friendly-finished"    -> handleFriendlyFinished(msg, playerId);
                 default -> sendError(session, "Unknown type");
             }
         } catch (Exception e) {
@@ -215,10 +219,11 @@ public class GameSocket {
     private void handleCreateBattle(JsonNode msg, String senderId) {
         String fromId    = playerIdField(msg, "fromId");
         String toId      = playerIdField(msg, "toId");
-        Long challengeId = requireLong(msg, "challengeId");
+        Long challengeId = msg.hasNonNull("challengeId") ? msg.get("challengeId").asLong() : null;
+        control.BattleMode mode = control.BattleMode.from(msg.path("mode").asText(null));
 
-        System.out.printf("create-battle received: from=%s, to=%s, challenge=%d%n",
-                fromId, toId, challengeId);
+        System.out.printf("create-battle received: from=%s, to=%s, mode=%s, challenge=%s%n",
+                fromId, toId, mode, challengeId);
 
         // Nur im eigenen Namen herausfordern
         if (senderId != null && fromId != null && !senderId.equals(fromId)) {
@@ -228,7 +233,7 @@ public class GameSocket {
 
         Battle battle;
         try {
-            battle = battleService.createRequestedBattle(fromId, toId, challengeId);
+            battle = battleService.createRequestedBattle(fromId, toId, challengeId, mode);
         } catch (BattleRejectedException e) {
             System.out.println("create-battle abgelehnt: " + e.getMessage());
             sendBattleRejected(senderId != null ? senderId : fromId, toId, e.getMessage());
@@ -293,6 +298,10 @@ public class GameSocket {
     static String buildBattlePayload(String type, Battle battle, Boolean submitted) {
         String categoryName = battle.getChallenge().getChallengeCategory() != null
                 ? battle.getChallenge().getChallengeCategory().getName() : "";
+        control.BattleMode mode = control.BattleMode.from(battle.getType());
+        // Liga Wissen: die erste Frage nicht schon in der Anfrage verraten
+        String challengeText = mode == control.BattleMode.RANKED_KNOWLEDGE
+                ? "Quiz-Show: " + QUIZ_ROUNDS + " Fragen" : battle.getChallenge().getText();
         return """
     {
       "type": "%s",
@@ -309,7 +318,8 @@ public class GameSocket {
       "fromName": "%s",
       "toName": "%s",
       "fromCharacter": %s,
-      "toCharacter": %s%s
+      "toCharacter": %s,
+      "mode": "%s"%s
     }
     """.formatted(
                 type,
@@ -317,7 +327,7 @@ public class GameSocket {
                 escapeJsonStatic(battle.getFromPlayer().getId()),
                 escapeJsonStatic(battle.getToPlayer().getId()),
                 battle.getChallenge().getId(),
-                escapeJsonStatic(battle.getChallenge().getText()),
+                escapeJsonStatic(challengeText),
                 escapeJsonStatic(categoryName),
                 escapeJsonStatic(battle.getStatus()),
                 secondsUntilExpiry(battle),
@@ -327,6 +337,7 @@ public class GameSocket {
                 escapeJsonStatic(battle.getToPlayer().getName()),
                 jsonStringOrNullStatic(battle.getFromPlayer().getCharacter()),
                 jsonStringOrNullStatic(battle.getToPlayer().getCharacter()),
+                mode.name(),
                 submitted == null ? "" : ",\n      \"submitted\": " + submitted
         );
     }
@@ -338,6 +349,9 @@ public class GameSocket {
     /** Hat der Spieler in diesem laufenden Battle schon sein Ergebnis/seine Stimme abgegeben? */
     private boolean hasSubmitted(Battle battle, String playerId) {
         Long id = battle.getId();
+        if (QUIZZES.containsKey(id)) return false; // Quiz läuft weiter, Frage wird neu geschickt
+        Set<String> finished = FRIENDLY_FINISHED.get(id);
+        if (finished != null && finished.contains(playerId)) return true;
         if (isKnowledgeBattle(battle)) return hasAnswered(id, playerId);
         if (METRIC_RESULTS.value(id, playerId) != null) return true;
         return BATTLE_VOTES.hasVoted(id, playerId);
@@ -367,7 +381,10 @@ public class GameSocket {
             // sonst wäre der Spieler bis zum Timeout für neue Challenges gesperrt.
             for (Battle b : battleService.findRunningBattlesFor(playerId)) {
                 sendToPlayer(playerId, buildBattlePayload("battle-running", b, hasSubmitted(b, playerId)));
-                if (isKnowledgeBattle(b) && !hasAnswered(b.getId(), playerId)) {
+                if (QUIZZES.containsKey(b.getId())) {
+                    String q = currentQuizQuestionPayload(b.getId());
+                    if (q != null) sendToPlayer(playerId, q);
+                } else if (isKnowledgeBattle(b) && !hasAnswered(b.getId(), playerId)) {
                     sendToPlayer(playerId, buildKnowledgeQuestionPayload(b));
                 }
             }
@@ -435,8 +452,12 @@ public class GameSocket {
             handleSurrender(battle, senderId);
         }
 
-        if ("ACCEPTED".equals(status) && isKnowledgeBattle(battle)) {
-            sendKnowledgeQuestion(battle);
+        if ("ACCEPTED".equals(status)) {
+            if (control.BattleMode.from(battle.getType()) == control.BattleMode.RANKED_KNOWLEDGE) {
+                startQuiz(battle);
+            } else if (isKnowledgeBattle(battle)) {
+                sendKnowledgeQuestion(battle);
+            }
         }
 
         if ("CHECKIN_DONE".equals(status)) {
@@ -600,12 +621,14 @@ public class GameSocket {
 
         String metricsJson = buildMetricsJson(battle, winnerId, loserId);
         String outcome = isConflict ? "CONFLICT" : winnerId != null ? "WIN" : "DRAW";
+        metricsJson = metricsJson + buildQuizJson(battleId);
 
         String payload = """
         {
             "type": "battle-result",
             "battleId": %d,
             "outcome": "%s",
+            "mode": "%s",
             "winnerId": %s,
             "winnerName": "%s",
             "winnerAvatar": "opponentAvatar",
@@ -625,6 +648,7 @@ public class GameSocket {
         """.formatted(
                 battleId,
                 outcome,
+                control.BattleMode.from(battle.getType()).name(),
                 jsonStringOrNull(winnerId),
                 escapeJson(winnerName),
                 winnerDelta,
@@ -686,27 +710,9 @@ public class GameSocket {
 """.formatted(entry);
     }
 
+    /** Konflikt zählen (frisch aus der DB, damit nichts Veraltetes zurückgeschrieben wird). */
     private int applyConflictToPlayer(Player player) {
-        int current = player.getConsecutiveConflicts();
-        current += 1;
-        player.setConsecutiveConflicts(current);
-
-        int penalty = 0;
-        if (current >= 3) {
-            penalty = (current - 2) * 10;  // 3 -> 10, 4 -> 20, ...
-        }
-
-        if (penalty > 0) {
-            player.setPoints(player.getPoints() - penalty);
-            System.out.printf("Konflikt-Penalty für %s: -%d Punkte (Konflikte in Folge: %d)%n",
-                    player.getName(), penalty, current);
-        } else {
-            System.out.printf("Konflikt ohne Penalty für %s (Konflikte in Folge: %d)%n",
-                    player.getName(), current);
-        }
-
-        battleService.updatePlayer(player);
-        return penalty;
+        return battleService.applyConflict(player.getId());
     }
 
     private int[] applyConflictPenalty(Battle battle) {
@@ -721,14 +727,9 @@ public class GameSocket {
 
 
     private void resetConflictCountersForBattle(Battle battle) {
-        Player fromPlayer = battle.getFromPlayer();
-        Player toPlayer   = battle.getToPlayer();
-
-        fromPlayer.setConsecutiveConflicts(0);
-        toPlayer.setConsecutiveConflicts(0);
-
-        battleService.updatePlayer(fromPlayer);
-        battleService.updatePlayer(toPlayer);
+        // Frisch laden statt das vor der Auswertung geladene Battle zu speichern –
+        // sonst würden gerade vergebene Trophäen/Punkte wieder überschrieben.
+        battleService.resetConflicts(battle.getFromPlayer().getId(), battle.getToPlayer().getId());
     }
 
     // ---------------------------------------------------------
@@ -745,6 +746,8 @@ public class GameSocket {
         METRIC_RESULTS.clear(battleId);
         BATTLE_VOTES.clear(battleId);
         BATTLE_ANSWERS.remove(battleId);
+        QUIZZES.remove(battleId);
+        FRIENDLY_FINISHED.remove(battleId);
     }
 
     private static boolean isParticipant(Battle battle, String playerId) {
@@ -978,8 +981,8 @@ public class GameSocket {
             return;
         }
 
-        // Nur für Wissen-Battles nutzen wir diese Logik
-        if (!isKnowledgeBattle(battle)) {
+        // Nur für Wissen-Battles (Friendly, Einzelfrage) – die Liga nutzt die Quiz-Show
+        if (!isKnowledgeBattle(battle) || QUIZZES.containsKey(battleId)) {
             System.out.println("battle-answer ignoriert, kein Wissen-Battle");
             return;
         }
@@ -1105,6 +1108,247 @@ public class GameSocket {
         );
         // correctIndex wird bewusst NICHT mitgeschickt – das Backend prüft die Antwort selbst.
         return json;
+    }
+
+
+    // ---------------------------------------------------------
+    // Quiz-Show (Liga Wissen): 4 Fragen, richtig + Tempo
+    // ---------------------------------------------------------
+
+    static final int QUIZ_ROUNDS = 4;
+    static final Duration DEFAULT_QUIZ_ROUND_TIME = Duration.ofSeconds(15);
+    static final Duration DEFAULT_QUIZ_REVEAL = Duration.ofMillis(3500);
+    static final Duration DEFAULT_QUIZ_INTRO = Duration.ofSeconds(3);
+    /** Nur in Tests verkürzt. */
+    static volatile Duration quizRoundTime = DEFAULT_QUIZ_ROUND_TIME;
+    static volatile Duration quizRevealPause = DEFAULT_QUIZ_REVEAL;
+    static volatile Duration quizIntro = DEFAULT_QUIZ_INTRO;
+    /** Puffer für Netzwerk-Verzögerung, bevor eine Runde ohne Antwort schließt. */
+    static final Duration QUIZ_GRACE = Duration.ofSeconds(2);
+
+    private static final ObjectMapper QUIZ_JSON = new ObjectMapper();
+
+    static final class QuizState {
+        final Long battleId;
+        final String fromId;
+        final String toId;
+        final List<Challenges> questions;
+        int round = -1;
+        long roundStartedAt;
+        boolean roundClosed = true;
+        boolean finished;
+        final Map<String, Integer> answers = new HashMap<>();
+        final Map<String, Integer> roundPoints = new HashMap<>();
+        final Map<String, Integer> scores = new HashMap<>();
+
+        QuizState(Long battleId, String fromId, String toId, List<Challenges> questions) {
+            this.battleId = battleId;
+            this.fromId = fromId;
+            this.toId = toId;
+            this.questions = questions;
+            scores.put(fromId, 0);
+            scores.put(toId, 0);
+        }
+
+        boolean isPlayer(String id) {
+            return fromId.equals(id) || toId.equals(id);
+        }
+    }
+
+    private static final Map<Long, QuizState> QUIZZES = new ConcurrentHashMap<>();
+
+    /** Richtig = 100 Punkte + bis zu 50 Tempo-Bonus (je schneller, desto mehr). Falsch/keine Antwort = 0. */
+    static int quizPoints(boolean correct, long elapsedMs, long limitMs) {
+        if (!correct) return 0;
+        double remaining = Math.max(0, Math.min(1, 1 - (double) elapsedMs / Math.max(1, limitMs)));
+        return 100 + (int) Math.round(50 * remaining);
+    }
+
+    private void startQuiz(Battle battle) {
+        List<Challenges> questions = battleService.quizQuestions(battle.getId(), QUIZ_ROUNDS);
+        if (questions.isEmpty()) {
+            computeAndBroadcastResult(battle, List.of(NOBODY));
+            return;
+        }
+        Long battleId = battle.getId();
+        QUIZZES.put(battleId, new QuizState(battleId, battle.getFromPlayer().getId(), battle.getToPlayer().getId(), questions));
+        System.out.println("Quiz-Show startet: Battle " + battleId + " mit " + questions.size() + " Fragen");
+        schedule(() -> startQuizRound(battleId, 0), quizIntro);
+    }
+
+    private void schedule(Runnable task, Duration delay) {
+        RESULT_TIMEOUTS.schedule(() -> {
+            try { task.run(); } catch (Exception e) { e.printStackTrace(); }
+        }, delay.toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    private void startQuizRound(Long battleId, int round) {
+        QuizState q = QUIZZES.get(battleId);
+        if (q == null) return;
+        String payload;
+        synchronized (q) {
+            if (q.finished || round >= q.questions.size()) return;
+            q.round = round;
+            q.answers.clear();
+            q.roundPoints.clear();
+            q.roundClosed = false;
+            q.roundStartedAt = System.currentTimeMillis();
+            payload = quizQuestionPayload(q, quizRoundTime.toMillis());
+        }
+        sendToPlayer(q.fromId, payload);
+        sendToPlayer(q.toId, payload);
+        schedule(() -> closeQuizRound(battleId, round), quizRoundTime.plus(QUIZ_GRACE));
+    }
+
+    /** Aktuelle Frage mit Restzeit, z.B. nach einem Neustart der App. */
+    private String currentQuizQuestionPayload(Long battleId) {
+        QuizState q = QUIZZES.get(battleId);
+        if (q == null) return null;
+        synchronized (q) {
+            if (q.finished || q.roundClosed || q.round < 0) return null;
+            long remaining = quizRoundTime.toMillis() - (System.currentTimeMillis() - q.roundStartedAt);
+            return quizQuestionPayload(q, Math.max(0, remaining));
+        }
+    }
+
+    private String quizQuestionPayload(QuizState q, long remainingMs) {
+        Challenges c = q.questions.get(q.round);
+        ObjectNode root = QUIZ_JSON.createObjectNode();
+        root.put("type", "quiz-question");
+        root.put("battleId", q.battleId);
+        root.put("round", q.round + 1);
+        root.put("rounds", q.questions.size());
+        root.put("timeLimitSeconds", quizRoundTime.toSeconds());
+        root.put("remainingMs", remainingMs);
+        ObjectNode question = root.putObject("question");
+        question.put("id", c.getId());
+        question.put("text", c.getText());
+        var choices = question.putArray("choices");
+        choices.add(c.getOptionA()).add(c.getOptionB()).add(c.getOptionC()).add(c.getOptionD());
+        // correctIndex wird erst in der Auflösung verraten
+        ObjectNode scores = root.putObject("scores");
+        q.scores.forEach(scores::put);
+        return root.toString();
+    }
+
+    private void handleQuizAnswer(JsonNode msg, String playerId) {
+        Long battleId = requireLong(msg, "battleId");
+        int round = msg.path("round").asInt(-1) - 1;
+        int answerIndex = msg.path("answerIndex").asInt(-1);
+        QuizState q = QUIZZES.get(battleId);
+        if (q == null || playerId == null || !q.isPlayer(playerId)) {
+            System.out.println("quiz-answer ignoriert: " + msg);
+            return;
+        }
+        boolean bothAnswered;
+        synchronized (q) {
+            if (q.finished || q.roundClosed || round != q.round) return;
+            if (q.answers.putIfAbsent(playerId, answerIndex) != null) return; // nur die erste Antwort zählt
+            Challenges c = q.questions.get(q.round);
+            long elapsed = System.currentTimeMillis() - q.roundStartedAt;
+            boolean correct = c.getCorrectIndex() != null && c.getCorrectIndex() == answerIndex;
+            q.roundPoints.put(playerId, quizPoints(correct, elapsed, quizRoundTime.toMillis()));
+            bothAnswered = q.answers.size() >= 2;
+        }
+        // Der Gegner sieht, dass ich geantwortet habe – aber nicht was
+        String other = q.fromId.equals(playerId) ? q.toId : q.fromId;
+        sendToPlayer(other, "{\"type\":\"quiz-opponent-answered\",\"battleId\":" + battleId + ",\"round\":" + (round + 1) + "}");
+        if (bothAnswered) {
+            closeQuizRound(battleId, round);
+        }
+    }
+
+    private void closeQuizRound(Long battleId, int round) {
+        QuizState q = QUIZZES.get(battleId);
+        if (q == null) return;
+        String payload;
+        boolean last;
+        synchronized (q) {
+            if (q.finished || q.roundClosed || q.round != round) return;
+            q.roundClosed = true;
+            for (String p : List.of(q.fromId, q.toId)) {
+                q.scores.merge(p, q.roundPoints.getOrDefault(p, 0), Integer::sum);
+            }
+            last = round >= q.questions.size() - 1;
+            Challenges c = q.questions.get(round);
+            ObjectNode root = QUIZ_JSON.createObjectNode();
+            root.put("type", "quiz-round-result");
+            root.put("battleId", battleId);
+            root.put("round", round + 1);
+            root.put("rounds", q.questions.size());
+            root.put("correctIndex", c.getCorrectIndex() == null ? -1 : c.getCorrectIndex());
+            root.put("last", last);
+            ObjectNode answers = root.putObject("answers");
+            for (String p : List.of(q.fromId, q.toId)) {
+                ObjectNode a = answers.putObject(p);
+                a.put("answerIndex", q.answers.getOrDefault(p, -1));
+                a.put("points", q.roundPoints.getOrDefault(p, 0));
+            }
+            ObjectNode scores = root.putObject("scores");
+            q.scores.forEach(scores::put);
+            payload = root.toString();
+        }
+        sendToPlayer(q.fromId, payload);
+        sendToPlayer(q.toId, payload);
+        if (last) {
+            schedule(() -> finishQuiz(battleId), quizRevealPause);
+        } else {
+            schedule(() -> startQuizRound(battleId, round + 1), quizRevealPause);
+        }
+    }
+
+    private void finishQuiz(Long battleId) {
+        QuizState q = QUIZZES.get(battleId);
+        if (q == null) return;
+        int from, to;
+        synchronized (q) {
+            if (q.finished) return;
+            q.finished = true;
+            from = q.scores.getOrDefault(q.fromId, 0);
+            to = q.scores.getOrDefault(q.toId, 0);
+        }
+        Battle battle = battleService.findById(battleId);
+        if (battle == null || !isRunning(battle)) {
+            QUIZZES.remove(battleId);
+            return;
+        }
+        String winner = from > to ? q.fromId : to > from ? q.toId : NOBODY;
+        System.out.printf("Quiz-Show %d beendet: %d : %d%n", battleId, from, to);
+        computeAndBroadcastResult(battle, List.of(winner));
+    }
+
+    /** Endstand der Quiz-Show fürs Ergebnis ("quiz": {fromScore, toScore}), sonst leer. */
+    private String buildQuizJson(Long battleId) {
+        QuizState q = QUIZZES.get(battleId);
+        if (q == null) return "";
+        synchronized (q) {
+            return ",\n      \"quiz\": {\"fromScore\": %d, \"toScore\": %d}".formatted(
+                    q.scores.getOrDefault(q.fromId, 0), q.scores.getOrDefault(q.toId, 0));
+        }
+    }
+
+    // ---------------------------------------------------------
+    // Friendly ohne Messung: beide tippen "Geschafft" → Unentschieden, Aufgeben → der andere gewinnt
+    // ---------------------------------------------------------
+
+    private static final Map<Long, Set<String>> FRIENDLY_FINISHED = new ConcurrentHashMap<>();
+
+    private void handleFriendlyFinished(JsonNode msg, String playerId) {
+        Long battleId = requireLong(msg, "battleId");
+        Battle battle = battleService.findById(battleId);
+        if (battle == null || playerId == null || !isParticipant(battle, playerId) || !isRunning(battle)
+                || control.BattleMode.from(battle.getType()).isRanked()) {
+            System.out.println("friendly-finished ignoriert: " + msg);
+            return;
+        }
+        Set<String> finished = FRIENDLY_FINISHED.computeIfAbsent(battleId, id -> ConcurrentHashMap.newKeySet());
+        if (!finished.add(playerId)) return;
+        sendToPlayer(otherPlayerId(battle, playerId),
+                "{\"type\":\"opponent-finished\",\"battleId\":" + battleId + "}");
+        if (finished.size() >= 2) {
+            sendPendingToBoth(battle);
+            computeAndBroadcastResult(battle, List.of(NOBODY));
+        }
     }
 
     // ---------------------------------------------------------

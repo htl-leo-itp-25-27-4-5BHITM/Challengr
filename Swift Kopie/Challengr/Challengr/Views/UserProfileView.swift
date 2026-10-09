@@ -17,6 +17,11 @@ struct UserProfileData {
     let totalChallenges: Int
     let wonChallenges: Int
     let points: Int
+    /// Liga-Stände (nil bei alten Servern)
+    var knowledgeTrophies: Int? = nil
+    var realLifeTrophies: Int? = nil
+    var knowledgeRank: String? = nil
+    var realLifeRank: String? = nil
 }
 
 struct ProfileBadge {
@@ -64,6 +69,8 @@ struct UserProfileView: View {
                     GameStatTile(icon: "percent", value: winRateText, title: "Siegquote", color: .challengrGreen)
                 }
 
+                leagueSection
+
                 pointsChart
 
                 badgesSection
@@ -78,6 +85,46 @@ struct UserProfileView: View {
         .sheet(isPresented: $showCharacterEditor, onDismiss: { avatarStore.load() }) {
             CharacterEditorSheet(store: avatarStore, playerId: playerId)
         }
+    }
+
+    // MARK: - Ligen (Trophäen je Liga)
+
+    @ViewBuilder
+    private var leagueSection: some View {
+        if data.knowledgeTrophies != nil || data.realLifeTrophies != nil {
+            VStack(spacing: 8) {
+                GameSectionHeader(title: "Ligen")
+                HStack(spacing: 10) {
+                    leagueTile(mode: .rankedKnowledge, trophies: data.knowledgeTrophies, rank: data.knowledgeRank)
+                    leagueTile(mode: .rankedRealLife, trophies: data.realLifeTrophies, rank: data.realLifeRank)
+                }
+            }
+        }
+    }
+
+    private func leagueTile(mode: BattleMode, trophies: Int?, rank: String?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(mode.title.uppercased(), systemImage: mode.icon)
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .tracking(0.8)
+                .foregroundColor(.white.opacity(0.85))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            HStack(spacing: 6) {
+                Image(systemName: "trophy.fill").foregroundColor(.challengrYellow)
+                Text(trophies.map(String.init) ?? "–")
+                    .font(.system(size: 24, weight: .black, design: .rounded))
+                    .foregroundColor(.white)
+            }
+            Text((rank ?? "–").uppercased())
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .foregroundColor(.white)
+                .padding(.horizontal, 8).padding(.vertical, 3)
+                .background(Capsule().fill(mode.color))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .gamePanel(padding: 12, cornerRadius: 16, highlight: mode.color)
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Hero (Figur, Name, Rang)
@@ -116,7 +163,8 @@ struct UserProfileView: View {
                         .foregroundColor(.challengrDark)
                         .padding(.horizontal, 10).padding(.vertical, 5)
                         .background(Capsule().fill(rankColor))
-                    Label("\(data.points)", systemImage: "trophy.fill")
+                    Label("\(data.points)", systemImage: "star.circle.fill")
+                        .accessibilityLabel("\(data.points) Punkte")
                         .font(.system(size: 14, weight: .black, design: .rounded))
                         .foregroundColor(.challengrYellow)
                     statusChip

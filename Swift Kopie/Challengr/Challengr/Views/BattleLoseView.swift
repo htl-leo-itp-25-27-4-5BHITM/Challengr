@@ -58,7 +58,7 @@ struct BattleLoseView: View {
                         .shadow(color: (data.isDraw ? Color.challengrYellow : .challengrRed).opacity(0.6), radius: 14, x: 0, y: 0)
 
                     Text(data.isDraw
-                         ? "Keiner hat gewonnen – es gibt keine Punkte."
+                         ? (data.mode.isRanked ? "Keiner hat gewonnen – keine Trophäen." : "Keiner hat gewonnen – war ja nur ein Friendly.")
                          : isConflict
                          ? "Ihr habt unterschiedlich abgestimmt – keine Einigung."
                          : "KOPF HOCH, \(data.loserName.uppercased())!")
@@ -103,17 +103,24 @@ struct BattleLoseView: View {
                     }
                     }
 
-                    // Punkte-Verlust
+                    if let quiz = data.quizScoreLine {
+                        Label(quiz, systemImage: "brain.head.profile")
+                            .font(.system(size: 14, weight: .black, design: .rounded))
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+
+                    // Trophäen-Verlust (Liga) bzw. Friendly-Hinweis
                     Text(
-                        data.loserPointsDelta == 0
-                        ? "0 PUNKTE VERÄNDERT"
-                        : "\(data.loserPointsDelta > 0 ? "+" : "")\(data.loserPointsDelta) PUNKTE"
+                        !data.mode.isRanked || data.loserPointsDelta == 0
+                        ? data.mode.isRanked ? "KEINE TROPHÄEN VERÄNDERT" : data.mode.trophyText(delta: 0).uppercased()
+                        : data.mode.trophyText(delta: data.loserPointsDelta).uppercased()
                     )
+                    .multilineTextAlignment(.center)
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundColor(
-                        data.loserPointsDelta <= 0
-                        ? .challengrRed
-                        : .challengrGreen
+                        !data.mode.isRanked ? Color.white.opacity(0.8)
+                        : data.loserPointsDelta <= 0 ? Color.challengrRed
+                        : Color.challengrGreen
                     )
 
                     if let metrics = data.metrics {
@@ -270,7 +277,7 @@ struct BattleLoseView: View {
                 .tracking(1)
                 .foregroundColor(color)
 
-            Text("\(pointsDelta >= 0 ? "+" : "")\(pointsDelta) PUNKTE")
+            Text(data.deltaLabel(pointsDelta))
                 .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .foregroundColor(color.opacity(0.9))
         }

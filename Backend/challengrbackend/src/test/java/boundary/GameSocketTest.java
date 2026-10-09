@@ -60,6 +60,9 @@ class GameSocketTest {
     void cleanState() {
         GameSocket.resultWait = GameSocket.DEFAULT_RESULT_WAIT;
         GameSocket.knowledgeTimeLimit = GameSocket.DEFAULT_KNOWLEDGE_TIME_LIMIT;
+        GameSocket.quizRoundTime = GameSocket.DEFAULT_QUIZ_ROUND_TIME;
+        GameSocket.quizRevealPause = GameSocket.DEFAULT_QUIZ_REVEAL;
+        GameSocket.quizIntro = GameSocket.DEFAULT_QUIZ_INTRO;
         // Keine offenen oder laufenden Battles aus anderen Tests
         QuarkusTransaction.requiringNew().run(() -> battleRepository.update(
                 "status = 'EXPIRED' where status not in ('DONE','EXPIRED','CANCELLED','DECLINED','ABANDONED')"));
@@ -99,6 +102,35 @@ class GameSocketTest {
         return createAcceptedBattle(attacker, defender, 1L);
     }
 
+    private String createMode(String mode) {
+        return "{\"type\":\"create-battle\",\"fromId\":\"" + A + "\",\"toId\":\"" + B + "\",\"mode\":\"" + mode + "\"}";
+    }
+
+    private long createAcceptedRanked(WsTestClient attacker, WsTestClient defender, String mode) throws Exception {
+        attacker.send(createMode(mode));
+        JsonNode requested = defender.await("battle-requested", 5);
+        assertNotNull(requested);
+        long battleId = requested.get("battleId").asLong();
+        defender.send(status(battleId, "ACCEPTED"));
+        assertNotNull(attacker.awaitStatus("ACCEPTED", 5));
+        return battleId;
+    }
+
+    private static String quizAnswer(long battleId, int round, int index) {
+        return "{\"type\":\"quiz-answer\",\"battleId\":" + battleId + ",\"round\":" + round + ",\"answerIndex\":" + index + "}";
+    }
+
+    private int correctIndexFor(long challengeId) {
+        return QuarkusTransaction.requiringNew().call(() -> challengeRepository.findById(challengeId).getCorrectIndex());
+    }
+
+    private int trophies(String playerId, boolean realLife) {
+        return QuarkusTransaction.requiringNew().call(() -> {
+            Player p = playerRepository.findById(playerId);
+            return realLife ? p.getRealLifeTrophies() : p.getKnowledgeTrophies();
+        });
+    }
+
     private int points(String playerId) {
         return QuarkusTransaction.requiringNew().call(() -> playerRepository.findById(playerId).getPoints());
     }
@@ -131,19 +163,137 @@ class GameSocketTest {
     }
 
     @Test
-    void surrenderGivesPointsToTheOtherPlayer() throws Exception {
+    void surrenderInTheLeagueGivesTrophiesToTheOtherPlayer() throws Exception {
         WsTestClient attacker = connect(A);
         WsTestClient defender = connect(B);
-        int before = points(B);
+        int pointsBefore = points(B);
+        int trophiesBefore = trophies(B, true);
+        int knowledgeBefore = trophies(B, false);
 
-        long battleId = createAcceptedBattle(attacker, defender);
+        long battleId = createAcceptedRanked(attacker, defender, "RANKED_REALLIFE");
         attacker.send(status(battleId, "DONE_SURRENDER"));
 
         JsonNode result = defender.await("battle-result", 5);
         assertNotNull(result);
+        assertEquals("RANKED_REALLIFE", result.get("mode").asText());
         int delta = result.get("winnerPointsDelta").asInt();
         assertTrue(delta > 0);
-        assertEquals(before + delta, points(B));
+        assertEquals(trophiesBefore + delta, trophies(B, true), "Real-Life-Trophäen steigen");
+        assertEquals(knowledgeBefore, trophies(B, false), "Wissen-Liga unverändert");
+        assertEquals(pointsBefore + delta, points(B), "Sieger bekommt den Gewinn auch als Punkte");
+    }
+
+    @Test
+    void friendlyIsForNothing() throws Exception {
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        int pointsBefore = points(B), trophiesBefore = trophies(B, true);
+
+        long battleId = createAcceptedBattle(attacker, defender); // ohne Modus = Friendly
+        attacker.send(status(battleId, "DONE_SURRENDER"));
+
+        JsonNode result = defender.await("battle-result", 5);
+        assertNotNull(result);
+        assertEquals("FRIENDLY", result.get("mode").asText());
+        assertEquals(B, result.get("winnerId").asText());
+        assertEquals(0, result.get("winnerPointsDelta").asInt());
+        assertEquals(pointsBefore, points(B));
+        assertEquals(trophiesBefore, trophies(B, true));
+    }
+
+    @Test
+    void friendlyBothFinishedIsADraw() throws Exception {
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        long battleId = createAcceptedBattle(attacker, defender);
+
+        attacker.send("{\"type\":\"friendly-finished\",\"battleId\":" + battleId + "}");
+        assertNotNull(defender.await("opponent-finished", 5), "Gegner sieht, dass ich fertig bin");
+        defender.send("{\"type\":\"friendly-finished\",\"battleId\":" + battleId + "}");
+
+        JsonNode result = attacker.await("battle-result", 5);
+        assertNotNull(result);
+        assertEquals("DRAW", result.get("outcome").asText());
+    }
+
+    @Test
+    void realLifeLeaguePicksAMeasuredChallenge() throws Exception {
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        attacker.send(createMode("RANKED_REALLIFE"));
+        JsonNode requested = defender.await("battle-requested", 5);
+        assertNotNull(requested);
+        assertEquals("RANKED_REALLIFE", requested.get("mode").asText());
+        assertEquals("iPhone", requested.get("challengeCategory").asText(), "nur vom Handy gemessene Challenges");
+    }
+
+    @Test
+    void knowledgeLeagueDoesNotRevealTheFirstQuestion() throws Exception {
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        attacker.send(createMode("RANKED_KNOWLEDGE"));
+        JsonNode requested = defender.await("battle-requested", 5);
+        assertNotNull(requested);
+        assertEquals("RANKED_KNOWLEDGE", requested.get("mode").asText());
+        assertTrue(requested.get("challengeText").asText().startsWith("Quiz-Show"));
+    }
+
+    @Test
+    void quizShowWithFourQuestionsAndSpeedPoints() throws Exception {
+        GameSocket.quizIntro = Duration.ofMillis(50);
+        GameSocket.quizRevealPause = Duration.ofMillis(50);
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        int knowledgeBefore = trophies(A, false);
+        long battleId = createAcceptedRanked(attacker, defender, "RANKED_KNOWLEDGE");
+
+        for (int round = 1; round <= 4; round++) {
+            JsonNode qa = attacker.await("quiz-question", 5);
+            JsonNode qb = defender.await("quiz-question", 5);
+            assertNotNull(qa, "Frage " + round);
+            assertNotNull(qb);
+            assertEquals(round, qa.get("round").asInt());
+            assertEquals(4, qa.get("rounds").asInt());
+            assertFalse(qa.get("question").has("correctIndex"), "Antwort nicht mitschicken");
+            int correct = correctIndexFor(qa.get("question").get("id").asLong());
+            attacker.send(quizAnswer(battleId, round, correct));            // A immer richtig
+            defender.send(quizAnswer(battleId, round, (correct + 1) % 4));  // B immer falsch
+            JsonNode reveal = attacker.await("quiz-round-result", 5);
+            assertNotNull(reveal);
+            assertEquals(correct, reveal.get("correctIndex").asInt());
+            assertTrue(reveal.get("answers").get(A).get("points").asInt() >= 100);
+            assertEquals(0, reveal.get("answers").get(B).get("points").asInt());
+            defender.await("quiz-round-result", 5);
+        }
+
+        JsonNode result = attacker.await("battle-result", 5);
+        assertNotNull(result, "Nach 4 Fragen kommt das Ergebnis");
+        assertEquals(A, result.get("winnerId").asText());
+        assertEquals("RANKED_KNOWLEDGE", result.get("mode").asText());
+        assertTrue(result.get("quiz").get("fromScore").asInt() >= 400);
+        assertEquals(0, result.get("quiz").get("toScore").asInt());
+        assertTrue(trophies(A, false) > knowledgeBefore, "Wissen-Trophäen steigen");
+    }
+
+    @Test
+    void quizRoundClosesWhenNobodyAnswers() throws Exception {
+        GameSocket.quizIntro = Duration.ofMillis(50);
+        GameSocket.quizRevealPause = Duration.ofMillis(50);
+        GameSocket.quizRoundTime = Duration.ofMillis(200);
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        createAcceptedRanked(attacker, defender, "RANKED_KNOWLEDGE");
+        JsonNode result = attacker.await("battle-result", 20);
+        assertNotNull(result, "Quiz endet auch ohne Antworten");
+        assertEquals("DRAW", result.get("outcome").asText());
+    }
+
+    @Test
+    void quizPointsRewardSpeed() {
+        assertEquals(150, GameSocket.quizPoints(true, 0, 15000));
+        assertEquals(125, GameSocket.quizPoints(true, 7500, 15000));
+        assertEquals(100, GameSocket.quizPoints(true, 20000, 15000));
+        assertEquals(0, GameSocket.quizPoints(false, 100, 15000));
     }
 
     @Test
@@ -704,7 +854,7 @@ class GameSocketTest {
         assertNotNull(attacker.await("error", 5));
 
         attacker.send("{\"type\":\"create-battle\",\"fromId\":\"" + A + "\"}");
-        assertNotNull(attacker.await("error", 5), "Fehlende Felder");
+        assertNotNull(attacker.await("battle-rejected", 5), "Fehlende Felder → Ablehnung statt Absturz");
     }
 
     // --------------------------------------------------------------- Positionen

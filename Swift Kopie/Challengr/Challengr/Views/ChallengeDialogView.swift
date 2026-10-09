@@ -6,6 +6,7 @@ struct ChallengeDialogView: View {
     let otherPlayerId: String
     let otherPlayerName: String
     var otherPlayerRankColor: Color = .gray
+    var otherPlayerCharacter: GameCharacter = .opponent
     let ownPlayerId: String
 
     let allChallenges: [ChallengeDTO]      // ⬅️ alle vom MapView vorab geladen
@@ -13,205 +14,233 @@ struct ChallengeDialogView: View {
     let onClose: () -> Void
 
     // MARK: - State (State)
-    @State private var isLoading = false
-    @State private var selectedChallenge: String? = nil
+    @State private var mode: BattleMode? = nil
+    @State private var selectedCategory: String = "Fitness"
     @State private var selectedChallengeId: Int64? = nil
-    @State private var selectedCategory: String? = nil
 
     // Kategorien wie in der Webapp / Backend
     private let categories: [String] = ["Fitness", "Mutprobe", "Wissen", "iPhone", "Customer"]
 
-    private var hasAnyLoadedChallenges: Bool {
-        !allChallenges.isEmpty
-    }
-
     var body: some View {
         ZStack {
-
             // DIMMED BACKGROUND
             Color.black.opacity(0.35)
                 .ignoresSafeArea()
                 .onTapGesture { onClose() }
 
             // CARD
-            VStack(spacing: 18) {
-
-                // HEADER
-                Text("CHALLENGE")
+            VStack(spacing: 14) {
+                Text("HERAUSFORDERN")
                     .font(.system(size: 12, weight: .black, design: .rounded))
                     .tracking(1.4)
                     .foregroundStyle(.challengrBlack)
 
-                MapAvatarPin(imageName: GameCharacter.opponent.avatarImageName, ringColor: otherPlayerRankColor, isOwnPlayer: false)
+                MapAvatarPin(imageName: otherPlayerCharacter.avatarImageName, ringColor: otherPlayerRankColor, isOwnPlayer: false)
 
                 Text(otherPlayerName.uppercased())
                     .font(.system(size: 20, weight: .black, design: .rounded))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.challengrBlack)
 
-                // SELECTED CHALLENGE
-                if let challenge = selectedChallenge {
-                    VStack(spacing: 10) {
-
-                        Text("ZUFÄLLIGE CHALLENGE")
-                            .font(.system(size: 10, weight: .black))
-                            .tracking(1.2)
-                            .foregroundStyle(.challengrBlack)
-
-                        if let selectedCategory {
-                            HStack(spacing: 10) {
-                                ZStack {
-                                    Circle()
-                                        .fill(color(for: selectedCategory).opacity(0.18))
-                                        .frame(width: 34, height: 34)
-                                    Image(systemName: icon(for: selectedCategory))
-                                        .font(.system(size: 14, weight: .bold))
-                                        .foregroundStyle(color(for: selectedCategory))
-                                }
-
-                                Text(challenge)
-                                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                                    .multilineTextAlignment(.leading)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .foregroundStyle(.challengrBlack)
-                            }
-                            .padding(10)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .fill(.challengrYellow)
-                            )
-                        }
+                if let mode {
+                    selectedModeHeader(mode)
+                    if mode == .friendly {
+                        friendlyPicker
+                    } else {
+                        Text(mode == .rankedKnowledge
+                             ? "4 Fragen, je 15 Sekunden. Richtig gibt Punkte, schneller gibt Bonus."
+                             : "Der Server lost eine Handy-Challenge aus – Sprint, Lautstärke, Kompass, Schütteln … Das Handy misst, wer gewinnt.")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.challengrBlack.opacity(0.75))
                     }
-                }
-
-                // LOADING
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(0.9)
-                }
-
-                if !isLoading && !hasAnyLoadedChallenges {
-                    Text("Challenges werden noch geladen oder sind gerade nicht verfügbar.")
-                        .font(.system(size: 13, weight: .semibold))
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(.challengrBlack.opacity(0.75))
-                }
-
-                // CATEGORY BUTTONS (nur sichtbar, solange keine Challenge gewählt & nicht loading)
-                if selectedChallenge == nil && !isLoading {
+                } else {
                     VStack(spacing: 10) {
-                        ForEach(categories, id: \.self) { category in
-                            let availableCount = availableChallengeCount(for: category)
-                            Button {
-                                SoundManager.shared.play(.tap)
-                                Task {
-                                    await loadRandomChallenge(for: category)
-                                }
-                            } label: {
-                                HStack(spacing: 12) {
-
-                                    Image(systemName: icon(for: category))
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundStyle(.white)
-
-                                    Text(category.uppercased())
-                                        .font(.system(size: 14, weight: .black))
-                                        .tracking(1)
-                                        .foregroundStyle(.white)
-
-                                    Spacer()
-
-                                    Text("\(availableCount)")
-                                        .font(.system(size: 12, weight: .black))
-                                        .foregroundStyle(.white.opacity(0.9))
-                                }
-                                .padding(.vertical, 10)
-                                .padding(.horizontal, 14)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .fill(color(for: category).opacity(availableCount == 0 ? 0.4 : 1))
-                                )
-                            }
-                            .disabled(availableCount == 0)
+                        ForEach(BattleMode.allCases.filter(\.isRanked) + [.friendly]) { m in
+                            modeButton(m)
                         }
                     }
                 }
 
                 // ACTION BUTTONS
                 VStack(spacing: 10) {
+                    if mode != nil {
+                        Button(action: send) {
+                            Text("SENDEN")
+                                .font(.system(size: 14, weight: .black))
+                                .tracking(1)
+                                .foregroundStyle(.challengrBlack)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(RoundedRectangle(cornerRadius: 14).fill(.challengrGreen))
+                        }
+                        .disabled(!canSend)
+                        .opacity(canSend ? 1 : 0.4)
+                    }
 
                     Button {
-                        guard let selectedChallengeId else { return }
-                        playSound()
-                        socket.sendCreateBattle(
-                            fromId: ownPlayerId,
-                            toId: otherPlayerId,
-                            challengeId: selectedChallengeId
-                        )
-                        onClose()
+                        if mode != nil {
+                            withAnimation(.easeInOut(duration: 0.2)) { mode = nil; selectedChallengeId = nil }
+                        } else {
+                            onClose()
+                        }
                     } label: {
-                        Text("SENDEN")
-                            .font(.system(size: 14, weight: .black))
-                            .tracking(1)
-                            .foregroundStyle(.challengrBlack)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .fill(.challengrGreen)
-                            )
-                    }
-                            .disabled(selectedChallengeId == nil)
-                            .opacity(selectedChallengeId == nil ? 0.4 : 1)
-
-                    Button(action: onClose) {
-                        Text("ABBRECHEN")
+                        Text(mode != nil ? "ZURÜCK" : "ABBRECHEN")
                             .font(.system(size: 12, weight: .black))
                             .tracking(1)
                             .foregroundStyle(.chalengrRed)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(.chalengrRed, lineWidth: 2)
-                            )
+                            .background(RoundedRectangle(cornerRadius: 14).stroke(.chalengrRed, lineWidth: 2))
                     }
                 }
             }
             .padding(16)
-            .frame(maxWidth: 300)
-            .background(
-                RoundedRectangle(cornerRadius: 22)
-                    .fill(.regularMaterial)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 22)
-                    .stroke(.white.opacity(0.15), lineWidth: 1)
-            )
+            .frame(maxWidth: 320)
+            .background(RoundedRectangle(cornerRadius: 22).fill(.regularMaterial))
+            .overlay(RoundedRectangle(cornerRadius: 22).stroke(.white.opacity(0.15), lineWidth: 1))
             .shadow(radius: 20)
             // Spielkarte im Marken-Look: Material und Texte bleiben auch im Dark Mode hell/dunkel.
             .environment(\.colorScheme, .light)
         }
     }
 
+    // MARK: - Modus
+
+    private func modeButton(_ m: BattleMode) -> some View {
+        Button {
+            SoundManager.shared.play(.tap)
+            withAnimation(.easeInOut(duration: 0.2)) { mode = m }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: m.icon)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 30)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(m.title.uppercased())
+                        .font(.system(size: 14, weight: .black, design: .rounded))
+                        .tracking(1)
+                    Text(m.subtitle)
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .opacity(0.85)
+                        .multilineTextAlignment(.leading)
+                }
+                .foregroundStyle(.white)
+                Spacer(minLength: 0)
+                if m.isRanked {
+                    Image(systemName: "trophy.fill").foregroundStyle(.challengrYellow)
+                }
+            }
+            .padding(.vertical, 11)
+            .padding(.horizontal, 14)
+            .background(RoundedRectangle(cornerRadius: 16).fill(m.color))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(m.title): \(m.subtitle)")
+    }
+
+    private func selectedModeHeader(_ m: BattleMode) -> some View {
+        Label(m.title.uppercased(), systemImage: m.icon)
+            .font(.system(size: 13, weight: .black, design: .rounded))
+            .tracking(1)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+            .background(Capsule().fill(m.color))
+    }
+
+    // MARK: - Friendly: Kategorie + Challenge wählen
+
+    private var friendlyPicker: some View {
+        VStack(spacing: 10) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(categories, id: \.self) { category in
+                        let selected = selectedCategory == category
+                        Button {
+                            selectedCategory = category
+                            selectedChallengeId = nil
+                        } label: {
+                            Label(category, systemImage: icon(for: category))
+                                .font(.system(size: 12, weight: .black, design: .rounded))
+                                .foregroundStyle(selected ? .white : .challengrBlack)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 7)
+                                .background(Capsule().fill(selected ? color(for: category) : Color.black.opacity(0.06)))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(selected ? .isSelected : [])
+                    }
+                }
+            }
+
+            let list = ChallengePicker.challenges(in: selectedCategory, from: allChallenges)
+            if list.isEmpty {
+                Text("In dieser Kategorie gibt es noch keine Challenges.")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.challengrBlack.opacity(0.7))
+            } else {
+                ScrollView {
+                    VStack(spacing: 6) {
+                        ForEach(list) { challenge in
+                            let selected = selectedChallengeId == Int64(challenge.id)
+                            Button {
+                                selectedChallengeId = Int64(challenge.id)
+                            } label: {
+                                HStack(alignment: .top, spacing: 8) {
+                                    Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(selected ? Color.challengrGreen : .challengrBlack.opacity(0.35))
+                                    Text(challenge.text)
+                                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(.challengrBlack)
+                                        .multilineTextAlignment(.leading)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    Spacer(minLength: 0)
+                                }
+                                .padding(9)
+                                .background(RoundedRectangle(cornerRadius: 12)
+                                    .fill(selected ? Color.challengrYellow.opacity(0.5) : Color.black.opacity(0.04)))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(challenge.text)
+                            .accessibilityAddTraits(selected ? .isSelected : [])
+                        }
+                    }
+                }
+                .frame(maxHeight: 210)
+
+                Button {
+                    if let random = ChallengePicker.random(in: selectedCategory, from: allChallenges) {
+                        selectedChallengeId = Int64(random.id)
+                    }
+                } label: {
+                    Label("Zufällig", systemImage: "dice.fill")
+                        .font(.system(size: 12, weight: .black, design: .rounded))
+                        .foregroundStyle(.challengrBlack)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
     // MARK: - Actions (Aktionen)
 
-    private func loadRandomChallenge(for category: String) async {
-        isLoading = true
-        selectedChallenge = nil
-        selectedChallengeId = nil
-        selectedCategory = category
+    private var canSend: Bool {
+        guard let mode else { return false }
+        return mode.isRanked || selectedChallengeId != nil
+    }
 
-        // hier kein Netzwerk – wir benutzen die vom MapView gelieferten Challenges
-        if let random = ChallengePicker.random(in: category, from: allChallenges) {
-            selectedChallenge = random.text
-            selectedChallengeId = Int64(random.id)
-        } else {
-            selectedChallenge = "KEINE CHALLENGE IN DIESER KATEGORIE"
-        }
-
-        isLoading = false
+    private func send() {
+        guard let mode, canSend else { return }
+        SoundManager.shared.play(.challengeSent)
+        socket.sendCreateBattle(
+            fromId: ownPlayerId,
+            toId: otherPlayerId,
+            mode: mode,
+            challengeId: mode == .friendly ? selectedChallengeId : nil
+        )
+        onClose()
     }
 
     // MARK: - Helpers (Hilfsfunktionen)
@@ -236,13 +265,5 @@ struct ChallengeDialogView: View {
         case "Customer": return "person.2"
         default:         return "questionmark"
         }
-    }
-
-    private func availableChallengeCount(for category: String) -> Int {
-        ChallengePicker.challenges(in: category, from: allChallenges).count
-    }
-
-    private func playSound() {
-        SoundManager.shared.play(.challengeSent)
     }
 }

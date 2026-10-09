@@ -265,6 +265,8 @@ public class PlayerRessources {
         public String status;
         public int pointsDelta;
         public boolean won;
+        /** FRIENDLY, RANKED_KNOWLEDGE oder RANKED_REALLIFE */
+        public String mode;
 
         public BattleHistoryDTO() {}
 
@@ -296,21 +298,28 @@ public class PlayerRessources {
                 p.getLatitude(),
                 p.getLongitude(),
                 p.getPoints(),
-                battleService.rankNameForPoints(p.getPoints()),
-                p.getCharacter()
+                battleService.rankNameForPoints(Math.max(p.getKnowledgeTrophies(), p.getRealLifeTrophies())),
+                p.getCharacter(),
+                p.getKnowledgeTrophies(),
+                p.getRealLifeTrophies(),
+                battleService.rankNameForPoints(p.getKnowledgeTrophies()),
+                battleService.rankNameForPoints(p.getRealLifeTrophies())
         );
     }
 
     /** Fortschritt für die Freischalt-Regeln: Siege, Wissens-Siege, Hotspot-Check-ins, Punkte. */
     private CharacterCatalog.Progress progressOf(Player player) {
+        // Nur Liga-Siege zählen – sonst könnte man Figuren im Friendly "farmen"
         var won = playerRepository.findDoneBattlesForPlayer(player).stream()
                 .filter(b -> b.getWinner() != null && b.getWinner().getId().equals(player.getId()))
+                .filter(b -> control.BattleMode.from(b.getType()).isRanked())
                 .toList();
         int knowledgeWins = (int) won.stream()
-                .filter(b -> b.getCategory() != null && "Wissen".equalsIgnoreCase(b.getCategory().getName()))
+                .filter(b -> control.BattleMode.from(b.getType()) == control.BattleMode.RANKED_KNOWLEDGE)
                 .count();
         int checkins = (int) hotspotRepository.countForPlayer(player.getId());
-        return new CharacterCatalog.Progress(won.size(), knowledgeWins, checkins, player.getPoints());
+        int bestTrophies = Math.max(player.getKnowledgeTrophies(), player.getRealLifeTrophies());
+        return new CharacterCatalog.Progress(won.size(), knowledgeWins, checkins, bestTrophies);
     }
 
     /** Eine Figur mit Freischalt-Stand für diesen Spieler. */
@@ -406,7 +415,8 @@ public class PlayerRessources {
             }
 
             String category = b.getCategory() != null ? b.getCategory().getName() : "";
-            String challengeText = b.getChallenge() != null ? b.getChallenge().getText() : "";
+            String challengeText = control.BattleMode.from(b.getType()) == control.BattleMode.RANKED_KNOWLEDGE
+                    ? "Quiz-Show" : b.getChallenge() != null ? b.getChallenge().getText() : "";
             String winnerName = b.getWinner() != null ? b.getWinner().getName() : null;
 
             history.add(new BattleHistoryDTO(
@@ -420,6 +430,7 @@ public class PlayerRessources {
                     delta,
                     won
             ));
+            history.get(history.size() - 1).mode = control.BattleMode.from(b.getType()).name();
         }
 
         return history;

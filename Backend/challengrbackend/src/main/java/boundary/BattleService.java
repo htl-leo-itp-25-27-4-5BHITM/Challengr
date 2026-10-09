@@ -40,11 +40,52 @@ public class BattleService {
         playerRepository.save(player);
     }
 
-    // Neues Battle anlegen
+    /** "Konflikte in Folge" zurücksetzen – lädt die Spieler frisch (kein Überschreiben mit altem Stand). */
+    @Transactional
+    public void resetConflicts(String... playerIds) {
+        for (String id : playerIds) {
+            Player p = playerRepository.findById(id);
+            if (p != null) p.setConsecutiveConflicts(0);
+        }
+    }
+
+    /**
+     * Konflikt (beide stimmen für sich selbst) zählen. Ab dem 3. in Folge gibt es Abzug:
+     * 3 → 10, 4 → 20 … Punkte. Lädt den Spieler frisch.
+     * @return Abzug in Punkten
+     */
+    @Transactional
+    public int applyConflict(String playerId) {
+        Player player = playerRepository.findById(playerId);
+        if (player == null) return 0;
+        int current = player.getConsecutiveConflicts() + 1;
+        player.setConsecutiveConflicts(current);
+        int penalty = current >= 3 ? (current - 2) * 10 : 0;
+        if (penalty > 0) {
+            player.setPoints(player.getPoints() - penalty);
+        }
+        System.out.printf("Konflikt für %s: %d in Folge, Abzug %d%n", player.getName(), current, penalty);
+        return penalty;
+    }
+
+    // Neues Battle anlegen (ohne Modus = Friendly, z.B. alte Apps)
     @Transactional
     public Battle createRequestedBattle(String fromPlayerId,
                                         String toPlayerId,
                                         Long challengeId) {
+        return createRequestedBattle(fromPlayerId, toPlayerId, challengeId, BattleMode.FRIENDLY);
+    }
+
+    /**
+     * Neues Battle anlegen.
+     * Liga: der Server wählt die Challenge zufällig (Wissen-Frage bzw. vom Handy gemessene Challenge),
+     * damit sich niemand seine Lieblings-Challenge aussucht. Friendly: challengeId vom Herausforderer.
+     */
+    @Transactional
+    public Battle createRequestedBattle(String fromPlayerId,
+                                        String toPlayerId,
+                                        Long challengeId,
+                                        BattleMode mode) {
 
         if (fromPlayerId == null || toPlayerId == null) {
             throw new BattleRejectedException("Spieler fehlt");
@@ -74,10 +115,7 @@ public class BattleService {
             throw new IllegalArgumentException("toPlayer not found");
         }
 
-        Challenges challenge = challengeRepository.findById(challengeId);
-        if (challenge == null) {
-            throw new IllegalArgumentException("challenge not found");
-        }
+        Challenges challenge = pickChallenge(mode, challengeId);
 
         ChallengeCategory category = challenge.getChallengeCategory();
 
@@ -87,7 +125,7 @@ public class BattleService {
         battle.setChallenge(challenge);
         battle.setCategory(category);
         battle.setStatus("REQUESTED");
-        battle.setType("NORMAL");
+        battle.setType(mode.name());
 
         // ⬇️ Zielpunkt für iPhone-Check-In-Spot-Challenge setzen
         if ("iPhone".equalsIgnoreCase(category.getName())
@@ -299,7 +337,54 @@ public class BattleService {
         return true;
     }
 
-    // Punkte vergeben – Gewinner über die Spieler-ID (Namen können doppelt vorkommen)
+    private static final java.util.Random RANDOM = new java.util.Random();
+
+    private Challenges pickChallenge(BattleMode mode, Long challengeId) {
+        if (mode == BattleMode.FRIENDLY) {
+            if (challengeId == null) {
+                throw new BattleRejectedException("Bitte eine Challenge wählen");
+            }
+            Challenges challenge = challengeRepository.findById(challengeId);
+            if (challenge == null) {
+                throw new IllegalArgumentException("challenge not found");
+            }
+            return challenge;
+        }
+        List<Challenges> pool = challengeRepository.findChallengesByKat(
+                        mode == BattleMode.RANKED_KNOWLEDGE ? BattleMode.KNOWLEDGE_CATEGORY : BattleMode.REALLIFE_CATEGORY)
+                .stream()
+                .filter(c -> mode != BattleMode.RANKED_KNOWLEDGE || c.getCorrectIndex() != null)
+                .toList();
+        if (pool.isEmpty()) {
+            throw new BattleRejectedException("Für diese Liga gibt es noch keine Challenges");
+        }
+        return pool.get(RANDOM.nextInt(pool.size()));
+    }
+
+    /** Zufällige Wissensfragen für die Quiz-Show (ohne Wiederholung, die erste ist die des Battles). */
+    @Transactional
+    public List<Challenges> quizQuestions(Long battleId, int count) {
+        Battle battle = battleRepository.findById(battleId);
+        List<Challenges> pool = new java.util.ArrayList<>(challengeRepository.findChallengesByKat(BattleMode.KNOWLEDGE_CATEGORY)
+                .stream().filter(c -> c.getCorrectIndex() != null).toList());
+        java.util.Collections.shuffle(pool, RANDOM);
+        List<Challenges> result = new java.util.ArrayList<>();
+        if (battle != null && battle.getChallenge() != null && battle.getChallenge().getCorrectIndex() != null) {
+            result.add(battle.getChallenge());
+        }
+        for (Challenges c : pool) {
+            if (result.size() >= count) break;
+            if (result.stream().noneMatch(r -> r.getId() == c.getId())) result.add(c);
+        }
+        result.forEach(c -> { c.getText(); c.getOptionA(); c.getOptionB(); c.getOptionC(); c.getOptionD(); });
+        return result;
+    }
+
+    /**
+     * Ergebnis verbuchen – Gewinner über die Spieler-ID (Namen können doppelt vorkommen).
+     * Friendly: es geht um nichts. Liga: Trophäen der Liga (+/-), der Sieger bekommt seinen
+     * Trophäen-Gewinn zusätzlich als Punkte (Währung für den Shop).
+     */
     @Transactional
     public void finalizeResult(Long battleId, String winnerPlayerId) {
 
@@ -322,14 +407,24 @@ public class BattleService {
             throw new IllegalArgumentException("winnerPlayerId does not match battle players");
         }
 
+        BattleMode mode = BattleMode.from(battle.getType());
+        if (!mode.isRanked()) {
+            battle.setWinner(winner);
+            battle.setStatus("DONE");
+            battle.setWinnerPointsDelta(0);
+            battle.setLoserPointsDelta(0);
+            System.out.printf("finalizeResult (Friendly): winner=%s – keine Trophäen%n", winner.getName());
+            return;
+        }
+
         // alle Ranks laden und nach min sortieren
         List<Rank> ranks = rankRepository.getAllRanks()
                 .stream()
                 .sorted(Comparator.comparingInt(Rank::getMin))
                 .toList();
 
-        Rank winnerRank = rankRepository.rankForPoints(winner.getPoints(), ranks);
-        Rank loserRank  = rankRepository.rankForPoints(loser.getPoints(), ranks);
+        Rank winnerRank = rankRepository.rankForPoints(winner.trophiesFor(mode), ranks);
+        Rank loserRank  = rankRepository.rankForPoints(loser.trophiesFor(mode), ranks);
 
         int rankDiff = 0;
         int absDiff  = 0;
@@ -369,8 +464,13 @@ public class BattleService {
             loserDelta  = (int) Math.round(baseLoss - penaltyLoss);
         }
 
-        winner.setPoints(winner.getPoints() + winnerDelta);
-        loser.setPoints(loser.getPoints() + loserDelta);
+        // Trophäen nie unter 0
+        int loserBefore = loser.trophiesFor(mode);
+        loserDelta = Math.max(loserDelta, -loserBefore);
+        winner.setTrophiesFor(mode, winner.trophiesFor(mode) + winnerDelta);
+        loser.setTrophiesFor(mode, loserBefore + loserDelta);
+        // Sieger verdient seinen Trophäen-Gewinn auch als Punkte (Währung)
+        winner.setPoints(winner.getPoints() + Math.max(0, winnerDelta));
 
         battle.setWinner(winner);
         battle.setStatus("DONE");
@@ -378,13 +478,8 @@ public class BattleService {
         battle.setWinnerPointsDelta(winnerDelta);
         battle.setLoserPointsDelta(loserDelta);
 
-        System.out.printf(
-                "finalizeResult: winner=%s (%d -> %d, delta=%d), loser=%s (%d -> %d, delta=%d)%n",
-                winner.getName(),
-                winner.getPoints() - winnerDelta, winner.getPoints(), winnerDelta,
-                loser.getName(),
-                loser.getPoints() - loserDelta, loser.getPoints(), loserDelta
-        );
+        System.out.printf("finalizeResult (%s): winner=%s %+d, loser=%s %+d Trophäen%n",
+                mode, winner.getName(), winnerDelta, loser.getName(), loserDelta);
 
     }
 

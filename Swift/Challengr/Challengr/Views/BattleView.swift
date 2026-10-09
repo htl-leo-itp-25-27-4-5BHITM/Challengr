@@ -18,6 +18,10 @@ struct BattleView: View {
     let onClose: () -> Void
     let onSurrender: () -> Void
     let onFinished: () -> Void
+    /// Selbst "Geschafft" gemeldet → warten, bis der Gegner es auch schafft oder aufgibt
+    var waitingForOpponent: Bool = false
+    /// Der Gegner hat "Geschafft" gemeldet
+    var opponentFinished: Bool = false
 
     // MARK: - Entrance choreography (Eintritts-Animation)
     @State private var headerAppeared = false
@@ -175,14 +179,38 @@ struct BattleView: View {
 
     private var bottomBar: some View {
         VStack(spacing: 12) {
-            Text("CHALLENGE GESCHAFFT?")
+            if opponentFinished {
+                Label("\(playerRight) hat's geschafft!", systemImage: "flag.checkered")
+                    .font(.system(size: 13, weight: .black, design: .rounded))
+                    .foregroundColor(.challengrDark)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(Color.challengrYellow))
+                    .transition(.scale.combined(with: .opacity))
+            }
+
+            Text(waitingForOpponent ? "GESCHAFFT – WARTE AUF \(playerRight.uppercased())" : "CHALLENGE GESCHAFFT?")
                 .font(.system(size: 14, weight: .black, design: .rounded))
                 .tracking(1.2)
                 .foregroundColor(.white.opacity(0.85))
+                .multilineTextAlignment(.center)
 
             HStack(spacing: 14) {
-                GamePrimaryButton(title: "Geschafft", color: .challengrGreen) {
-                    onFinished()
+                if waitingForOpponent {
+                    HStack(spacing: 8) {
+                        ProgressView().tint(.white)
+                        Text("WARTEN …")
+                            .font(.system(size: 15, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(Color.challengrGreen.opacity(0.35)))
+                } else {
+                    GamePrimaryButton(title: "Geschafft", color: .challengrGreen) {
+                        onFinished()
+                    }
                 }
 
                 Button(action: onSurrender) {
@@ -239,6 +267,8 @@ struct BattleView: View {
                 .stroke(Color.white.opacity(0.10), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.35), radius: 18, x: 0, y: 10)
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: opponentFinished)
+        .animation(.easeInOut(duration: 0.2), value: waitingForOpponent)
     }
 
     // MARK: - Subviews (Unteransichten)
