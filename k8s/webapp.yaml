@@ -4,7 +4,10 @@ metadata:
   name: challengr-webapp
   namespace: student-it220257
 spec:
-  replicas: 1
+  # TestFlight-Phase: WebApp abgeschaltet. Sie schickt noch keinen Keycloak-Login mit und würde
+  # seit Checkliste A2–A4 nicht mehr funktionieren. Schüler nutzen die iPhone-App.
+  # Wieder aktivieren erst, wenn map.js/GameSocketClient.js ein Token mitschicken.
+  replicas: 0
   selector:
     matchLabels:
       app: challengr-webapp

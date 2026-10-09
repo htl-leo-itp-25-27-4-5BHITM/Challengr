@@ -1,6 +1,8 @@
-import { NgModule, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { NgModule, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { BrowserModule, provideClientHydration, withEventReplay } from '@angular/platform-browser';
-import { HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
+import { AuthInterceptor } from './core/auth/auth.interceptor';
+import { AuthService } from './core/auth/auth.service';
 
 import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
@@ -15,7 +17,13 @@ import { FormsModule } from '@angular/forms';
 @NgModule({
   declarations: [App, Layout, Header, Dashboard, Users, Challenges, Erd],
   imports: [BrowserModule, AppRoutingModule, FormsModule, HttpClientModule],
-  providers: [provideBrowserGlobalErrorListeners(), provideClientHydration(withEventReplay())],
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideClientHydration(withEventReplay()),
+    // Admin-Login über Keycloak, bevor das Dashboard Daten lädt (Checkliste A3)
+    provideAppInitializer(() => inject(AuthService).init()),
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+  ],
   bootstrap: [App],
 })
 export class AppModule {}

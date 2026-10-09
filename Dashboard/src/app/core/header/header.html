@@ -5,10 +5,16 @@
   </div>
 
   <div class="right">
+    @if (auth.isLoggedIn && !auth.isAdmin) {
+      <span class="no-admin">Kein Admin-Konto – Daten sind gesperrt</span>
+    }
     <div class="search">
       <span class="search-icon">🔍</span>
       <span class="search-text">Suchen…</span>
     </div>
-    <div class="avatar">JD</div>
+    <div class="avatar" [title]="auth.userName">{{ initials }}</div>
+    @if (auth.isLoggedIn) {
+      <button type="button" class="logout" (click)="logout()">Abmelden</button>
+    }
   </div>
 </header>

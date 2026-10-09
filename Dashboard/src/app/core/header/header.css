@@ -71,3 +71,18 @@
   font-family: var(--font-display);
   box-shadow: 0 0 0 2px rgba(253, 208, 6, 0.25);
 }
+
+.no-admin {
+  color: #ffb4b4;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.logout {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: inherit;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}

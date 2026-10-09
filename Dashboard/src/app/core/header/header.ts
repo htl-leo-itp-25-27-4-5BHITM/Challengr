@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { AuthService } from '../auth/auth.service';
 
 @Component({
   selector: 'app-header',
@@ -6,4 +7,15 @@ import { Component } from '@angular/core';
   templateUrl: './header.html',
   styleUrl: './header.css',
 })
-export class Header {}
+export class Header {
+  constructor(public auth: AuthService) {}
+
+  get initials(): string {
+    const name = this.auth.userName || '?';
+    return name.slice(0, 2).toUpperCase();
+  }
+
+  logout(): void {
+    this.auth.logout();
+  }
+}
