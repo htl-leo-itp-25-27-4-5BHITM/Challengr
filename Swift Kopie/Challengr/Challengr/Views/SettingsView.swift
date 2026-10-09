@@ -10,6 +10,9 @@ struct SettingsView: View {
     /// Stand vom Server (nil = noch nicht geladen)
     @State private var isInvisible: Bool? = nil
     @State private var privacyError: String? = nil
+    @State private var confirmDelete = false
+    @State private var isDeleting = false
+    @State private var deleteError: String? = nil
     private let playerService = PlayerLocationService()
 
     var body: some View {
@@ -91,6 +94,27 @@ struct SettingsView: View {
                     }
                 }
                 
+                Section(footer: Text("Löscht dein Konto, deine Punkte, Trophäen, Figuren, Freunde und Check-ins endgültig. Vergangene Battles bleiben bei deinen Gegnern nur anonym als „Gelöschter Spieler“.")) {
+                    Button(role: .destructive) {
+                        confirmDelete = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "trash.fill")
+                            Text(isDeleting ? "Wird gelöscht …" : "Konto löschen")
+                        }
+                    }
+                    .disabled(isDeleting || auth.playerId == nil)
+                    if let deleteError {
+                        Text(deleteError).font(.caption).foregroundColor(.red)
+                    }
+                }
+                .confirmationDialog("Konto wirklich löschen?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                    Button("Endgültig löschen", role: .destructive) { deleteAccount() }
+                    Button("Abbrechen", role: .cancel) {}
+                } message: {
+                    Text("Das kann nicht rückgängig gemacht werden.")
+                }
+
                 Section(header: Text("Über")) {
                     HStack {
                         Text("Version")
@@ -105,6 +129,21 @@ struct SettingsView: View {
             .navigationBarItems(trailing: Button("Fertig") {
                 dismiss()
             })
+        }
+    }
+
+    private func deleteAccount() {
+        isDeleting = true
+        deleteError = nil
+        Task {
+            do {
+                try await playerService.deleteOwnAccount()
+                dismiss()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { auth.accountDeleted() }
+            } catch {
+                isDeleting = false
+                deleteError = "Löschen fehlgeschlagen – bitte später nochmal versuchen."
+            }
         }
     }
 

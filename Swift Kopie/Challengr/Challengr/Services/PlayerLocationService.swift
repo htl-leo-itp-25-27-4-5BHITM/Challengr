@@ -88,6 +88,16 @@ final class PlayerLocationService {
         return try JSONDecoder().decode(PlayerDTO.self, from: data)
     }
 
+    /// Eigenes Konto endgültig löschen (Keycloak-Konto + Spieldaten)
+    func deleteOwnAccount() async throws {
+        var request = URLRequest(url: baseURL.appendingPathComponent("me"))
+        request.httpMethod = "DELETE"
+        let (_, response) = try await API.data(for: request)
+        guard let status = (response as? HTTPURLResponse)?.statusCode, (200...299).contains(status) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+
     /// "Unsichtbar": nicht mehr bei anderen auf der Karte (Standortschutz)
     func setInvisible(id: String, invisible: Bool) async throws -> PlayerDTO {
         var request = URLRequest(url: baseURL.appendingPathComponent(id).appendingPathComponent("visibility"))

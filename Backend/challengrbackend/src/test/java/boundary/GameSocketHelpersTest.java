@@ -58,4 +58,11 @@ class GameSocketHelpersTest {
         assertFalse(payload.has("latitude"));
         assertFalse(payload.has("longitude"));
     }
+
+    @Test
+    void logsOnlyContainTheMessageType() {
+        assertEquals("battle-requested", GameSocket.typeOf("{\"type\": \"battle-requested\",\"targetLatitude\":48.2}"));
+        assertEquals("(ohne type)", GameSocket.typeOf("{\"latitude\":48.2}"));
+        assertEquals("?", GameSocket.typeOf(null));
+    }
 }

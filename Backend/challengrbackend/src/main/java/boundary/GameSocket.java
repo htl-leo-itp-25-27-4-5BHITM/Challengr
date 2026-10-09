@@ -128,6 +128,26 @@ public class GameSocket {
         return name == null || name.isBlank() ? null : name;
     }
 
+    private static final java.util.regex.Pattern TYPE_FIELD = java.util.regex.Pattern.compile("\"type\"\\s*:\\s*\"([^\"]{1,40})\"");
+
+    /** B4: Logs nur mit dem Nachrichtentyp – keine Inhalte (Zielkoordinaten, Antworten, Namen). */
+    static String typeOf(String json) {
+        if (json == null) return "?";
+        var m = TYPE_FIELD.matcher(json);
+        return m.find() ? m.group(1) : "(ohne type)";
+    }
+
+    /** Verbindung eines Spielers schließen (z. B. nach dem Löschen des Kontos). */
+    public static void disconnect(String playerId) {
+        Session s = playerId == null ? null : SESSIONS.remove(playerId);
+        if (s == null) return;
+        SESSION_TO_PLAYER.remove(s.getId());
+        try {
+            if (s.isOpen()) s.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "account deleted"));
+        } catch (IOException ignored) {
+        }
+    }
+
     /** Hat der Spieler gerade eine offene Verbindung? (zählt für "nearby" als aktiv) */
     public static boolean isOnline(String playerId) {
         Session s = playerId == null ? null : SESSIONS.get(playerId);
@@ -149,7 +169,9 @@ public class GameSocket {
         String closedPlayer = SESSION_TO_PLAYER.remove(session.getId());
         // App zu bzw. abgemeldet → offline, die letzte Position bleibt nicht auf der Karte stehen (A5)
         if (closedPlayer != null && !SESSIONS.containsKey(closedPlayer)) {
-            CompletableFuture.runAsync(() -> touchLastSeen(closedPlayer, null), MESSAGE_WORKERS);
+            // knapp außerhalb des Aktiv-Fensters: offline, aber "zuletzt aktiv" bleibt für die Speicherdauer (B4)
+            java.time.Instant offline = java.time.Instant.now().minus(control.LocationPrivacy.ACTIVE_WINDOW).minusSeconds(1);
+            CompletableFuture.runAsync(() -> touchLastSeen(closedPlayer, offline), MESSAGE_WORKERS);
         }
         System.out.println("WebSocket closed: " + session.getId());
     }
@@ -157,7 +179,7 @@ public class GameSocket {
     @OnMessage
     public void onMessage(String message, Session session) {
         String playerId = SESSION_TO_PLAYER.get(session.getId());
-        System.out.println("WebSocket message from player " + playerId + ": " + message);
+        System.out.println("WebSocket message from player " + playerId + ": " + typeOf(message));
         CompletableFuture.runAsync(() -> handleMessage(message, session, playerId), MESSAGE_WORKERS);
     }
 
@@ -702,7 +724,7 @@ public class GameSocket {
         sendToPlayer(toId, payload);
 
         clearBattleState(battleId);
-        System.out.println("Sent battle-result for battle " + battleId + ": " + payload);
+        System.out.println("Sent battle-result for battle " + battleId);
     }
 
     private void clearBattleState(Long battleId) {
@@ -822,10 +844,10 @@ public class GameSocket {
         if (playerId == null) return;
         Session s = SESSIONS.get(playerId);
         if (s != null && s.isOpen()) {
-            System.out.println("Sending WS payload to player " + playerId + ": " + jsonPayload);
+            System.out.println("Sending WS " + typeOf(jsonPayload) + " to player " + playerId);
             s.getAsyncRemote().sendText(jsonPayload);
         } else {
-            System.out.println("No active WebSocket session for player " + playerId + ". Payload not delivered: " + jsonPayload);
+            System.out.println("No active WebSocket session for player " + playerId + ". Not delivered: " + typeOf(jsonPayload));
         }
     }
 

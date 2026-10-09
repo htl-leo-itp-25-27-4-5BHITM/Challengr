@@ -88,6 +88,26 @@ public class BanService {
         return count;
     }
 
+    /** Sind Zugangsdaten für die Keycloak-Admin-API gesetzt? (Dev/Test: nein) */
+    public boolean keycloakAdminConfigured() {
+        String cid = clientId.orElse(null);
+        String cs = clientSecret.orElse(null);
+        return cid != null && !cid.isBlank() && cs != null && !cs.isBlank();
+    }
+
+    /** B1: Keycloak-Konto löschen. Ein schon gelöschtes Konto (404) ist kein Fehler. */
+    public void deleteKeycloakUser(String keycloakUserId) {
+        if (!keycloakAdminConfigured()) {
+            throw new IllegalStateException("Keycloak admin client credentials are not configured");
+        }
+        var token = tokenClient.token(realm, "client_credentials", clientId.get(), clientSecret.get());
+        try {
+            userClient.deleteUser("Bearer " + token.accessToken(), realm, keycloakUserId);
+        } catch (jakarta.ws.rs.WebApplicationException e) {
+            if (e.getResponse() == null || e.getResponse().getStatus() != 404) throw e;
+        }
+    }
+
     private void setKeycloakEnabled(String keycloakUserId, boolean enabled) {
         String cid = clientId.orElse(null);
         String cs = clientSecret.orElse(null);

@@ -1,5 +1,6 @@
 package control;
 
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.PUT;
@@ -44,5 +45,14 @@ public interface KeycloakAdminUserClient {
             @PathParam("realm") String realm,
             @PathParam("userId") String userId,
             UserRepresentation body
+    );
+
+    /** B1: Konto löschen – danach ist kein Login mehr möglich. */
+    @DELETE
+    @Path("/{userId}")
+    void deleteUser(
+            @HeaderParam("Authorization") String authorization,
+            @PathParam("realm") String realm,
+            @PathParam("userId") String userId
     );
 }

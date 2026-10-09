@@ -278,6 +278,15 @@ final class KeycloakAuthService: NSObject, ObservableObject {
         session.start()
     }
 
+    /// Nach dem Löschen des Kontos: lokale Spieler-Zuordnungen entfernen und abmelden.
+    func accountDeleted() {
+        let defaults = UserDefaults.standard
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("playerId.") {
+            defaults.removeObject(forKey: key)
+        }
+        clearSession()
+    }
+
     private func clearSession() {
         AuthSession.shared.clear()
         accessToken     = nil

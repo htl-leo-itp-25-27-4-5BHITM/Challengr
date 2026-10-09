@@ -47,6 +47,9 @@ public class PlayerRessources {
     @Inject
     CurrentPlayer me;
 
+    @Inject
+    control.AccountDeletionService accountDeletion;
+
     /** Alle Spieler inkl. Standort – nur für Admins (Dashboard). */
     @GET
     @RolesAllowed(CurrentPlayer.ADMIN_ROLE)
@@ -115,6 +118,16 @@ public class PlayerRessources {
         }
 
         return toOwnDTO(player);
+    }
+
+    /** B1: eigenes Konto endgültig löschen (Keycloak-Konto + Spieldaten). */
+    @DELETE
+    @Path("/me")
+    public jakarta.ws.rs.core.Response deleteOwnAccount() {
+        String id = me.id();
+        accountDeletion.deleteAccount(id);
+        GameSocket.disconnect(id);
+        return jakarta.ws.rs.core.Response.noContent().build();
     }
 
     /** "Unsichtbar" schalten. Body: {"invisible": true} */
