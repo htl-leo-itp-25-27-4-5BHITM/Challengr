@@ -155,8 +155,8 @@ struct MapView: View {
     @State private var ownTotalChallenges: Int = 0
     @State private var ownWonChallenges: Int = 0
     @State private var ownPoints: Int = 0
-    /// Liga-Stände (Trophäen + Rang) für Wissen und Real-Life
-    @State private var ownLeague: (knowledge: Int?, realLife: Int?, knowledgeRank: String?, realLifeRank: String?) = (nil, nil, nil, nil)
+    /// Liga-Trophäen (Quiz-Show und Real-Life gemeinsam)
+    @State private var ownTrophies: Int? = nil
     @State private var pointsHistory: [PlayerPointsHistoryDTO] = []
     @State private var battleHistory: [BattleHistoryDTO] = []
     @State private var profileStatusText: String? = nil
@@ -440,10 +440,7 @@ struct MapView: View {
                     totalChallenges: ownTotalChallenges,
                     wonChallenges: ownWonChallenges,
                     points: ownPoints,
-                    knowledgeTrophies: ownLeague.knowledge,
-                    realLifeTrophies: ownLeague.realLife,
-                    knowledgeRank: ownLeague.knowledgeRank,
-                    realLifeRank: ownLeague.realLifeRank
+                    trophies: ownTrophies
                 ),
                 pointsHistory: pointsHistory,
                 battleHistory: battleHistory,
@@ -1641,7 +1638,7 @@ struct MapView: View {
                 await MainActor.run {
                     ownPlayerName      = name
                     ownRankName        = rank
-                    ownLeague          = (me.knowledgeTrophies, me.realLifeTrophies, me.knowledgeRank, me.realLifeRank)
+                    ownTrophies        = me.trophies
                     ownPoints          = points
                     ownDailyStreak     = streak
                     ownTotalChallenges = stats.totalChallenges

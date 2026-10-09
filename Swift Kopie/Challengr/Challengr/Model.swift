@@ -29,11 +29,8 @@ struct PlayerDTO: Codable, Identifiable {
     let rankName: String
     /// Gewählte Spielfigur (z.B. "sir-brecht"); nil bei Spielern ohne Wahl oder alten Backends.
     var character: String? = nil
-    /// Liga-Stände (nil bei alten Backends)
-    var knowledgeTrophies: Int? = nil
-    var realLifeTrophies: Int? = nil
-    var knowledgeRank: String? = nil
-    var realLifeRank: String? = nil
+    /// Liga-Trophäen (Quiz-Show und Real-Life gemeinsam; nil bei alten Backends)
+    var trophies: Int? = nil
 }
 
 // MARK: - Challenge DTOs (Challenge-DTOs)

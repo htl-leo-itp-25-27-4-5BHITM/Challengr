@@ -44,10 +44,8 @@ struct TrophyRoadView: View {
 
     // MARK: - State (State)
     @State private var trophyRanks: [TrophyRank] = []
-    /// Trophäen der gerade gezeigten Liga
+    /// Liga-Trophäen (Quiz-Show und Real-Life gemeinsam)
     @State private var playerPoints: Int = 0
-    @State private var league: BattleMode = .rankedKnowledge
-    @State private var trophiesByLeague: [BattleMode: Int] = [:]
 
     // MARK: - Services (Services)
     private let rankService = RankService()
@@ -144,17 +142,6 @@ struct TrophyRoadView: View {
                     .foregroundColor(.challengrBlack.opacity(0.5))
                     .padding(.top, 16)
 
-                Picker("Liga", selection: $league) {
-                    ForEach([BattleMode.rankedKnowledge, .rankedRealLife]) { mode in
-                        Label(mode.title, systemImage: mode.icon).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 16)
-                .onChange(of: league) { _, mode in
-                    if let trophies = trophiesByLeague[mode] { playerPoints = trophies }
-                }
-
                 ScrollViewReader { proxy in
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(spacing: 24) {
@@ -232,12 +219,8 @@ struct TrophyRoadView: View {
 
             await MainActor.run {
                 self.trophyRanks = ranks
-                var byLeague: [BattleMode: Int] = [:]
-                byLeague[.rankedKnowledge] = player?.knowledgeTrophies
-                byLeague[.rankedRealLife] = player?.realLifeTrophies
-                self.trophiesByLeague = byLeague
-                // Alte Server ohne Ligen: Punkte wie bisher
-                self.playerPoints = byLeague[league] ?? points
+                // Alte Server ohne Liga: Punkte wie bisher
+                self.playerPoints = player?.trophies ?? points
             }
         } catch {
             print("Fehler beim Laden:", error)

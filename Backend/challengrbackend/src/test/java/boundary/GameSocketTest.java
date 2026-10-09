@@ -124,11 +124,8 @@ class GameSocketTest {
         return QuarkusTransaction.requiringNew().call(() -> challengeRepository.findById(challengeId).getCorrectIndex());
     }
 
-    private int trophies(String playerId, boolean realLife) {
-        return QuarkusTransaction.requiringNew().call(() -> {
-            Player p = playerRepository.findById(playerId);
-            return realLife ? p.getRealLifeTrophies() : p.getKnowledgeTrophies();
-        });
+    private int trophies(String playerId) {
+        return QuarkusTransaction.requiringNew().call(() -> playerRepository.findById(playerId).getTrophies());
     }
 
     private int points(String playerId) {
@@ -167,8 +164,7 @@ class GameSocketTest {
         WsTestClient attacker = connect(A);
         WsTestClient defender = connect(B);
         int pointsBefore = points(B);
-        int trophiesBefore = trophies(B, true);
-        int knowledgeBefore = trophies(B, false);
+        int trophiesBefore = trophies(B);
 
         long battleId = createAcceptedRanked(attacker, defender, "RANKED_REALLIFE");
         attacker.send(status(battleId, "DONE_SURRENDER"));
@@ -178,8 +174,7 @@ class GameSocketTest {
         assertEquals("RANKED_REALLIFE", result.get("mode").asText());
         int delta = result.get("winnerPointsDelta").asInt();
         assertTrue(delta > 0);
-        assertEquals(trophiesBefore + delta, trophies(B, true), "Real-Life-Trophäen steigen");
-        assertEquals(knowledgeBefore, trophies(B, false), "Wissen-Liga unverändert");
+        assertEquals(trophiesBefore + delta, trophies(B), "Liga-Trophäen steigen");
         assertEquals(pointsBefore + delta, points(B), "Sieger bekommt den Gewinn auch als Punkte");
     }
 
@@ -187,7 +182,7 @@ class GameSocketTest {
     void friendlyIsForNothing() throws Exception {
         WsTestClient attacker = connect(A);
         WsTestClient defender = connect(B);
-        int pointsBefore = points(B), trophiesBefore = trophies(B, true);
+        int pointsBefore = points(B), trophiesBefore = trophies(B);
 
         long battleId = createAcceptedBattle(attacker, defender); // ohne Modus = Friendly
         attacker.send(status(battleId, "DONE_SURRENDER"));
@@ -198,7 +193,7 @@ class GameSocketTest {
         assertEquals(B, result.get("winnerId").asText());
         assertEquals(0, result.get("winnerPointsDelta").asInt());
         assertEquals(pointsBefore, points(B));
-        assertEquals(trophiesBefore, trophies(B, true));
+        assertEquals(trophiesBefore, trophies(B));
     }
 
     @Test
@@ -244,7 +239,7 @@ class GameSocketTest {
         GameSocket.quizRevealPause = Duration.ofMillis(50);
         WsTestClient attacker = connect(A);
         WsTestClient defender = connect(B);
-        int knowledgeBefore = trophies(A, false);
+        int knowledgeBefore = trophies(A);
         long battleId = createAcceptedRanked(attacker, defender, "RANKED_KNOWLEDGE");
 
         for (int round = 1; round <= 4; round++) {
@@ -272,7 +267,7 @@ class GameSocketTest {
         assertEquals("RANKED_KNOWLEDGE", result.get("mode").asText());
         assertTrue(result.get("quiz").get("fromScore").asInt() >= 400);
         assertEquals(0, result.get("quiz").get("toScore").asInt());
-        assertTrue(trophies(A, false) > knowledgeBefore, "Wissen-Trophäen steigen");
+        assertTrue(trophies(A) > knowledgeBefore, "Liga-Trophäen steigen (gemeinsamer Stand)");
     }
 
     @Test

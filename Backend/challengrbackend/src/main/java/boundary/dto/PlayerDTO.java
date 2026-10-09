@@ -6,10 +6,7 @@ public record PlayerDTO(
         double latitude,
         double longitude,
         int points,
-        String rankName,  // Rang der besseren Liga (z.B. für die Ringfarbe auf der Karte)
+        String rankName,  // Liga-Rang nach Trophäen (z.B. für die Ringfarbe auf der Karte)
         String character, // gewählte Spielfigur, null = App-Standard
-        int knowledgeTrophies,
-        int realLifeTrophies,
-        String knowledgeRank,
-        String realLifeRank
+        int trophies      // Liga-Trophäen (Quiz-Show und Real-Life gemeinsam)
 ) {}

@@ -298,12 +298,9 @@ public class PlayerRessources {
                 p.getLatitude(),
                 p.getLongitude(),
                 p.getPoints(),
-                battleService.rankNameForPoints(Math.max(p.getKnowledgeTrophies(), p.getRealLifeTrophies())),
+                battleService.rankNameForPoints(p.getTrophies()),
                 p.getCharacter(),
-                p.getKnowledgeTrophies(),
-                p.getRealLifeTrophies(),
-                battleService.rankNameForPoints(p.getKnowledgeTrophies()),
-                battleService.rankNameForPoints(p.getRealLifeTrophies())
+                p.getTrophies()
         );
     }
 
@@ -318,7 +315,7 @@ public class PlayerRessources {
                 .filter(b -> control.BattleMode.from(b.getType()) == control.BattleMode.RANKED_KNOWLEDGE)
                 .count();
         int checkins = (int) hotspotRepository.countForPlayer(player.getId());
-        int bestTrophies = Math.max(player.getKnowledgeTrophies(), player.getRealLifeTrophies());
+        int bestTrophies = player.getTrophies();
         return new CharacterCatalog.Progress(won.size(), knowledgeWins, checkins, bestTrophies);
     }
 

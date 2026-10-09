@@ -56,9 +56,27 @@ struct ChallengeDialogView: View {
                     }
                 } else {
                     VStack(spacing: 10) {
-                        ForEach(BattleMode.allCases.filter(\.isRanked) + [.friendly]) { m in
-                            modeButton(m)
+                        // Eine Liga, zwei Spielarten – beide zählen auf dieselben Trophäen
+                        HStack(spacing: 6) {
+                            Image(systemName: "trophy.fill").foregroundStyle(.challengrYellow)
+                            Text("LIGA · UM TROPHÄEN")
+                                .tracking(1)
                         }
+                        .font(.system(size: 12, weight: .black, design: .rounded))
+                        .foregroundStyle(.challengrBlack.opacity(0.8))
+
+                        HStack(spacing: 10) {
+                            leagueButton(.rankedKnowledge)
+                            leagueButton(.rankedRealLife)
+                        }
+
+                        Text("ODER")
+                            .font(.system(size: 11, weight: .black, design: .rounded))
+                            .tracking(1.4)
+                            .foregroundStyle(.challengrBlack.opacity(0.45))
+                            .padding(.top, 2)
+
+                        modeButton(.friendly)
                     }
                 }
 
@@ -134,6 +152,31 @@ struct ChallengeDialogView: View {
             }
             .padding(.vertical, 11)
             .padding(.horizontal, 14)
+            .background(RoundedRectangle(cornerRadius: 16).fill(m.color))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(m.title): \(m.subtitle)")
+    }
+
+    /// Liga-Spielart als Kachel (Quiz-Show / Real-Life-Challenge).
+    private func leagueButton(_ m: BattleMode) -> some View {
+        Button {
+            SoundManager.shared.play(.tap)
+            withAnimation(.easeInOut(duration: 0.2)) { mode = m }
+        } label: {
+            VStack(spacing: 6) {
+                Image(systemName: m.icon)
+                    .font(.system(size: 24, weight: .bold))
+                Text(m.shortTitle.uppercased())
+                    .font(.system(size: 12, weight: .black, design: .rounded))
+                    .tracking(0.6)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, minHeight: 86)
+            .padding(.horizontal, 6)
             .background(RoundedRectangle(cornerRadius: 16).fill(m.color))
         }
         .buttonStyle(.plain)

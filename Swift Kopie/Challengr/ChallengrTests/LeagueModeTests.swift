@@ -21,8 +21,11 @@ final class LeagueModeTests: XCTestCase {
     }
 
     func testTrophyTexts() {
-        XCTAssertEqual(BattleMode.rankedKnowledge.trophyText(delta: 28), "+28 Wissen-Trophäen")
-        XCTAssertEqual(BattleMode.rankedRealLife.trophyText(delta: -20), "-20 Real-Life-Trophäen")
+        // Eine Liga: beide Spielarten zählen auf dieselben Trophäen
+        XCTAssertEqual(BattleMode.rankedKnowledge.trophyText(delta: 28), "+28 Trophäen")
+        XCTAssertEqual(BattleMode.rankedRealLife.trophyText(delta: -20), "-20 Trophäen")
+        XCTAssertTrue(BattleMode.rankedKnowledge.title.hasPrefix("Liga"))
+        XCTAssertTrue(BattleMode.rankedRealLife.title.hasPrefix("Liga"))
         XCTAssertEqual(BattleMode.friendly.trophyText(delta: 50), "Friendly – es ging um nichts")
     }
 
@@ -39,6 +42,15 @@ final class LeagueModeTests: XCTestCase {
         XCTAssertEqual(r.deltaLabel(28), "+28 🏆")
         XCTAssertEqual(r.deltaLabel(-20), "-20 🏆")
         XCTAssertEqual(r.quizScoreLine, "Basti 320 : 210 Mia")
+    }
+
+    func testPlayerWithLeagueTrophiesDecodes() throws {
+        let json = #"{"id":"p","name":"Mia","latitude":48.2,"longitude":14.2,"points":230,"rankName":"Scrapper","trophies":245}"#
+        let p = try JSONDecoder().decode(PlayerDTO.self, from: Data(json.utf8))
+        XCTAssertEqual(p.trophies, 245)
+        XCTAssertEqual(p.points, 230, "Punkte bleiben die Währung")
+        let old = #"{"id":"p","name":"Mia","latitude":48.2,"longitude":14.2,"points":230,"rankName":"Scrapper"}"#
+        XCTAssertNil(try JSONDecoder().decode(PlayerDTO.self, from: Data(old.utf8)).trophies, "alter Server")
     }
 
     // MARK: - Quiz-Show

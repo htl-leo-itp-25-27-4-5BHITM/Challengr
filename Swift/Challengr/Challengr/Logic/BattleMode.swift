@@ -4,9 +4,10 @@ import SwiftUI
 enum BattleMode: String, CaseIterable, Identifiable {
     /// Es geht um nichts: Kategorie und Challenge frei wählbar.
     case friendly = "FRIENDLY"
-    /// Liga Wissen: Quiz-Show mit 4 Fragen, Wissen-Trophäen.
+    /// Liga, Wissen: Quiz-Show mit 4 Fragen.
     case rankedKnowledge = "RANKED_KNOWLEDGE"
-    /// Liga Real-Life: zufällige vom Handy gemessene Challenge, Real-Life-Trophäen.
+    /// Liga, Real-Life: zufällige vom Handy gemessene Challenge.
+    /// Beide Liga-Modi spielen um dieselben Trophäen.
     case rankedRealLife = "RANKED_REALLIFE"
 
     var id: String { rawValue }
@@ -21,8 +22,17 @@ enum BattleMode: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .friendly:        return "Friendly"
-        case .rankedKnowledge: return "Liga Wissen"
-        case .rankedRealLife:  return "Liga Real-Life"
+        case .rankedKnowledge: return "Liga · Quiz-Show"
+        case .rankedRealLife:  return "Liga · Real-Life"
+        }
+    }
+
+    /// Name innerhalb der Liga-Auswahl ("Quiz-Show" / "Real-Life-Challenge")
+    var shortTitle: String {
+        switch self {
+        case .friendly:        return "Friendly"
+        case .rankedKnowledge: return "Quiz-Show"
+        case .rankedRealLife:  return "Real-Life-Challenge"
         }
     }
 
@@ -54,8 +64,7 @@ enum BattleMode: String, CaseIterable, Identifiable {
     func trophyText(delta: Int) -> String {
         switch self {
         case .friendly:        return "Friendly – es ging um nichts"
-        case .rankedKnowledge: return "\(delta >= 0 ? "+" : "")\(delta) Wissen-Trophäen"
-        case .rankedRealLife:  return "\(delta >= 0 ? "+" : "")\(delta) Real-Life-Trophäen"
+        case .rankedKnowledge, .rankedRealLife: return "\(delta >= 0 ? "+" : "")\(delta) Trophäen"
         }
     }
 }

@@ -18,10 +18,8 @@ struct UserProfileData {
     let wonChallenges: Int
     let points: Int
     /// Liga-Stände (nil bei alten Servern)
-    var knowledgeTrophies: Int? = nil
-    var realLifeTrophies: Int? = nil
-    var knowledgeRank: String? = nil
-    var realLifeRank: String? = nil
+    /// Liga-Trophäen (nil bei alten Servern)
+    var trophies: Int? = nil
 }
 
 struct ProfileBadge {
@@ -87,44 +85,37 @@ struct UserProfileView: View {
         }
     }
 
-    // MARK: - Ligen (Trophäen je Liga)
+    // MARK: - Liga (Trophäen)
 
     @ViewBuilder
     private var leagueSection: some View {
-        if data.knowledgeTrophies != nil || data.realLifeTrophies != nil {
-            VStack(spacing: 8) {
-                GameSectionHeader(title: "Ligen")
-                HStack(spacing: 10) {
-                    leagueTile(mode: .rankedKnowledge, trophies: data.knowledgeTrophies, rank: data.knowledgeRank)
-                    leagueTile(mode: .rankedRealLife, trophies: data.realLifeTrophies, rank: data.realLifeRank)
+        if let trophies = data.trophies {
+            HStack(spacing: 14) {
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 30, weight: .bold))
+                    .foregroundColor(.challengrYellow)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("LIGA")
+                        .font(.system(size: 11, weight: .black, design: .rounded))
+                        .tracking(1.2)
+                        .foregroundColor(GameStyle.secondaryText)
+                    Text("\(trophies) Trophäen")
+                        .font(.system(size: 24, weight: .black, design: .rounded))
+                        .foregroundColor(.white)
+                    Text("Quiz-Show und Real-Life zählen zusammen")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundColor(GameStyle.secondaryText)
                 }
+                Spacer(minLength: 0)
+                Text(data.rankName.uppercased())
+                    .font(.system(size: 12, weight: .black, design: .rounded))
+                    .foregroundColor(.challengrDark)
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                    .background(Capsule().fill(rankColor))
             }
+            .gamePanel(padding: 14, cornerRadius: 18, highlight: .challengrYellow)
+            .accessibilityElement(children: .combine)
         }
-    }
-
-    private func leagueTile(mode: BattleMode, trophies: Int?, rank: String?) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(mode.title.uppercased(), systemImage: mode.icon)
-                .font(.system(size: 11, weight: .black, design: .rounded))
-                .tracking(0.8)
-                .foregroundColor(.white.opacity(0.85))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            HStack(spacing: 6) {
-                Image(systemName: "trophy.fill").foregroundColor(.challengrYellow)
-                Text(trophies.map(String.init) ?? "–")
-                    .font(.system(size: 24, weight: .black, design: .rounded))
-                    .foregroundColor(.white)
-            }
-            Text((rank ?? "–").uppercased())
-                .font(.system(size: 11, weight: .black, design: .rounded))
-                .foregroundColor(.white)
-                .padding(.horizontal, 8).padding(.vertical, 3)
-                .background(Capsule().fill(mode.color))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .gamePanel(padding: 12, cornerRadius: 16, highlight: mode.color)
-        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Hero (Figur, Name, Rang)
