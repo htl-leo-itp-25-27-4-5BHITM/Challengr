@@ -38,14 +38,14 @@ Prüfen:
 
 ## 3. App hochladen
 
-Vorbereitet: Release-Builds haben die Bundle-ID **`at.htl.leonding.challengr.app`** (Debug bleibt
+Vorbereitet: Release-Builds haben die Bundle-ID **`com.challengrapp.challengr`** (Debug bleibt
 `…challengr.binder` fürs Entwickeln), Version 1.0, Privacy-Manifest und Exportangaben sind drin.
 
 1. Apple Developer Program kaufen: https://developer.apple.com/programs/enroll/ (Individual, 99 €/Jahr).
 2. Team-ID notieren: https://developer.apple.com/account → *Membership details* (10 Zeichen).
 3. Xcode → *Settings → Accounts* → mit derselben Apple-ID anmelden.
 4. https://appstoreconnect.apple.com → *Meine Apps → +* → Neue App: Plattform iOS, Name „Challengr“,
-   Sprache Deutsch, Bundle-ID `at.htl.leonding.challengr.app` (erscheint nach Schritt 5 einmal registriert
+   Sprache Deutsch, Bundle-ID `com.challengrapp.challengr` (erscheint nach Schritt 5 einmal registriert
    in der Liste; falls noch nicht: in Xcode einmal mit dem Team archivieren oder unter
    developer.apple.com → *Identifiers* anlegen), SKU z. B. `challengr-ios`.
 5. Hochladen:

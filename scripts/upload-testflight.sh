@@ -4,7 +4,7 @@
 # Voraussetzungen (einmalig):
 #   1. Bezahlter Apple Developer Account; Team-ID steht unter developer.apple.com/account → Membership details
 #   2. Xcode → Settings → Accounts: mit derselben Apple-ID angemeldet
-#   3. App Store Connect → Meine Apps → + : App mit Bundle-ID at.htl.leonding.challengr.app angelegt
+#   3. App Store Connect → Meine Apps → + : App mit Bundle-ID com.challengrapp.challengr angelegt
 #
 # Aufruf:   ./scripts/upload-testflight.sh <TEAM_ID>
 # Die Build-Nummer wird automatisch aus Datum/Uhrzeit gesetzt (jeder Upload braucht eine neue).
