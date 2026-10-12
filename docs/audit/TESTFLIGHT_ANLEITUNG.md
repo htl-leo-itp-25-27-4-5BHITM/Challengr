@@ -38,15 +38,27 @@ Prüfen:
 
 ## 3. App hochladen
 
-1. Bezahlter Apple Developer Account (99 €/Jahr). Mit „Personal Team“ geht kein Upload.
-2. Xcode, Projekt `Swift/Challengr`: *Signing* → bezahltes Team, endgültige Bundle-ID (z. B. `at.htl.leonding.challengr`).
-3. *General*: Version `1.0`, Build `1` (jeder weitere Upload: Build +1).
-4. Ziel **Any iOS Device** → *Product → Archive* → *Distribute App → App Store Connect → Upload*.
-5. App Store Connect → *Meine Apps → +* (gleiche Bundle-ID), falls noch nicht vorhanden.
-6. *TestFlight → Test Information*: Beschreibung, Feedback-E-Mail, Datenschutz-URL
-   `https://it220257.cloud.htl-leonding.ac.at/datenschutz.html`, Anmeldedaten `applereview`
-   (Passwort im Schlüsselbund „Challengr Apple-Prüfer-Account“), Hinweis: „Battles brauchen einen
-   zweiten Spieler in der Nähe; Quiz-Show und Einstellungen sind einzeln ansehbar.“
+Vorbereitet: Release-Builds haben die Bundle-ID **`at.htl.leonding.challengr.app`** (Debug bleibt
+`…challengr.binder` fürs Entwickeln), Version 1.0, Privacy-Manifest und Exportangaben sind drin.
+
+1. Apple Developer Program kaufen: https://developer.apple.com/programs/enroll/ (Individual, 99 €/Jahr).
+2. Team-ID notieren: https://developer.apple.com/account → *Membership details* (10 Zeichen).
+3. Xcode → *Settings → Accounts* → mit derselben Apple-ID anmelden.
+4. https://appstoreconnect.apple.com → *Meine Apps → +* → Neue App: Plattform iOS, Name „Challengr“,
+   Sprache Deutsch, Bundle-ID `at.htl.leonding.challengr.app` (erscheint nach Schritt 5 einmal registriert
+   in der Liste; falls noch nicht: in Xcode einmal mit dem Team archivieren oder unter
+   developer.apple.com → *Identifiers* anlegen), SKU z. B. `challengr-ios`.
+5. Hochladen:
+   ```bash
+   ./scripts/upload-testflight.sh <TEAM_ID>
+   ```
+   Alternativ in Xcode: Team unter *Signing* wählen → *Any iOS Device* → *Product → Archive* → *Distribute App*.
+6. *TestFlight → Test Information*: Beschreibung, Feedback-E-Mail `challengrapp.official@gmail.com`,
+   Datenschutz-URL `https://it220257.cloud.htl-leonding.ac.at/datenschutz.html`, Anmeldedaten
+   `applereview` (Passwort: `security find-generic-password -s "Challengr Apple-Prüfer-Account" -w`),
+   Hinweis: „Battles brauchen einen zweiten Spieler in der Nähe; Quiz-Show und Einstellungen sind einzeln ansehbar.“
+7. Beim ersten Build fragt TestFlight nach Exportbestimmungen: die App nutzt nur HTTPS → keine
+   Verschlüsselung angeben (ist schon im Build hinterlegt).
 
 ## 4. Intern testen (Checkliste Teil D)
 
