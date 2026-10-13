@@ -35,7 +35,6 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 | Teil | Ort | Technik |
 |---|---|---|
 | iOS-App | `Swift/Challengr/` | SwiftUI, MapKit, SceneKit (3D-Figuren), Default Actor Isolation = MainActor |
-| „Swift Kopie“ | `Swift Kopie/Challengr/` | Zweites Xcode-Projekt zum Testen mit zwei Geräten; **identisch zu `Swift/` bis auf** `GameCharacter.own = .maedchen` (Swift = `.junge`) und eigene Signing-/Bundle-Einstellungen in `project.pbxproj` |
 | Backend | `Backend/challengrbackend/` | Quarkus 3.28 (Java 25), REST + Jakarta-WebSocket `/ws/game`, Hibernate/Panache, PostgreSQL, OIDC (Keycloak) |
 | Admin-Dashboard | `Dashboard/` | Angular 21 mit SSR (Node-Server), Keycloak-Login (PKCE), liefert auch `/datenschutz.html` aus |
 | WebApp | `WebApp/` | Vite; **für TestFlight abgeschaltet** (`k8s/webapp.yaml` → `replicas: 0`), schickt noch keinen Login |
@@ -165,9 +164,8 @@ App-Änderungen → `upload-testflight.sh`; intern sofort verfügbar, extern Bui
 
 ## 7. Stolperfallen
 
-- **„Swift Kopie“ synchron halten:** nach App-Änderungen
-  `rsync -a --exclude xcuserdata --exclude .DS_Store --exclude project.pbxproj Swift/Challengr/ "Swift Kopie/Challengr/"`
-  und danach in der Kopie `GameCharacter.own = .maedchen` setzen. `project.pbxproj` nie kopieren (anderes Team/Bundle).
+- **„Swift Kopie“ gibt es nicht mehr** (gelöscht am 13.10., in der Git-Historie bis `8ea2877`). Zum Testen mit
+  zwei Geräten: TestFlight oder zwei Simulatoren mit verschiedenen Konten.
 - **Nicht committen:** `…/xcuserdata/…/UserInterfaceState.xcuserstate`.
 - **Prod-Wächter:** Das Backend startet in Prod absichtlich nicht mit Standard-Passwörtern oder mit
   `challengr.auth.trust-player-header=true`. Fehlt ein Secret → Pod in CrashLoop (so war es 10.–12.10.).

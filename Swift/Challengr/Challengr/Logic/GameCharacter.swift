@@ -17,7 +17,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
     case lyra = "lyra"
     case kaeptnRex = "kaeptn-rex"
 
-    /// Start-Figur dieses App-Builds, bis man eine andere wählt. Swift = Junge, Swift Kopie = Mädchen.
+    /// Start-Figur, bis man im Figuren-Editor eine andere wählt.
     static let own: GameCharacter = .junge
 
     /// Die aktuell gewählte Figur (lokal gespeichert und mit dem Server abgeglichen).

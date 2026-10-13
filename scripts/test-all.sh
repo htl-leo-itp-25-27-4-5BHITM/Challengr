@@ -45,8 +45,8 @@ run_ios() {
 
 case "$TARGET" in
   backend) run_backend ;;
-  ios)     run_ios "Swift/Challengr"; run_ios "Swift Kopie/Challengr" ;;
-  all)     run_backend; run_ios "Swift/Challengr"; run_ios "Swift Kopie/Challengr" ;;
+  ios)     run_ios "Swift/Challengr" ;;
+  all)     run_backend; run_ios "Swift/Challengr" ;;
   *) echo "Usage: ./scripts/test-all.sh [all|backend|ios]"; exit 1 ;;
 esac
 
