@@ -120,7 +120,9 @@ public class PlayerRessources {
 
         // Realtime: nur Spieler in der Nähe (alte + neue Position) informieren, damit sie den
         // Spieler kommen und gehen sehen – unsichtbare Spieler verraten nichts.
-        if (!player.isInvisible()) {
+        // Bei vielen Spielern auf einem Fleck: Positions-Events pro Spieler gedrosselt
+        // (die Karten der anderen holen sich ohnehin alle paar Sekunden den Stand)
+        if (!player.isInvisible() && GameSocket.mayAnnouncePosition(player.getId())) {
             GameSocket.emitPlayerPositionUpdated(player.getId(),
                     positionEventRecipients(player.getId(), oldLat, oldLon, player.getLatitude(), player.getLongitude()));
         }
@@ -268,7 +270,7 @@ public class PlayerRessources {
      */
     @GET
     @Path("/nearby")
-    public List<PlayerDTO> getNearbyPlayers(
+    public jakarta.ws.rs.core.Response getNearbyPlayers(
         @QueryParam("playerId") String playerId,
             @QueryParam("latitude") double latitude,
             @QueryParam("longitude") double longitude,
@@ -276,24 +278,36 @@ public class PlayerRessources {
     ) {
         Player self = playerRepository.findById(me.id());
         if (self == null || !LocationPrivacy.hasPosition(self)) {
-            return List.of();
+            return jakarta.ws.rs.core.Response.ok(List.of()).header(NEARBY_TOTAL_HEADER, 0).build();
         }
         double limit = LocationPrivacy.clampRadius(radius);
         java.time.Instant now = java.time.Instant.now();
         java.util.Set<String> blocked = blockRepository.blockedWith(self.getId()); // B2: in beide Richtungen
 
-        List<Player> allPlayers = em.createQuery(
-                "SELECT p FROM Player p", Player.class
-        ).getResultList();
+        // Nur der Kartenausschnitt kommt aus der Datenbank, nicht alle Spieler
+        List<Player> candidates = playerRepository.findInBoundingBox(self.getLatitude(), self.getLongitude(), limit);
 
-        return allPlayers.stream()
+        List<Player> visible = candidates.stream()
                 .filter(p -> !p.getId().equals(self.getId()))
                 .filter(p -> !blocked.contains(p.getId()))
                 .filter(p -> LocationPrivacy.visibleToOthers(p, now) || isOnlineAndVisible(p, now))
                 .filter(p -> distance(self.getLatitude(), self.getLongitude(), p.getLatitude(), p.getLongitude()) <= limit)
+                .toList();
+
+        // Viele Spieler auf einem Fleck (z. B. Schulhof): nur die nächsten auf die Karte,
+        // die Gesamtzahl steht im Header für die Anzeige "187 Spieler in meiner Nähe"
+        List<PlayerDTO> nearest = visible.stream()
+                .sorted(java.util.Comparator.comparingDouble(
+                        p -> distance(self.getLatitude(), self.getLongitude(), p.getLatitude(), p.getLongitude())))
+                .limit(MAX_NEARBY_RESULTS)
                 .map(this::toNearbyDTO)
                 .toList();
+        return jakarta.ws.rs.core.Response.ok(nearest).header(NEARBY_TOTAL_HEADER, visible.size()).build();
     }
+
+    /** Höchstens so viele Spieler schickt "nearby" mit (die nächsten). */
+    static final int MAX_NEARBY_RESULTS = 30;
+    static final String NEARBY_TOTAL_HEADER = "X-Nearby-Total";
 
     /** Mit offenem WebSocket gilt ein Spieler als aktiv, auch wenn er sich gerade nicht bewegt. */
     private static boolean isOnlineAndVisible(Player p, java.time.Instant now) {

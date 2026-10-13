@@ -910,6 +910,24 @@ public class GameSocket {
      * Die Apps laden danach selbst die Spieler in ihrem Radius (Datenschutz: niemand
      * bekommt die genaue Position von Spielern, die weit weg sind).
      */
+    /** Höchstens ein Positions-Event pro Spieler in diesem Abstand. */
+    static final Duration POSITION_EVENT_INTERVAL = Duration.ofSeconds(5);
+    private static final Map<String, Long> LAST_POSITION_EVENT_AT = new ConcurrentHashMap<>();
+
+    /** Darf für diesen Spieler jetzt ein Positions-Event raus? (merkt sich den Zeitpunkt) */
+    public static boolean mayAnnouncePosition(String playerId) {
+        long now = System.currentTimeMillis();
+        Long last = LAST_POSITION_EVENT_AT.get(playerId);
+        if (last != null && now - last < POSITION_EVENT_INTERVAL.toMillis()) return false;
+        LAST_POSITION_EVENT_AT.put(playerId, now);
+        return true;
+    }
+
+    /** Nur für Tests: Drosselung zurücksetzen. */
+    static void resetPositionThrottle() {
+        LAST_POSITION_EVENT_AT.clear();
+    }
+
     public static void emitPlayerPositionUpdated(String playerId, Collection<String> recipientIds) {
         String payload = buildPlayerPositionPayload(playerId);
         for (String recipient : recipientIds) {

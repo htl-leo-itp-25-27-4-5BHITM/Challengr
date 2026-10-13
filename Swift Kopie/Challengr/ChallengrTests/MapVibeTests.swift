@@ -64,6 +64,12 @@ final class MapVibeTests: XCTestCase {
         XCTAssertFalse(MapPlayerFilter.isVisible(name: "Gegner10"), "Demo-Filter blendet andere aus")
     }
 
+    func testCrowdedMapAnimatesSlower() {
+        XCTAssertEqual(MapCrowd.spriteInterval(crowded: false, sonar: false), 1.0 / 15, accuracy: 0.0001)
+        XCTAssertEqual(MapCrowd.spriteInterval(crowded: true, sonar: false), 1.0 / 6, accuracy: 0.0001)
+        XCTAssertEqual(MapCrowd.spriteInterval(crowded: true, sonar: true), 1.0 / 15, accuracy: 0.0001, "eigener Pin bleibt flüssig")
+    }
+
     func testMapIsTilted() {
         XCTAssertGreaterThanOrEqual(MapView.mapPitch, 45)
         XCTAssertLessThanOrEqual(MapView.mapPitch, 70)

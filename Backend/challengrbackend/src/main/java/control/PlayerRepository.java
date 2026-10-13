@@ -168,10 +168,25 @@ public class PlayerRepository {
                 .getSingleResult();
     }
 
-    public List<Player> findNearbyPlayers(String currentPlayerId, double latitude, double longitude, double radius) {
-        List<Player> allPlayers = em.createQuery("SELECT p FROM Player p", Player.class).getResultList();
+    /**
+     * Kandidaten in einem Kartenausschnitt (Rechteck um den Punkt) – die Datenbank filtert vor,
+     * statt alle Spieler zu laden. Die genaue Entfernung prüft der Aufrufer.
+     */
+    public List<Player> findInBoundingBox(double latitude, double longitude, double radiusMeters) {
+        double dLat = radiusMeters / 111_320.0;
+        double dLon = radiusMeters / (111_320.0 * Math.max(0.01, Math.cos(Math.toRadians(latitude))));
+        return em.createQuery("""
+                        SELECT p FROM Player p
+                        WHERE p.latitude BETWEEN :latMin AND :latMax
+                          AND p.longitude BETWEEN :lonMin AND :lonMax
+                        """, Player.class)
+                .setParameter("latMin", latitude - dLat).setParameter("latMax", latitude + dLat)
+                .setParameter("lonMin", longitude - dLon).setParameter("lonMax", longitude + dLon)
+                .getResultList();
+    }
 
-        return allPlayers.stream()
+    public List<Player> findNearbyPlayers(String currentPlayerId, double latitude, double longitude, double radius) {
+        return findInBoundingBox(latitude, longitude, radius).stream()
                 .filter(p -> {
                     if (p.getId() == null || p.getId().equals(currentPlayerId)) return false;
                     if (p.getLatitude() == 0 || p.getLongitude() == 0) return false;

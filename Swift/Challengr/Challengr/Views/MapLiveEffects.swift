@@ -13,9 +13,10 @@ struct MapCharacterPin: View {
     var height: CGFloat = 78
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.mapCrowded) private var crowded
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 15, paused: reduceMotion)) { context in
+        TimelineView(.animation(minimumInterval: MapCrowd.spriteInterval(crowded: crowded, sonar: sonar), paused: reduceMotion)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             ZStack(alignment: .bottom) {
                 // Boden: Wellen, Schatten, Ring – flach gedrückt, damit sie auf der Karte "liegen"
@@ -99,24 +100,15 @@ struct LivelyPin<Content: View>: View {
     @State private var appeared = false
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { context in
-            let bob = (reduceMotion || !bobs) ? 0 : MapVibe.bobOffset(time: context.date.timeIntervalSinceReferenceDate, seed: seed)
-            content
-                .offset(y: bob)
-                .overlay(alignment: .top) {
-                    if let bubble {
-                        Text(bubble)
-                            .font(.system(size: 18))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Capsule().fill(.white))
-                            .overlay(Capsule().stroke(Color.challengrBlack.opacity(0.15), lineWidth: 1))
-                            .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
-                            .offset(y: (bobs ? -40 : -24) + bob)
-                            .transition(.scale(scale: 0.3, anchor: .bottom).combined(with: .opacity))
-                            .allowsHitTesting(false)
-                    }
+        Group {
+            if bobs && !reduceMotion {
+                // Nur wippende Pins brauchen eine eigene Animationsschleife
+                TimelineView(.animation(minimumInterval: 1 / 30)) { context in
+                    pin(bob: MapVibe.bobOffset(time: context.date.timeIntervalSinceReferenceDate, seed: seed))
                 }
+            } else {
+                pin(bob: 0)
+            }
         }
         .scaleEffect(appeared || reduceMotion ? 1 : 0.2)
         .opacity(appeared || reduceMotion ? 1 : 0)
@@ -124,6 +116,46 @@ struct LivelyPin<Content: View>: View {
             withAnimation(.spring(response: 0.45, dampingFraction: 0.55)) { appeared = true }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.6), value: bubble)
+    }
+
+    private func pin(bob: Double) -> some View {
+        content
+            .offset(y: bob)
+            .overlay(alignment: .top) {
+                if let bubble {
+                    Text(bubble)
+                        .font(.system(size: 18))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(.white))
+                        .overlay(Capsule().stroke(Color.challengrBlack.opacity(0.15), lineWidth: 1))
+                        .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
+                        .offset(y: (bobs ? -40 : -24) + bob)
+                        .transition(.scale(scale: 0.3, anchor: .bottom).combined(with: .opacity))
+                        .allowsHitTesting(false)
+                }
+            }
+    }
+}
+
+/// Viele Spieler auf einem Fleck (z. B. Schulhof): ab hier laufen die Figuren-Animationen langsamer.
+enum MapCrowd {
+    static let threshold = 12
+
+    /// Bilder pro Sekunde der Figuren-Animation: normal 15, bei Gedränge 6; der eigene Pin (Sonar) bleibt flüssig.
+    static func spriteInterval(crowded: Bool, sonar: Bool) -> Double {
+        crowded && !sonar ? 1.0 / 6 : 1.0 / 15
+    }
+}
+
+private struct MapCrowdedKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var mapCrowded: Bool {
+        get { self[MapCrowdedKey.self] }
+        set { self[MapCrowdedKey.self] = newValue }
     }
 }
 

@@ -232,6 +232,8 @@ struct MapView: View {
     
     /// All players that should be displayed
     @State private var annotations: [PlayerAnnotation] = []
+    /// Alle Spieler in der Nähe laut Server (auf der Karte stehen höchstens die 30 nächsten)
+    @State private var nearbyTotal = 0
 
     /// Rank name -> rank color, used to tint player pins on the map.
     @State private var rankColorsByName: [String: Color] = [:]
@@ -297,6 +299,8 @@ struct MapView: View {
         ZStack {
             // Map-Ebene
             mapLayer
+                // Voller Schulhof: Figuren-Animationen sparsamer, damit die Karte flüssig bleibt
+                .environment(\.mapCrowded, annotations.count > MapCrowd.threshold)
 
             VStack {
                 HStack {
@@ -326,7 +330,7 @@ struct MapView: View {
                         }
 
                         if showNearbyText {
-                            let count = annotations.count
+                            let count = max(nearbyTotal, annotations.count)
                             let text: String = {
                                 switch count {
                                 case 0:  return "Noch keine Spieler in deiner Nähe"
@@ -2124,12 +2128,12 @@ struct MapView: View {
     @MainActor
     private func refreshNearbyPlayers(at coordinate: CLLocationCoordinate2D) async {
         do {
-            let players = try await playerService.loadNearbyPlayers(
-                currentPlayerId: ownPlayerId,
+            let (players, total) = try await playerService.loadNearbyWithTotal(
                 latitude: coordinate.latitude,
                 longitude: coordinate.longitude,
                 radius: 200.0
             )
+            nearbyTotal = total
 
             // Der eigene Spieler kommt mit – der hat schon seinen eigenen Pin
             let updated = players.filter { $0.id != ownPlayerId && MapPlayerFilter.isVisible(name: $0.name) }.compactMap { p -> PlayerAnnotation? in

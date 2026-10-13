@@ -72,10 +72,28 @@ final class PlayerLocationService {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
 
-        let (data, _) = try await API.data(for: request)
-        return try JSONDecoder().decode([PlayerDTO].self, from: data)
+        return try await loadNearby(request: request).players
     }
-    
+
+    /// Spieler in der Nähe plus Gesamtzahl: der Server schickt höchstens die 30 nächsten,
+    /// die echte Anzahl steht im Header X-Nearby-Total (z. B. 187 auf dem Schulhof).
+    func loadNearbyWithTotal(latitude: Double, longitude: Double, radius: Double) async throws -> (players: [PlayerDTO], total: Int) {
+        var components = URLComponents(url: baseURL.appendingPathComponent("nearby"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "latitude", value: String(latitude)),
+            URLQueryItem(name: "longitude", value: String(longitude)),
+            URLQueryItem(name: "radius", value: String(radius))
+        ]
+        return try await loadNearby(request: URLRequest(url: components.url!))
+    }
+
+    private func loadNearby(request: URLRequest) async throws -> (players: [PlayerDTO], total: Int) {
+        let (data, response) = try await API.data(for: request)
+        let players = try JSONDecoder().decode([PlayerDTO].self, from: data)
+        let header = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "X-Nearby-Total")
+        return (players, header.flatMap(Int.init) ?? players.count)
+    }
+
 
     /// Loads a player by id (Spieler per ID laden)
     func loadPlayerById(id: String) async throws -> PlayerDTO {

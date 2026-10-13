@@ -58,6 +58,7 @@ class GameSocketTest {
 
     @BeforeEach
     void cleanState() {
+        GameSocket.resetPositionThrottle();
         GameSocket.resultWait = GameSocket.DEFAULT_RESULT_WAIT;
         GameSocket.knowledgeTimeLimit = GameSocket.DEFAULT_KNOWLEDGE_TIME_LIMIT;
         GameSocket.quizRoundTime = GameSocket.DEFAULT_QUIZ_ROUND_TIME;
