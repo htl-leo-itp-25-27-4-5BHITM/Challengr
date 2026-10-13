@@ -53,15 +53,15 @@ final class MapVibeTests: XCTestCase {
         }
     }
 
-    func testOnlyTestAppsAreShownOnTheMap() {
-        XCTAssertTrue(MapPlayerFilter.isVisible(name: "test"))
-        XCTAssertTrue(MapPlayerFilter.isVisible(name: " CookieClicker "))
-        XCTAssertFalse(MapPlayerFilter.isVisible(name: "Gegner10"))
+    func testAllPlayersAreShownUnlessADemoFilterIsSet() {
+        XCTAssertTrue(MapPlayerFilter.allowedNames.isEmpty, "TestFlight: alle Spieler in der Nähe sichtbar")
+        XCTAssertTrue(MapPlayerFilter.isVisible(name: "bin_der_dominik"))
 
         let saved = MapPlayerFilter.allowedNames
         defer { MapPlayerFilter.allowedNames = saved }
-        MapPlayerFilter.allowedNames = []
-        XCTAssertTrue(MapPlayerFilter.isVisible(name: "Gegner10"), "leere Liste = alle zeigen")
+        MapPlayerFilter.allowedNames = ["test", "cookieclicker"]
+        XCTAssertTrue(MapPlayerFilter.isVisible(name: " CookieClicker "))
+        XCTAssertFalse(MapPlayerFilter.isVisible(name: "Gegner10"), "Demo-Filter blendet andere aus")
     }
 
     func testMapIsTilted() {

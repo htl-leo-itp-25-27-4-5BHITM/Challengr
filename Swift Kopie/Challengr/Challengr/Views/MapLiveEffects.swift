@@ -74,10 +74,10 @@ enum MapSprites {
     }
 }
 
-/// Wer auf der Karte angezeigt wird. Für die Demo nur die beiden Test-Apps;
-/// leer lassen, um wieder alle Spieler zu zeigen.
+/// Wer auf der Karte angezeigt wird. Leer = alle Spieler in der Nähe (TestFlight/Live).
+/// Für eine Demo mit nur bestimmten Konten hier Namen eintragen.
 enum MapPlayerFilter {
-    static var allowedNames: [String] = ["test", "cookieclicker"]
+    static var allowedNames: [String] = []
 
     static func isVisible(name: String) -> Bool {
         guard !allowedNames.isEmpty else { return true }
