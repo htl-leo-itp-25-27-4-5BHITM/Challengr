@@ -118,21 +118,21 @@ Kubernetes-Secret `challengr-secrets`. Verloren? `./scripts/rotate-secrets.sh` s
 
 ## 5. Offene Punkte (in dieser Reihenfolge)
 
+**Der öffentliche TestFlight-Test läuft:** Neuester Build ist der externen Gruppe „Schule“ zugewiesen, der
+öffentliche Link ist aktiv, Schüler spielen bereits.
+
 Erledigt am 13.10.: hängende Keycloak-Konten freigeschaltet, Passwort von `test` geändert, 2FA für den
 Keycloak-Admin eingerichtet, Kontakt-Mail bestätigt (`challengrapp.official@gmail.com`), alles gepusht,
-**Zustimmung der Schule liegt vor**, **Test mit zwei iPhones durchgeführt** (Checkliste Teil C/D).
+Zustimmung der Schule liegt vor, Test mit zwei iPhones durchgeführt (Checkliste Teil C/D).
 
-1. **TestFlight:** Build `2610131028` (oder einen neueren) der externen Gruppe „Schule“ zuweisen
-   (*Schule → Builds → +*). **Bewusst aufgeschoben**, bis weitere Änderungen dazukommen – dann neu hochladen
-   (`./scripts/upload-testflight.sh 9CK2N38H9M`) und den neuesten Build zuweisen.
-2. **Tägliches DB-Backup** fehlt noch (kein CronJob im Namespace) – z. B. Kubernetes-CronJob mit `pg_dump`,
-   7 Tage aufbewahren. Bis dahin vor größeren Änderungen manuell sichern (siehe Befehle).
-3. **Mailserver in Keycloak** fehlt noch (Realm **challengr** → Realm settings → Email; z. B. Gmail mit
-   App-Passwort, `smtp.gmail.com:587`, StartTLS; *Save*, dann *Test connection*). Danach „Verify email“ wieder an.
-   Ohne Mailserver geht „Passwort vergessen“ nicht.
-4. **Öffentlicher Link:** In der Gruppe „Schule“ → *Tester:innen* → „Öffentlichen Link aktivieren“, Limit setzen
-   (z. B. 300). Erst nach Punkt 1 verteilen.
-5. Später (App Store): B5 Prüfer-Zugang ohne zweiten Spieler (Bot/Übungsmodus), eigener Server + Domain,
+1. **Tägliches DB-Backup – dringend**, weil jetzt echte Spielerdaten anfallen (kein CronJob im Namespace).
+   Z. B. Kubernetes-CronJob mit `pg_dump`, 7 Tage aufbewahren. Bis dahin regelmäßig manuell sichern (siehe Befehle).
+2. **Mailserver in Keycloak** (Realm **challengr** → Realm settings → Email; z. B. Gmail mit App-Passwort,
+   `smtp.gmail.com:587`, StartTLS; *Save*, dann *Test connection*). Danach „Verify email“ wieder an.
+   Ohne Mailserver geht „Passwort vergessen“ nicht – solche Fälle im Keycloak-Admin manuell zurücksetzen.
+3. **Laufender Betrieb:** Meldungen im Dashboard („Meldungen“) regelmäßig ansehen; TestFlight-Feedback/Crashs in
+   App Store Connect prüfen; Build läuft nach 90 Tagen ab → vorher neu hochladen und der Gruppe „Schule“ zuweisen.
+4. Später (App Store): B5 Prüfer-Zugang ohne zweiten Spieler (Bot/Übungsmodus), eigener Server + Domain,
    EU-Händlerstatus in App Store Connect, WebApp mit Login.
 
 **Ablauf:** TestFlight-Builds laufen nach 90 Tagen ab → vorher neu hochladen.
