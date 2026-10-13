@@ -93,7 +93,7 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 **Leo Cloud** – alles läuft mit dem Stand `783988a`:
 - Backend, Dashboard, Keycloak, Postgres laufen; WebApp aus.
 - Postgres- und Keycloak-Admin-Passwort am 12.10. neu gesetzt (`rotate-secrets.sh`).
-- Keycloak: Selbst-Registrierung **an**, „Verify email“ **aus** (es ist kein Mailserver eingetragen).
+- Keycloak: Selbst-Registrierung **an**, „Verify email“ **aus** (es ist kein Mailserver eingetragen). Admin mit 2FA, Benutzer `test` (Admin-Rolle) mit neuem Passwort.
 - Backup vom 12.10. in `~/Developer/ChallengrProjekt/Backups/` (lokal, nicht im Repo).
 
 **Apple:**
@@ -102,8 +102,7 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 - TestFlight-Gruppen: intern **„Team“**, extern **„Schule“** (2 Tester). Testinformationen inkl. `applereview`-Login ausgefüllt.
 - Builds: `2610121422` (Im Test, alt – Kartenfilter-Bug), `2610130934` (Kartenfix), **`2610131028`** (Kartenfix + viele Spieler) – **dieser muss noch der Gruppe „Schule“ zugewiesen werden**.
 
-**Git:** `feature/liga-modus` und `main` auf GitHub stehen auf `3399ed1`.
-Lokal **4 Commits ungepusht**: `1a98552`, `892b3a0`, `360e1da`, `783988a`.
+**Git:** `feature/liga-modus` und `main` auf GitHub sind auf dem aktuellen Stand (alles gepusht).
 
 **Wo die Passwörter liegen** (nie im Repo):
 | Schlüsselbund-Eintrag (macOS) | Wofür |
@@ -119,16 +118,18 @@ Kubernetes-Secret `challengr-secrets`. Verloren? `./scripts/rotate-secrets.sh` s
 
 ## 5. Offene Punkte (in dieser Reihenfolge)
 
-1. **TestFlight:** Build `2610131028` der externen Gruppe „Schule“ zuweisen (*Schule → Builds → +*), Tester aktualisieren in TestFlight.
-2. **Keycloak:** Bei `jui`, `julian.paul.richter@gmail.com`, `tryharder`, `xoxo` unter *Users* die offene Aktion „Verify Email“ entfernen (sie hängen sonst beim Login).
-3. **4 Commits pushen** (nach Rückfrage) – und `feature/liga-modus` nach `main` bringen.
-4. **E-Mail klären:** In Datenschutzerklärung und als Feedback-Mail steht `challengrapp.official@gmail.com`; in den Mails des Nutzers taucht auch `challengr.game@gmail.com` auf. Welche wird wirklich gelesen? Ggf. in `Dashboard/public/datenschutz.html` ändern und `./scripts/deploy-cloud.sh dashboard`.
-5. **Mailserver in Keycloak** (Realm settings → Email; z. B. Gmail mit App-Passwort, `smtp.gmail.com:587`, StartTLS). Danach „Verify email“ wieder an. Ohne Mailserver geht auch „Passwort vergessen“ nicht.
-6. **Sicherheit:** Passwort von Keycloak-Benutzer `test` ändern (hat die Admin-Rolle, Passwort ist `test`). 2FA für den Keycloak-Admin einrichten (*Users → admin → Required user actions → Configure OTP*).
-7. **Checkliste Teil C:** Zustimmung der Schule, Ansprechperson, **tägliches DB-Backup** (z. B. Kubernetes-CronJob mit `pg_dump`).
-8. **Checkliste Teil D:** Abnahmetest mit zwei echten iPhones (Abstand, Unsichtbar, Quiz-Show, Friendly, Blockieren, Konto löschen, Backend-Neustart).
-9. **Öffentlicher Link:** In der Gruppe „Schule“ → *Tester:innen* → „Öffentlichen Link aktivieren“, Limit setzen (z. B. 300). Erst nach 1., 7. und einem eigenen Test verteilen.
-10. Später (App Store): B5 Prüfer-Zugang ohne zweiten Spieler (Bot/Übungsmodus), eigener Server + Domain, EU-Händlerstatus in App Store Connect, WebApp mit Login.
+Erledigt am 13.10.: hängende Keycloak-Konten freigeschaltet, Passwort von `test` geändert, 2FA für den
+Keycloak-Admin eingerichtet, Kontakt-Mail bestätigt (`challengrapp.official@gmail.com`), alles gepusht.
+
+1. **TestFlight:** Build `2610131028` (oder einen neueren) der externen Gruppe „Schule“ zuweisen
+   (*Schule → Builds → +*). **Bewusst aufgeschoben**, bis weitere Änderungen dazukommen – dann neu hochladen
+   (`./scripts/upload-testflight.sh 9CK2N38H9M`) und den neuesten Build zuweisen.
+2. **Mailserver in Keycloak** (Realm settings → Email; z. B. Gmail mit App-Passwort, `smtp.gmail.com:587`, StartTLS).
+   Danach „Verify email“ wieder an. Ohne Mailserver geht auch „Passwort vergessen“ nicht.
+3. **Checkliste Teil C:** Zustimmung der Schule, Ansprechperson, **tägliches DB-Backup** (z. B. Kubernetes-CronJob mit `pg_dump`).
+4. **Checkliste Teil D:** Abnahmetest mit zwei echten iPhones (Abstand, Unsichtbar, Quiz-Show, Friendly, Blockieren, Konto löschen, Backend-Neustart).
+5. **Öffentlicher Link:** In der Gruppe „Schule“ → *Tester:innen* → „Öffentlichen Link aktivieren“, Limit setzen (z. B. 300). Erst nach 1., 3. und einem eigenen Test verteilen.
+6. Später (App Store): B5 Prüfer-Zugang ohne zweiten Spieler (Bot/Übungsmodus), eigener Server + Domain, EU-Händlerstatus in App Store Connect, WebApp mit Login.
 
 **Ablauf:** TestFlight-Builds laufen nach 90 Tagen ab → vorher neu hochladen.
 
