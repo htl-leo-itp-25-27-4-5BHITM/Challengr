@@ -65,7 +65,7 @@ public class BattleService {
         player.setConsecutiveConflicts(current);
         int penalty = current >= 3 ? (current - 2) * 10 : 0;
         if (penalty > 0) {
-            player.setPoints(player.getPoints() - penalty);
+            player.setPoints(Math.max(0, player.getPoints() - penalty));
         }
         System.out.printf("Konflikt für %s: %d in Folge, Abzug %d%n", player.getName(), current, penalty);
         return penalty;
@@ -354,6 +354,9 @@ public class BattleService {
             Challenges challenge = challengeRepository.findById(challengeId);
             if (challenge == null) {
                 throw new IllegalArgumentException("challenge not found");
+            }
+            if (ChallengeRepository.isDisabled(challenge)) {
+                throw new BattleRejectedException("Diese Challenge ist gerade nicht verfügbar");
             }
             return challenge;
         }

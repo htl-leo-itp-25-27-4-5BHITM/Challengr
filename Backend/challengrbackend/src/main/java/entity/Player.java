@@ -170,7 +170,7 @@ public class Player {
     }
 
     public void setTrophies(int trophies) {
-        this.trophies = trophies;
+        this.trophies = Math.max(0, trophies); // nie ins Minus
         this.highestTrophies = Math.max(highestTrophies, trophies);
     }
 

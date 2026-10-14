@@ -19,13 +19,24 @@ public class ChallengeRepository {
         return query.getResultList();
     }
 
+    /**
+     * Vorübergehend abgeschaltete Challenges (Textanfang): tauchen weder in der Auswahl noch in der Liga auf.
+     * Foto-Beweis: der Farbvergleich der Kamera ist noch nicht zuverlässig.
+     */
+    static final List<String> DISABLED_PREFIXES = List.of("Foto-Beweis");
+
+    public static boolean isDisabled(Challenges challenge) {
+        String text = challenge.getText();
+        return text != null && DISABLED_PREFIXES.stream().anyMatch(text::startsWith);
+    }
+
     public List<Challenges> findChallengesByKat(String kategorie) {
         var query = em.createQuery(
                 "SELECT c FROM Challenges c WHERE c.challengeCategory.name = :categorie",
                 Challenges.class
         );
         query.setParameter("categorie", kategorie);
-        return query.getResultList();
+        return query.getResultList().stream().filter(c -> !isDisabled(c)).toList();
     }
 
     public Challenges findById(Long id) {
