@@ -44,6 +44,33 @@ final class KeycloakAuthService: NSObject, ObservableObject {
         NotificationCenter.default.addObserver(forName: .authExpired, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.handleExpiredLogin() }
         }
+        // Noch angemeldet vom letzten Mal? Dann ohne Klick wieder rein.
+        if !isAuthenticated, TokenStore.load(TokenStore.refreshTokenKey) != nil {
+            isLoading = true
+            Task { await restoreSession() }
+        }
+    }
+
+    /// Mit dem gespeicherten Refresh-Token still neu anmelden (kein Browser).
+    func restoreSession() async {
+        refreshToken = TokenStore.load(TokenStore.refreshTokenKey)
+        idToken = TokenStore.load(TokenStore.idTokenKey)
+        guard await refresh(), let accessToken else {
+            // abgelaufen oder offline → normaler Login (ungültige Tokens löscht refresh() selbst)
+            refreshToken = nil
+            isLoading = false
+            return
+        }
+        parseToken(accessToken)
+        if playerId == nil, let keycloakUserId,
+           let cached = UserDefaults.standard.string(forKey: "playerId.\(keycloakUserId)") {
+            playerId = cached
+        }
+        if playerId == nil {
+            await ensurePlayerId()
+        }
+        isAuthenticated = true
+        isLoading = false
     }
 
     private func handleExpiredLogin() {
@@ -78,7 +105,8 @@ final class KeycloakAuthService: NSObject, ObservableObject {
             .init(name: "response_type",         value: "code"),
             .init(name: "client_id",             value: clientId),
             .init(name: "redirect_uri",          value: redirectURI),
-            .init(name: "scope",                 value: "openid profile email"),
+            // offline_access: Refresh-Token bleibt auch nach Wochen gültig (sonst nach 30 min ohne App weg)
+            .init(name: "scope",                 value: "openid profile email offline_access"),
             .init(name: "state",                 value: state),
             .init(name: "code_challenge",        value: challenge),
             .init(name: "code_challenge_method", value: "S256"),
@@ -156,8 +184,14 @@ final class KeycloakAuthService: NSObject, ObservableObject {
     /// Neue Tokens übernehmen und an alle Anfragen weitergeben.
     private func apply(_ json: TokenResponse) {
         accessToken = json.access_token
-        if let id = json.id_token { idToken = id }
-        if let refresh = json.refresh_token { refreshToken = refresh }
+        if let id = json.id_token {
+            idToken = id
+            TokenStore.save(id, for: TokenStore.idTokenKey)
+        }
+        if let refresh = json.refresh_token {
+            refreshToken = refresh
+            TokenStore.save(refresh, for: TokenStore.refreshTokenKey)
+        }
         AuthSession.shared.update(accessToken: json.access_token, expiresIn: json.expires_in.map(TimeInterval.init))
         AuthSession.shared.setRefresher { [weak self] in
             await self?.refresh() ?? false
@@ -179,7 +213,12 @@ final class KeycloakAuthService: NSObject, ObservableObject {
         req.httpBody = body.query?.data(using: .utf8)
         do {
             let (data, response) = try await URLSession.shared.data(for: req)
-            guard (response as? HTTPURLResponse)?.statusCode == 200 else { return false }
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            if (400..<500).contains(status) {
+                // Keycloak lehnt das Token ab (abgelaufen, widerrufen) – nicht mehr verwenden
+                TokenStore.clear()
+            }
+            guard status == 200 else { return false }
             apply(try JSONDecoder().decode(TokenResponse.self, from: data))
             return true
         } catch {
@@ -248,6 +287,7 @@ final class KeycloakAuthService: NSObject, ObservableObject {
 
     // MARK: - Logout
     func logout() {
+        revokeRefreshToken()
         guard let idToken else {
             clearSession()
             return
@@ -287,7 +327,24 @@ final class KeycloakAuthService: NSObject, ObservableObject {
         clearSession()
     }
 
+    /// Offline-Token bei Keycloak ungültig machen (das normale Logout beendet nur die Browser-Sitzung).
+    private func revokeRefreshToken() {
+        guard let refreshToken else { return }
+        var body = URLComponents()
+        body.queryItems = [
+            .init(name: "client_id",       value: clientId),
+            .init(name: "token",           value: refreshToken),
+            .init(name: "token_type_hint", value: "refresh_token"),
+        ]
+        var req = URLRequest(url: URL(string: "\(keycloakBase)/protocol/openid-connect/revoke")!)
+        req.httpMethod = "POST"
+        req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        req.httpBody = body.query?.data(using: .utf8)
+        Task { _ = try? await URLSession.shared.data(for: req) }
+    }
+
     private func clearSession() {
+        TokenStore.clear()
         AuthSession.shared.clear()
         accessToken     = nil
         refreshToken    = nil
