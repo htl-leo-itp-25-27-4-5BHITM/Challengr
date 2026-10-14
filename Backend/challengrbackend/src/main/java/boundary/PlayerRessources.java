@@ -419,8 +419,12 @@ public class PlayerRessources {
                 .filter(b -> control.BattleMode.from(b.getType()) == control.BattleMode.RANKED_KNOWLEDGE)
                 .count();
         int checkins = (int) hotspotRepository.countForPlayer(player.getId());
-        int bestTrophies = player.getTrophies();
-        return new CharacterCatalog.Progress(won.size(), knowledgeWins, checkins, bestTrophies);
+        return new CharacterCatalog.Progress(won.size(), knowledgeWins, checkins, player.getHighestTrophies());
+    }
+
+    /** Frei nach den Regeln – oder schon gewählt (z.B. vor einer Regeländerung freigeschaltet), die bleibt dem Spieler. */
+    private static boolean isUnlockedFor(Player player, CharacterCatalog.Entry entry, CharacterCatalog.Progress progress) {
+        return CharacterCatalog.isUnlocked(entry, progress) || entry.id().equals(player.getCharacter());
     }
 
     /** Eine Figur mit Freischalt-Stand für diesen Spieler. */
@@ -438,7 +442,7 @@ public class PlayerRessources {
         return CharacterCatalog.ALL.stream()
                 .map(e -> new CharacterUnlockDTO(e.id(), e.name(), e.requirement().name(), e.required(),
                         Math.min(progress.of(e.requirement()), Math.max(e.required(), 0)),
-                        CharacterCatalog.isUnlocked(e, progress), e.id().equals(player.getCharacter())))
+                        isUnlockedFor(player, e, progress), e.id().equals(player.getCharacter())))
                 .toList();
     }
 
@@ -455,7 +459,7 @@ public class PlayerRessources {
         String character = body == null ? null : body.get("character");
         var entry = CharacterCatalog.find(character)
                 .orElseThrow(() -> new WebApplicationException("Unbekannte Figur: " + character, 400));
-        if (!CharacterCatalog.isUnlocked(entry, progressOf(player))) {
+        if (!isUnlockedFor(player, entry, progressOf(player))) {
             throw new WebApplicationException(entry.name() + " ist noch gesperrt", 403);
         }
         player.setCharacter(entry.id());

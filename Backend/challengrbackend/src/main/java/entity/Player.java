@@ -25,6 +25,10 @@ public class Player {
     @Column(columnDefinition = "integer default 200 not null")
     private int trophies = 200;
 
+    /** Höchster je erreichter Trophäen-Stand – Rang-Figuren bleiben frei, auch wenn man wieder abrutscht. */
+    @Column(columnDefinition = "integer default 0 not null")
+    private int highestTrophies = 200;
+
     private int consecutiveConflicts = 0;
 
     @Column(length = 255)
@@ -167,6 +171,12 @@ public class Player {
 
     public void setTrophies(int trophies) {
         this.trophies = trophies;
+        this.highestTrophies = Math.max(highestTrophies, trophies);
+    }
+
+    /** Höchster je erreichter Stand (mindestens der aktuelle – ältere Konten haben hier noch 0). */
+    public int getHighestTrophies() {
+        return Math.max(highestTrophies, trophies);
     }
 
     /** Liga-Trophäen für einen Modus: beide Liga-Modi teilen sich einen Stand, Friendly → 0. */
@@ -175,7 +185,7 @@ public class Player {
     }
 
     public void setTrophiesFor(control.BattleMode mode, int value) {
-        if (mode.isRanked()) trophies = value;
+        if (mode.isRanked()) setTrophies(value);
     }
 
     public Instant getLastSeenAt() {

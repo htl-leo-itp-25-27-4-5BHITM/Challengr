@@ -19,12 +19,15 @@ public class RankRepository {
                 .getResultList();
     }
 
-    // Rank passend zu bestimmten Punkten finden
+    // Rank passend zu bestimmten Trophäen finden; über dem höchsten Rang bleibt man im höchsten (nach oben offen)
     public Rank rankForPoints(int points, List<Rank> ranks) {
         return ranks.stream()
                 .filter(r -> points >= r.getMin() && points <= r.getMax())
                 .findFirst()
-                .orElse(null);
+                .orElseGet(() -> ranks.stream()
+                        .filter(r -> points >= r.getMin())
+                        .max(Comparator.comparingInt(Rank::getMin))
+                        .orElse(null));
     }
 
     // Index im sortierten Rank‑Array (für getOrder-Ersatz)

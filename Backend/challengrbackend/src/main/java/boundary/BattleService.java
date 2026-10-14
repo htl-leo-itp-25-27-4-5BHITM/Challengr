@@ -424,56 +424,10 @@ public class BattleService {
             return;
         }
 
-        // alle Ranks laden und nach min sortieren
-        List<Rank> ranks = rankRepository.getAllRanks()
-                .stream()
-                .sorted(Comparator.comparingInt(Rank::getMin))
-                .toList();
-
-        Rank winnerRank = rankRepository.rankForPoints(winner.trophiesFor(mode), ranks);
-        Rank loserRank  = rankRepository.rankForPoints(loser.trophiesFor(mode), ranks);
-
-        int rankDiff = 0;
-        int absDiff  = 0;
-        if (winnerRank != null && loserRank != null) {
-            int winnerIndex = ranks.indexOf(winnerRank);
-            int loserIndex  = ranks.indexOf(loserRank);
-            rankDiff = winnerIndex - loserIndex;   // 0 = gleich, <0 = Gewinner war tiefer, >0 = höher
-            absDiff  = Math.abs(rankDiff);
-        }
-
-        int baseWin  = 30;    // Standard +30
-        int baseLoss = -20;   // Standard -20
-        double factor = 0.05; // 5 % pro Rangunterschied
-
-        int winnerDelta;
-        int loserDelta;
-
-        if (rankDiff == 0) {
-            // gleicher Rank
-            winnerDelta = baseWin;
-            loserDelta  = baseLoss;
-
-        } else if (rankDiff < 0) {
-            // Gewinner war UNTERLEGEN (tieferer Rank)
-            double bonusWin  = baseWin  * factor * absDiff;
-            double bonusLoss = baseLoss * factor * absDiff; // baseLoss ist negativ → stärker ins Minus
-
-            winnerDelta = (int) Math.round(baseWin  + bonusWin);
-            loserDelta  = (int) Math.round(baseLoss + bonusLoss);
-
-        } else {
-            // Gewinner war FAVORIT (höherer Rank)
-            double penaltyWin  = baseWin  * factor * absDiff;
-            double penaltyLoss = baseLoss * factor * absDiff; // baseLoss ist negativ → Verlust wird kleiner (Richtung 0)
-
-            winnerDelta = (int) Math.round(baseWin  - penaltyWin);
-            loserDelta  = (int) Math.round(baseLoss - penaltyLoss);
-        }
-
-        // Trophäen nie unter 0
         int loserBefore = loser.trophiesFor(mode);
-        loserDelta = Math.max(loserDelta, -loserBefore);
+        var trophyDelta = control.TrophyMath.delta(winner.trophiesFor(mode), loserBefore);
+        int winnerDelta = trophyDelta.winnerDelta();
+        int loserDelta = trophyDelta.loserDelta();
         winner.setTrophiesFor(mode, winner.trophiesFor(mode) + winnerDelta);
         loser.setTrophiesFor(mode, loserBefore + loserDelta);
         // Sieger verdient seinen Trophäen-Gewinn auch als Punkte (Währung)

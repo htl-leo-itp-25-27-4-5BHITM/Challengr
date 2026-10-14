@@ -19,7 +19,7 @@ public final class CharacterCatalog {
         KNOWLEDGE_WINS,
         /** Check-ins an Hotspots */
         CHECKINS,
-        /** Trophäen in der besseren Liga */
+        /** Rang auf der Trophy Road: höchster je erreichter Trophäen-Stand (required = Untergrenze des Rangs) */
         TROPHIES
     }
 
@@ -43,12 +43,13 @@ public final class CharacterCatalog {
             new Entry("maedchen", "Mädchen", Requirement.NONE, 0),
             new Entry("sir-brecht", "Sir Brecht", Requirement.WINS, 1),
             new Entry("ragnar", "Ragnar", Requirement.WINS, 3),
-            new Entry("hayato", "Hayato", Requirement.WINS, 5),
-            new Entry("kage", "Kage", Requirement.WINS, 10),
-            new Entry("kai", "Kai", Requirement.WINS, 20),
             new Entry("merlo", "Merlo", Requirement.KNOWLEDGE_WINS, 3),
             new Entry("lyra", "Lyra", Requirement.CHECKINS, 5),
-            new Entry("kaeptn-rex", "Käpt'n Rex", Requirement.TROPHIES, 350)
+            // Rang-Belohnungen der Trophy Road (Grenzen wie in reference-data.sql)
+            new Entry("kaeptn-rex", "Käpt'n Rex", Requirement.TROPHIES, 350),  // Contender
+            new Entry("hayato", "Hayato", Requirement.TROPHIES, 600),          // Tryhard
+            new Entry("kai", "Kai", Requirement.TROPHIES, 950),                // Brawler
+            new Entry("kage", "Kage", Requirement.TROPHIES, 1400)              // Dueler
     );
 
     private CharacterCatalog() {}

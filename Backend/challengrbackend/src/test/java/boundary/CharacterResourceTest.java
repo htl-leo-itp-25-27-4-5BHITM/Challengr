@@ -14,6 +14,20 @@ import static org.junit.jupiter.api.Assertions.*;
 @QuarkusTest
 class CharacterResourceTest {
 
+    @jakarta.inject.Inject
+    control.PlayerRepository playerRepository;
+
+    private void setTrophies(String id, int trophies) {
+        io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
+                .run(() -> playerRepository.findById(id).setTrophies(trophies));
+    }
+
+    private Map<String, Object> character(String player, String characterId) {
+        List<Map<String, Object>> list = Login.as(player).when().get("/api/players/" + player + "/characters")
+                .then().statusCode(200).extract().jsonPath().getList("$");
+        return list.stream().filter(c -> characterId.equals(c.get("id"))).findFirst().orElseThrow();
+    }
+
     private String newPlayer(String id, double lat, double lon) {
         Login.as(id).contentType("application/json")
                 .body("{\"id\":\"" + id + "\",\"name\":\"" + id + "\",\"latitude\":" + lat + ",\"longitude\":" + lon + "}")
@@ -71,5 +85,24 @@ class CharacterResourceTest {
         Login.as(me).when().get("/api/players/nearby?playerId=" + me + "&latitude=47.1&longitude=15.1&radius=200")
                 .then().statusCode(200)
                 .body("find { it.id == '" + other + "' }.character", is("maedchen"));
+    }
+
+    @Test
+    void rankCharactersUnlockAtTheirRankAndStayUnlockedAfterDropping() {
+        String id = newPlayer("char-rank-" + System.nanoTime(), 48.3, 14.3);
+        assertEquals("TROPHIES", character(id, "hayato").get("requirement"));
+        assertEquals(600, character(id, "hayato").get("required"));
+        assertEquals(Boolean.FALSE, character(id, "hayato").get("unlocked"));
+
+        setTrophies(id, 640);  // Tryhard erreicht
+        assertEquals(Boolean.TRUE, character(id, "hayato").get("unlocked"));
+        assertEquals(Boolean.FALSE, character(id, "kai").get("unlocked"), "Kai erst ab Brawler");
+
+        setTrophies(id, 420);  // wieder abgerutscht
+        assertEquals(Boolean.TRUE, character(id, "hayato").get("unlocked"), "einmal erreicht bleibt frei");
+        assertEquals(600, character(id, "hayato").get("progress"));
+        Login.as(id).contentType("application/json").body(body("hayato"))
+                .when().put("/api/players/" + id + "/character")
+                .then().statusCode(200).body("character", is("hayato"));
     }
 }
