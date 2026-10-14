@@ -1,78 +1,108 @@
 import SwiftUI
 
-/// Simple public friend profile view (MVP).
-/// Shows a placeholder avatar plus name, points and rank based on `PlayerDTO`.
+/// Öffentliches Profil eines Freundes: Figur, Rang, Trophäen und Statistik – im dunklen Spiel-Look.
 struct FriendProfileView: View {
     let friend: PlayerDTO
     @Environment(\.dismiss) private var dismiss
 
-    private let challengrDark = Color(red: 0.12, green: 0.00, blue: 0.05)
+    @State private var stats: PlayerStatsDTO?
+    @State private var rank: TrophyRank?
+
+    private let playerService = PlayerLocationService()
+    private let rankService = RankService()
+
+    private var character: GameCharacter { GameCharacter.from(serverId: friend.character) ?? .opponent }
+    private var rankColor: Color { rank?.uiColor ?? .gray }
+
+    private var winRateText: String {
+        guard let stats, stats.totalChallenges > 0 else { return "–" }
+        return "\(Int((Double(stats.wonChallenges) / Double(stats.totalChallenges) * 100).rounded()))%"
+    }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 110, height: 110)
-                    .foregroundColor(challengrDark.opacity(0.75))
-                    .padding(10)
-                    .background(challengrDark.opacity(0.08))
-                    .clipShape(Circle())
-                    .padding(.top, 12)
+            VStack(spacing: 14) {
+                hero
 
-                Text(friend.name)
-                    .font(.system(size: 26, weight: .bold))
-                    .foregroundColor(challengrDark)
-
-                Text("\(friend.trophies ?? 0) Trophäen")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-
-                VStack(spacing: 12) {
-                    HStack(spacing: 12) {
-                        FriendStatBox(title: "Rang", value: friend.rankName)
-                        FriendStatBox(title: "Trophäen", value: "\(friend.trophies ?? 0)")
-                    }
+                HStack(spacing: 10) {
+                    GameStatTile(icon: "trophy.fill", value: "\(friend.trophies ?? 0)", title: "Trophäen", color: .challengrYellow)
+                    GameStatTile(icon: "flag.checkered", value: stats.map { "\($0.totalChallenges)" } ?? "–", title: "Battles", color: .white)
+                    GameStatTile(icon: "star.fill", value: stats.map { "\($0.wonChallenges)" } ?? "–", title: "Siege", color: .orange)
+                    GameStatTile(icon: "percent", value: winRateText, title: "Siegquote", color: .challengrGreen)
                 }
-                .padding(.top, 8)
-
-                Spacer(minLength: 24)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
             .padding(.bottom, 24)
         }
-        .background(Color(.systemGroupedBackground))
-        .navigationTitle("Profil")
-        .navigationBarTitleDisplayMode(.inline)
+        .background(GameStyle.background.ignoresSafeArea())
+        .navigationBarBackButtonHidden(true)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button { dismiss() } label: {
+                    Label("Zurück", systemImage: "chevron.left")
+                        .labelStyle(.titleAndIcon)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
-                PlayerSafetyMenu(playerId: friend.id, playerName: friend.name, onBlocked: { dismiss() }, tint: .primary)
+                PlayerSafetyMenu(playerId: friend.id, playerName: friend.name, onBlocked: { dismiss() }, tint: .white)
             }
         }
+        .task { await load() }
     }
-}
 
-private struct FriendStatBox: View {
-    let title: String
-    let value: String
+    /// Figur auf einer Bühne in Rangfarbe, darunter Name und Rang.
+    private var hero: some View {
+        ZStack(alignment: .bottom) {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(RadialGradient(colors: [rankColor.opacity(0.55), Color.challengrDark.opacity(0.9)],
+                                     center: .top, startRadius: 10, endRadius: 300))
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(rankColor.opacity(0.6), lineWidth: 2)
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
+            VStack(spacing: 8) {
+                Image(character.imageName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 190)
+                    .shadow(color: .black.opacity(0.5), radius: 10, y: 6)
+                    .accessibilityLabel(character.displayName)
 
-            Text(value)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.primary)
+                Text(friend.name.uppercased())
+                    .font(.system(size: 26, weight: .black, design: .rounded))
+                    .tracking(1)
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+
+                HStack(spacing: 8) {
+                    Text(friend.rankName.uppercased())
+                        .font(.system(size: 12, weight: .black, design: .rounded))
+                        .tracking(1)
+                        .foregroundColor(.challengrDark)
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(Capsule().fill(rankColor))
+                    Label("\(friend.trophies ?? 0)", systemImage: "trophy.fill")
+                        .font(.system(size: 14, weight: .black, design: .rounded))
+                        .foregroundColor(.challengrYellow)
+                        .accessibilityLabel("\(friend.trophies ?? 0) Trophäen")
+                }
+                Text(character.displayName + " · " + character.tagline)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundColor(GameStyle.secondaryText)
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.06), radius: 6, x: 0, y: 3)
-        )
+        .frame(height: 330)
+    }
+
+    private func load() async {
+        async let statsAsync = try? playerService.loadPlayerStats(id: friend.id)
+        async let ranksAsync = try? rankService.loadRanks()
+        stats = await statsAsync
+        rank = (await ranksAsync)?.first { $0.name == friend.rankName }
     }
 }

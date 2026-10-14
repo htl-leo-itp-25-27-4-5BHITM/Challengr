@@ -127,6 +127,20 @@ final class PlayerLocationService {
         return try JSONDecoder().decode(PlayerDTO.self, from: data)
     }
 
+    /// Eigenen Namen ändern. Der Server prüft Länge, Zeichen, Schimpfwörter und ob es den Namen schon gibt.
+    func rename(id: String, to name: String) async throws -> PlayerDTO {
+        var request = URLRequest(url: baseURL.appendingPathComponent(id).appendingPathComponent("name"))
+        request.httpMethod = "PUT"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["name": name])
+        let (data, response) = try await API.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+            let message = String(data: data, encoding: .utf8).flatMap { $0.isEmpty ? nil : $0 }
+            throw RenameError(message: message ?? "Name konnte nicht gespeichert werden – bitte nochmal versuchen.")
+        }
+        return try JSONDecoder().decode(PlayerDTO.self, from: data)
+    }
+
     /// Loads daily streak (Tagesstreak laden)
     func loadPlayerStreak(id: String) async throws -> Int {
         let url = baseURL
@@ -236,6 +250,12 @@ extension PlayerLocationService {
         let dto = try JSONDecoder().decode(PlayerLoudnessBestDTO.self, from: data)
         return dto.bestLoudness
     }
+}
+
+/// Server hat den neuen Namen abgelehnt (Text kommt vom Server, z.B. "Den Namen gibt es schon …").
+struct RenameError: LocalizedError {
+    let message: String
+    var errorDescription: String? { message }
 }
 
 struct PlayerStatsDTO: Decodable {

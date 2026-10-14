@@ -13,6 +13,11 @@ struct SettingsView: View {
     @State private var confirmDelete = false
     @State private var isDeleting = false
     @State private var deleteError: String? = nil
+    /// Spielname vom Server (kann vom Keycloak-Benutzernamen abweichen)
+    @State private var ownName: String? = nil
+    @State private var showRename = false
+    @State private var newName = ""
+    @State private var renameMessage: String? = nil
     private let playerService = PlayerLocationService()
 
     var body: some View {
@@ -86,12 +91,20 @@ struct SettingsView: View {
                 }
 
                 Section(header: Text("Account")) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("Angemeldet als:")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                        Text(auth.playerName)
-                            .font(.headline)
+                    HStack {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Dein Name im Spiel")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                            Text(ownName ?? auth.playerName)
+                                .font(.headline)
+                        }
+                        Spacer()
+                        Button("Ändern") {
+                            newName = ownName ?? auth.playerName
+                            showRename = true
+                        }
+                        .disabled(ownName == nil)
                     }
                     
                     Button(role: .destructive) {
@@ -142,6 +155,19 @@ struct SettingsView: View {
             }
             .navigationTitle("Einstellungen")
             .task { await loadVisibility() }
+            .alert("Name ändern", isPresented: $showRename) {
+                TextField("Neuer Name", text: $newName)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                Button("Speichern") { rename() }
+                Button("Abbrechen", role: .cancel) {}
+            } message: {
+                Text("3–20 Zeichen: Buchstaben, Zahlen, Leerzeichen, _ . und -")
+            }
+            .alert(renameMessage ?? "", isPresented: Binding(get: { renameMessage != nil },
+                                                             set: { if !$0 { renameMessage = nil } })) {
+                Button("OK", role: .cancel) {}
+            }
             .navigationBarItems(trailing: Button("Fertig") {
                 dismiss()
             })
@@ -166,6 +192,21 @@ struct SettingsView: View {
     private func loadVisibility() async {
         guard let id = auth.playerId, let me = try? await playerService.loadPlayerById(id: id) else { return }
         isInvisible = me.invisible ?? false
+        ownName = me.name
+    }
+
+    private func rename() {
+        let wanted = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let id = auth.playerId, !wanted.isEmpty, wanted != ownName else { return }
+        Task {
+            do {
+                let me = try await playerService.rename(id: id, to: wanted)
+                ownName = me.name
+                renameMessage = "Du heißt jetzt „\(me.name)“."
+            } catch {
+                renameMessage = error.localizedDescription
+            }
+        }
     }
 
     private func setInvisible(_ invisible: Bool) {

@@ -411,6 +411,10 @@ struct MapView: View {
         .sheet(isPresented: $showChallengeView) {
             challengeSheet
         }
+        .onChange(of: showSettings) { _, shown in
+            // z.B. neuer Name aus den Einstellungen
+            if !shown { reloadOwnPlayerData() }
+        }
         .sheet(isPresented: $showSettings) {
             if let auth {
                 SettingsView(auth: auth)
