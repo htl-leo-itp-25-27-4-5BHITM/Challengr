@@ -226,7 +226,7 @@ struct MapView: View {
     @State private var hasCapturedInitialZoom = false
 
     let minDistance: CLLocationDistance = 200
-    let maxDistance: CLLocationDistance = 5000
+    let maxDistance: CLLocationDistance = 2500
 
     /// Wo zuletzt auf die Karte getippt wurde – kurze Welle als Rückmeldung.
     @State private var mapTaps: [MapTapMark] = []
@@ -675,8 +675,8 @@ struct MapView: View {
                 minimumDistance: minDistance,
                 maximumDistance: maxDistance
             ),
-            // Nur drehen: kein Zoomen, Verschieben oder Kippen (bleibt immer 3D, nie Draufsicht)
-            interactionModes: [.rotate]
+            // Drehen und Zoomen, aber kein Verschieben oder Kippen (bleibt immer 3D, nie Draufsicht)
+            interactionModes: [.rotate, .zoom]
         ) {
             /// 200m radius around ownplayer
             if let ownCoordinate {
@@ -812,8 +812,9 @@ struct MapView: View {
                         let center = ctx.camera.centerCoordinate
                         let deltaLat = abs(center.latitude - ownCoordinate.latitude)
                         let deltaLon = abs(center.longitude - ownCoordinate.longitude)
+                        // Zoomen verschiebt die Mitte (zum Finger hin) – zurück zum Spieler
                         if deltaLat > 0.00025 || deltaLon > 0.00025 {
-                            isFollowingUser = false
+                            recenter(on: ownCoordinate, keeping: ctx.camera)
                         }
                     }
                 }
@@ -2161,6 +2162,19 @@ struct MapView: View {
             }
         } catch {
             print("Fehler beim Laden der Nearby Players", error)
+        }
+    }
+
+    /// Spieler wieder in die Mitte, Zoom und Drehung bleiben.
+    private func recenter(on coordinate: CLLocationCoordinate2D, keeping camera: MapCamera) {
+        isFollowingUser = true
+        isProgrammaticCameraUpdate = true
+        withAnimation(.easeOut(duration: 0.3)) {
+            position = .camera(MapCamera(centerCoordinate: coordinate, distance: camera.distance,
+                                         heading: camera.heading, pitch: camera.pitch))
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            isProgrammaticCameraUpdate = false
         }
     }
 
