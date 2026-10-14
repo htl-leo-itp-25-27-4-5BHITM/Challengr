@@ -64,6 +64,7 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 | *(14.10.)* | **Trophy Road neu:** durchgehender Weg im Spiel-Look, Figur läuft vom zuletzt gesehenen Stand zum aktuellen, Rang-Aufstieg mit Konfetti, Regeln hinter „i“. **Trophäen nach Trophäen-Abstand** (`TrophyMath`: +30/−20, ±1 pro 25 Abstand, Sieg 10–50, Verlust max. 40). **Rang-Figuren:** Käpt'n Rex (Contender), Hayato (Tryhard), Kai (Brawler), Kage (Dueler) nach höchstem je erreichtem Stand (`Player.highestTrophies`); bereits gewählte Figur bleibt. Höchster Rang nach oben offen |
 | *(14.10.)* | **Feinschliff Testphase:** Karte drehbar und zoombar (200 m–2,5 km), aber nicht verschiebbar oder kippbar – nach jeder Geste springt sie zurück auf den Spieler; Tipp-Welle als Rückmeldung; Shop geschlossen (`ShopView.isOpen = false`); Foto-Challenge abgeschaltet (`ChallengeRepository.DISABLED_PREFIXES`); Trophäen/Punkte nie unter 0; **Punkte in der App ausgeblendet** – überall nur Trophäen (Karten-Chip → Trophy Road, Profil, Freunde, Trophäenverlauf statt Punkteverlauf) |
 | *(14.10.)* | **235 Wissensfragen:** Fragenkatalog `Backend/…/resources/quiz-questions.txt` (eine Zeile pro Frage: `Frage \| richtig \| falsch \| falsch \| falsch`), `QuizQuestionSync` legt beim Start fehlende Fragen an – neue Fragen = Zeile anhängen + `deploy-cloud.sh backend`. `QuizHistory` bevorzugt Fragen, die beide Spieler zuletzt nicht hatten (letzte 100 pro Spieler, nur im Speicher). Herausfordern aus dem Freundes-Menü schließt das Menü |
+| *(14.10.)* | **Namen ändern** (`PUT /api/players/{id}/name`, 3–20 Zeichen, Filter, eindeutig); Login/Standort überschreiben den Namen nicht mehr. **Freundesprofil** im Spiel-Look. **Tag/Nacht** (`SkyCycle`, `SkyOverlay`): Karte nach echtem Sonnenstand hell/dunkel, Dämmerung, Sterne – nur Optik |
 
 **Punkte vs. Trophäen:** Trophäen = Liga-Rang – das Einzige, was die App zurzeit zeigt. Punkte (Währung für den späteren Shop) sammelt der Server weiter im Hintergrund (Liga-Sieg = Trophäen-Gewinn, Hotspot-Check-in), angezeigt werden sie erst wieder, wenn der Shop öffnet.
 
@@ -92,7 +93,7 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 
 ## 4. Aktueller Stand (live)
 
-**Leo Cloud** – Backend läuft seit 14.10. mit dem Stand `62916fe` (Dashboard `783988a`), 235 Wissensfragen:
+**Leo Cloud** – Backend läuft seit 14.10. mit dem Stand `29505ab` (Dashboard `783988a`), 235 Wissensfragen:
 - Backend, Dashboard, Keycloak, Postgres laufen; WebApp aus.
 - Postgres- und Keycloak-Admin-Passwort am 12.10. neu gesetzt (`rotate-secrets.sh`).
 - Keycloak: Selbst-Registrierung **an**, „Verify email“ **aus** (es ist kein Mailserver eingetragen). Admin mit 2FA, Benutzer `test` (Admin-Rolle) mit neuem Passwort.
@@ -102,7 +103,7 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 - Apple Developer Program (Individual, Sebastian Lehner), **Team-ID `9CK2N38H9M`**, Verlängerung 13.10.2027 (Auto-Renew an).
 - App Store Connect: App „Challengr“, SKU `challengr-ios`.
 - TestFlight-Gruppen: intern **„Team“**, extern **„Schule“** (2 Tester). Testinformationen inkl. `applereview`-Login ausgefüllt.
-- Builds: `2610121422` (Im Test, alt – Kartenfilter-Bug), `2610130934` (Kartenfix), **`2610131028`** (Kartenfix + viele Spieler), `2610141130` (Trophy Road neu, Rang-Figuren, Karte nur drehbar, Shop zu, nur Trophäen), **`2610141213`** (+ Karte zoombar mit Spieler in der Mitte, Freundes-Menü schließt nach Herausfordern, angemeldet bleiben über Offline-Token im Schlüsselbund) – **muss noch der Gruppe „Schule“ zugewiesen werden**.
+- Builds: `2610121422` (Im Test, alt – Kartenfilter-Bug), `2610130934` (Kartenfix), **`2610131028`** (Kartenfix + viele Spieler), `2610141130` (Trophy Road neu, Rang-Figuren, Karte nur drehbar, Shop zu, nur Trophäen), **`2610141213`** (+ Karte zoombar mit Spieler in der Mitte, Freundes-Menü schließt nach Herausfordern, angemeldet bleiben über Offline-Token im Schlüsselbund), **`2610141631`** (+ Freundesprofil im Spiel-Look, Namen ändern in den Einstellungen, Tag/Nacht-Zyklus auf der Karte) – **muss noch der Gruppe „Schule“ zugewiesen werden**.
 
 **Git:** `feature/liga-modus` und `main` auf GitHub sind auf dem aktuellen Stand (alles gepusht).
 
