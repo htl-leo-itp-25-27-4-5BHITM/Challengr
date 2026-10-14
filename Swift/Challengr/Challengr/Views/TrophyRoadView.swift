@@ -654,7 +654,6 @@ private struct TrophyRulesSheet: View {
                 rule("arrow.down.right", "Gegen Schwächere", "Umgekehrt: ein Sieg bringt weniger, eine Niederlage kostet mehr.")
                 rule("shield.lefthalf.filled", "Grenzen", "Ein Sieg bringt 10 bis 50, eine Niederlage kostet höchstens 40. Unter 0 fällst du nie.")
                 rule("equal.circle", "Unentschieden & Friendly", "Keine Trophäen – Friendly-Battles zählen nie für die Liga.")
-                rule("star.circle.fill", "Punkte", "Gewonnene Trophäen bekommst du zusätzlich als Punkte für den Shop.")
                 rule("person.crop.circle.badge.checkmark", "Rang-Figuren", "Manche Figuren gibt’s nur auf der Trophy Road. Einmal erreicht, bleiben sie dir – auch wenn du wieder abrutschst.")
             }
             .padding(24)

@@ -169,15 +169,6 @@ extension PlayerLocationService {
         return try JSONDecoder().decode(PlayerStatsDTO.self, from: data)
     }
 
-    /// Loads points history (Punkteverlauf laden)
-    func loadPlayerPointsHistory(id: String) async throws -> [PlayerPointsHistoryDTO] {
-        let url = baseURL
-            .appendingPathComponent(id)
-            .appendingPathComponent("points-history")
-        let (data, _) = try await API.data(from: url)
-        return try JSONDecoder().decode([PlayerPointsHistoryDTO].self, from: data)
-    }
-
     // MARK: - Battles & profile (Battles & Profil)
 
     /// Loads battle history (Battle-Verlauf laden)

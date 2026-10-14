@@ -25,14 +25,14 @@ struct FriendProfileView: View {
                     .font(.system(size: 26, weight: .bold))
                     .foregroundColor(challengrDark)
 
-                Text("\(friend.points) Punkte")
+                Text("\(friend.trophies ?? 0) Trophäen")
                     .font(.headline)
                     .foregroundColor(.secondary)
 
                 VStack(spacing: 12) {
                     HStack(spacing: 12) {
                         FriendStatBox(title: "Rang", value: friend.rankName)
-                        FriendStatBox(title: "Punkte", value: "\(friend.points)")
+                        FriendStatBox(title: "Trophäen", value: "\(friend.trophies ?? 0)")
                     }
                 }
                 .padding(.top, 8)

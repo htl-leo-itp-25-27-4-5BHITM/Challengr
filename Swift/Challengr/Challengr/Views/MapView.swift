@@ -157,7 +157,6 @@ struct MapView: View {
     @State private var ownPoints: Int = 0
     /// Liga-Trophäen (Quiz-Show und Real-Life gemeinsam)
     @State private var ownTrophies: Int? = nil
-    @State private var pointsHistory: [PlayerPointsHistoryDTO] = []
     @State private var battleHistory: [BattleHistoryDTO] = []
     @State private var profileStatusText: String? = nil
     @State private var profileBadges: [String] = []
@@ -228,6 +227,9 @@ struct MapView: View {
 
     let minDistance: CLLocationDistance = 200
     let maxDistance: CLLocationDistance = 5000
+
+    /// Wo zuletzt auf die Karte getippt wurde – kurze Welle als Rückmeldung.
+    @State private var mapTaps: [MapTapMark] = []
 
     
     /// All players that should be displayed
@@ -384,7 +386,7 @@ struct MapView: View {
                 .padding(.horizontal, 18)
 
                 HStack {
-                    pointsChip
+                    trophiesChip
                     Spacer()
                 }
                 .padding(.top, 10)
@@ -446,7 +448,6 @@ struct MapView: View {
                     points: ownPoints,
                     trophies: ownTrophies
                 ),
-                pointsHistory: pointsHistory,
                 battleHistory: battleHistory,
                 profileStatusText: profileStatusText,
                 profileBadges: profileBadges,
@@ -673,7 +674,9 @@ struct MapView: View {
             bounds: MapCameraBounds(
                 minimumDistance: minDistance,
                 maximumDistance: maxDistance
-            )
+            ),
+            // Nur drehen: kein Zoomen, Verschieben oder Kippen (bleibt immer 3D, nie Draufsicht)
+            interactionModes: [.rotate]
         ) {
             /// 200m radius around ownplayer
             if let ownCoordinate {
@@ -741,6 +744,12 @@ struct MapView: View {
                 showsTraffic: false
             )
         )
+        .simultaneousGesture(SpatialTapGesture().onEnded { showTapMark(at: $0.location) })
+        .overlay {
+            ForEach(mapTaps) { MapTapRipple().position($0.location) }
+                .allowsHitTesting(false)
+        }
+        .sensoryFeedback(.selection, trigger: mapTaps.count) { old, new in new > old }
         .tint(.challengrGreen)
         .accentColor(.challengrYellow)
         .ignoresSafeArea()
@@ -811,16 +820,16 @@ struct MapView: View {
             }
     }
 
-    /// Always-visible points/currency chip, tappable to jump straight into the shop.
-    private var pointsChip: some View {
+    /// Immer sichtbarer Trophäen-Stand, öffnet die Trophy Road.
+    private var trophiesChip: some View {
         Button {
-            showShop = true
+            showTrophyRoad = true
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "trophy.fill")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.challengrYellow)
-                Text("\(ownPoints)")
+                Text("\(ownTrophies ?? 0)")
                     .font(.system(size: 13, weight: .black, design: .rounded))
                     .foregroundColor(.challengrDark)
             }
@@ -1101,7 +1110,7 @@ struct MapView: View {
         for hotspot in hotspots where !announcedHotspotIds.contains(hotspot.id) {
             if HotspotState.of(hotspot, playerAt: ownCoordinate) == .inRange {
                 announcedHotspotIds.insert(hotspot.id)
-                showMapBanner(icon: "bolt.circle.fill", text: "Du bist bei \(hotspot.name) – jetzt einchecken für +\(hotspot.points) Punkte!",
+                showMapBanner(icon: "bolt.circle.fill", text: "Du bist bei \(hotspot.name) – jetzt einchecken!",
                               seconds: 6)
             }
         }
@@ -1119,8 +1128,8 @@ struct MapView: View {
             ownPoints = result.totalPoints
             showMapBanner(icon: result.firstOfDay ? "crown.fill" : "checkmark.seal.fill",
                           text: result.firstOfDay
-                            ? "+\(result.points) Punkte – du bist heute der Erste bei \(hotspot.name)!"
-                            : "+\(result.points) Punkte – eingecheckt bei \(hotspot.name)!")
+                            ? "Eingecheckt – du bist heute der Erste bei \(hotspot.name)!"
+                            : "Eingecheckt bei \(hotspot.name)!")
             reloadOwnPlayerData()
         } catch {
             SoundManager.shared.play(.purchaseFailed)
@@ -1150,7 +1159,7 @@ struct MapView: View {
                             Text(isCheckingIn ? "…" : "EINCHECKEN")
                                 .font(.system(size: 15, weight: .black, design: .rounded))
                                 .tracking(1)
-                            Text("\(hotspot.name) · +\(hotspot.points)\(hotspot.checkinsToday == 0 ? " (+\(hotspot.firstOfDayBonus) als Erster)" : "")")
+                            Text(hotspot.checkinsToday == 0 ? "\(hotspot.name) · sei heute der Erste!" : hotspot.name)
                                 .font(.system(size: 11, weight: .bold, design: .rounded))
                                 .lineLimit(1)
                         }
@@ -1195,7 +1204,7 @@ struct MapView: View {
                             .font(.system(size: 16, weight: .black, design: .rounded))
                             .foregroundStyle(.challengrBlack)
 
-                        Text("HOTSPOT · +\(hotspot.points) PUNKTE PRO TAG")
+                        Text("HOTSPOT · 1 CHECK-IN PRO TAG")
                             .font(.system(size: 10, weight: .black, design: .rounded))
                             .tracking(1)
                             .foregroundStyle(Color.challengrRed)
@@ -1638,14 +1647,12 @@ struct MapView: View {
                 async let pointsAsync = playerService.loadPlayerPoints(id: ownPlayerId)
                 async let streakAsync = playerService.loadPlayerStreak(id: ownPlayerId)
                 async let statsAsync  = playerService.loadPlayerStats(id: ownPlayerId)
-                async let historyAsync = playerService.loadPlayerPointsHistory(id: ownPlayerId)
                 async let battlesAsync = playerService.loadPlayerBattles(id: ownPlayerId)
                 async let profileAsync = playerService.loadPlayerProfile(id: ownPlayerId)
 
                 let points = try await pointsAsync
                 let streak = try await streakAsync
                 let stats  = try await statsAsync
-                let history = (try? await historyAsync) ?? []
                 let battles = (try? await battlesAsync) ?? []
                 let profile = (try? await profileAsync) ?? PlayerProfileDTO(status: nil, badges: [])
 
@@ -1657,7 +1664,6 @@ struct MapView: View {
                     ownDailyStreak     = streak
                     ownTotalChallenges = stats.totalChallenges
                     ownWonChallenges   = stats.wonChallenges
-                    pointsHistory      = history
                     battleHistory      = battles
                     profileStatusText  = profile.status
                     profileBadges      = profile.badges
@@ -2158,6 +2164,14 @@ struct MapView: View {
         }
     }
 
+    private func showTapMark(at location: CGPoint) {
+        let mark = MapTapMark(location: location)
+        mapTaps.append(mark)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            mapTaps.removeAll { $0.id == mark.id }
+        }
+    }
+
     private func seedInitialZoom() {
         guard !hasCapturedInitialZoom else { return }
         if let distance = position.camera?.distance {
@@ -2182,6 +2196,38 @@ struct MapView: View {
             return trimmed.components(separatedBy: separator).first ?? trimmed
         }
         return trimmed
+    }
+}
+
+/// Eine Stelle, auf die getippt wurde.
+struct MapTapMark: Identifiable {
+    let id = UUID()
+    let location: CGPoint
+}
+
+/// Welle an der getippten Stelle: Punkt + zwei Ringe, die sich ausbreiten und verblassen.
+private struct MapTapRipple: View {
+    @State private var expanded = false
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<2, id: \.self) { ring in
+                Circle()
+                    .stroke(Color.challengrYellow, lineWidth: 3)
+                    .frame(width: 70, height: 70)
+                    .scaleEffect(expanded ? 1 : 0.15)
+                    .opacity(expanded ? 0 : 0.9)
+                    .animation(.easeOut(duration: 0.55).delay(Double(ring) * 0.12), value: expanded)
+            }
+            Circle()
+                .fill(Color.challengrYellow)
+                .frame(width: 12, height: 12)
+                .shadow(color: .black.opacity(0.3), radius: 2)
+                .scaleEffect(expanded ? 0.4 : 1)
+                .opacity(expanded ? 0 : 1)
+                .animation(.easeOut(duration: 0.6), value: expanded)
+        }
+        .onAppear { expanded = true }
     }
 }
 

@@ -40,14 +40,13 @@ private extension String {
 struct UserProfileView: View {
     var playerId: String = ""
     let data: UserProfileData
-    let pointsHistory: [PlayerPointsHistoryDTO]
     let battleHistory: [BattleHistoryDTO]
     let profileStatusText: String?
     let profileBadges: [String]
     var rankColor: Color = .gray
 
     @State private var selectedDate: String? = nil
-    @State private var selectedPoints: Int? = nil
+    @State private var selectedTrophies: Int? = nil
     @State private var isChartExpanded: Bool = true
     @State private var showCharacterEditor: Bool = false
 
@@ -69,7 +68,7 @@ struct UserProfileView: View {
 
                 leagueSection
 
-                pointsChart
+                trophyChart
 
                 badgesSection
 
@@ -154,8 +153,8 @@ struct UserProfileView: View {
                         .foregroundColor(.challengrDark)
                         .padding(.horizontal, 10).padding(.vertical, 5)
                         .background(Capsule().fill(rankColor))
-                    Label("\(data.points)", systemImage: "star.circle.fill")
-                        .accessibilityLabel("\(data.points) Punkte")
+                    Label("\(data.trophies ?? 0)", systemImage: "trophy.fill")
+                        .accessibilityLabel("\(data.trophies ?? 0) Trophäen")
                         .font(.system(size: 14, weight: .black, design: .rounded))
                         .foregroundColor(.challengrYellow)
                     statusChip
@@ -173,15 +172,14 @@ struct UserProfileView: View {
         }
     }
 
-    // MARK: - Points chart (Punkte-Chart)
+    // MARK: - Trophy chart (Trophäenverlauf)
 
-    private var pointsChart: some View {
-        let aggregatedHistory = startOfDayHistory(pointsHistory, battleHistory: battleHistory)
-        let sortedHistory = aggregatedHistory.sorted { $0.date < $1.date }
+    private var trophyChart: some View {
+        let sortedHistory = TrophyHistory.daily(battles: battleHistory, current: data.trophies ?? 0)
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("PUNKTEVERLAUF")
+                Text("TROPHÄENVERLAUF")
                     .font(.system(size: 12, weight: .black, design: .rounded))
                     .tracking(1.2)
                     .foregroundColor(.secondary)
@@ -198,14 +196,14 @@ struct UserProfileView: View {
             }
 
             if sortedHistory.isEmpty {
-                Text("Noch keine Daten")
+                Text("Noch keine Liga-Battles")
                     .font(.footnote)
                     .foregroundColor(.secondary)
             } else if isChartExpanded {
                 Chart(sortedHistory) { entry in
                     LineMark(
                         x: .value("Datum", entry.date),
-                        y: .value("Punkte", entry.points)
+                        y: .value("Trophäen", entry.trophies)
                     )
                     .foregroundStyle(
                         LinearGradient(
@@ -218,7 +216,7 @@ struct UserProfileView: View {
 
                     PointMark(
                         x: .value("Datum", entry.date),
-                        y: .value("Punkte", entry.points)
+                        y: .value("Trophäen", entry.trophies)
                     )
                     .foregroundStyle(entry.date == selectedDate ? Color.challengrYellow : Color.accentColor)
                     .symbolSize(entry.date == selectedDate ? 90 : 40)
@@ -236,7 +234,7 @@ struct UserProfileView: View {
                                         let relativeX = value.location.x - plotFrame.minX
                                         if let date: String = proxy.value(atX: relativeX) {
                                             selectedDate = date
-                                            selectedPoints = sortedHistory.first { $0.date == date }?.points
+                                            selectedTrophies = sortedHistory.first { $0.date == date }?.trophies
                                         }
                                     }
                             )
@@ -245,9 +243,9 @@ struct UserProfileView: View {
                 .chartOverlay { proxy in
                     GeometryReader { geometry in
                         if let selectedDate,
-                           let selectedPoints,
+                           let selectedTrophies,
                            let xPosition = proxy.position(forX: selectedDate),
-                           let yPosition = proxy.position(forY: selectedPoints) {
+                           let yPosition = proxy.position(forY: selectedTrophies) {
                             let plotFrame = geometry[proxy.plotAreaFrame]
                             let point = CGPoint(x: xPosition + plotFrame.minX, y: yPosition + plotFrame.minY)
 
@@ -259,7 +257,7 @@ struct UserProfileView: View {
                             VStack(spacing: 2) {
                                 Text(selectedDate)
                                     .font(.caption2.weight(.semibold))
-                                Text("\(selectedPoints) Punkte")
+                                Text("\(selectedTrophies) Trophäen")
                                     .font(.caption2)
                             }
                             .padding(.horizontal, 8)
@@ -392,7 +390,7 @@ struct UserProfileView: View {
                     Button("Alles anzeigen") {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             selectedDate = nil
-                            selectedPoints = nil
+                            selectedTrophies = nil
                         }
                     }
                     .font(.caption.weight(.semibold))
@@ -619,31 +617,6 @@ struct UserProfileView: View {
             Image(systemName: icon)
                 .foregroundColor(color)
             Text(title)
-        }
-    }
-
-    private func startOfDayHistory(
-        _ history: [PlayerPointsHistoryDTO],
-        battleHistory: [BattleHistoryDTO]
-    ) -> [PlayerPointsHistoryDTO] {
-        let ordered = history.sorted { $0.date < $1.date }
-        var endOfDayPoints: [String: Int] = [:]
-        ordered.forEach { entry in
-            endOfDayPoints[entry.date] = entry.points
-        }
-
-        let dailyDelta = Dictionary(grouping: battleHistory) { battle in
-            String(battle.createdAt.prefix(10))
-        }.mapValues { battles in
-            battles.reduce(0) { $0 + $1.pointsDelta }
-        }
-
-        let dates = endOfDayPoints.keys.sorted()
-        return dates.map { date in
-            let endPoints = endOfDayPoints[date] ?? 0
-            let delta = dailyDelta[date] ?? 0
-            let startPoints = endPoints - delta
-            return PlayerPointsHistoryDTO(date: date, points: startPoints)
         }
     }
 }

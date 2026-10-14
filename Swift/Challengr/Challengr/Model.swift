@@ -48,12 +48,6 @@ struct ChallengeDTO: Codable, Identifiable {
 
 // MARK: - Profile & History DTOs (Profil & Verlauf DTOs)
 
-struct PlayerPointsHistoryDTO: Codable, Identifiable {
-    let id = UUID()
-    let date: String
-    let points: Int
-}
-
 struct BattleHistoryDTO: Codable, Identifiable {
     let id: Int64
     let createdAt: String

@@ -27,8 +27,8 @@ struct OnboardingView: View {
         ),
         OnboardingStep(
             icon: "trophy.fill",
-            title: "Trophäen & Punkte",
-            text: "Siege in der Liga bringen Trophäen und lassen dich aufsteigen. Punkte sammelst du nebenbei – im Shop tauschst du sie gegen Items."
+            title: "Trophäen & Trophy Road",
+            text: "Siege in der Liga bringen Trophäen und lassen dich auf der Trophy Road aufsteigen. Mit neuen Rängen schaltest du neue Figuren frei."
         )
     ]
 

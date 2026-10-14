@@ -89,11 +89,6 @@ struct BattleWinView: View {
                         .multilineTextAlignment(.center)
                         .foregroundColor(data.mode.isRanked ? .challengrGreen : .white.opacity(0.8))
                         .padding(.top, 4)
-                    if data.mode.isRanked && data.winnerPointsDelta > 0 {
-                        Text("+\(data.winnerPointsDelta) Punkte für Shop & Co.")
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                            .foregroundColor(.challengrYellow)
-                    }
 
                     if let metrics = data.metrics {
                         let rows = metricRows(from: metrics)

@@ -558,7 +558,7 @@ private struct FriendRow: View {
                             .font(.system(size: 16, weight: .black, design: .rounded))
                             .foregroundColor(.white)
                             .lineLimit(1)
-                        Text("\(player.rankName) · \(player.points) P")
+                        Text("\(player.rankName) · \(player.trophies ?? 0) 🏆")
                             .font(.system(size: 12, weight: .semibold, design: .rounded))
                             .foregroundColor(GameStyle.secondaryText)
                         Label(distanceText, systemImage: isNearby ? "location.fill" : "location")
@@ -796,7 +796,7 @@ private struct NearbyPlayerRow: View {
                     .font(.system(size: 15, weight: .black, design: .rounded))
                     .foregroundColor(.white)
                     .lineLimit(1)
-                Text("\(player.rankName) · \(player.points) P")
+                Text("\(player.rankName) · \(player.trophies ?? 0) 🏆")
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundColor(GameStyle.secondaryText)
             }

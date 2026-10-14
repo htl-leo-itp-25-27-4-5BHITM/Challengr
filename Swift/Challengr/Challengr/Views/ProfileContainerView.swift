@@ -7,7 +7,6 @@ struct ProfileContainerView: View {
     /// 0 = DU, 1 = FREUNDE (z.B. aus dem Karten-Menü)
     var initialTab: Int = 0
     let data: UserProfileData
-    let pointsHistory: [PlayerPointsHistoryDTO]
     let battleHistory: [BattleHistoryDTO]
     let profileStatusText: String?
     let profileBadges: [String]
@@ -52,7 +51,6 @@ struct ProfileContainerView: View {
                 UserProfileView(
                     playerId: ownPlayerId,
                     data: data,
-                    pointsHistory: pointsHistory,
                     battleHistory: battleHistory,
                     profileStatusText: profileStatusText,
                     profileBadges: profileBadges,

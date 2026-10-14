@@ -82,7 +82,7 @@ struct LoginView: View {
                     // Features
                     VStack(spacing: 12) {
                         featureRow(icon: "mappin.and.ellipse", text: "Finde Spieler in deiner Nähe")
-                        featureRow(icon: "trophy.fill",        text: "Sammle Punkte & steig auf")
+                        featureRow(icon: "trophy.fill",        text: "Sammle Trophäen & steig auf")
                         featureRow(icon: "bolt.shield.fill",   text: "Kompetitiv & fair")
                     }
                     .padding(.bottom, 8)
