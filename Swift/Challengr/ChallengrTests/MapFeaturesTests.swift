@@ -88,7 +88,9 @@ final class ScheduleAndUnlockTextTests: XCTestCase {
         XCTAssertEqual(GameCharacter.ragnar.requirement.text(progress: 1), "1/3 Siege")
         XCTAssertEqual(GameCharacter.merlo.requirement.text(progress: 7), "3/3 Quiz-Siege")
         XCTAssertEqual(GameCharacter.lyra.requirement.text(progress: 2), "2/5 Check-ins")
-        XCTAssertEqual(GameCharacter.kaeptnRex.requirement.text(progress: 200), "200/350 Trophäen")
+        XCTAssertEqual(GameCharacter.kaeptnRex.requirement.text(progress: 200), "Rang Contender · 200/350")
+        XCTAssertEqual(GameCharacter.kage.requirement.text(), "Rang Dueler")
+        XCTAssertEqual(GameCharacter.rankRewards(atTrophies: 600), [.hayato])
         XCTAssertEqual(GameCharacter.junge.requirement.text(), "Frei")
     }
 

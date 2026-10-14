@@ -61,6 +61,7 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 | `96df336` | Quiz-Show als **3D-Fernsehstudio** (`QuizStageView`): beide Spieler hinter Pulten, Merlo als Quizmaster, Kamerafahrten, Reaktionen; nur ein SceneKit-Fenster, keine eigenen Shader, 2D-Fallback bei Magenta |
 | `360e1da` | Kartenfilter entfernt (zeigte nur „test“/„cookieclicker“) – TestFlight-Tester sahen sich sonst nicht |
 | `783988a` | **Viele Spieler auf einem Fleck:** nearby nur Kartenausschnitt aus der DB, max. 30 nächste + Gesamtzahl im Header `X-Nearby-Total`; Positions-Events max. alle 5 s pro Spieler; App spart Animationen (getestet mit 200 Spielern: 21 ms) |
+| *(14.10.)* | **Trophy Road neu:** durchgehender Weg im Spiel-Look, Figur läuft vom zuletzt gesehenen Stand zum aktuellen, Rang-Aufstieg mit Konfetti, Regeln hinter „i“. **Trophäen nach Trophäen-Abstand** (`TrophyMath`: +30/−20, ±1 pro 25 Abstand, Sieg 10–50, Verlust max. 40). **Rang-Figuren:** Käpt'n Rex (Contender), Hayato (Tryhard), Kai (Brawler), Kage (Dueler) nach höchstem je erreichtem Stand (`Player.highestTrophies`); bereits gewählte Figur bleibt. Höchster Rang nach oben offen |
 
 **Punkte vs. Trophäen:** Trophäen = Liga-Rang. Punkte = Währung (Shop, Hotspot). Wer in der Liga gewinnt, bekommt seinen Trophäen-Gewinn zusätzlich als Punkte.
 

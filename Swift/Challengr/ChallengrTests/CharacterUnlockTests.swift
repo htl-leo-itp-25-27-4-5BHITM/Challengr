@@ -12,7 +12,7 @@ final class CharacterUnlockTests: XCTestCase {
     func testIdsMatchTheBackend() {
         XCTAssertEqual(GameCharacter.allCases.map(\.rawValue),
                        ["junge", "maedchen", "sir-brecht", "ragnar", "hayato", "kage", "kai", "merlo", "lyra", "kaeptn-rex"])
-        XCTAssertEqual(GameCharacter.hayato.requirement, .wins(5))
+        XCTAssertEqual(GameCharacter.hayato.requirement, .rank("Tryhard", trophies: 600))
         XCTAssertEqual(GameCharacter.lyra.requirement, .checkins(5))
         XCTAssertEqual(GameCharacter.allCases.filter { $0.requirement == .none }, [.junge, .maedchen], "nur Junge und Mädchen frei")
         XCTAssertNil(GameCharacter.from(serverId: "godzilla"))
@@ -24,13 +24,15 @@ final class CharacterUnlockTests: XCTestCase {
         XCTAssertTrue(store.isUnlocked(.maedchen), "Start-Figur ohne Serverdaten frei")
         XCTAssertFalse(store.isUnlocked(.sirBrecht), "Roster-Figur ohne Serverdaten gesperrt")
 
-        store.unlocks = ["hayato": unlock("hayato", false, progress: 1, required: 5)]
-        XCTAssertEqual(store.progressText(.hayato), "1/5 Siege")
+        store.unlocks = ["ragnar": unlock("ragnar", false, progress: 1, required: 3)]
+        XCTAssertEqual(store.progressText(.ragnar), "1/3 Siege")
         store.unlocks = ["lyra": unlock("lyra", false, progress: 2, required: 5, type: "CHECKINS")]
         XCTAssertEqual(store.progressText(.lyra), "2/5 Check-ins")
-        store.unlocks = ["hayato": unlock("hayato", true, progress: 9, required: 5)]
-        XCTAssertTrue(store.isUnlocked(.hayato))
-        XCTAssertEqual(store.progressText(.hayato), "5/5 Siege")
+        store.unlocks = ["ragnar": unlock("ragnar", true, progress: 9, required: 3)]
+        XCTAssertTrue(store.isUnlocked(.ragnar))
+        XCTAssertEqual(store.progressText(.ragnar), "3/3 Siege")
+        store.unlocks = ["hayato": unlock("hayato", false, progress: 420, required: 600, type: "TROPHIES")]
+        XCTAssertEqual(store.progressText(.hayato), "Rang Tryhard · 420/600")
     }
 
     func testUnlockBannerOnlyForNewUnlocks() {

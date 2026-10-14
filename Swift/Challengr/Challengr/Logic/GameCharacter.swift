@@ -69,12 +69,13 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .junge, .maedchen: return .none
         case .sirBrecht:        return .wins(1)
         case .ragnar:           return .wins(3)
-        case .hayato:           return .wins(5)
-        case .kage:             return .wins(10)
-        case .kai:              return .wins(20)
         case .merlo:            return .knowledgeWins(3)
         case .lyra:             return .checkins(5)
-        case .kaeptnRex:        return .trophies(350)
+        // Rang-Belohnungen der Trophy Road (Grenzen wie im Backend, reference-data.sql)
+        case .kaeptnRex:        return .rank("Contender", trophies: 350)
+        case .hayato:           return .rank("Tryhard", trophies: 600)
+        case .kai:              return .rank("Brawler", trophies: 950)
+        case .kage:             return .rank("Dueler", trophies: 1400)
         }
     }
 
@@ -102,6 +103,14 @@ enum GameCharacter: String, CaseIterable, Identifiable {
     /// Animation für die Karte: aus dem 3D-Modell gerendert (schräg von oben), Bilder nebeneinander.
     var mapSheetName: String { sceneName + "MapSheet" }
     static let mapSheetFrames = 16
+
+    /// Figuren, die man auf der Trophy Road beim Rang mit dieser Trophäen-Grenze bekommt.
+    static func rankRewards(atTrophies min: Int) -> [GameCharacter] {
+        GameCharacter.allCases.filter {
+            if case .rank(_, let n) = $0.requirement { return n == min }
+            return false
+        }
+    }
 }
 
 /// Freischalt-Bedingung einer Figur – gleiche Typen wie im Backend (`CharacterCatalog.Requirement`).
@@ -110,15 +119,16 @@ enum UnlockRequirement: Equatable {
     case wins(Int)
     case knowledgeWins(Int)
     case checkins(Int)
-    /// Trophäen in der besseren Liga
-    case trophies(Int)
+    /// Rang auf der Trophy Road (einmal erreicht – bleibt frei, auch wenn man wieder abrutscht)
+    case rank(String, trophies: Int)
 
     var required: Int {
         switch self {
         case .none: return 0
-        case .wins(let n), .knowledgeWins(let n), .checkins(let n), .trophies(let n): return n
+        case .wins(let n), .knowledgeWins(let n), .checkins(let n), .rank(_, let n): return n
         }
     }
+
 
     /// z.B. "3 Siege", "5 Check-ins" – für gesperrte Figuren im Editor.
     func text(progress: Int? = nil) -> String {
@@ -128,7 +138,7 @@ enum UnlockRequirement: Equatable {
         case .wins(let n):          return "\(p)\(n) \(n == 1 && progress == nil ? "Sieg" : "Siege")"
         case .knowledgeWins(let n): return "\(p)\(n) Quiz-Siege"
         case .checkins(let n):      return "\(p)\(n) Check-ins"
-        case .trophies(let n):      return "\(p)\(n) Trophäen"
+        case .rank(let name, let n): return progress == nil ? "Rang \(name)" : "Rang \(name) · \(p)\(n)"
         }
     }
 }
