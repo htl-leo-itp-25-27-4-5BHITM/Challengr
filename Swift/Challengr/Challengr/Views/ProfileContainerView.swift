@@ -18,6 +18,7 @@ struct ProfileContainerView: View {
     var currentCoordinate: CLLocationCoordinate2D? = nil
     
     @State private var selectedTab = 0
+    @Environment(\.dismiss) private var dismiss
 
     private let challengrRed = Color(red: 0.73, green: 0.12, blue: 0.20)
     private let challengrDark = Color(red: 0.12, green: 0.00, blue: 0.05)
@@ -63,7 +64,8 @@ struct ProfileContainerView: View {
                     ownPlayerId: ownPlayerId,
                     currentCoordinate: currentCoordinate,
                     allChallenges: allChallenges,
-                    socket: socket
+                    socket: socket,
+                    onBattleSent: { dismiss() }
                 )
                 .tag(1)
             }

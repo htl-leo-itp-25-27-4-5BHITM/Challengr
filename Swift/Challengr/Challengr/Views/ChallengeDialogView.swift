@@ -11,6 +11,8 @@ struct ChallengeDialogView: View {
 
     let allChallenges: [ChallengeDTO]      // ⬅️ alle vom MapView vorab geladen
     let socket: GameSocketService
+    /// Nach dem Absenden (z.B. Freundes-Menü schließen, damit man die Karte sieht)
+    var onSent: () -> Void = {}
     let onClose: () -> Void
 
     // MARK: - State (State)
@@ -284,6 +286,7 @@ struct ChallengeDialogView: View {
             challengeId: mode == .friendly ? selectedChallengeId : nil
         )
         onClose()
+        onSent()
     }
 
     // MARK: - Helpers (Hilfsfunktionen)

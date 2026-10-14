@@ -14,6 +14,8 @@ struct FriendsListView: View {
     var allChallenges: [ChallengeDTO] = []
     var socket: GameSocketService? = nil
     var radiusMeters: Double = 250
+    /// Herausforderung abgeschickt – das Menü schließt sich, damit man die Karte sieht
+    var onBattleSent: () -> Void = {}
 
     @StateObject private var vm = FriendsViewModel()
 
@@ -36,13 +38,15 @@ struct FriendsListView: View {
         currentCoordinate: CLLocationCoordinate2D?,
         allChallenges: [ChallengeDTO] = [],
         socket: GameSocketService? = nil,
-        radiusMeters: Double = 250
+        radiusMeters: Double = 250,
+        onBattleSent: @escaping () -> Void = {}
     ) {
         self.ownPlayerId = ownPlayerId
         self.currentCoordinate = currentCoordinate
         self.allChallenges = allChallenges
         self.socket = socket
         self.radiusMeters = radiusMeters
+        self.onBattleSent = onBattleSent
     }
     
     var body: some View {
@@ -341,7 +345,8 @@ struct FriendsListView: View {
                         otherPlayerName: friend.name,
                         ownPlayerId: ownPlayerId,
                         allChallenges: allChallenges,
-                        socket: socket
+                        socket: socket,
+                        onSent: onBattleSent
                     ) {
                         selectedBattleFriend = nil
                     }
