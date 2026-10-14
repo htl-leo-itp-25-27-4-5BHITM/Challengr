@@ -14,6 +14,7 @@ struct MapCharacterPin: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.mapCrowded) private var crowded
+    @Environment(\.mapNight) private var night
 
     var body: some View {
         TimelineView(.animation(minimumInterval: MapCrowd.spriteInterval(crowded: crowded, sonar: sonar), paused: reduceMotion)) { context in
@@ -36,6 +37,8 @@ struct MapCharacterPin: View {
                 Ellipse()
                     .stroke(ringColor, lineWidth: 3)
                     .frame(width: 50, height: 18)
+                    // nachts leuchtet der Ring
+                    .shadow(color: night ? ringColor.opacity(0.9) : .clear, radius: night ? 8 : 0)
 
                 if let frame = MapSprites.frame(of: character,
                                                 at: reduceMotion ? 0 : MapVibe.spriteFrame(time: t, seed: seed)) {
@@ -242,6 +245,7 @@ struct HotspotMarker: View {
     let checkedIn: Bool
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.mapNight) private var night
 
     var body: some View {
         // Erledigt: nur noch jede halbe Minute neu zeichnen (Countdown), sonst flüssig schweben
@@ -266,6 +270,8 @@ struct HotspotMarker: View {
                     .frame(width: 50, height: 50)
                     .saturation(checkedIn ? 0 : 1)
                     .opacity(checkedIn ? 0.75 : 1)
+                    // nachts glüht die Münze
+                    .shadow(color: night && !checkedIn ? Color.challengrYellow.opacity(0.9) : .clear, radius: night ? 12 : 0)
                     .offset(y: -16 + hover)
                     .overlay(alignment: .topTrailing) {
                         if checkedIn {

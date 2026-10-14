@@ -228,6 +228,12 @@ struct MapView: View {
     let minDistance: CLLocationDistance = 200
     let maxDistance: CLLocationDistance = 2500
 
+    /// Uhrzeit für den Himmel (jede Minute neu)
+    @State private var skyClock = SkyCycle.now()
+    private var sky: SkyState {
+        SkyCycle.sky(at: skyClock, coordinate: ownCoordinate ?? CLLocationCoordinate2D(latitude: 48.268, longitude: 14.251))
+    }
+
     /// Wo zuletzt auf die Karte getippt wurde – kurze Welle als Rückmeldung.
     @State private var mapTaps: [MapTapMark] = []
 
@@ -303,6 +309,13 @@ struct MapView: View {
             mapLayer
                 // Voller Schulhof: Figuren-Animationen sparsamer, damit die Karte flüssig bleibt
                 .environment(\.mapCrowded, annotations.count > MapCrowd.threshold)
+                // Tag/Nacht nach echtem Sonnenstand (nur Optik)
+                .environment(\.colorScheme, sky.isDark ? .dark : .light)
+                .environment(\.mapNight, sky.night > 0.3)
+
+            SkyOverlay(sky: sky)
+                .environment(\.mapCrowded, annotations.count > MapCrowd.threshold)
+                .ignoresSafeArea()
 
             VStack {
                 HStack {
@@ -757,6 +770,13 @@ struct MapView: View {
         .tint(.challengrGreen)
         .accentColor(.challengrYellow)
         .ignoresSafeArea()
+        .task {
+            // Himmel jede Minute an den Sonnenstand anpassen
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(60))
+                skyClock = SkyCycle.now()
+            }
+        }
         .onAppear {
             setupSocket()
             Task { await syncCharacterAndUnlocks() }
