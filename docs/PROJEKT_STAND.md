@@ -92,17 +92,17 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 
 ## 4. Aktueller Stand (live)
 
-**Leo Cloud** – Backend läuft seit 14.10. mit dem Stand `930713b` (Dashboard `783988a`):
+**Leo Cloud** – Backend läuft seit 14.10. mit dem Stand `62916fe` (Dashboard `783988a`), 235 Wissensfragen:
 - Backend, Dashboard, Keycloak, Postgres laufen; WebApp aus.
 - Postgres- und Keycloak-Admin-Passwort am 12.10. neu gesetzt (`rotate-secrets.sh`).
 - Keycloak: Selbst-Registrierung **an**, „Verify email“ **aus** (es ist kein Mailserver eingetragen). Admin mit 2FA, Benutzer `test` (Admin-Rolle) mit neuem Passwort.
-- Backups vom 12.10. und 14.10. (vor dem Deploy) in `~/Developer/ChallengrProjekt/Backups/` (lokal, nicht im Repo).
+- Backups vom 12.10. und 14.10. (vor beiden Deploys) in `~/Developer/ChallengrProjekt/Backups/` (lokal, nicht im Repo).
 
 **Apple:**
 - Apple Developer Program (Individual, Sebastian Lehner), **Team-ID `9CK2N38H9M`**, Verlängerung 13.10.2027 (Auto-Renew an).
 - App Store Connect: App „Challengr“, SKU `challengr-ios`.
 - TestFlight-Gruppen: intern **„Team“**, extern **„Schule“** (2 Tester). Testinformationen inkl. `applereview`-Login ausgefüllt.
-- Builds: `2610121422` (Im Test, alt – Kartenfilter-Bug), `2610130934` (Kartenfix), **`2610131028`** (Kartenfix + viele Spieler), **`2610141130`** (Trophy Road neu, Rang-Figuren, Karte nur drehbar, Shop zu, nur Trophäen) – **muss noch der Gruppe „Schule“ zugewiesen werden**.
+- Builds: `2610121422` (Im Test, alt – Kartenfilter-Bug), `2610130934` (Kartenfix), **`2610131028`** (Kartenfix + viele Spieler), `2610141130` (Trophy Road neu, Rang-Figuren, Karte nur drehbar, Shop zu, nur Trophäen), **`2610141213`** (+ Karte zoombar mit Spieler in der Mitte, Freundes-Menü schließt nach Herausfordern, angemeldet bleiben über Offline-Token im Schlüsselbund) – **muss noch der Gruppe „Schule“ zugewiesen werden**.
 
 **Git:** `feature/liga-modus` und `main` auf GitHub sind auf dem aktuellen Stand (alles gepusht).
 
