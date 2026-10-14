@@ -1,0 +1,225 @@
+# Wissensfragen für die Quiz-Show.
+# Eine Frage pro Zeile:  Frage | richtige Antwort | falsch | falsch | falsch
+# Die richtige Antwort steht hier immer zuerst – beim Anlegen werden die Antworten gemischt.
+# Neue Fragen einfach anhängen: beim nächsten Start (Deploy) kommen sie automatisch dazu (QuizQuestionSync).
+# Eine Frage wird an ihrem Text erkannt – bestehende Fragen bitte nicht umformulieren, sonst gibt es sie doppelt.
+
+# --- Österreich ---
+Welches Bundesland ist flächenmäßig das größte Österreichs? | Niederösterreich | Tirol | Steiermark | Oberösterreich
+Wie heißt die Landeshauptstadt der Steiermark? | Graz | Leoben | Klagenfurt | Villach
+Wie heißt die Landeshauptstadt von Tirol? | Innsbruck | Kufstein | Bregenz | Lienz
+Wie heißt die Landeshauptstadt von Kärnten? | Klagenfurt | Villach | Spittal an der Drau | Wolfsberg
+Wie heißt die Landeshauptstadt des Burgenlands? | Eisenstadt | Neusiedl am See | Oberwart | Mattersburg
+Wie heißt die Landeshauptstadt von Vorarlberg? | Bregenz | Dornbirn | Feldkirch | Bludenz
+Wie heißt die Landeshauptstadt von Niederösterreich? | St. Pölten | Krems | Wiener Neustadt | Baden
+Welcher ist der größte See, der ganz in Österreich liegt? | Attersee | Wolfgangsee | Traunsee | Wörthersee
+An wie viele Nachbarländer grenzt Österreich? | 8 | 6 | 7 | 9
+Welche Farben hat die österreichische Flagge? | Rot-Weiß-Rot | Rot-Gelb-Rot | Weiß-Rot-Weiß | Rot-Weiß-Grün
+In welchem Jahr trat Österreich der EU bei? | 1995 | 1989 | 2002 | 1990
+Welche Währung hatte Österreich vor dem Euro? | Schilling | Mark | Gulden | Franken
+Wie heißt die Wiener Schokoladetorte mit Marillenmarmelade? | Sachertorte | Linzer Torte | Esterházytorte | Malakofftorte
+Welcher Fluss fließt durch Innsbruck? | Inn | Salzach | Enns | Mur
+Welcher Fluss fließt durch Graz? | Mur | Drau | Enns | Traun
+Welcher Fluss fließt durch die Stadt Salzburg? | Salzach | Inn | Traun | Ybbs
+Wie viele Einwohner hat Österreich ungefähr? | 9 Millionen | 5 Millionen | 15 Millionen | 20 Millionen
+Welche österreichische Stadt ist für ihre Sommer-Festspiele weltberühmt? | Salzburg | Linz | Graz | Villach
+Wie hieß die österreichische Kaiserin, die „Sisi“ genannt wurde, mit Vornamen? | Elisabeth | Maria Theresia | Marie Antoinette | Viktoria
+Welches Gebirge bedeckt den Großteil Österreichs? | Alpen | Karpaten | Pyrenäen | Apenninen
+
+# --- Geografie ---
+Was ist die Hauptstadt von Italien? | Rom | Mailand | Venedig | Neapel
+Was ist die Hauptstadt von Spanien? | Madrid | Barcelona | Sevilla | Valencia
+Was ist die Hauptstadt von Japan? | Tokio | Osaka | Kyoto | Seoul
+Was ist die Hauptstadt von Australien? | Canberra | Sydney | Melbourne | Perth
+Was ist die Hauptstadt von Kanada? | Ottawa | Toronto | Vancouver | Montreal
+Was ist die Hauptstadt der Schweiz? | Bern | Zürich | Genf | Basel
+Was ist die Hauptstadt der USA? | Washington, D.C. | New York | Los Angeles | Chicago
+Was ist die Hauptstadt von Brasilien? | Brasília | Rio de Janeiro | São Paulo | Salvador
+Was ist die Hauptstadt von Ungarn? | Budapest | Bukarest | Belgrad | Bratislava
+Welcher ist der höchste Berg der Welt? | Mount Everest | K2 | Kilimandscharo | Mont Blanc
+Welche ist die größte heiße Wüste der Erde? | Sahara | Gobi | Kalahari | Atacama
+In welchem Land liegt die Stadt Prag? | Tschechien | Polen | Slowakei | Ungarn
+Welches Land hat die Form eines Stiefels? | Italien | Griechenland | Portugal | Kroatien
+Durch welche Stadt fließt die Themse? | London | Paris | Dublin | Edinburgh
+Welcher Kontinent hat die meisten Länder? | Afrika | Asien | Europa | Südamerika
+Welches ist das flächenmäßig größte Land der Erde? | Russland | Kanada | China | USA
+Auf welchem Kontinent liegt der Großteil Ägyptens? | Afrika | Asien | Europa | Australien
+Wie heißt das Meer zwischen Europa und Afrika? | Mittelmeer | Nordsee | Schwarzes Meer | Rotes Meer
+Welche Stadt wird „Big Apple“ genannt? | New York | Los Angeles | Chicago | Boston
+Welches Land ist bekannt für Tulpen und Windmühlen? | Niederlande | Belgien | Dänemark | Schweden
+
+# --- Naturwissenschaft ---
+Wie viele Knochen hat ein erwachsener Mensch ungefähr? | 206 | 106 | 306 | 156
+Was ist die chemische Formel für Kochsalz? | NaCl | KCl | NaOH | CaCO3
+Welches Gas macht den größten Teil der Luft aus? | Stickstoff | Sauerstoff | Kohlendioxid | Argon
+Bei wie viel Grad Celsius siedet Wasser auf Meereshöhe? | 100 °C | 90 °C | 80 °C | 120 °C
+Bei wie viel Grad Celsius gefriert Wasser? | 0 °C | −10 °C | 4 °C | 10 °C
+Welches chemische Symbol hat Gold? | Au | Ag | Go | Gd
+Welches chemische Symbol hat Eisen? | Fe | Ei | Ir | F
+Welcher Planet ist der größte im Sonnensystem? | Jupiter | Saturn | Neptun | Erde
+Welcher Planet wird „Roter Planet“ genannt? | Mars | Venus | Jupiter | Merkur
+Wie lange braucht das Licht von der Sonne zur Erde ungefähr? | 8 Minuten | 8 Sekunden | 8 Stunden | 1 Tag
+Was ist das härteste natürliche Material? | Diamant | Granit | Stahl | Quarz
+Wie heißt das positiv geladene Teilchen im Atomkern? | Proton | Neutron | Elektron | Photon
+Welches ist das größte Organ des Menschen? | Haut | Leber | Lunge | Gehirn
+Welche Blutgruppe gilt als Universalspender? | 0 negativ | AB positiv | A positiv | B negativ
+Welcher Planet hat die auffälligsten Ringe? | Saturn | Mars | Venus | Merkur
+Wie heißt der Vorgang, bei dem Wasser zu Dampf wird? | Verdampfen | Kondensieren | Gefrieren | Schmelzen
+Wie heißt die Einheit der elektrischen Spannung? | Volt | Ampere | Watt | Ohm
+Wie heißt die Einheit der Kraft? | Newton | Joule | Pascal | Watt
+Welches Vitamin bildet der Körper mit Hilfe von Sonnenlicht? | Vitamin D | Vitamin C | Vitamin A | Vitamin B12
+Wie viele Chromosomen hat ein Mensch normalerweise? | 46 | 23 | 48 | 44
+
+# --- Geschichte ---
+In welchem Jahr begann der Erste Weltkrieg? | 1914 | 1918 | 1939 | 1905
+In welchem Jahr endete der Zweite Weltkrieg? | 1945 | 1944 | 1939 | 1950
+Wer betrat als erster Mensch den Mond? | Neil Armstrong | Buzz Aldrin | Juri Gagarin | Michael Collins
+In welchem Jahr landeten Menschen zum ersten Mal auf dem Mond? | 1969 | 1959 | 1975 | 1965
+Wer erreichte 1492 Amerika und machte es in Europa bekannt? | Christoph Kolumbus | Vasco da Gama | Ferdinand Magellan | James Cook
+Welches Volk baute die Pyramiden von Gizeh? | Ägypter | Römer | Griechen | Maya
+Wie hieß der erste römische Kaiser? | Augustus | Julius Caesar | Nero | Konstantin
+Wer erfand in Europa den Buchdruck mit beweglichen Lettern? | Johannes Gutenberg | Martin Luther | Leonardo da Vinci | Galileo Galilei
+In welcher Stadt wurde 1914 der österreichische Thronfolger ermordet? | Sarajevo | Wien | Belgrad | Budapest
+Wie hieß die letzte Zarenfamilie Russlands? | Romanow | Habsburg | Hohenzollern | Tudor
+Welche Dynastie regierte jahrhundertelang in Österreich? | Habsburger | Bourbonen | Tudors | Romanows
+In welchem Jahr wurde die Republik Österreich zum ersten Mal ausgerufen? | 1918 | 1945 | 1867 | 1938
+In welchem Jahr wurde der Österreichische Staatsvertrag unterzeichnet? | 1955 | 1945 | 1960 | 1950
+Wer war der erste Präsident der USA? | George Washington | Abraham Lincoln | Thomas Jefferson | John Adams
+Welches Schiff sank 1912 nach dem Zusammenstoß mit einem Eisberg? | Titanic | Lusitania | Bismarck | Britannic
+Welches Gefängnis wurde 1789 zu Beginn der Französischen Revolution gestürmt? | Bastille | Tower of London | Alcatraz | Engelsburg
+Wer leitete die erste Weltumsegelung? | Ferdinand Magellan | Christoph Kolumbus | Marco Polo | Francis Drake
+Welcher Feldherr aus Karthago überquerte mit Elefanten die Alpen? | Hannibal | Spartacus | Attila | Alexander der Große
+Was war Napoleon Bonaparte? | Französischer Kaiser | Italienischer Maler | Spanischer König | Englischer Admiral
+In welcher Stadt steht das Kolosseum? | Rom | Athen | Istanbul | Neapel
+
+# --- Mathe & Logik ---
+Was sind 15 % von 200? | 30 | 15 | 20 | 35
+Was ist 13 × 13? | 169 | 156 | 179 | 196
+Wie viele Grad hat ein rechter Winkel? | 90° | 45° | 180° | 360°
+Wie groß ist die Winkelsumme in einem Dreieck? | 180° | 90° | 270° | 360°
+Was ist 2 hoch 10? | 1024 | 512 | 2048 | 1000
+Welche dieser Zahlen ist eine Primzahl? | 17 | 21 | 27 | 15
+Wie viele Minuten haben 3 Stunden? | 180 | 120 | 300 | 150
+Was ist die Hälfte von einem Viertel? | Ein Achtel | Ein Halb | Ein Sechstel | Ein Zwölftel
+Wie viele Zentimeter hat ein Meter? | 100 | 10 | 1000 | 60
+Wie heißt ein Vieleck mit acht Ecken? | Achteck | Sechseck | Fünfeck | Zehneck
+Was ergibt 3² + 4²? | 25 | 49 | 14 | 12
+Wie nennt man das Ergebnis einer Multiplikation? | Produkt | Summe | Differenz | Quotient
+Wie nennt man das Ergebnis einer Division? | Quotient | Produkt | Summe | Differenz
+Wie viele Sekunden hat eine Stunde? | 3600 | 360 | 6000 | 1200
+Welchen Wert hat die römische Zahl X? | 10 | 5 | 50 | 100
+Welchen Wert hat die römische Zahl L? | 50 | 100 | 500 | 1000
+Welche Zahl kommt als Nächstes: 2, 4, 8, 16, …? | 32 | 24 | 20 | 18
+Wie groß ist die Kreiszahl π ungefähr? | 3,14 | 2,71 | 1,62 | 3,41
+Wie viele Kanten hat ein Würfel? | 12 | 8 | 6 | 10
+Welcher Bruch entspricht 25 %? | 1/4 | 1/5 | 1/3 | 2/5
+
+# --- Sport ---
+Wie viele Spieler einer Basketballmannschaft stehen gleichzeitig auf dem Feld? | 5 | 6 | 7 | 4
+Wie viele Spieler einer Volleyballmannschaft stehen gleichzeitig auf dem Feld? | 6 | 5 | 7 | 9
+Wie lange dauert ein reguläres Fußballspiel ohne Nachspielzeit? | 90 Minuten | 60 Minuten | 80 Minuten | 120 Minuten
+Wie oft finden Olympische Sommerspiele statt? | Alle 4 Jahre | Jedes Jahr | Alle 2 Jahre | Alle 5 Jahre
+Wie viele Ringe hat das olympische Symbol? | 5 | 4 | 6 | 7
+In welcher Sportart spricht man von einem „Hattrick“? | Fußball | Tennis | Golf | Schwimmen
+Wie lang ist ein Marathon ungefähr? | 42 km | 21 km | 50 km | 30 km
+In welcher Sportart wird um den Stanley Cup gespielt? | Eishockey | Basketball | Baseball | American Football
+Welches Land hat die meisten Fußball-Weltmeistertitel der Männer? | Brasilien | Deutschland | Italien | Argentinien
+Welcher österreichische Skirennläufer gewann achtmal in Folge den Gesamtweltcup? | Marcel Hirscher | Hermann Maier | Benjamin Raich | Toni Sailer
+In welcher Sportart bedeutet „Love“ null Punkte? | Tennis | Golf | Fußball | Boxen
+Wie viele Punkte zählt ein Touchdown im American Football? | 6 | 3 | 7 | 2
+Wie hoch hängt ein Basketballkorb? | 3,05 m | 2,50 m | 3,50 m | 2,80 m
+Wie viele Felder hat ein Schachbrett? | 64 | 81 | 49 | 100
+Mit welcher Figur führt der König im Schach die Rochade aus? | Turm | Läufer | Springer | Dame
+In welcher Stadt fanden 2024 die Olympischen Sommerspiele statt? | Paris | Los Angeles | Tokio | London
+Welche Sportart betreibt man bei der Tour de France? | Radfahren | Laufen | Segeln | Rudern
+Wie viele Löcher hat ein normaler Golfplatz? | 18 | 9 | 12 | 24
+Wie heißt die höchste Fußballliga in Österreich? | Bundesliga | Premier League | Serie A | La Liga
+Welcher Fußballklub spielt in Wien-Hütteldorf? | Rapid Wien | Austria Wien | Sturm Graz | LASK
+
+# --- Technik & IT ---
+Wofür steht „WWW“? | World Wide Web | Wide World Web | World Web Wide | Web World Wide
+Wofür steht „CPU“? | Central Processing Unit | Computer Power Unit | Central Program Utility | Core Processing Usage
+Welche Firma stellt das iPhone her? | Apple | Samsung | Google | Microsoft
+Wer gründete Microsoft gemeinsam mit Paul Allen? | Bill Gates | Steve Jobs | Mark Zuckerberg | Elon Musk
+Wofür steht „RAM“? | Random Access Memory | Read And Modify | Rapid Access Module | Run All Memory
+Welches Betriebssystem läuft auf dem iPhone? | iOS | Android | Windows | Linux
+Welches Zahlensystem verwendet ein Computer intern? | Binärsystem | Dezimalsystem | Römisches Zahlensystem | Zwölfersystem
+Was ist Bluetooth? | Funktechnik für kurze Strecken | Ein Zahnpflegemittel | Eine Programmiersprache | Ein Dateiformat
+Wofür steht „USB“? | Universal Serial Bus | Unified System Board | Universal Storage Box | User Service Bus
+Welche Firma entwickelt das Handy-Betriebssystem Android? | Google | Apple | Amazon | Meta
+Wofür steht die Abkürzung „KI“? | Künstliche Intelligenz | Kreative Information | Kabelloses Internet | Komplexe Integration
+Welches Dateiformat ist typisch für Fotos? | JPG | MP3 | TXT | EXE
+Welches Dateiformat ist typisch für Musik? | MP3 | PDF | PNG | DOCX
+Was macht ein Router? | Verbindet Netzwerke, z. B. mit dem Internet | Druckt Dokumente | Speichert Fotos | Kühlt den Prozessor
+Mit welcher Programmiersprache schreibt man iPhone-Apps meistens? | Swift | Python | PHP | COBOL
+Wofür steht „PDF“? | Portable Document Format | Printed Data File | Public Document File | Picture Data Format
+Wie nennt man ein Schadprogramm, das sich selbst weiterverbreitet? | Computervirus | Browser | Compiler | Treiber
+Welche Tastenkombination kopiert am Windows-PC? | Strg + C | Strg + V | Strg + X | Strg + Z
+Wofür steht „GPS“? | Global Positioning System | General Position Service | Geo Pointing Satellite | Global Phone Signal
+Wer gilt als Erfinder des World Wide Web? | Tim Berners-Lee | Bill Gates | Steve Jobs | Alan Turing
+
+# --- Tiere & Natur ---
+Welches ist das schnellste Landtier? | Gepard | Löwe | Antilope | Pferd
+Wie viele Beine hat eine Spinne? | 8 | 6 | 10 | 12
+Wie viele Beine hat ein Insekt? | 6 | 8 | 4 | 10
+Welches ist das größte Landtier? | Afrikanischer Elefant | Giraffe | Nashorn | Flusspferd
+Was frisst ein Panda hauptsächlich? | Bambus | Fisch | Eukalyptus | Gras
+Was frisst ein Koala hauptsächlich? | Eukalyptusblätter | Bambus | Insekten | Früchte
+Welcher dieser Vögel kann nicht fliegen? | Pinguin | Adler | Spatz | Möwe
+Wie heißt ein junges Pferd? | Fohlen | Kalb | Ferkel | Lamm
+Welches Tier hat den längsten Hals? | Giraffe | Strauß | Kamel | Lama
+Welches dieser Tiere hält Winterschlaf? | Igel | Hase | Fuchs | Reh
+Welches dieser Tiere ist ein Reptil? | Krokodil | Frosch | Delfin | Lachs
+Welches dieser Tiere ist ein Amphibium? | Frosch | Eidechse | Schildkröte | Hai
+Wie viele Herzen hat ein Oktopus? | 3 | 1 | 2 | 8
+Welche dieser Tiere leben in einem Staat mit einer Königin? | Bienen | Spinnen | Schmetterlinge | Marienkäfer
+Welches ist das größte Raubtier an Land? | Eisbär | Löwe | Tiger | Wolf
+Welcher Nadelbaum verliert im Herbst seine Nadeln? | Lärche | Fichte | Tanne | Kiefer
+Welche Farbe hat Chlorophyll? | Grün | Rot | Gelb | Blau
+Was stellen Bienen her? | Honig | Milch | Seide | Wolle
+Wie heißt ein männliches Huhn? | Hahn | Henne | Küken | Gans
+Welches Tier ist das Wappentier Österreichs? | Adler | Löwe | Bär | Hirsch
+
+# --- Kultur, Musik & Film ---
+Wer komponierte „Für Elise“? | Ludwig van Beethoven | Wolfgang Amadeus Mozart | Johann Strauss | Joseph Haydn
+Wer schrieb „Romeo und Julia“? | William Shakespeare | Johann Wolfgang von Goethe | Friedrich Schiller | Charles Dickens
+Wer schrieb „Faust“? | Johann Wolfgang von Goethe | Friedrich Schiller | Thomas Mann | Franz Kafka
+Wie heißt der Zauberschüler in den Büchern von J. K. Rowling? | Harry Potter | Frodo Beutlin | Percy Jackson | Bilbo Beutlin
+Wer wird der „Walzerkönig“ genannt? | Johann Strauss (Sohn) | Franz Schubert | Gustav Mahler | Joseph Haydn
+Wie viele Saiten hat eine normale Gitarre? | 6 | 4 | 5 | 8
+Wie viele Tasten hat ein normales Klavier? | 88 | 76 | 96 | 64
+Wie heißt die berühmte Maus von Walt Disney? | Micky Maus | Speedy Gonzales | Jerry | Stuart Little
+In welcher Stadt steht die Freiheitsstatue? | New York | Washington | Boston | San Francisco
+Wer malte „Die Sternennacht“? | Vincent van Gogh | Claude Monet | Pablo Picasso | Gustav Klimt
+Welcher österreichische Maler malte „Der Kuss“? | Gustav Klimt | Egon Schiele | Friedensreich Hundertwasser | Oskar Kokoschka
+Wer bringt in „Der Herr der Ringe“ den Ring zum Schicksalsberg? | Frodo | Gandalf | Aragorn | Legolas
+Welcher Superheld beschützt Gotham City? | Batman | Superman | Spider-Man | Iron Man
+Wie heißt der junge Löwe im Film „Der König der Löwen“? | Simba | Mufasa | Scar | Nala
+Aus welchem Land stammt die Band ABBA? | Schweden | Norwegen | Dänemark | Finnland
+Wer gewann 2014 den Eurovision Song Contest für Österreich? | Conchita Wurst | Udo Jürgens | Falco | Cesár Sampson
+Welcher österreichische Sänger sang „Rock Me Amadeus“? | Falco | Udo Jürgens | Rainhard Fendrich | DJ Ötzi
+Wie viele Musiker spielen in einem Quartett? | 4 | 3 | 5 | 8
+Was ist ein Haiku? | Ein kurzes japanisches Gedicht | Ein japanisches Gericht | Ein Kampfsport | Ein Musikinstrument
+Wer schrieb „Die Verwandlung“? | Franz Kafka | Thomas Mann | Hermann Hesse | Bertolt Brecht
+
+# --- Allgemeinwissen ---
+Wie viele Buchstaben hat das Alphabet ohne Umlaute und ß? | 26 | 24 | 28 | 30
+Wie viele Monate haben 31 Tage? | 7 | 6 | 5 | 8
+Welcher Monat hat in einem normalen Jahr nur 28 Tage? | Februar | April | Juni | November
+Wie viele Wochen hat ein Jahr ungefähr? | 52 | 48 | 50 | 56
+Welche Sprache spricht man in Brasilien? | Portugiesisch | Spanisch | Brasilianisch | Französisch
+Was ist das Gegenteil von „Synonym“? | Antonym | Homonym | Akronym | Pseudonym
+Wie nennt man ein Wort, das vorwärts und rückwärts gleich gelesen wird? | Palindrom | Anagramm | Akronym | Synonym
+Welche Farbe entsteht aus Rot und Weiß? | Rosa | Orange | Lila | Braun
+Welche Farbe entsteht aus Rot und Gelb? | Orange | Grün | Braun | Lila
+Wie viele Zähne hat ein Erwachsener mit Weisheitszähnen normalerweise? | 32 | 28 | 30 | 36
+Welche Notrufnummer gilt in ganz Europa? | 112 | 133 | 911 | 144
+Welche Notrufnummer hat die Rettung in Österreich? | 144 | 122 | 133 | 128
+Welche Notrufnummer hat die Feuerwehr in Österreich? | 122 | 133 | 144 | 128
+Wie viele Sterne hat die Flagge der Europäischen Union? | 12 | 15 | 27 | 10
+Was ist die Amtssprache in Österreich? | Deutsch | Österreichisch | Englisch | Bairisch
+In welcher Einheit misst man den Stromverbrauch im Haushalt? | Kilowattstunden | Volt | Liter | Kilometer
+Welche Augenzahl liegt auf einem Spielwürfel der 6 gegenüber? | 1 | 2 | 3 | 5
+Wie viele Karten hat ein Pokerdeck ohne Joker? | 52 | 32 | 54 | 48
+Welche Jahreszeit beginnt bei uns um den 21. Juni? | Sommer | Frühling | Herbst | Winter
+Wie viele Liter passen in einen Kubikmeter? | 1000 | 100 | 10 | 10 000

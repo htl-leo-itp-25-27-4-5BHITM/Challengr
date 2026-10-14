@@ -33,6 +33,9 @@ public class BattleService {
     @Inject
     RankRepository rankRepository;
 
+    @Inject
+    QuizHistory quizHistory;
+
     @Transactional
     public Battle findById(Long battleId) {
         return battleRepository.findById(battleId);
@@ -122,7 +125,7 @@ public class BattleService {
             throw new IllegalArgumentException("toPlayer not found");
         }
 
-        Challenges challenge = pickChallenge(mode, challengeId);
+        Challenges challenge = pickChallenge(mode, challengeId, fromPlayerId, toPlayerId);
 
         ChallengeCategory category = challenge.getChallengeCategory();
 
@@ -346,7 +349,7 @@ public class BattleService {
 
     private static final java.util.Random RANDOM = new java.util.Random();
 
-    private Challenges pickChallenge(BattleMode mode, Long challengeId) {
+    private Challenges pickChallenge(BattleMode mode, Long challengeId, String fromPlayerId, String toPlayerId) {
         if (mode == BattleMode.FRIENDLY) {
             if (challengeId == null) {
                 throw new BattleRejectedException("Bitte eine Challenge wählen");
@@ -368,6 +371,10 @@ public class BattleService {
         if (pool.isEmpty()) {
             throw new BattleRejectedException("Für diese Liga gibt es noch keine Challenges");
         }
+        if (mode == BattleMode.RANKED_KNOWLEDGE) {
+            // erste Quiz-Frage: eine, die beide zuletzt nicht hatten
+            return quizHistory.freshFirst(pool, RANDOM, fromPlayerId, toPlayerId).get(0);
+        }
         return pool.get(RANDOM.nextInt(pool.size()));
     }
 
@@ -375,9 +382,10 @@ public class BattleService {
     @Transactional
     public List<Challenges> quizQuestions(Long battleId, int count) {
         Battle battle = battleRepository.findById(battleId);
-        List<Challenges> pool = new java.util.ArrayList<>(challengeRepository.findChallengesByKat(BattleMode.KNOWLEDGE_CATEGORY)
-                .stream().filter(c -> c.getCorrectIndex() != null).toList());
-        java.util.Collections.shuffle(pool, RANDOM);
+        String[] players = battle == null ? new String[0]
+                : new String[]{battle.getFromPlayer().getId(), battle.getToPlayer().getId()};
+        List<Challenges> pool = quizHistory.freshFirst(challengeRepository.findChallengesByKat(BattleMode.KNOWLEDGE_CATEGORY)
+                .stream().filter(c -> c.getCorrectIndex() != null).toList(), RANDOM, players);
         List<Challenges> result = new java.util.ArrayList<>();
         if (battle != null && battle.getChallenge() != null && battle.getChallenge().getCorrectIndex() != null) {
             result.add(battle.getChallenge());
@@ -387,6 +395,7 @@ public class BattleService {
             if (result.stream().noneMatch(r -> r.getId() == c.getId())) result.add(c);
         }
         result.forEach(c -> { c.getText(); c.getOptionA(); c.getOptionB(); c.getOptionC(); c.getOptionD(); });
+        quizHistory.remember(result, players);
         return result;
     }
 
