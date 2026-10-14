@@ -100,13 +100,8 @@ public class PlayerRessources {
             throw new WebApplicationException("Player not found", 404);
         }
 
-        // Name optional mit updaten, falls gewünscht:
-        if (dto.name() != null && !dto.name().equals(player.getName())) {
-            if (control.NameFilter.isOffensive(dto.name())) {
-                throw new WebApplicationException("Dieser Name ist nicht erlaubt", 400);
-            }
-            player.setName(dto.name());
-        }
+        // Der Name wird hier bewusst ignoriert: die App schickt bei jedem Standort-Update den
+        // Keycloak-Benutzernamen mit. Umbenennen geht nur über PUT /{id}/name.
 
         double oldLat = player.getLatitude();
         double oldLon = player.getLongitude();
@@ -127,6 +122,29 @@ public class PlayerRessources {
                     positionEventRecipients(player.getId(), oldLat, oldLon, player.getLatitude(), player.getLongitude()));
         }
 
+        return toOwnDTO(player);
+    }
+
+    /** Eigenen Spielernamen ändern. Body: {"name": "Neuer Name"} */
+    @PUT
+    @Path("/{id}/name")
+    @Transactional
+    public PlayerDTO rename(@PathParam("id") String id, Map<String, String> body) {
+        me.requireSelf(id);
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new WebApplicationException("Player not found", 404);
+        }
+        String name = body == null || body.get("name") == null ? "" : body.get("name").trim().replaceAll("\\s+", " ");
+        String problem = control.NameFilter.problemWith(name);
+        if (problem != null) {
+            throw new WebApplicationException(jakarta.ws.rs.core.Response.status(400).entity(problem).type("text/plain;charset=UTF-8").build());
+        }
+        if (playerRepository.nameTaken(name, id)) {
+            throw new WebApplicationException(jakarta.ws.rs.core.Response.status(409)
+                    .entity("Den Namen gibt es schon – such dir einen anderen aus").type("text/plain;charset=UTF-8").build());
+        }
+        player.setName(name);
         return toOwnDTO(player);
     }
 

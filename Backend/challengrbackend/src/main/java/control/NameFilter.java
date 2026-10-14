@@ -37,6 +37,18 @@ public final class NameFilter {
         return WHOLE_WORD.contains(joined);
     }
 
+    public static final int MIN_LENGTH = 3;
+    public static final int MAX_LENGTH = 20;
+
+    /** Prüft einen selbst gewählten Namen. @return Fehlermeldung für den Spieler oder null, wenn er passt. */
+    public static String problemWith(String name) {
+        if (name == null || name.length() < MIN_LENGTH) return "Der Name braucht mindestens " + MIN_LENGTH + " Zeichen";
+        if (name.length() > MAX_LENGTH) return "Der Name darf höchstens " + MAX_LENGTH + " Zeichen haben";
+        if (!name.matches("[\\p{L}\\p{N}_.\\- ]+")) return "Erlaubt sind Buchstaben, Zahlen, Leerzeichen, _ . und -";
+        if (isOffensive(name)) return "Dieser Name ist nicht erlaubt";
+        return null;
+    }
+
     /** Ersatzname, wenn der gewünschte Name nicht erlaubt ist. */
     public static String replacementFor(String playerId) {
         String suffix = playerId == null ? "0000" : Integer.toHexString(Math.abs(playerId.hashCode()) % 0xFFFF);

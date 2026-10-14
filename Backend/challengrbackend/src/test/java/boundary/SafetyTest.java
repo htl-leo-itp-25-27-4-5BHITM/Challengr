@@ -76,10 +76,11 @@ class SafetyTest {
         String id = "name-" + System.nanoTime();
         Login.as(id).contentType("application/json").body("{\"id\":\"" + id + "\",\"name\":\"Fuck3r\"}")
                 .when().post("/api/players").then().statusCode(200).body("name", startsWith("Spieler-"));
+        // Umbenennen geht über /name (Standort-Updates ändern den Namen nicht)
         Login.as(id).contentType("application/json").body("{\"name\":\"Hurens0hn\"}")
-                .when().put("/api/players/" + id).then().statusCode(400);
+                .when().put("/api/players/" + id + "/name").then().statusCode(400);
         Login.as(id).contentType("application/json").body("{\"name\":\"Marschall\"}")
-                .when().put("/api/players/" + id).then().statusCode(200);
+                .when().put("/api/players/" + id + "/name").then().statusCode(anyOf(is(200), is(409)));
     }
 
     @Test
