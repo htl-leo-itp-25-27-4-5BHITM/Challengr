@@ -234,8 +234,14 @@ struct MapView: View {
         SkyCycle.sky(at: skyClock, coordinate: ownCoordinate ?? CLLocationCoordinate2D(latitude: 48.268, longitude: 14.251))
     }
 
-    /// Drehen mit einem Finger (wie Pokémon GO): Blickrichtung und Kamera beim Start des Wischens
+    /// Drehen mit einem Finger (wie Pokémon GO): Kamera beim Start, zuletzt gesehener Winkel des Fingers
+    /// um die Kartenmitte und wie weit seitdem gedreht wurde
     @State private var dragStartCamera: MapCamera?
+    @State private var dragLastAngle: Double?
+    @State private var dragTurned: Double = 0
+    /// Zwei Finger (Zoomen/Drehen von MapKit) – dann dreht das Wischen nicht mit
+    @State private var twoFingerGesture = false
+    @State private var mapSize: CGSize = .zero
 
     /// Wo zuletzt auf die Karte getippt wurde – kurze Welle als Rückmeldung.
     @State private var mapTaps: [MapTapMark] = []
@@ -755,28 +761,24 @@ struct MapView: View {
             )
         )
         .simultaneousGesture(SpatialTapGesture().onEnded { showTapMark(at: $0.location) })
-        // Ein Finger seitlich wischen = Karte um den Spieler drehen (Verschieben ist ohnehin aus)
+        // Ein Finger: Karte "greifen" und um die Mitte drehen (Verschieben ist ohnehin aus)
         .simultaneousGesture(
             DragGesture(minimumDistance: 12)
-                .onChanged { value in
-                    guard let ownCoordinate else { return }
-                    if dragStartCamera == nil {
-                        dragStartCamera = lastMapCamera ?? position.camera
-                    }
-                    let start = dragStartCamera
-                    isProgrammaticCameraUpdate = true
-                    position = .camera(MapCamera(
-                        centerCoordinate: ownCoordinate,
-                        distance: start?.distance ?? currentZoomDistance,
-                        heading: MapRotation.heading(start: start?.heading ?? 0, dragWidth: value.translation.width),
-                        pitch: start?.pitch ?? MapView.mapPitch
-                    ))
-                }
-                .onEnded { _ in
-                    dragStartCamera = nil
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { isProgrammaticCameraUpdate = false }
-                }
+                .onChanged { value in handleOneFingerRotation(value) }
+                .onEnded { _ in endOneFingerRotation() }
         )
+        // Zwei Finger gehören MapKit (Zoomen und Drehen) – solange ruht das Wischen
+        .simultaneousGesture(
+            MagnifyGesture()
+                .onChanged { _ in startTwoFingerGesture() }
+                .onEnded { _ in twoFingerGesture = false }
+        )
+        .simultaneousGesture(
+            RotateGesture()
+                .onChanged { _ in startTwoFingerGesture() }
+                .onEnded { _ in twoFingerGesture = false }
+        )
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { mapSize = $0 }
         .overlay {
             ForEach(mapTaps) { MapTapRipple().position($0.location) }
                 .allowsHitTesting(false)
@@ -2149,8 +2151,15 @@ struct MapView: View {
 
         guard isFollowingUser else { return }
         guard hasCapturedInitialZoom else { return }
+        // Während der Spieler die Karte dreht oder zoomt, nicht dazwischenfunken
+        guard dragStartCamera == nil, !twoFingerGesture else {
+            Task { await refreshNearbyPlayers(at: userLoc) }
+            return
+        }
 
-        let currentCamera = position.camera
+        // Die wirklich sichtbare Kamera nehmen: nach einer Drehung durch den Spieler ist position.camera leer –
+        // dann würde die Karte bei jedem Standort-Update wieder nach Norden springen
+        let currentCamera = lastMapCamera ?? position.camera
         let heading = currentCamera?.heading ?? 0
         let pitch = currentCamera?.pitch ?? MapView.mapPitch
         if let distance = currentCamera?.distance {
@@ -2206,6 +2215,49 @@ struct MapView: View {
         }
     }
 
+    /// Ein Finger: Der Finger dreht sich um die Kartenmitte, die Karte dreht sich mit (Kamera bleibt auf dem Spieler).
+    private func handleOneFingerRotation(_ value: DragGesture.Value) {
+        guard !twoFingerGesture, let ownCoordinate, mapSize != .zero else { return }
+        let center = CGPoint(x: mapSize.width / 2, y: mapSize.height / 2)
+        if dragStartCamera == nil {
+            dragStartCamera = lastMapCamera ?? position.camera
+            dragLastAngle = MapRotation.angle(of: value.startLocation, around: center)
+            dragTurned = 0
+        }
+        guard let start = dragStartCamera else { return }
+        let angle = MapRotation.angle(of: value.location, around: center)
+        // ganz nahe der Mitte springt der Winkel – diese Bewegung zählt nicht
+        if hypot(value.location.x - center.x, value.location.y - center.y) > MapRotation.deadZone,
+           let last = dragLastAngle {
+            dragTurned += MapRotation.shortestDelta(from: last, to: angle)
+        }
+        dragLastAngle = angle
+
+        isProgrammaticCameraUpdate = true
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            position = .camera(MapCamera(centerCoordinate: ownCoordinate,
+                                         distance: start.distance,
+                                         heading: MapRotation.heading(start: start.heading, turnedDegrees: dragTurned),
+                                         pitch: start.pitch))
+        }
+    }
+
+    private func endOneFingerRotation() {
+        dragStartCamera = nil
+        dragLastAngle = nil
+        dragTurned = 0
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { isProgrammaticCameraUpdate = false }
+    }
+
+    private func startTwoFingerGesture() {
+        guard !twoFingerGesture else { return }
+        twoFingerGesture = true
+        // ein angefangenes Ein-Finger-Drehen beenden, sonst kämpfen beide um die Kamera
+        if dragStartCamera != nil { endOneFingerRotation() }
+    }
+
     /// Spieler wieder in die Mitte, Zoom und Drehung bleiben.
     private func recenter(on coordinate: CLLocationCoordinate2D, keeping camera: MapCamera) {
         isFollowingUser = true
@@ -2254,13 +2306,27 @@ struct MapView: View {
     }
 }
 
-/// Drehen mit einem Finger: so viele Grad pro Punkt seitlich gewischt.
+/// Drehen mit einem Finger: Die Karte folgt dem Finger, der sich um die Kartenmitte bewegt (wie Pokémon GO).
 enum MapRotation {
-    static let degreesPerPoint = 0.4
+    /// Näher an der Mitte als so viele Punkt: Winkel zu unruhig, zählt nicht
+    static let deadZone: CGFloat = 50
 
-    /// Wischen nach rechts dreht die Karte mit dem Finger mit (Blickrichtung nimmt ab), 0…360.
-    static func heading(start: Double, dragWidth: CGFloat) -> Double {
-        let h = (start - Double(dragWidth) * degreesPerPoint).truncatingRemainder(dividingBy: 360)
+    /// Winkel des Punkts um die Mitte in Grad (Bildschirm-Koordinaten: im Uhrzeigersinn wachsend).
+    static func angle(of point: CGPoint, around center: CGPoint) -> Double {
+        atan2(Double(point.y - center.y), Double(point.x - center.x)) * 180 / .pi
+    }
+
+    /// Kleinster Unterschied zwischen zwei Winkeln (−180…180), damit es beim Übergang 180/−180 nicht springt.
+    static func shortestDelta(from: Double, to: Double) -> Double {
+        var d = (to - from).truncatingRemainder(dividingBy: 360)
+        if d > 180 { d -= 360 }
+        if d < -180 { d += 360 }
+        return d
+    }
+
+    /// Finger im Uhrzeigersinn → Karte dreht im Uhrzeigersinn mit (Blickrichtung nimmt ab), 0…360.
+    static func heading(start: Double, turnedDegrees: Double) -> Double {
+        let h = (start - turnedDegrees).truncatingRemainder(dividingBy: 360)
         return h < 0 ? h + 360 : h
     }
 }

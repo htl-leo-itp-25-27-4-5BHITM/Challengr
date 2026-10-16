@@ -102,10 +102,22 @@ final class ScheduleAndUnlockTextTests: XCTestCase {
 
 /// Karte mit einem Finger drehen (wie Pokémon GO) und Figuren-Farben.
 final class MapRotationTests: XCTestCase {
-    func testDragRotatesAndWraps() {
-        XCTAssertEqual(MapRotation.heading(start: 90, dragWidth: 100), 50, accuracy: 0.001, "nach rechts wischen")
-        XCTAssertEqual(MapRotation.heading(start: 10, dragWidth: 100), 330, accuracy: 0.001, "unter 0 → 330")
-        XCTAssertEqual(MapRotation.heading(start: 350, dragWidth: -100), 30, accuracy: 0.001, "über 360 → 30")
+    func testFingerAngleAroundCenter() {
+        let c = CGPoint(x: 200, y: 400)
+        XCTAssertEqual(MapRotation.angle(of: CGPoint(x: 300, y: 400), around: c), 0, accuracy: 0.001, "rechts")
+        XCTAssertEqual(MapRotation.angle(of: CGPoint(x: 200, y: 500), around: c), 90, accuracy: 0.001, "unten (Uhrzeigersinn)")
+    }
+
+    func testShortestDeltaAcrossTheSeam() {
+        XCTAssertEqual(MapRotation.shortestDelta(from: 170, to: -170), 20, accuracy: 0.001)
+        XCTAssertEqual(MapRotation.shortestDelta(from: -170, to: 170), -20, accuracy: 0.001)
+        XCTAssertEqual(MapRotation.shortestDelta(from: 10, to: 40), 30, accuracy: 0.001)
+    }
+
+    func testClockwiseFingerTurnsMapAndWraps() {
+        XCTAssertEqual(MapRotation.heading(start: 90, turnedDegrees: 40), 50, accuracy: 0.001)
+        XCTAssertEqual(MapRotation.heading(start: 10, turnedDegrees: 40), 330, accuracy: 0.001, "unter 0 → 330")
+        XCTAssertEqual(MapRotation.heading(start: 350, turnedDegrees: -40), 30, accuracy: 0.001, "über 360 → 30")
     }
 
     func testGiftsAndShopAreOffForNow() {
