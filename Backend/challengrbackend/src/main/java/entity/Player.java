@@ -55,6 +55,9 @@ public class Player {
     /** Zuletzt aktiv (Position, Anfrage, WebSocket). Wer länger weg ist, taucht bei "nearby" nicht auf. */
     private Instant lastSeenAt;
 
+    /** Wann das Konto angelegt wurde (ältere Konten: null – dann zählt die erste Aktivität). */
+    private Instant createdAt;
+
     /** "Unsichtbar": weder bei nearby noch per WebSocket für andere sichtbar. */
     @Column(columnDefinition = "boolean default false not null")
     private boolean invisible = false;
@@ -190,6 +193,14 @@ public class Player {
 
     public Instant getLastSeenAt() {
         return lastSeenAt;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 
     public void setLastSeenAt(Instant lastSeenAt) {

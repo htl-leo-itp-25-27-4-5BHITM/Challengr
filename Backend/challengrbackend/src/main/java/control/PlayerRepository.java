@@ -57,6 +57,7 @@ public class PlayerRepository {
             return existingById;
         }
 
+        if (player.getCreatedAt() == null) player.setCreatedAt(java.time.Instant.now());
         em.persist(player);
         return player;
     }
@@ -94,11 +95,15 @@ public class PlayerRepository {
                 .orElse(null);
     }
 
+    @Inject
+    ActivityTracker activity;
+
     /** A5: zuletzt aktiv setzen (null = offline). */
     @Transactional
     public void setLastSeen(String playerId, java.time.Instant at) {
         Player p = em.find(Player.class, playerId);
         if (p != null) p.setLastSeenAt(at);
+        if (p != null && at != null) activity.seen(playerId);
     }
 
     @Transactional

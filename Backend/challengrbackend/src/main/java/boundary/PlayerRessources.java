@@ -33,6 +33,9 @@ public class PlayerRessources {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     @Inject
+    control.ActivityTracker activity;
+
+    @Inject
     PlayerRepository playerRepository;
 
     @Inject
@@ -80,6 +83,7 @@ public class PlayerRessources {
         }
         clean.setLastSeenAt(java.time.Instant.now());
         Player saved = playerRepository.createPlayer(clean);
+        activity.seen(saved.getId());
         return toOwnDTO(saved);
     }
 
@@ -111,6 +115,7 @@ public class PlayerRessources {
             player.setLongitude(dto.longitude());
         }
         player.setLastSeenAt(java.time.Instant.now());
+        activity.seen(player.getId());
         // Punkte kommen aus Battles → hier NICHT setzen
 
         // Realtime: nur Spieler in der Nähe (alte + neue Position) informieren, damit sie den
