@@ -1,15 +1,15 @@
 .report-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.report-toolbar .count { color: #6b6880; font-weight: 600; }
-.report-error { color: #ba1f33; font-weight: 600; margin-bottom: 12px; }
+.report-toolbar .count { color: var(--text-3); font-weight: 700; }
 .card.report, .card.empty { padding: 16px 18px; margin-bottom: 12px; }
-.card.report.resolved { opacity: 0.6; }
-.report-head { display: flex; justify-content: space-between; margin-bottom: 8px; }
-.report-head .reason { font-weight: 800; color: #ba1f33; }
-.report-head .date { color: #6b6880; font-size: 0.85rem; }
-.report-body .muted { color: #6b6880; font-size: 0.9rem; }
-.report-body .comment { margin: 8px 0 0; font-style: italic; }
-.banned { margin-left: 8px; color: #ba1f33; font-size: 0.85rem; font-weight: 700; }
-.report-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-.btn { border: 1px solid #d6d3e0; background: #fff; border-radius: 10px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
-.btn.danger { border-color: #ba1f33; color: #ba1f33; }
-.btn:disabled { opacity: 0.5; cursor: default; }
+.card.report.resolved { opacity: 0.55; }
+.report-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.report-head .reason { font-weight: 800; color: #ff8b9a; font-size: 15px; }
+.report-head .date { color: var(--text-3); font-size: 12px; }
+.report-body { display: flex; flex-direction: column; gap: 4px; }
+.report-body .muted { color: var(--text-3); font-size: 13px; }
+.report-body .comment {
+  margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--surface-2);
+  font-style: italic; color: var(--text-1);
+}
+.banned { margin-left: 8px; color: #ff8b9a; font-size: 12px; font-weight: 800; }
+.report-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }

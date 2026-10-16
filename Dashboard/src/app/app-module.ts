@@ -9,6 +9,7 @@ import { App } from './app';
 import { Layout } from './core/layout/layout';
 import { Header } from './core/header/header';
 import { Dashboard } from './features/dashboard/dashboard';
+import { BarChart, HBarList, TrendChart } from './features/dashboard/charts';
 import { Users } from './features/users/users';
 import { Challenges } from './features/challenges/challenges';
 import { Erd } from './features/erd/erd';
@@ -16,7 +17,7 @@ import { Reports } from './features/reports/reports';
 import { FormsModule } from '@angular/forms';
 
 @NgModule({
-  declarations: [App, Layout, Header, Dashboard, Users, Challenges, Erd, Reports],
+  declarations: [App, Layout, Header, Dashboard, TrendChart, BarChart, HBarList, Users, Challenges, Erd, Reports],
   imports: [BrowserModule, AppRoutingModule, FormsModule, HttpClientModule],
   providers: [
     provideBrowserGlobalErrorListeners(),

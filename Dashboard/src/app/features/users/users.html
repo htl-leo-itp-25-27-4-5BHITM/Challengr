@@ -1,208 +1,102 @@
 <div class="hero">
-  <div class="hero-glow"></div>
   <div class="hero-inner">
-    <div class="crumbs">Admin <span>/</span> Users</div>
-    <h1>Spieler verwalten</h1>
-    <div class="subtitle">Alle registrierten Spieler, Punktestände und Sperren im Überblick.</div>
+    <div class="crumbs">Admin <span>/</span> Spieler</div>
+    <h1>Spieler</h1>
+    <div class="subtitle">Alle Konten mit Trophäen, Rang und Aktivität. Sperren gilt sofort für Login und Spiel.</div>
   </div>
 </div>
 
-<div class="section">
+@if (error) {
+  <div class="error">{{ error }}</div>
+}
 
-  <div class="grid">
-
-    <div class="card stat">
-      <div class="stat-icon-badge">👥</div>
-      <div class="stat-body">
-        <div class="value">{{ totalUsers }}</div>
-        <div class="label">Total Users</div>
-      </div>
-    </div>
-
-    <div class="card stat" data-tone="ok">
-      <div class="stat-icon-badge">✅</div>
-      <div class="stat-body">
-        <div class="value green">{{ activeUsers }}</div>
-        <div class="label">Active</div>
-      </div>
-    </div>
-
-    <div class="card stat" data-tone="danger">
-      <div class="stat-icon-badge">💤</div>
-      <div class="stat-body">
-        <div class="value red">{{ inactiveUsers }}</div>
-        <div class="label">Inactive</div>
-      </div>
-    </div>
-
-  </div>
-
-</div>
-
-<div class="toolbar card">
-
-  <input
-    type="text"
-    placeholder="Suche nach Name oder ID..."
-    [(ngModel)]="search"
-    (input)="applyFilters()"
-  >
-
-  <select
-    [(ngModel)]="orderBy"
-    (change)="applyFilters()"
-  >
-    <option value="name">Alphabet</option>
-    <option value="points">Points</option>
-  </select>
-
-  <select
-    [(ngModel)]="orderDirection"
-    (change)="applyFilters()"
-  >
-    <option value="asc">Aufsteigend</option>
-    <option value="desc">Absteigend</option>
-  </select>
-
+<div class="stats">
+  <div class="card stat"><div class="stat-label">Spieler</div><div class="stat-value">{{ totalUsers }}</div></div>
+  <div class="card stat"><div class="stat-label">Aktiv (7 Tage)</div><div class="stat-value ok">{{ activeUsers }}</div></div>
+  <div class="card stat"><div class="stat-label">Gesperrt</div><div class="stat-value" [class.danger]="bannedUsers > 0">{{ bannedUsers }}</div></div>
 </div>
 
 <div class="layout">
-
-  <div class="sidebar">
-
-    <div class="card">
-      <div class="list">
-
-        @for (user of filteredUsers; track user.id) {
-
-          <div
-            class="row clickable"
-            (click)="selectUser(user)"
-            [class.active]="selectedUser?.id === user.id"
-          >
-
-            <div>{{ user.name }}</div>
-
-            <div
-              class="badge"
-              [class.active]="user.status === 'active'"
-            >
-              {{ user.status }}
-            </div>
-
-          </div>
-
-        }
-
-      </div>
+  <div class="card list-card">
+    <div class="toolbar">
+      <input type="search" placeholder="Name oder ID suchen…" [(ngModel)]="search" (input)="applyFilters()" />
+      <select [(ngModel)]="orderBy" (change)="applyFilters()" aria-label="Sortieren">
+        <option value="trophies">Trophäen</option>
+        <option value="lastSeen">Zuletzt aktiv</option>
+        <option value="name">Name</option>
+      </select>
     </div>
-
-  </div>
-
-  <div class="content">
-
-    <div class="card details">
-
-      @if(selectedUser){
-
-        <div class="header">
-          <h2>{{ selectedUser.name }}</h2>
-        </div>
-
-        <div class="info">
-
-          <div class="item">
-            <span>ID</span>
-            <strong>{{ selectedUser.id }}</strong>
-          </div>
-
-          <div class="item">
-            <span>Name</span>
-            <strong>{{ selectedUser.name }}</strong>
-          </div>
-
-          <div class="item">
-            <span>Points</span>
-            <strong>{{ selectedUser.points }}</strong>
-          </div>
-
-          <div class="item">
-            <span>Status</span>
-            <strong>{{ selectedUser.status }}</strong>
-          </div>
-
-          <div class="item">
-            <span>Banned</span>
-            <strong>
-              <span class="pill" [class.pill--danger]="isBanned(selectedUser)" [class.pill--ok]="!isBanned(selectedUser)">
-                {{ isBanned(selectedUser) ? 'yes' : 'no' }}
-              </span>
-            </strong>
-          </div>
-
-          @if (selectedUser.banUntil) {
-            <div class="item">
-              <span>Ban until</span>
-              <strong>{{ selectedUser.banUntil }}</strong>
-            </div>
-          }
-
-          @if (selectedUser.banReason) {
-            <div class="item">
-              <span>Reason</span>
-              <strong>{{ selectedUser.banReason }}</strong>
-            </div>
-          }
-
-          <div class="item">
-            <span>Ban duration (hours)</span>
-            <strong>
-              <input class="control control--number" type="number" min="1" [(ngModel)]="banHours" />
-            </strong>
-          </div>
-
-          <div class="item">
-            <span>Ban reason</span>
-            <strong>
-              <input class="control" type="text" [(ngModel)]="banReason" placeholder="optional" />
-            </strong>
-          </div>
-
-          <div class="item">
-            <span>Actions</span>
-            <strong>
-              <div class="actions">
-                <button class="btn btn--danger" (click)="banSelected()" [disabled]="banBusy">Ban</button>
-                <button class="btn" (click)="unbanSelected()" [disabled]="banBusy">Unban</button>
-              </div>
-            </strong>
-          </div>
-
-
-
-        </div>
-
-      } @else {
-
-        <div class="empty-state">
-
-          <div class="empty-icon">
-            👤
-          </div>
-
-          <h2>Kein Spieler ausgewählt</h2>
-
-          <p>
-            Wähle links einen Spieler aus um
-            die Details anzuzeigen.
-          </p>
-
-        </div>
-
+    <div class="list">
+      @for (user of filteredUsers; track user.id) {
+        <button type="button" class="row" (click)="selectUser(user)" [class.active]="selectedUser?.id === user.id">
+          <span class="status-dot" [class.on]="user.active" [title]="user.active ? 'aktiv' : 'länger nicht aktiv'"></span>
+          <span class="row-name">{{ user.name }}</span>
+          @if (isBanned(user)) { <span class="pill pill--danger">gesperrt</span> }
+          <span class="row-rank" [style.color]="user.rankColor">{{ user.rank }}</span>
+          <span class="row-trophies">🏆 {{ user.trophies }}</span>
+        </button>
+      } @empty {
+        <div class="muted empty-list">Keine Spieler gefunden</div>
       }
-
     </div>
-
   </div>
 
+  <div class="card details">
+    @if (selectedUser; as u) {
+      <div class="details-head">
+        <div>
+          <h2 class="details-name">{{ u.name }}</h2>
+          <div class="details-sub">
+            <span class="rank-chip" [style.background]="u.rankColor">{{ u.rank }}</span>
+            <span>🏆 {{ u.trophies }}</span>
+            <span class="muted">· {{ u.character }}</span>
+          </div>
+        </div>
+        @if (isBanned(u)) { <span class="pill pill--danger">gesperrt</span> } @else { <span class="pill pill--ok">nicht gesperrt</span> }
+      </div>
+
+      <dl class="facts">
+        <div><dt>Zuletzt aktiv</dt><dd>{{ lastSeen(u.lastSeenAt) }}</dd></div>
+        <div><dt>Konto seit</dt><dd>{{ u.createdAt ? (u.createdAt | date: 'dd.MM.yyyy') : 'vor dem 16.10.' }}</dd></div>
+        <div><dt>Höchster Stand</dt><dd>🏆 {{ u.highestTrophies }}</dd></div>
+        <div><dt>Punkte (Shop, ausgeblendet)</dt><dd>{{ u.points }}</dd></div>
+        <div><dt>Auf der Karte</dt><dd>{{ u.invisible ? 'unsichtbar' : 'sichtbar' }}</dd></div>
+        <div><dt>ID</dt><dd class="mono">{{ u.id }}</dd></div>
+        @if (u.banUntil && isBanned(u)) {
+          <div><dt>Gesperrt bis</dt><dd>{{ u.banUntil | date: 'dd.MM.yyyy HH:mm' }}</dd></div>
+        }
+        @if (u.banReason && isBanned(u)) {
+          <div><dt>Grund</dt><dd>{{ u.banReason }}</dd></div>
+        }
+      </dl>
+
+      <div class="ban">
+        <h2>Sperren</h2>
+        <div class="ban-row">
+          <label>Dauer
+            <select [(ngModel)]="banHours">
+              <option [ngValue]="1">1 Stunde</option>
+              <option [ngValue]="24">24 Stunden</option>
+              <option [ngValue]="168">7 Tage</option>
+              <option [ngValue]="720">30 Tage</option>
+            </select>
+          </label>
+          <label class="grow">Grund (optional)
+            <input type="text" [(ngModel)]="banReason" placeholder="z. B. Beleidigung im Chat" />
+          </label>
+        </div>
+        <div class="ban-actions">
+          <button class="btn btn--danger" (click)="banSelected()" [disabled]="banBusy">Sperren</button>
+          <button class="btn" (click)="unbanSelected()" [disabled]="banBusy || !isBanned(u)">Sperre aufheben</button>
+        </div>
+        @if (banMessage) { <div class="ban-message">{{ banMessage }}</div> }
+      </div>
+    } @else {
+      <div class="empty-state">
+        <div class="empty-icon">👤</div>
+        <h2>Kein Spieler ausgewählt</h2>
+        <p>Wähle links einen Spieler aus.</p>
+      </div>
+    }
+  </div>
 </div>

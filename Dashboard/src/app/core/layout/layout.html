@@ -1,50 +1,30 @@
 <app-header></app-header>
 
 <div class="shell">
-
   <aside class="sidebar">
-    <div class="nav">
+    <nav class="nav">
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <span class="icon">📊</span>
-        <span>Dashboard</span>
+        <span class="icon">📊</span><span>Übersicht</span>
       </a>
-
       <a routerLink="/users" routerLinkActive="active">
-        <span class="icon">👥</span>
-        <span>Users</span>
+        <span class="icon">👥</span><span>Spieler</span>
       </a>
-
       <a routerLink="/reports" routerLinkActive="active">
-        <span class="icon">🚩</span>
-        <span>Meldungen</span>
+        <span class="icon">🚩</span><span>Meldungen</span>
       </a>
-
       <a routerLink="/challenges" routerLinkActive="active">
-        <span class="icon">🏆</span>
-        <span>Challenges</span>
+        <span class="icon">🏆</span><span>Challenges</span>
       </a>
-
-      <a routerLink="/erd" routerLinkActive="active">
-        <span class="icon">🗂️</span>
-        <span>ERD</span>
+      <a routerLink="/erd" routerLinkActive="active" class="nav-minor">
+        <span class="icon">🗂️</span><span>Datenbank</span>
       </a>
-    </div>
-
-    <div class="sidebar-footer">
-      <div class="user">
-        <div class="avatar">AD</div>
-        <div>
-          <div class="name">admin</div>
-          <div class="role">Challengr</div>
-        </div>
-      </div>
-
-      <button class="logout" type="button">Logout</button>
-    </div>
+    </nav>
+    <div class="sidebar-footer">Nur für Admins · Daten sind live</div>
   </aside>
 
   <main class="content">
-    <router-outlet></router-outlet>
+    <div class="page">
+      <router-outlet></router-outlet>
+    </div>
   </main>
-
 </div>

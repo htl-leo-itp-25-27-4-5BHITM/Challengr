@@ -1,131 +1,14 @@
-:host {
-  display: block;
-  background: var(--bg, #f6f5fa);
-  color: #2b2b2b;
-  padding: 24px;
-  min-height: 100vh;
-}
-
-/* HERO */
-
-.hero {
-  position: relative;
-  margin: -24px -24px 0;
-  padding: 36px 28px 56px;
-  background: linear-gradient(135deg, #0a1020 0%, #120a1f 55%, #1e000e 100%);
-  overflow: hidden;
-}
-
-.hero-glow {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(600px 300px at 12% 0%, rgba(253, 208, 6, 0.20), transparent 60%),
-    radial-gradient(500px 260px at 90% 10%, rgba(186, 31, 51, 0.22), transparent 55%);
-  pointer-events: none;
-}
-
-.hero-inner {
-  position: relative;
-  max-width: 900px;
-}
-
-.hero .crumbs {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
-  font-weight: 650;
-  margin-bottom: 10px;
-}
-
-.hero .crumbs span {
-  margin: 0 6px;
-  opacity: 0.7;
-}
-
-.hero h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 900;
-  color: #fff;
-  letter-spacing: -0.01em;
-}
-
-.hero .subtitle {
-  margin-top: 10px;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.65);
-  max-width: 560px;
-}
-
-.card {
-  position: relative;
-  z-index: 1;
-  margin-top: -32px;
-}
-
-.diagramHeader {
-  position: relative;
-  z-index: 1;
-  margin-top: -32px;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.full {
-  grid-column: 1 / -1;
-}
-
-.card {
-  background: #ffffff;
-  border: 1px solid rgba(17, 24, 39, 0.08);
-  border-radius: 12px;
-  padding: 14px;
-}
-
-.muted {
-  color: #6b6b6b;
-}
-
-.diagramHeader {
-  font-family: var(--font-display, 'Inter', sans-serif);
-  font-size: 18px;
-  font-weight: 800;
-  margin-bottom: 12px;
-  color: #2b2b2b;
-}
-
-.kv {
-  display: grid;
-  grid-template-columns: 120px 1fr;
-  row-gap: 6px;
-  column-gap: 10px;
-  font-size: 14px;
-}
-
-.code {
-  width: 100%;
-  background: #0b1220;
-  color: #e5e7eb;
-  border: 1px solid rgba(17, 24, 39, 0.12);
-  border-radius: 10px;
-  padding: 10px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
-  font-size: 12px;
-  line-height: 1.35;
-}
+/* Datenbank-Schema: das Diagramm bleibt auf hellem Grund (Mermaid zeichnet dunkle Linien), alles andere dunkel */
+.diagramHeader { font: 800 13px var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-2); margin-bottom: 12px; }
+.muted { color: var(--text-3); }
 
 .diagram {
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 12px;
-  background: #fffef5;
+  background: #f7f2f4;
   padding: 20px;
   overflow: visible;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  
 }
 
 .diagram :global(svg),
@@ -191,75 +74,18 @@
 }
 
 
+
 .tableData {
-  margin-top: 18px;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 16px;
-  padding: 14px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  margin-top: 18px; padding: 16px;
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
 }
-
-.tableDataHeader {
-  font-weight: 700;
-  margin-bottom: 10px;
-  color: #2b2b2b;
-}
-
-.empty {
-  color: #6b6b6b;
-}
-
-.dataTable {
-  overflow-x: auto;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 12px;
-}
-
-.dataHeader,
-.dataRow {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(140px, 1fr);
-}
-
-.dataHeader {
-  background: #fffbe6;
-  font-weight: 600;
-}
-
-.cell {
-  padding: 8px 10px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
-  font-size: 12px;
-}
-
-.dataRow:last-child .cell {
-  border-bottom: none;
-}
-
-.dataRow .cell:last-child,
-.dataHeader .cell:last-child {
-  border-right: none;
-}
-
-.diagram :global(svg),
-.diagram svg {
-  max-width: 100%;
-  height: auto;
-}
-
-.hint {
-  margin-top: 10px;
-}
-
-
-@media (max-width: 900px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-  .tables {
-    grid-template-columns: 1fr;
-  }
-}
+.tableDataHeader { font-weight: 800; margin-bottom: 10px; color: var(--text-1); }
+.empty { color: var(--text-3); }
+.dataTable { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+.dataHeader, .dataRow { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(140px, 1fr); }
+.dataHeader { background: var(--surface-2); font-weight: 800; color: var(--text-2); }
+.cell { padding: 8px 10px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); font-size: 12px; }
+.dataRow:last-child .cell { border-bottom: none; }
+.dataRow .cell:last-child, .dataHeader .cell:last-child { border-right: none; }
+.diagram :global(svg), .diagram svg { max-width: 100%; height: auto; }
+.hint { margin-top: 10px; }

@@ -1,93 +1,194 @@
-<div class="hero">
-  <div class="hero-glow"></div>
+<div class="hero hero--row">
   <div class="hero-inner">
-    <div class="crumbs">Admin <span>/</span> Dashboard</div>
-    <h1>Willkommen zurück <span class="wave">👋</span></h1>
-    <div class="subtitle">Live-Zahlen aus dem Backend – Spieler, Battles, Shop und Challenges auf einen Blick.</div>
+    <div class="crumbs">Admin <span>/</span> Übersicht</div>
+    <h1>Was in Challengr los ist</h1>
+    <div class="subtitle">Echte Zahlen aus dem Spiel – wer spielt, wann, was und wie oft.</div>
+  </div>
+  <div class="range" role="group" aria-label="Zeitraum">
+    @for (r of ranges; track r) {
+      <button type="button" class="range-btn" [class.active]="r === days" (click)="setRange(r)">{{ r }} Tage</button>
+    }
   </div>
 </div>
 
-<div class="container">
-
-  <div class="overview">
-
-  <div class="loading" *ngIf="loading">Lade Übersicht…</div>
-
-  <div class="error" *ngIf="!loading && error">
-    <div class="error-title">Overview konnte nicht geladen werden</div>
-    <div class="error-detail">{{ error }}</div>
-    <button class="btn-secondary" type="button" (click)="reload()">Retry</button>
+@if (error) {
+  <div class="error">
+    {{ error }}
+    <button type="button" class="btn" (click)="reload()">Nochmal versuchen</button>
   </div>
+}
 
-  <div class="kpi-grid">
-    <div class="card kpi" *ngFor="let k of kpis" [attr.data-tone]="k.tone">
-      <div class="kpi-icon-badge">{{ k.icon }}</div>
-      <div class="kpi-body">
-        <div class="kpi-value">{{ k.value }}</div>
-        <div class="kpi-label">{{ k.label }}</div>
+@if (loading && !stats) {
+  <div class="card loading">Lade Daten…</div>
+}
+
+@if (stats; as s) {
+  <!-- Kennzahlen -->
+  <div class="kpis" [class.refreshing]="loading">
+    <div class="card kpi">
+      <div class="kpi-label">Spieler gesamt</div>
+      <div class="kpi-value">{{ s.totals.players }}</div>
+      <div class="kpi-sub">+{{ s.totals.newPlayers7d }} in 7 Tagen</div>
+    </div>
+    <div class="card kpi kpi--accent">
+      <div class="kpi-label">Heute aktiv</div>
+      <div class="kpi-value">{{ s.totals.activeToday }}</div>
+      <div class="kpi-sub">{{ s.totals.active7d }} in den letzten 7 Tagen</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi-label">Kommen wieder</div>
+      <div class="kpi-value">{{ s.totals.returning7d }}</div>
+      <div class="kpi-sub">an 2+ Tagen aktiv (7 Tage)</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi-label">Battles heute</div>
+      <div class="kpi-value">{{ s.totals.battlesToday }}</div>
+      <div class="kpi-sub">{{ s.totals.battlesTotal }} insgesamt</div>
+    </div>
+    <a class="card kpi kpi--link" routerLink="/reports" [class.kpi--warn]="s.totals.openReports > 0">
+      <div class="kpi-label">Offene Meldungen</div>
+      <div class="kpi-value">{{ s.totals.openReports }}</div>
+      <div class="kpi-sub">
+        @if (s.totals.openReports > 0) { ⚠️ ansehen → } @else { alles erledigt ✓ }
       </div>
+    </a>
+    <div class="card kpi">
+      <div class="kpi-label">Gesperrt</div>
+      <div class="kpi-value">{{ s.totals.activeBans }}</div>
+      <div class="kpi-sub">{{ s.totals.checkinsToday }} Hotspot-Check-ins heute</div>
     </div>
   </div>
 
-  <div class="bottom-grid">
-
-    <div class="card panel">
-      <div class="panel-header">
-        <h2><span class="panel-icon">🛡️</span> Setup-Warnungen</h2>
+  <!-- Verläufe -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head">
+        <h2>Spieler pro Tag</h2>
+        <div class="card-sub">Wer an dem Tag die App offen hatte, und wer neu dazukam</div>
       </div>
-
-      <div class="panel-body">
-  <ng-container *ngIf="setupWarnings.length; else setupEmpty">
-          <div class="warn-row" *ngFor="let w of setupWarnings" [attr.data-tone]="w.tone">
-            <div class="dot"></div>
-            <div class="warn-text">
-              <div class="warn-title">{{ w.title }}</div>
-              <div class="warn-detail">{{ w.detail }}</div>
-            </div>
-          </div>
-        </ng-container>
-
-        <ng-template #setupEmpty>
-          <div class="empty">
-            <div class="empty-icon">✅</div>
-            <div class="empty-title">Keine Warnungen vorhanden</div>
-            <div class="empty-detail">Alles sieht gut aus.</div>
-          </div>
-        </ng-template>
-      </div>
+      <app-trend-chart [labels]="dayLabels" [series]="playerSeries" label="Aktive und neue Spieler pro Tag" />
     </div>
-
-    <div class="card panel">
-      <div class="panel-header panel-header--row">
-        <h2><span class="panel-icon">📡</span> Letzte Aktivität</h2>
-        <button class="btn-secondary" type="button" (click)="reload()">Aktualisieren</button>
+    <div class="card">
+      <div class="card-head">
+        <h2>Battles pro Tag</h2>
+        <div class="card-sub">{{ battlesInRange }} gespielte Battles in {{ s.days }} Tagen</div>
       </div>
+      <app-bar-chart [labels]="dayLabels" [series]="battleSeries" label="Gespielte Battles pro Tag nach Modus" />
+    </div>
+  </div>
 
-      <div class="panel-body">
-  <ng-container *ngIf="auditEvents.length; else auditEmpty">
-          <div class="timeline">
-            <div class="timeline-item" *ngFor="let e of auditEvents">
-              <div class="timeline-dot" [attr.data-type]="e.type">
-                {{ e.type === 'BATTLE' ? '⚔️' : e.type === 'SHOP' ? '🛍️' : 'ℹ️' }}
+  <div class="grid-3">
+    <div class="card span-2">
+      <div class="card-head">
+        <h2>Wann gespielt wird</h2>
+        <div class="card-sub">Battles nach Uhrzeit · am meisten {{ peakHour }}</div>
+      </div>
+      <app-bar-chart [labels]="hourLabels" [series]="hourSeries" labelKind="hour" label="Battles nach Uhrzeit" />
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h2>Spielmodi</h2>
+        <div class="card-sub">Gespielte Battles in {{ s.days }} Tagen</div>
+      </div>
+      <div class="modes">
+        @for (m of s.modes; track m.name; let i = $index) {
+          <div class="mode">
+            <i class="swatch" [style.background]="'var(--series-' + (i + 1) + ')'"></i>
+            <span class="mode-name">{{ m.name }}</span>
+            <b>{{ m.count }}</b>
+            <span class="mode-share">{{ battlesInRange ? ((m.count / battlesInRange) * 100 | number: '1.0-0') + ' %' : '' }}</span>
+          </div>
+        }
+      </div>
+      <div class="split-bar" aria-hidden="true">
+        @for (m of s.modes; track m.name; let i = $index) {
+          @if (m.count > 0) {
+            <span [style.flex]="m.count" [style.background]="'var(--series-' + (i + 1) + ')'"></span>
+          }
+        }
+      </div>
+      <div class="card-head card-head--spaced">
+        <h2>Herausforderungen</h2>
+        <div class="card-sub">{{ playedRate }} werden wirklich gespielt</div>
+      </div>
+      <app-hbar-list [items]="s.outcomes" color="var(--text-3)" label="Was aus Herausforderungen wird" />
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-head">
+        <h2>Ränge</h2>
+        <div class="card-sub">Wie viele Spieler in welchem Rang sind</div>
+      </div>
+      <app-hbar-list [items]="s.ranks" label="Spieler pro Rang" />
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h2>Figuren</h2>
+        <div class="card-sub">Welche Figur Spieler gewählt haben</div>
+      </div>
+      <app-hbar-list [items]="s.characters" label="Gewählte Figuren" />
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h2>Beliebteste Challenges</h2>
+        <div class="card-sub">Real-Life und Friendly, {{ s.days }} Tage</div>
+      </div>
+      <app-hbar-list [items]="s.topChallenges" color="var(--series-2)" label="Beliebteste Challenges" />
+    </div>
+  </div>
+
+  <div class="grid-2 grid-2--wide">
+    <div class="card">
+      <div class="card-head">
+        <h2>Top 10</h2>
+        <div class="card-sub">Nach Trophäen · Battles und Siege zählen nur Liga</div>
+      </div>
+      @if (s.leaderboard.length) {
+        <table class="table">
+          <thead>
+            <tr><th>#</th><th>Spieler</th><th>Rang</th><th class="num">Trophäen</th><th class="num">Battles</th><th class="num">Siegquote</th><th>Zuletzt</th></tr>
+          </thead>
+          <tbody>
+            @for (r of s.leaderboard; track $index; let i = $index) {
+              <tr>
+                <td class="pos" [class.pos--top]="i < 3">{{ i + 1 }}</td>
+                <td class="strong">{{ r.name }}</td>
+                <td><span class="pill">{{ r.rank }}</span></td>
+                <td class="num strong">🏆 {{ r.trophies }}</td>
+                <td class="num">{{ r.battles }}</td>
+                <td class="num">{{ winRate(r) }}</td>
+                <td class="muted">{{ lastSeen(r.lastSeen) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <div class="muted">Noch keine Spieler</div>
+      }
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h2>Letzte Aktivität</h2>
+      </div>
+      @if (activity.length) {
+        <ul class="feed">
+          @for (e of activity; track $index) {
+            <li>
+              <span class="feed-icon">{{ eventIcon(e.type) }}</span>
+              <div>
+                <div>{{ e.detail }}</div>
+                <div class="feed-at">{{ e.at }}</div>
               </div>
-              <div class="timeline-content">
-                <div class="timeline-detail">{{ e.detail }}</div>
-                <div class="timeline-at">{{ e.at }}</div>
-              </div>
-            </div>
-          </div>
-        </ng-container>
-
-        <ng-template #auditEmpty>
-          <div class="empty">
-            <div class="empty-icon">🗂️</div>
-            <div class="empty-title">Noch keine Events</div>
-            <div class="empty-detail">Sobald Spieler Battles spielen oder im Shop kaufen, erscheinen sie hier.</div>
-          </div>
-        </ng-template>
-      </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="muted">Noch keine Aktivität</div>
+      }
     </div>
+  </div>
 
-  </div>
-  </div>
-</div>
+  <div class="footnote">Stand {{ s.generatedAt | date: 'dd.MM.yyyy, HH:mm' }} · Tage nach österreichischer Zeit</div>
+}
