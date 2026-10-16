@@ -98,11 +98,21 @@ struct CharacterBadge: View {
             .resizable()
             .scaledToFill()
             .frame(width: size, height: size)
-            .background(Circle().fill(Color.white.opacity(0.9)))
+            .background(CharacterBackdrop(character: character))
             .clipShape(Circle())
             .overlay(Circle().stroke(ringColor, lineWidth: 3))
             .shadow(color: .black.opacity(0.35), radius: 4, y: 2)
             .accessibilityHidden(true)
+    }
+}
+
+/// Runder Hintergrund in der Farbe der Figur (hell in der Mitte, dunkler am Rand).
+struct CharacterBackdrop: View {
+    let character: GameCharacter
+
+    var body: some View {
+        Circle().fill(RadialGradient(colors: [character.themeColor.opacity(0.55), character.themeColor],
+                                     center: .center, startRadius: 2, endRadius: 40))
     }
 }
 

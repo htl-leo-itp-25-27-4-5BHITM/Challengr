@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// Spielbare 3D-Figuren. Jede Figur gibt es als SceneKit-Modell (`Characters/<sceneName>.scn`)
 /// und als daraus gerendertes Bild (ganze Figur + Brustbild für runde Avatare).
@@ -91,6 +92,22 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .merlo:     return "Merlo"
         case .lyra:      return "Lyra"
         case .kaeptnRex: return "Rex"
+        }
+    }
+
+    /// Farbe der Figur – Hintergrund hinter runden Avataren (statt durchsichtig).
+    var themeColor: Color {
+        switch self {
+        case .junge:     return Color(red: 0.98, green: 0.78, blue: 0.20)
+        case .maedchen:  return Color(red: 0.86, green: 0.25, blue: 0.27)
+        case .sirBrecht: return Color(red: 0.42, green: 0.55, blue: 0.75)
+        case .ragnar:    return Color(red: 0.85, green: 0.50, blue: 0.20)
+        case .hayato:    return Color(red: 0.80, green: 0.15, blue: 0.20)
+        case .kage:      return Color(red: 0.30, green: 0.25, blue: 0.55)
+        case .kai:       return Color(red: 0.95, green: 0.40, blue: 0.25)
+        case .merlo:     return Color(red: 0.50, green: 0.30, blue: 0.85)
+        case .lyra:      return Color(red: 0.30, green: 0.68, blue: 0.40)
+        case .kaeptnRex: return Color(red: 0.20, green: 0.50, blue: 0.60)
         }
     }
 

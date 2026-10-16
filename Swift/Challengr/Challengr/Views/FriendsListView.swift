@@ -91,7 +91,7 @@ struct FriendsListView: View {
                 .background(Capsule().fill(GameStyle.panelFill))
                 .overlay(Capsule().stroke(GameStyle.panelStroke, lineWidth: 1))
 
-                if !vm.incomingGifts.isEmpty {
+                if FriendGifts.isEnabled && !vm.incomingGifts.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         GameSectionHeader(title: "Geschenke", count: vm.incomingGifts.count)
 
@@ -579,8 +579,10 @@ private struct FriendRow: View {
                 GamePillButton(icon: "bolt.fill", color: .challengrGreen, textColor: .white, action: onBattle)
                     .accessibilityLabel("\(player.name) herausfordern")
             }
-            GamePillButton(icon: "gift.fill", color: .challengrRed, textColor: .white, action: onSendGift)
-                .accessibilityLabel("Geschenk an \(player.name)")
+            if FriendGifts.isEnabled {
+                GamePillButton(icon: "gift.fill", color: .challengrRed, textColor: .white, action: onSendGift)
+                    .accessibilityLabel("Geschenk an \(player.name)")
+            }
         }
         .gamePanel(padding: 12, cornerRadius: 18, highlight: isNearby ? .challengrGreen : nil)
         .contextMenu {
@@ -682,6 +684,11 @@ private struct IncomingFriendRequestSheet: View {
         }
         .background(Color(.systemBackground))
     }
+}
+
+/// Geschenke sind vorerst aus (wie der Shop): sie bringen noch nichts, solange Punkte nicht sichtbar sind.
+enum FriendGifts {
+    static let isEnabled = false
 }
 
 private struct GiftInboxRow: View {

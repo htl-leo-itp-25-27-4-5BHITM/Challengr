@@ -154,6 +154,10 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Einstellungen")
+            // Spiel-Look wie Profil und Freunde: dunkel, Gelb als Akzent
+            .scrollContentBackground(.hidden)
+            .background(GameStyle.background.ignoresSafeArea())
+            .tint(.challengrYellow)
             .task { await loadVisibility() }
             .alert("Name ändern", isPresented: $showRename) {
                 TextField("Neuer Name", text: $newName)
@@ -172,6 +176,7 @@ struct SettingsView: View {
                 dismiss()
             })
         }
+        .environment(\.colorScheme, .dark)
     }
 
     private func deleteAccount() {

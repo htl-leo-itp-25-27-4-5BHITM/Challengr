@@ -202,23 +202,26 @@ struct TrophyRoadView: View {
             let geo = RoadGeometry(width: outer.size.width, ranks: ranks.count)
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: false) {
-                    RoadCanvas(geo: geo,
-                               ranks: road.ranks,
-                               currentIndex: road.rankIndex(for: trophies) ?? 0,
-                               walker: walker,
-                               animate: !reduceMotion,
-                               isUnlocked: isUnlocked)
-                        .overlay {
-                            // Anker zum Hinscrollen: der Zielpunkt der Figur
-                            Color.clear.frame(width: 1, height: 1)
-                                .position(geo.point(road.position(for: trophies)))
-                                .id("walker")
+                    ZStack(alignment: .top) {
+                        RoadCanvas(geo: geo,
+                                   ranks: road.ranks,
+                                   currentIndex: road.rankIndex(for: trophies) ?? 0,
+                                   walker: walker,
+                                   animate: !reduceMotion,
+                                   isUnlocked: isUnlocked)
+                        // Unsichtbare Markierungen alle `scrollSlice` Punkt – Ziele für scrollTo (auch unter iOS 17)
+                        VStack(spacing: 0) {
+                            ForEach(0..<Int(ceil(geo.height / Self.scrollSlice)), id: \.self) { i in
+                                Color.clear.frame(height: Self.scrollSlice).id(i)
+                            }
                         }
+                        .allowsHitTesting(false)
+                    }
                 }
                 .defaultScrollAnchor(.bottom)
                 .task(id: loaded) {
                     guard loaded else { return }
-                    await walkIn(proxy: proxy)
+                    await walkIn(geo: geo, proxy: proxy)
                 }
             }
         }
@@ -231,7 +234,14 @@ struct TrophyRoadView: View {
     // MARK: - Actions (Aktionen)
 
     /// Figur vom zuletzt gesehenen Stand zum aktuellen laufen lassen; bei neuem Rang feiern.
-    private func walkIn(proxy: ScrollViewProxy) async {
+    private static let scrollSlice: CGFloat = 50
+
+    /// Scrollt so, dass die Figur bei dieser Weg-Position in der Mitte des Bildschirms steht.
+    private func scrollToWalker(at position: Double, geo: RoadGeometry, proxy: ScrollViewProxy) {
+        proxy.scrollTo(Int(geo.point(position).y / Self.scrollSlice), anchor: .center)
+    }
+
+    private func walkIn(geo: RoadGeometry, proxy: ScrollViewProxy) async {
         let math = road
         let last = TrophyRoadMemory.lastSeen(playerId: playerId)
         // Erster Besuch: vom Anfang des aktuellen Rangs loslaufen, ohne Feier
@@ -240,7 +250,9 @@ struct TrophyRoadView: View {
 
         walker = math.position(for: start)
         shownTrophies = start
-        proxy.scrollTo("walker", anchor: .center)
+        // Direkt beim eigenen Stand starten (Mitte zwischen alter und neuer Position, damit beide sichtbar sind)
+        try? await Task.sleep(for: .milliseconds(30))
+        scrollToWalker(at: (math.position(for: start) + math.position(for: trophies)) / 2, geo: geo, proxy: proxy)
 
         guard !reduceMotion else {
             walker = math.position(for: trophies)

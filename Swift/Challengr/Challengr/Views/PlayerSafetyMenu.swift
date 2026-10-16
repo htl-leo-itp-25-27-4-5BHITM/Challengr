@@ -7,6 +7,8 @@ struct PlayerSafetyMenu: View {
     /// Nach erfolgreichem Blockieren (z. B. Popup schließen, Spieler von der Karte nehmen)
     var onBlocked: () -> Void = {}
     var tint: Color = .challengrBlack
+    /// Runder Knopf im Spiel-Look (dunkle Ansichten) statt des iOS-Standardsymbols
+    var gameStyle = false
 
     @State private var showReport = false
     @State private var confirmBlock = false
@@ -25,11 +27,21 @@ struct PlayerSafetyMenu: View {
                 Label("Blockieren", systemImage: "hand.raised.fill")
             }
         } label: {
-            Image(systemName: "ellipsis.circle.fill")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(tint.opacity(0.7))
-                .frame(width: 36, height: 36)
-                .contentShape(Rectangle())
+            if gameStyle {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 15, weight: .black))
+                    .foregroundStyle(.white)
+                    .frame(width: 40, height: 40)
+                    .background(Circle().fill(GameStyle.panelFill))
+                    .overlay(Circle().stroke(GameStyle.panelStroke, lineWidth: 1))
+                    .contentShape(Circle())
+            } else {
+                Image(systemName: "ellipsis.circle.fill")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(tint.opacity(0.7))
+                    .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
+            }
         }
         .accessibilityLabel("Optionen für \(playerName)")
         .confirmationDialog("\(playerName) blockieren?", isPresented: $confirmBlock, titleVisibility: .visible) {

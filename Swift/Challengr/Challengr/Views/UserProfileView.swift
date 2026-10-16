@@ -49,6 +49,9 @@ struct UserProfileView: View {
     @State private var selectedTrophies: Int? = nil
     @State private var isChartExpanded: Bool = true
     @State private var showCharacterEditor: Bool = false
+    /// Verlauf eingeklappt: nur die letzten Battles, sonst wird das Profil endlos lang
+    @State private var showAllBattles = false
+    private static let collapsedBattleCount = 5
 
     @StateObject private var avatarStore = AvatarCustomizationStore()
 
@@ -405,7 +408,9 @@ struct UserProfileView: View {
                     .font(.footnote)
                     .foregroundColor(.secondary)
             } else {
-                ForEach(filtered) { battle in
+                // Ein Tag gewählt: alle Battles des Tages; sonst eingeklappt auf die letzten paar
+                let shown = date != nil || showAllBattles ? filtered : Array(filtered.prefix(Self.collapsedBattleCount))
+                ForEach(shown) { battle in
                     let deltaColor: Color = battle.pointsDelta >= 0 ? .challengrGreen : .challengrRed
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(alignment: .top, spacing: 10) {
@@ -437,9 +442,15 @@ struct UserProfileView: View {
                                 .font(.caption)
                                 .foregroundColor(battle.won ? .challengrGreen : battle.isDraw ? .secondary : .challengrRed)
 
-                            Text("Δ \(battle.pointsDelta)")
-                                .font(.caption)
-                                .foregroundColor(deltaColor)
+                            if battle.mode == "FRIENDLY" {
+                                Text("Friendly")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Label("\(battle.pointsDelta > 0 ? "+" : "")\(battle.pointsDelta)", systemImage: "trophy.fill")
+                                    .font(.caption)
+                                    .foregroundColor(deltaColor)
+                            }
                         }
                     }
                     .padding(10)
@@ -449,6 +460,20 @@ struct UserProfileView: View {
                             .fill(GameStyle.panelFill)
                             .shadow(color: .black.opacity(0.06), radius: 6, x: 0, y: 3)
                     )
+                }
+                if date == nil && filtered.count > Self.collapsedBattleCount {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) { showAllBattles.toggle() }
+                    } label: {
+                        Label(showAllBattles ? "Weniger anzeigen" : "Alle \(filtered.count) Battles anzeigen",
+                              systemImage: showAllBattles ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundColor(.challengrYellow)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(Capsule().fill(GameStyle.panelFill))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }

@@ -22,6 +22,21 @@ struct FriendProfileView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
+                // Eigene Knöpfe im Spiel-Look statt blauem Zurück-Pfeil und grauem Standard-Menü
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 15, weight: .black))
+                            .foregroundStyle(.white)
+                            .frame(width: 40, height: 40)
+                            .background(Circle().fill(GameStyle.panelFill))
+                            .overlay(Circle().stroke(GameStyle.panelStroke, lineWidth: 1))
+                    }
+                    .accessibilityLabel("Zurück")
+                    Spacer()
+                    PlayerSafetyMenu(playerId: friend.id, playerName: friend.name, onBlocked: { dismiss() }, gameStyle: true)
+                }
+
                 hero
 
                 HStack(spacing: 10) {
@@ -36,20 +51,7 @@ struct FriendProfileView: View {
             .padding(.bottom, 24)
         }
         .background(GameStyle.background.ignoresSafeArea())
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button { dismiss() } label: {
-                    Label("Zurück", systemImage: "chevron.left")
-                        .labelStyle(.titleAndIcon)
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                PlayerSafetyMenu(playerId: friend.id, playerName: friend.name, onBlocked: { dismiss() }, tint: .white)
-            }
-        }
+        .toolbar(.hidden, for: .navigationBar)
         .task { await load() }
     }
 

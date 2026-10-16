@@ -234,6 +234,9 @@ struct MapView: View {
         SkyCycle.sky(at: skyClock, coordinate: ownCoordinate ?? CLLocationCoordinate2D(latitude: 48.268, longitude: 14.251))
     }
 
+    /// Drehen mit einem Finger (wie Pokémon GO): Blickrichtung und Kamera beim Start des Wischens
+    @State private var dragStartCamera: MapCamera?
+
     /// Wo zuletzt auf die Karte getippt wurde – kurze Welle als Rückmeldung.
     @State private var mapTaps: [MapTapMark] = []
 
@@ -321,22 +324,12 @@ struct MapView: View {
                 HStack {
                     // LINKS: Capsule "Spieler in meiner Nähe" (ausklappbar)
                     HStack(spacing: 8) {
+                        // Neu ausrichten braucht es nicht mehr (die Karte bleibt immer auf dem Spieler) –
+                        // das Symbol klappt nur den Text auf/zu
                         Button {
-                            hasCenteredOnUser = true
-                            isFollowingUser = true
-                            position = .userLocation(
-                                followsHeading: false,
-                                fallback: .camera(
-                                    MapCamera(
-                                        centerCoordinate: startCoordinate,
-                                        distance: 1000,
-                                        heading: 0,
-                                        pitch: MapView.mapPitch
-                                    )
-                                )
-                            )
+                            withAnimation(.easeOut(duration: 0.2)) { showNearbyText.toggle() }
                         } label: {
-                            Image(systemName: "location.fill")
+                            Image(systemName: "person.2.fill")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundColor(.challengrDark)
                                 .padding(7)
@@ -762,6 +755,28 @@ struct MapView: View {
             )
         )
         .simultaneousGesture(SpatialTapGesture().onEnded { showTapMark(at: $0.location) })
+        // Ein Finger seitlich wischen = Karte um den Spieler drehen (Verschieben ist ohnehin aus)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 12)
+                .onChanged { value in
+                    guard let ownCoordinate else { return }
+                    if dragStartCamera == nil {
+                        dragStartCamera = lastMapCamera ?? position.camera
+                    }
+                    let start = dragStartCamera
+                    isProgrammaticCameraUpdate = true
+                    position = .camera(MapCamera(
+                        centerCoordinate: ownCoordinate,
+                        distance: start?.distance ?? currentZoomDistance,
+                        heading: MapRotation.heading(start: start?.heading ?? 0, dragWidth: value.translation.width),
+                        pitch: start?.pitch ?? MapView.mapPitch
+                    ))
+                }
+                .onEnded { _ in
+                    dragStartCamera = nil
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { isProgrammaticCameraUpdate = false }
+                }
+        )
         .overlay {
             ForEach(mapTaps) { MapTapRipple().position($0.location) }
                 .allowsHitTesting(false)
@@ -936,6 +951,8 @@ struct MapView: View {
                             .resizable()
                             .scaledToFill()
                             .frame(width: 64, height: 64)
+                            // Hintergrund in der Farbe der Figur statt durchsichtig über der Karte
+                            .background(CharacterBackdrop(character: AvatarPresets.persistedPreset().character ?? .own))
                             .clipShape(Circle())
                             .overlay(
                                 Circle().stroke(Color.white, lineWidth: 3)
@@ -2234,6 +2251,17 @@ struct MapView: View {
             return trimmed.components(separatedBy: separator).first ?? trimmed
         }
         return trimmed
+    }
+}
+
+/// Drehen mit einem Finger: so viele Grad pro Punkt seitlich gewischt.
+enum MapRotation {
+    static let degreesPerPoint = 0.4
+
+    /// Wischen nach rechts dreht die Karte mit dem Finger mit (Blickrichtung nimmt ab), 0…360.
+    static func heading(start: Double, dragWidth: CGFloat) -> Double {
+        let h = (start - Double(dragWidth) * degreesPerPoint).truncatingRemainder(dividingBy: 360)
+        return h < 0 ? h + 360 : h
     }
 }
 

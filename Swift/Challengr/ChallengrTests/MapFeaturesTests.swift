@@ -99,3 +99,17 @@ final class ScheduleAndUnlockTextTests: XCTestCase {
         XCTAssertTrue([GameCharacter.junge, .maedchen].contains(GameCharacter.opponent))
     }
 }
+
+/// Karte mit einem Finger drehen (wie Pokémon GO) und Figuren-Farben.
+final class MapRotationTests: XCTestCase {
+    func testDragRotatesAndWraps() {
+        XCTAssertEqual(MapRotation.heading(start: 90, dragWidth: 100), 50, accuracy: 0.001, "nach rechts wischen")
+        XCTAssertEqual(MapRotation.heading(start: 10, dragWidth: 100), 330, accuracy: 0.001, "unter 0 → 330")
+        XCTAssertEqual(MapRotation.heading(start: 350, dragWidth: -100), 30, accuracy: 0.001, "über 360 → 30")
+    }
+
+    func testGiftsAndShopAreOffForNow() {
+        XCTAssertFalse(FriendGifts.isEnabled)
+        XCTAssertFalse(ShopView.isOpen)
+    }
+}
