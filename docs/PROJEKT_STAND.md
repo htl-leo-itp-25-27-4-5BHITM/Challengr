@@ -105,21 +105,22 @@ Tryhard 600, Brawler 950, Dueler 1400, Challengr 2000+ (nach oben offen).
 
 ## 4. Aktueller Stand (live)
 
-**Leo Cloud** – Backend läuft seit 14.10. (16:34) mit dem Stand `29505ab` (seitdem nur App-Änderungen) (Dashboard `783988a`), 235 Wissensfragen:
-- Backend, Dashboard, Keycloak, Postgres laufen; WebApp aus.
+**Leo Cloud** – seit 16.10. (17:01) laufen Backend und Dashboard mit dem Stand `d310537`, 235 Wissensfragen:
+- Backend, Dashboard (neues Design, Analysen unter `/`), Keycloak, Postgres laufen; WebApp aus.
+- Tagesaktivität (`player_activity`) wird erst seit 16.10. erfasst – Verläufe davor sind aus Battles/Check-ins nachgerechnet.
 - Postgres- und Keycloak-Admin-Passwort am 12.10. neu gesetzt (`rotate-secrets.sh`).
 - Keycloak 24 (läuft mit `start-dev`, Daten in Postgres): Selbst-Registrierung **an**, „Verify email“ **aus** (kein Mailserver eingetragen).
   Admin mit 2FA (Authenticator-App). Benutzer `test` (Admin-Rolle): am 15.10. sollte 2FA entfernt und ein neues Passwort gesetzt werden –
   falls erledigt, liegt es im Schlüsselbund „Challengr Dashboard test“.
 - Spieler (Stand 14.10.): 8 Konten. `bin_der_dominik` wurde zum Testen per Hand auf 1342 Trophäen gesetzt → daraufhin
   **offene Meldung** von `mskes07` („zu viele Trophäen“) im Dashboard – einfach „Erledigt“, nicht sperren.
-- Backups vom 12.10. und 14.10. (vor jedem Deploy) in `~/Developer/ChallengrProjekt/Backups/` (lokal, nicht im Repo).
+- Backups vom 12.10., 14.10. und 16.10. (vor jedem Deploy) in `~/Developer/ChallengrProjekt/Backups/` (lokal, nicht im Repo).
 
 **Apple:**
 - Apple Developer Program (Individual, Sebastian Lehner), **Team-ID `9CK2N38H9M`**, Verlängerung 13.10.2027 (Auto-Renew an).
 - App Store Connect: App „Challengr“, SKU `challengr-ios`.
 - TestFlight-Gruppen: intern **„Team“**, extern **„Schule“** (2 Tester). Testinformationen inkl. `applereview`-Login ausgefüllt.
-- Builds: `2610121422` (Im Test, alt – Kartenfilter-Bug), `2610130934` (Kartenfix), **`2610131028`** (Kartenfix + viele Spieler), `2610141130` (Trophy Road neu, Rang-Figuren, Karte nur drehbar, Shop zu, nur Trophäen), **`2610141213`** (+ Karte zoombar mit Spieler in der Mitte, Freundes-Menü schließt nach Herausfordern, angemeldet bleiben über Offline-Token im Schlüsselbund), `2610141631` (+ Freundesprofil im Spiel-Look, Namen ändern, Tag/Nacht), **`2610161251`** (+ Feinschliff 16.10., neues Logo) – **`2610161251` der Gruppe „Schule“ zuweisen**. Text für „Was soll getestet werden?“: `docs/TESTFLIGHT_TESTER_TEXT.md`.
+- Builds: `2610121422` (Im Test, alt – Kartenfilter-Bug), `2610130934` (Kartenfix), **`2610131028`** (Kartenfix + viele Spieler), `2610141130` (Trophy Road neu, Rang-Figuren, Karte nur drehbar, Shop zu, nur Trophäen), **`2610141213`** (+ Karte zoombar mit Spieler in der Mitte, Freundes-Menü schließt nach Herausfordern, angemeldet bleiben über Offline-Token im Schlüsselbund), `2610141631` (+ Freundesprofil im Spiel-Look, Namen ändern, Tag/Nacht), `2610161251` (+ Feinschliff 16.10., neues Logo), **`2610161702`** (+ Karten-Drehen repariert) – **`2610161702` der Gruppe „Schule“ zuweisen**. Text für „Was soll getestet werden?“: `docs/TESTFLIGHT_TESTER_TEXT.md`.
 
 **Git:** `feature/liga-modus` ist auf GitHub aktuell. `main` hängt hinterher (Stand `7e39882`, 13.10.) – bei Bedarf mergen.
 
@@ -145,10 +146,11 @@ Erledigt am 13.10.: hängende Keycloak-Konten freigeschaltet, Passwort von `test
 Keycloak-Admin eingerichtet, Kontakt-Mail bestätigt (`challengrapp.official@gmail.com`), alles gepusht,
 Zustimmung der Schule liegt vor, Test mit zwei iPhones durchgeführt (Checkliste Teil C/D).
 
-0. **Kurzfristig:** Build `2610161251` der Gruppe „Schule“ zuweisen; dunkle Einstellungen und Drehen mit einem Finger am iPhone prüfen (im Simulator nicht getestet); Meldung zu `bin_der_dominik` im Dashboard auf „Erledigt“;
+0. **Kurzfristig:** Build `2610161702` der Gruppe „Schule“ zuweisen; dunkle Einstellungen und Drehen mit einem Finger am iPhone prüfen; neues Dashboard einmal mit echtem Admin-Login ansehen; Meldung zu `bin_der_dominik` im Dashboard auf „Erledigt“;
    Dashboard-Zugang klären (2FA bei `test` löschen oder eigenes Konto mit Rolle `admin`); **Instagram-Konto `challengr.game`
    prüfen** – im Gmail-Postfach lagen am 14.10. Mails „New login … Samsung SM-A556B/SM-A566B“ und „password has been changed“.
    Falls das nicht das Team war: Konto sichern, Passwort ändern, 2FA an.
+   **Testplan:** erst die 5. Klassen (1–2 Wochen, Link nur in deren Klassen-Chats, Tester-Limit z. B. 150), parallel Backup/Mailserver/Moderation klären, dann die ganze Schule (Plakat, Mail an den Professor).
 1. **Tägliches DB-Backup – dringend**, weil jetzt echte Spielerdaten anfallen (kein CronJob im Namespace).
    Z. B. Kubernetes-CronJob mit `pg_dump`, 7 Tage aufbewahren. Bis dahin regelmäßig manuell sichern (siehe Befehle).
 2. **Mailserver in Keycloak** (Realm **challengr** → Realm settings → Email; z. B. Gmail mit App-Passwort,

@@ -1,7 +1,7 @@
 # Text für TestFlight → „Was soll getestet werden?“
 
 Für App Store Connect → TestFlight → Build → *Testinformationen* (max. 4000 Zeichen).
-Stand: Build `2610161251` (16.10.2026). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
+Stand: Build `2610161702` (16.10.2026). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
 
 ---
 
@@ -9,7 +9,7 @@ Stand: Build `2610161251` (16.10.2026). Bei neuen Builds oben die Neuerungen erg
 
 ✨ **Neues Logo** – schau auf deinen Home-Bildschirm!
 
-🔄 **Karte mit einem Finger drehen:** einfach nach links oder rechts wischen, wie bei Pokémon GO.
+🔄 **Karte mit einem Finger drehen:** Finger auf die Karte und im Kreis ziehen, wie bei Pokémon GO. Die Drehung bleibt jetzt auch beim Gehen erhalten.
 
 🎨 **Neuer Look:** Einstellungen im dunklen Spiel-Design, Avatare in der Farbe deiner Figur, Freundesprofil mit neuen Knöpfen.
 
