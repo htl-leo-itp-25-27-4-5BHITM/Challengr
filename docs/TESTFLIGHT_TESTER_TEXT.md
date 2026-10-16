@@ -1,11 +1,23 @@
 # Text für TestFlight → „Was soll getestet werden?“
 
 Für App Store Connect → TestFlight → Build → *Testinformationen* (max. 4000 Zeichen).
-Stand: Build `2610141631` (14.10.2026). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
+Stand: Build `2610161251` (16.10.2026). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
 
 ---
 
 **Neu in diesem Update**
+
+✨ **Neues Logo** – schau auf deinen Home-Bildschirm!
+
+🔄 **Karte mit einem Finger drehen:** einfach nach links oder rechts wischen, wie bei Pokémon GO.
+
+🎨 **Neuer Look:** Einstellungen im dunklen Spiel-Design, Avatare in der Farbe deiner Figur, Freundesprofil mit neuen Knöpfen.
+
+📜 **Aufgeräumtes Profil:** Dein Battle-Verlauf zeigt die letzten 5 Battles, den Rest klappst du bei Bedarf auf.
+
+🏆 Die Trophy Road öffnet jetzt direkt dort, wo du gerade stehst.
+
+🎁 Geschenke sind vorerst pausiert.
 
 🌙 **Tag und Nacht:** Die Karte folgt dem echten Sonnenstand. Abends gibt es Abendrot, nachts wird die Karte dunkel mit Sternenhimmel, morgens kommt das Morgenrot.
 
@@ -30,6 +42,7 @@ Stand: Build `2610141631` (14.10.2026). Bei neuen Builds oben die Neuerungen erg
 🛒 **Shop:** Er ist vorerst geschlossen.
 
 **Bitte testen**
+- Dreh die Karte mit einem Finger: Fühlt sich das gut an?
 - Ändere deinen Namen: Sehen deine Freunde den neuen Namen?
 - Schließ die App ganz und öffne sie wieder: Kommst du ohne Login rein?
 - Schau abends oder nachts auf die Karte: Ist alles gut lesbar?

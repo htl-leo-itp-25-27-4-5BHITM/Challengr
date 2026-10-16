@@ -1,6 +1,6 @@
 # Challengr – Projektstand und Übergabe
 
-Stand: **15. Oktober 2026** · Branch `feature/liga-modus` (auf GitHub) · `main` steht noch auf `7e39882`
+Stand: **16. Oktober 2026** · Branch `feature/liga-modus` (auf GitHub) · `main` steht noch auf `7e39882`
 
 Diese Datei fasst zusammen, worum es geht, was gebaut wurde, wie alles läuft und was offen ist.
 Sie ist zum Weitermachen gedacht – für das Team und für eine neue Claude-Sitzung
@@ -67,7 +67,8 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 | `573fbab`, `be10828` | **235 Wissensfragen:** Fragenkatalog `Backend/…/resources/quiz-questions.txt` (eine Zeile pro Frage: `Frage \| richtig \| falsch \| falsch \| falsch`), `QuizQuestionSync` legt beim Start fehlende Fragen an – neue Fragen = Zeile anhängen + `deploy-cloud.sh backend`. `QuizHistory` bevorzugt Fragen, die beide Spieler zuletzt nicht hatten (letzte 100 pro Spieler, nur im Speicher). Herausfordern aus dem Freundes-Menü schließt das Menü |
 | `90d7ecd`, `56e5eb6`, `29505ab` | **Namen ändern** (`PUT /api/players/{id}/name`, 3–20 Zeichen, Filter, eindeutig); Login/Standort überschreiben den Namen nicht mehr. **Freundesprofil** im Spiel-Look. **Tag/Nacht** (`SkyCycle`, `SkyOverlay`): Karte nach echtem Sonnenstand hell/dunkel, Dämmerung, Sterne – nur Optik |
 
-| `0337ac9` | **Feinschliff 16.10.:** Einstellungen dunkel; Battle-Verlauf eingeklappt (letzte 5); Geschenke aus (`FriendGifts.isEnabled`); Karte mit einem Finger drehen (`MapRotation`); Freundesprofil mit runden Spiel-Knöpfen; Neuausrichten-Knopf entfernt; runde Avatare mit Farbe der Figur (`GameCharacter.themeColor`, `CharacterBackdrop`); Trophy Road startet bei der Figur. **Noch nicht hochgeladen** |
+| `0337ac9` | **Feinschliff 16.10.:** Einstellungen dunkel; Battle-Verlauf eingeklappt (letzte 5); Geschenke aus (`FriendGifts.isEnabled`); Karte mit einem Finger drehen (`MapRotation`); Freundesprofil mit runden Spiel-Knöpfen; Neuausrichten-Knopf entfernt; runde Avatare mit Farbe der Figur (`GameCharacter.themeColor`, `CharacterBackdrop`); Trophy Road startet bei der Figur |
+| `fdc1b64` | **Neues Logo:** App-Icon (hell/dunkel/getönt, Quelle 1024 px) und Login-Bildschirm (`AppLogo`) |
 | `62916fe` | **Angemeldet bleiben:** Refresh-Token (Scope `offline_access`) im iOS-Schlüsselbund (`TokenStore`), beim Start stille Anmeldung ohne Browser; ~30 Tage ohne Nutzung gültig (Keycloak „Offline Session Idle“), jede Nutzung verlängert |
 
 **Trophäen-Regel (`control/TrophyMath`):** Sieg +30 / Niederlage −20 bei gleich vielen Trophäen; pro 25 Trophäen, die der Verlierer
@@ -102,7 +103,7 @@ Tryhard 600, Brawler 950, Dueler 1400, Challengr 2000+ (nach oben offen).
 
 ## 4. Aktueller Stand (live)
 
-**Leo Cloud** – Backend läuft seit 14.10. (16:34) mit dem Stand `29505ab` (Dashboard `783988a`), 235 Wissensfragen:
+**Leo Cloud** – Backend läuft seit 14.10. (16:34) mit dem Stand `29505ab` (seitdem nur App-Änderungen) (Dashboard `783988a`), 235 Wissensfragen:
 - Backend, Dashboard, Keycloak, Postgres laufen; WebApp aus.
 - Postgres- und Keycloak-Admin-Passwort am 12.10. neu gesetzt (`rotate-secrets.sh`).
 - Keycloak 24 (läuft mit `start-dev`, Daten in Postgres): Selbst-Registrierung **an**, „Verify email“ **aus** (kein Mailserver eingetragen).
@@ -116,7 +117,7 @@ Tryhard 600, Brawler 950, Dueler 1400, Challengr 2000+ (nach oben offen).
 - Apple Developer Program (Individual, Sebastian Lehner), **Team-ID `9CK2N38H9M`**, Verlängerung 13.10.2027 (Auto-Renew an).
 - App Store Connect: App „Challengr“, SKU `challengr-ios`.
 - TestFlight-Gruppen: intern **„Team“**, extern **„Schule“** (2 Tester). Testinformationen inkl. `applereview`-Login ausgefüllt.
-- Builds: `2610121422` (Im Test, alt – Kartenfilter-Bug), `2610130934` (Kartenfix), **`2610131028`** (Kartenfix + viele Spieler), `2610141130` (Trophy Road neu, Rang-Figuren, Karte nur drehbar, Shop zu, nur Trophäen), **`2610141213`** (+ Karte zoombar mit Spieler in der Mitte, Freundes-Menü schließt nach Herausfordern, angemeldet bleiben über Offline-Token im Schlüsselbund), **`2610141631`** (+ Freundesprofil im Spiel-Look, Namen ändern in den Einstellungen, Tag/Nacht-Zyklus auf der Karte) – **`2610141631` der Gruppe „Schule“ zuweisen**, falls noch nicht geschehen. Text für „Was soll getestet werden?“: `docs/TESTFLIGHT_TESTER_TEXT.md`.
+- Builds: `2610121422` (Im Test, alt – Kartenfilter-Bug), `2610130934` (Kartenfix), **`2610131028`** (Kartenfix + viele Spieler), `2610141130` (Trophy Road neu, Rang-Figuren, Karte nur drehbar, Shop zu, nur Trophäen), **`2610141213`** (+ Karte zoombar mit Spieler in der Mitte, Freundes-Menü schließt nach Herausfordern, angemeldet bleiben über Offline-Token im Schlüsselbund), `2610141631` (+ Freundesprofil im Spiel-Look, Namen ändern, Tag/Nacht), **`2610161251`** (+ Feinschliff 16.10., neues Logo) – **`2610161251` der Gruppe „Schule“ zuweisen**. Text für „Was soll getestet werden?“: `docs/TESTFLIGHT_TESTER_TEXT.md`.
 
 **Git:** `feature/liga-modus` ist auf GitHub aktuell. `main` hängt hinterher (Stand `7e39882`, 13.10.) – bei Bedarf mergen.
 
@@ -142,7 +143,7 @@ Erledigt am 13.10.: hängende Keycloak-Konten freigeschaltet, Passwort von `test
 Keycloak-Admin eingerichtet, Kontakt-Mail bestätigt (`challengrapp.official@gmail.com`), alles gepusht,
 Zustimmung der Schule liegt vor, Test mit zwei iPhones durchgeführt (Checkliste Teil C/D).
 
-0. **Kurzfristig:** Build `2610141631` der Gruppe „Schule“ zuweisen; Meldung zu `bin_der_dominik` im Dashboard auf „Erledigt“;
+0. **Kurzfristig:** Build `2610161251` der Gruppe „Schule“ zuweisen; dunkle Einstellungen und Drehen mit einem Finger am iPhone prüfen (im Simulator nicht getestet); Meldung zu `bin_der_dominik` im Dashboard auf „Erledigt“;
    Dashboard-Zugang klären (2FA bei `test` löschen oder eigenes Konto mit Rolle `admin`); **Instagram-Konto `challengr.game`
    prüfen** – im Gmail-Postfach lagen am 14.10. Mails „New login … Samsung SM-A556B/SM-A566B“ und „password has been changed“.
    Falls das nicht das Team war: Konto sichern, Passwort ändern, 2FA an.
