@@ -68,6 +68,8 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 | `90d7ecd`, `56e5eb6`, `29505ab` | **Namen ändern** (`PUT /api/players/{id}/name`, 3–20 Zeichen, Filter, eindeutig); Login/Standort überschreiben den Namen nicht mehr. **Freundesprofil** im Spiel-Look. **Tag/Nacht** (`SkyCycle`, `SkyOverlay`): Karte nach echtem Sonnenstand hell/dunkel, Dämmerung, Sterne – nur Optik |
 
 | `0337ac9` | **Feinschliff 16.10.:** Einstellungen dunkel; Battle-Verlauf eingeklappt (letzte 5); Geschenke aus (`FriendGifts.isEnabled`); Karte mit einem Finger drehen (`MapRotation`); Freundesprofil mit runden Spiel-Knöpfen; Neuausrichten-Knopf entfernt; runde Avatare mit Farbe der Figur (`GameCharacter.themeColor`, `CharacterBackdrop`); Trophy Road startet bei der Figur |
+| `7a2563e` | **Karte drehen repariert:** Standort-Updates nehmen die sichtbare Kamera (sprang sonst nach Norden zurück); Ein-Finger-Drehen um die Kartenmitte; zwei Finger gehören MapKit |
+| `a8f3abd`, `d310537` | **Dashboard neu:** Spiel-Look, Übersicht mit echten Analysen (`GET /api/admin/stats`, Tabelle `player_activity`, `Player.createdAt`), Spieler-Seite auf Deutsch mit Trophäen/Rang/Sperren, keine Beispieldaten mehr. Diagramme selbst gebaut (`features/dashboard/charts.ts`) |
 | `fdc1b64` | **Neues Logo:** App-Icon (hell/dunkel/getönt, Quelle 1024 px) und Login-Bildschirm (`AppLogo`) |
 | `62916fe` | **Angemeldet bleiben:** Refresh-Token (Scope `offline_access`) im iOS-Schlüsselbund (`TokenStore`), beim Start stille Anmeldung ohne Browser; ~30 Tage ohne Nutzung gültig (Keycloak „Offline Session Idle“), jede Nutzung verlängert |
 
@@ -190,6 +192,7 @@ kubectl -n student-it220257 exec deploy/challengr-postgres -- psql -U postgres -
 
 **Neue Quizfragen:** Zeile in `Backend/challengrbackend/src/main/resources/quiz-questions.txt` anhängen
 (`Frage | richtig | falsch | falsch | falsch`), dann `deploy-cloud.sh backend`. Bestehende Fragen nicht umformulieren (sonst doppelt).
+**Dashboard lokal ansehen:** Test-Backend (TestHarness, Port 8080) + `npx ng serve --proxy-config <datei>` mit Proxy auf `localhost:8080` und Headern `X-Player-Id`/`X-Player-Roles: admin`; Login-Token vorher in `sessionStorage['challengr.dashboard.auth']` legen. Achtung: Tabellen in Angular-Templates immer mit `<thead>/<tbody>`, sonst bricht die Hydrierung (NG0500) und auf der Seite läuft kein Code.
 **Dashboard-Meldungen:** `https://it220257.cloud.htl-leonding.ac.at/reports` (Login mit Admin-Rolle).
 
 App-Unit-Tests: `xcodebuild -project Swift/Challengr/Challengr.xcodeproj -scheme Challengr -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test -only-testing:ChallengrTests`
