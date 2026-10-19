@@ -6,6 +6,7 @@ import { Users } from './features/users/users';
 import { Challenges } from './features/challenges/challenges';
 import { Erd } from './features/erd/erd';
 import { Reports } from './features/reports/reports';
+import { Feedback } from './features/feedback/feedback';
 
 const routes: Routes = [
   { path: '', component: Dashboard },
@@ -13,6 +14,7 @@ const routes: Routes = [
   { path: 'challenges', component: Challenges },
   { path: 'erd', component: Erd },
   { path: 'reports', component: Reports },
+  { path: 'feedback', component: Feedback },
   { path: '**', redirectTo: '' },
 ];
 

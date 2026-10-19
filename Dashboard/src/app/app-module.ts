@@ -14,10 +14,11 @@ import { Users } from './features/users/users';
 import { Challenges } from './features/challenges/challenges';
 import { Erd } from './features/erd/erd';
 import { Reports } from './features/reports/reports';
+import { Feedback } from './features/feedback/feedback';
 import { FormsModule } from '@angular/forms';
 
 @NgModule({
-  declarations: [App, Layout, Header, Dashboard, TrendChart, BarChart, HBarList, Users, Challenges, Erd, Reports],
+  declarations: [App, Layout, Header, Dashboard, TrendChart, BarChart, HBarList, Users, Challenges, Erd, Reports, Feedback],
   imports: [BrowserModule, AppRoutingModule, FormsModule, HttpClientModule],
   providers: [
     provideBrowserGlobalErrorListeners(),

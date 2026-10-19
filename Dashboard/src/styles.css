@@ -91,7 +91,7 @@ a { color: var(--yellow); }
 .section { margin-bottom: 20px; }
 
 /* ---------- Knöpfe & Eingaben ---------- */
-.btn, button.btn {
+.btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 14px; border-radius: 999px;
   border: 1px solid var(--border-strong);

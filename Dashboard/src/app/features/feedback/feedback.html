@@ -1,0 +1,102 @@
+<div class="hero hero--row">
+  <div class="hero-inner">
+    <div class="crumbs">Admin <span>/</span> Feedback</div>
+    <h1>TestFlight-Feedback</h1>
+    <div class="subtitle">Was Tester über „Feedback senden“ geschickt haben – Screenshots mit Text und Abstürze. Erledigtes abhaken.</div>
+  </div>
+  @if (feed?.configured) {
+    <button type="button" class="btn" (click)="load(true)" [disabled]="loading">↻ Neu laden</button>
+  }
+</div>
+
+@if (error) { <div class="error">{{ error }}</div> }
+@if (feed?.error) { <div class="error">{{ feed!.error }}</div> }
+
+@if (loading && !feed) {
+  <div class="card muted">Lade Feedback von Apple…</div>
+}
+
+@if (feed && !feed.configured) {
+  <div class="card setup">
+    <h2>Noch nicht eingerichtet</h2>
+    <p>Damit hier Feedback erscheint, braucht der Server einen App-Store-Connect-API-Schlüssel:</p>
+    <ol>
+      <li>App Store Connect → <b>Benutzer und Zugriff</b> → <b>Integrationen</b> → <b>App Store Connect API</b></li>
+      <li>Team-Schlüssel erstellen, Zugriff <b>Developer</b>, die <b>.p8-Datei</b> herunterladen (geht nur einmal)</li>
+      <li>Issuer-ID und Key-ID notieren und im Projektordner ausführen:<br />
+        <code>./scripts/setup-appstore-api.sh ~/Downloads/AuthKey_XXXX.p8 &lt;Issuer-ID&gt; &lt;Key-ID&gt;</code></li>
+    </ol>
+  </div>
+}
+
+@if (feed?.configured) {
+  <div class="tabs" role="group" aria-label="Filter">
+    <button type="button" [class.active]="filter === 'open'" (click)="filter = 'open'">Offen <span>{{ count('open') }}</span></button>
+    <button type="button" [class.active]="filter === 'done'" (click)="filter = 'done'">Erledigt <span>{{ count('done') }}</span></button>
+    <button type="button" [class.active]="filter === 'all'" (click)="filter = 'all'">Alle <span>{{ count('all') }}</span></button>
+  </div>
+
+  <div class="list" [class.refreshing]="loading">
+    @for (item of items; track item.id) {
+      <article class="card item" [class.done]="item.done">
+        @if (item.screenshots.length) {
+          <div class="shots">
+            @for (url of item.screenshots; track url) {
+              <button type="button" class="shot" (click)="enlarged = url" aria-label="Screenshot vergrößern">
+                <img [src]="url" alt="Screenshot des Testers" loading="lazy" referrerpolicy="no-referrer" />
+              </button>
+            }
+          </div>
+        } @else if (item.kind === 'CRASH') {
+          <div class="crash-badge" aria-hidden="true">💥</div>
+        }
+
+        <div class="body">
+          <div class="head">
+            <span class="pill" [class.pill--danger]="item.kind === 'CRASH'">{{ item.kind === 'CRASH' ? 'Absturz' : 'Feedback' }}</span>
+            <span class="date">{{ item.createdAt | date: 'dd.MM.yyyy, HH:mm' }}</span>
+          </div>
+          @if (item.comment) {
+            <p class="comment">„{{ item.comment }}“</p>
+          } @else {
+            <p class="comment muted">(kein Text)</p>
+          }
+          <div class="meta">
+            @if (item.tester || item.testerEmail) { <span>👤 {{ item.tester || item.testerEmail }}</span> }
+            @if (item.device) { <span>📱 {{ item.device }}{{ item.osVersion ? ' · iOS ' + item.osVersion : '' }}</span> }
+            @if (item.appVersion) { <span>📦 Build {{ item.appVersion }}</span> }
+          </div>
+
+          @if (item.kind === 'CRASH') {
+            <button type="button" class="link" (click)="toggleCrashLog(item)">
+              {{ crashLogs[item.id] !== undefined ? 'Absturzbericht ausblenden' : 'Absturzbericht anzeigen' }}
+            </button>
+            @if (crashLogs[item.id] !== undefined) {
+              <pre class="crash-log">{{ crashLogs[item.id] }}</pre>
+            }
+          }
+
+          <div class="actions">
+            <button type="button" class="btn" [class.btn--primary]="!item.done" [disabled]="busyId === item.id" (click)="toggleDone(item)">
+              {{ item.done ? 'Wieder öffnen' : '✓ Erledigt' }}
+            </button>
+            @if (item.done) {
+              <span class="done-info">erledigt{{ item.doneBy ? ' von ' + item.doneBy : '' }}{{ item.doneAt ? ' am ' + (item.doneAt | date: 'dd.MM.') : '' }}</span>
+            }
+          </div>
+        </div>
+      </article>
+    } @empty {
+      <div class="card empty-state">
+        <div class="empty-icon">{{ filter === 'open' ? '🎉' : '📭' }}</div>
+        <h2>{{ filter === 'open' ? 'Alles erledigt' : 'Nichts hier' }}</h2>
+      </div>
+    }
+  </div>
+}
+
+@if (enlarged) {
+  <div class="lightbox" (click)="enlarged = null" role="dialog" aria-label="Screenshot">
+    <img [src]="enlarged" alt="Screenshot groß" referrerpolicy="no-referrer" />
+  </div>
+}
