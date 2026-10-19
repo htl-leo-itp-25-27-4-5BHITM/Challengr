@@ -70,6 +70,7 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 | `0337ac9` | **Feinschliff 16.10.:** Einstellungen dunkel; Battle-Verlauf eingeklappt (letzte 5); Geschenke aus (`FriendGifts.isEnabled`); Karte mit einem Finger drehen (`MapRotation`); Freundesprofil mit runden Spiel-Knöpfen; Neuausrichten-Knopf entfernt; runde Avatare mit Farbe der Figur (`GameCharacter.themeColor`, `CharacterBackdrop`); Trophy Road startet bei der Figur |
 | `7a2563e` | **Karte drehen repariert:** Standort-Updates nehmen die sichtbare Kamera (sprang sonst nach Norden zurück); Ein-Finger-Drehen um die Kartenmitte; zwei Finger gehören MapKit |
 | `a8f3abd`, `d310537` | **Dashboard neu:** Spiel-Look, Übersicht mit echten Analysen (`GET /api/admin/stats`, Tabelle `player_activity`, `Player.createdAt`), Spieler-Seite auf Deutsch mit Trophäen/Rang/Sperren, keine Beispieldaten mehr. Diagramme selbst gebaut (`features/dashboard/charts.ts`) |
+| `c749200`, `b8ddeda` | **TestFlight-Feedback im Dashboard** (Seite „Feedback“): Screenshots/Abstürze aus der App Store Connect API (`AppStoreConnectClient`, `TestFlightFeedbackService`), Erledigt-Haken in `feedback_status`. Braucht einen API-Schlüssel im Secret `challengr-asc` (`scripts/setup-appstore-api.sh`), ohne ist die Seite eine Anleitung |
 | `fdc1b64` | **Neues Logo:** App-Icon (hell/dunkel/getönt, Quelle 1024 px) und Login-Bildschirm (`AppLogo`) |
 | `62916fe` | **Angemeldet bleiben:** Refresh-Token (Scope `offline_access`) im iOS-Schlüsselbund (`TokenStore`), beim Start stille Anmeldung ohne Browser; ~30 Tage ohne Nutzung gültig (Keycloak „Offline Session Idle“), jede Nutzung verlängert |
 
@@ -132,6 +133,9 @@ Tryhard 600, Brawler 950, Dueler 1400, Challengr 2000+ (nach oben offen).
 | Challengr Apple-Prüfer-Account | App-Login `applereview` |
 | Challengr Dashboard test | Dashboard-Login `test` (nur, wenn am 15.10. so gespeichert) |
 
+Der **App-Store-Connect-API-Schlüssel** (.p8) liegt nur im Kubernetes-Secret `challengr-asc` (Issuer-ID, Key-ID, Schlüssel) –
+die .p8-Datei selbst sicher aufheben, Apple lässt sie nur einmal herunterladen.
+
 Anzeigen: `security find-generic-password -s "<Eintrag>" -w`. Postgres/Keycloak-Admin stehen zusätzlich im
 Kubernetes-Secret `challengr-secrets`. Verloren? `./scripts/rotate-secrets.sh` setzt neue.
 
@@ -146,7 +150,8 @@ Erledigt am 13.10.: hängende Keycloak-Konten freigeschaltet, Passwort von `test
 Keycloak-Admin eingerichtet, Kontakt-Mail bestätigt (`challengrapp.official@gmail.com`), alles gepusht,
 Zustimmung der Schule liegt vor, Test mit zwei iPhones durchgeführt (Checkliste Teil C/D).
 
-0. **Kurzfristig:** Build `2610161702` der Gruppe „Schule“ zuweisen; dunkle Einstellungen und Drehen mit einem Finger am iPhone prüfen; neues Dashboard einmal mit echtem Admin-Login ansehen; Meldung zu `bin_der_dominik` im Dashboard auf „Erledigt“;
+0. **TestFlight-Feedback einrichten:** App Store Connect → Benutzer und Zugriff → Integrationen → App Store Connect API → Team-Schlüssel (Rolle Developer), dann `./scripts/setup-appstore-api.sh <AuthKey.p8> <Issuer-ID> <Key-ID>`. Hinweis: Die Apple-Schnittstelle für Feedback (betaFeedbackScreenshotSubmissions/CrashSubmissions) ist nur mit Test-Antworten getestet – beim ersten echten Abruf auf Fehlermeldungen auf der Seite achten.
+   **Kurzfristig:** Build `2610161702` der Gruppe „Schule“ zuweisen; dunkle Einstellungen und Drehen mit einem Finger am iPhone prüfen; neues Dashboard einmal mit echtem Admin-Login ansehen; Meldung zu `bin_der_dominik` im Dashboard auf „Erledigt“;
    Dashboard-Zugang klären (2FA bei `test` löschen oder eigenes Konto mit Rolle `admin`); **Instagram-Konto `challengr.game`
    prüfen** – im Gmail-Postfach lagen am 14.10. Mails „New login … Samsung SM-A556B/SM-A566B“ und „password has been changed“.
    Falls das nicht das Team war: Konto sichern, Passwort ändern, 2FA an.
@@ -224,6 +229,7 @@ App-Änderungen → `upload-testflight.sh`; intern sofort verfügbar, extern Bui
 - **Postgres-Spaltennamen** in Prod ohne Unterstrich (`highesttrophies`, `winnerpointsdelta`, `reporterid` …).
 - **Karte:** `interactionModes [.rotate, .zoom]` + Zurückspringen auf den Spieler (`recenter`). `MapCameraBounds` nicht mit
   gleichem Min/Max setzen – dann landet der Spieler am Bildschirmrand.
+- **Port 8080 lokal:** Manchmal läuft dort eine andere Anwendung (anderes Projekt). Das Test-Backend dann mit `-Dquarkus.http.port=8081` starten und die Proxy-Datei anpassen; die fremde Anwendung nicht beenden.
 - **Tag/Nacht testen:** Debug-Builds nehmen `AUDIT_FAKE_TIME` (ISO 8601) als Uhrzeit (`SkyCycle.now()`).
 - **UI-Tests im TestHarness:** Sheets aus dem Münz-Menü (Trophy Road, Shop, Einstellungen) öffnen sich in XCUITests oft nicht –
   die Trophy Road lässt sich in der Harness-Kopie über `AUDIT_TROPHY_ROAD=<playerId>` direkt starten. NavigationLinks per Koordinate antippen.
