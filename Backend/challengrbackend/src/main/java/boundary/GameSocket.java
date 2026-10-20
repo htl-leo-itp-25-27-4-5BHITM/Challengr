@@ -221,7 +221,8 @@ public class GameSocket {
     // -------------------- Emotes ----------------------------
 
     /** Erlaubte Emotes – nur diese werden weitergeleitet (kein Freitext, keine Beleidigungen). */
-    static final List<String> EMOTES = List.of("🔥", "😤", "💪", "👀", "🏆", "😂", "👋", "🥊");
+    // gleiche Liste wie in der App (Emotes.all) – nur harmlose Emojis, kein freier Text
+    static final List<String> EMOTES = List.of("🔥", "😤", "💪", "👀", "🏆", "😂", "👋", "🥊", "😎", "🤝", "👏", "🙌", "😅", "🤔", "😱", "🥳", "🎉", "⚡", "🧠", "🏃", "👑", "🤯", "😴", "🙏");
 
     /** Mindestabstand zwischen zwei Emotes eines Spielers (gegen Spam). */
     static final Duration EMOTE_COOLDOWN = Duration.ofMillis(1500);

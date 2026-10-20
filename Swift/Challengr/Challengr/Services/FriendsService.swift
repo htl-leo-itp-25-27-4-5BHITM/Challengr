@@ -49,6 +49,15 @@ final class FriendsService {
         }
     }
 
+    /// Spieler per Namen finden (ab 2 Zeichen, ohne Standort).
+    func searchPlayers(query: String) async throws -> [PlayerDTO] {
+        var components = URLComponents(url: BackendConfig.apiURL("api/players/search"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "q", value: query)]
+        guard let url = components.url else { return [] }
+        let (data, _) = try await API.data(from: url)
+        return try JSONDecoder().decode([PlayerDTO].self, from: data)
+    }
+
     func loadOutgoingPendingRequests(playerId: String) async throws -> [FriendRequestDTO] {
         var components = URLComponents(url: baseURL.appendingPathComponent("requests/outgoing"), resolvingAgainstBaseURL: false)!
         components.queryItems = [URLQueryItem(name: "playerId", value: playerId)]

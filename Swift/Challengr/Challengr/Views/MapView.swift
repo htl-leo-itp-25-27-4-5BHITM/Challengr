@@ -116,7 +116,8 @@ struct MapView: View {
     @StateObject private var quizModel: QuizShowModel
 
     /// Short info banner at the top of the map (z.B. "Anfrage abgelaufen").
-    @State private var mapBanner: (icon: String, text: String)? = nil
+    /// Hinweis oben auf der Karte; mit `action` lässt er sich antippen (z. B. neue Figur → Figurenwahl)
+    @State private var mapBanner: (icon: String, text: String, action: (() -> Void)?)? = nil
     @State private var mapBannerHideTask: Task<Void, Never>? = nil
     
     /// Information about an incoming challenge from another player.
@@ -261,6 +262,8 @@ struct MapView: View {
     @State private var showTrophyRoad = false
     @State private var showMainMenu = false
     @State private var showCharacterEditor = false
+    @State private var showLeaderboard = false
+    @State private var characterEditorHighlight: GameCharacter? = nil
     @State private var profileStartTab = 0
     @StateObject private var menuAvatarStore = AvatarCustomizationStore()
 
@@ -268,6 +271,12 @@ struct MapView: View {
     @State private var selectedPlayer: PlayerAnnotation? = nil
     @State private var showPlayerPopup = false
     @State private var showPlayerChallengeDialog = false
+    /// Freunde und gerade angefragte Spieler – für den Freund-Knopf im Spieler-Popup
+    @State private var mapFriendIds: Set<String> = []
+    @State private var requestedFriendIds: Set<String> = []
+    /// Eigene Emote-Kurzwahl und für wen das Emote-Fenster offen ist
+    @State private var emoteFavorites = EmoteFavorites.load()
+    @State private var emotePickerTarget: PlayerAnnotation? = nil
 
     @State private var showNearbyText = true
 
@@ -388,7 +397,7 @@ struct MapView: View {
                                     centerCoordinate: cam.centerCoordinate,
                                     distance: cam.distance,
                                     heading: 0,
-                                    pitch: cam.pitch
+                                    pitch: MapView.mapPitch
                                 ))
                             }
                         }
@@ -414,6 +423,14 @@ struct MapView: View {
                     mainMenu
                 }
         .overlay(playerPopupOverlay)
+        .sheet(item: $emotePickerTarget) { player in
+            EmotePickerSheet(favorites: $emoteFavorites) { emoji in
+                sendMapEmote(emoji, to: player)
+            }
+        }
+        .onChange(of: showPlayerPopup) { _, shown in
+            if shown { Task { await loadMapFriends() } }
+        }
         .overlay(hotspotPopupOverlay)
         .overlay(challengeDialogOverlay)
         .overlay(incomingChallengeOverlay)
@@ -915,15 +932,15 @@ struct MapView: View {
             MapMenuItem(id: "shop", title: "Shop", systemImage: "bag.fill", color: .challengrGreen) {
                 showShop = true
             },
-            MapMenuItem(id: "character", title: "Figur", systemImage: "figure.fencing", color: .challengrRed) {
+            // Figur: Kleiderbügel statt Fechter (Feedback: Symbol passte nicht zur Figurenwahl)
+            MapMenuItem(id: "character", title: "Figur", systemImage: "hanger", color: .challengrRed) {
                 menuAvatarStore.load()
                 showCharacterEditor = true
             },
-            MapMenuItem(id: "friends", title: "Freunde", systemImage: "person.2.fill", color: .blue,
-                        badge: friendsInbox.pendingIncomingCount) {
-                reloadOwnPlayerData()
-                profileStartTab = 1
-                showProfile = true
+            // Freunde sind über das Profilbild erreichbar (dort auch die Anfragen-Zahl) –
+            // hier die Rangliste, der stärkere Grund zum Wiederkommen
+            MapMenuItem(id: "leaderboard", title: "Rangliste", systemImage: "crown.fill", color: .blue) {
+                showLeaderboard = true
             },
             MapMenuItem(id: "settings", title: "Einstellungen", systemImage: "gearshape.fill", color: .gray) {
                 showSettings = true
@@ -933,7 +950,11 @@ struct MapView: View {
             TrophyRoadView(playerId: ownPlayerId)
         }
         .sheet(isPresented: $showCharacterEditor) {
-            CharacterEditorSheet(store: menuAvatarStore, playerId: ownPlayerId)
+            CharacterEditorSheet(store: menuAvatarStore, playerId: ownPlayerId, highlight: characterEditorHighlight)
+                .onDisappear { characterEditorHighlight = nil }
+        }
+        .sheet(isPresented: $showLeaderboard) {
+            LeaderboardView(rankColor: rankColor(for:))
         }
     }
 
@@ -945,7 +966,8 @@ struct MapView: View {
                 Spacer()
                 Button {
                     reloadOwnPlayerData()
-                    profileStartTab = 0
+                    // Offene Freundschaftsanfragen → gleich bei den Freunden aufgehen
+                    profileStartTab = friendsInbox.pendingIncomingCount > 0 ? 1 : 0
                     showProfile = true
                 } label: {
                     ZStack(alignment: .topTrailing) {
@@ -1019,7 +1041,7 @@ struct MapView: View {
 
                     // Emote schicken statt gleich herausfordern
                     HStack(spacing: 6) {
-                        ForEach(Emotes.map, id: \.self) { emoji in
+                        ForEach(emoteFavorites, id: \.self) { emoji in
                             Button { sendMapEmote(emoji, to: player) } label: {
                                 Text(emoji)
                                     .font(.system(size: 22))
@@ -1028,21 +1050,34 @@ struct MapView: View {
                             }
                             .accessibilityLabel("Emote \(emoji) an \(cleanPlayerName(player.title)) senden")
                         }
+                        // Alle Emotes + eigene Kurzwahl
+                        Button { emotePickerTarget = player } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 16, weight: .black))
+                                .foregroundStyle(Color.challengrBlack)
+                                .frame(width: 40, height: 40)
+                                .background(Circle().fill(Color.white.opacity(0.6)))
+                        }
+                        .accessibilityLabel("Mehr Emotes")
                     }
 
-                    Button {
-                        showPlayerChallengeDialog = true
-                    } label: {
-                        Text("HERAUSFORDERN")
-                            .font(.system(size: 13, weight: .black))
-                            .tracking(1)
-                            .foregroundStyle(.challengrBlack)
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 18)
-                            .background(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .fill(.challengrYellow)
-                            )
+                    HStack(spacing: 8) {
+                        friendButton(for: player)
+
+                        Button {
+                            showPlayerChallengeDialog = true
+                        } label: {
+                            Text("HERAUSFORDERN")
+                                .font(.system(size: 13, weight: .black))
+                                .tracking(1)
+                                .foregroundStyle(.challengrBlack)
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 18)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(.challengrYellow)
+                                )
+                        }
                     }
                 }
                 .padding(14)
@@ -1070,6 +1105,54 @@ struct MapView: View {
               }
             }
         }
+    }
+
+    /// Freund hinzufügen direkt auf der Karte (vorher ging das nur per QR-Code).
+    @ViewBuilder
+    private func friendButton(for player: PlayerAnnotation) -> some View {
+        let isFriend = mapFriendIds.contains(player.playerId)
+        let requested = requestedFriendIds.contains(player.playerId)
+        Button {
+            guard !isFriend, !requested else { return }
+            sendFriendRequest(to: player)
+        } label: {
+            Image(systemName: isFriend ? "person.2.fill" : requested ? "checkmark" : "person.badge.plus")
+                .font(.system(size: 15, weight: .black))
+                .foregroundStyle(isFriend || requested ? Color.white : Color.challengrBlack)
+                .frame(width: 40, height: 38)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(isFriend || requested ? Color.challengrGreen : Color.white.opacity(0.9))
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isFriend ? "Schon befreundet" : requested ? "Anfrage gesendet"
+                                     : "\(cleanPlayerName(player.title)) als Freund hinzufügen")
+    }
+
+    private func sendFriendRequest(to player: PlayerAnnotation) {
+        let id = player.playerId
+        let name = cleanPlayerName(player.title)
+        requestedFriendIds.insert(id)
+        SoundManager.shared.play(.tap)
+        Task {
+            do {
+                try await FriendsService().sendFriendRequest(from: ownPlayerId, to: id)
+                showMapBanner(icon: "person.badge.plus", text: "Freundschaftsanfrage an \(name) gesendet")
+            } catch {
+                requestedFriendIds.remove(id)
+                await loadMapFriends()
+                showMapBanner(icon: "exclamationmark.triangle.fill",
+                              text: mapFriendIds.contains(id) ? "Ihr seid schon Freunde" : "Anfrage ging gerade nicht")
+            }
+        }
+    }
+
+    /// Freunde für das Spieler-Popup (Knopf "Freund hinzufügen" vs. "schon befreundet").
+    @MainActor
+    private func loadMapFriends() async {
+        guard let friends = try? await FriendsService().loadFriends(playerId: ownPlayerId) else { return }
+        mapFriendIds = Set(friends.map(\.playerId))
     }
 
     /// Name eines Gegners: Karte → Battle-Nachricht vom Server → neutral. Nie die rohe Id (BUG-15).
@@ -1111,7 +1194,11 @@ struct MapView: View {
         guard let unlocks = try? await service.loadCharacters(playerId: ownPlayerId),
               let first = CharacterUnlockTracker.newlyUnlocked(unlocks).first else { return }
         SoundManager.shared.play(.win)
-        showMapBanner(icon: "lock.open.fill", text: "\(first.displayName) freigeschaltet! Im Profil auswählen")
+        showMapBanner(icon: "lock.open.fill", text: "\(first.displayName) freigeschaltet! Tippen zum Ansehen", seconds: 6) {
+            menuAvatarStore.load()
+            characterEditorHighlight = first
+            showCharacterEditor = true
+        }
     }
 
     private func closePlayerPopup() {
@@ -1632,16 +1719,21 @@ struct MapView: View {
     private var mapBannerOverlay: some View {
         Group {
             if let banner = mapBanner {
-                MapInfoBanner(icon: banner.icon, text: banner.text)
+                MapInfoBanner(icon: banner.icon, text: banner.text, tappable: banner.action != nil)
+                    .onTapGesture {
+                        guard let action = banner.action else { return }
+                        withAnimation(.easeOut(duration: 0.2)) { mapBanner = nil }
+                        action()
+                    }
                     .padding(.top, 90)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
     }
 
-    private func showMapBanner(icon: String, text: String, seconds: Double = 3) {
+    private func showMapBanner(icon: String, text: String, seconds: Double = 3, action: (() -> Void)? = nil) {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
-            mapBanner = (icon: icon, text: text)
+            mapBanner = (icon: icon, text: text, action: action)
         }
         mapBannerHideTask?.cancel()
         mapBannerHideTask = Task { @MainActor in
@@ -2161,7 +2253,7 @@ struct MapView: View {
         // dann würde die Karte bei jedem Standort-Update wieder nach Norden springen
         let currentCamera = lastMapCamera ?? position.camera
         let heading = currentCamera?.heading ?? 0
-        let pitch = currentCamera?.pitch ?? MapView.mapPitch
+        let pitch = MapView.mapPitch  // immer schräg – MapKit meldet manchmal 0° (Draufsicht), das darf sich nicht festsetzen
         if let distance = currentCamera?.distance {
             currentZoomDistance = distance
         }
@@ -2240,7 +2332,7 @@ struct MapView: View {
             position = .camera(MapCamera(centerCoordinate: ownCoordinate,
                                          distance: start.distance,
                                          heading: MapRotation.heading(start: start.heading, turnedDegrees: dragTurned),
-                                         pitch: start.pitch))
+                                         pitch: MapView.mapPitch))
         }
     }
 
@@ -2264,7 +2356,7 @@ struct MapView: View {
         isProgrammaticCameraUpdate = true
         withAnimation(.easeOut(duration: 0.3)) {
             position = .camera(MapCamera(centerCoordinate: coordinate, distance: camera.distance,
-                                         heading: camera.heading, pitch: camera.pitch))
+                                         heading: camera.heading, pitch: MapView.mapPitch))
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             isProgrammaticCameraUpdate = false
@@ -2366,6 +2458,7 @@ private struct MapTapRipple: View {
 private struct MapInfoBanner: View {
     let icon: String
     let text: String
+    var tappable = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -2380,6 +2473,12 @@ private struct MapInfoBanner: View {
                 .minimumScaleFactor(0.75)
 
             Spacer(minLength: 0)
+
+            if tappable {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .black))
+                    .foregroundColor(.challengrDark.opacity(0.7))
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)

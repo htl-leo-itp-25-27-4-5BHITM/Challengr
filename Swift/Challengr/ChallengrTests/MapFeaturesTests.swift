@@ -40,7 +40,8 @@ final class MapFeaturesTests: XCTestCase {
 
     func testEmotesMatchTheBackendList() {
         // Backend: GameSocket.EMOTES – andere Emojis leitet der Server nicht weiter
-        XCTAssertEqual(Emotes.all, ["🔥", "😤", "💪", "👀", "🏆", "😂", "👋", "🥊"])
+        XCTAssertEqual(Emotes.all, ["🔥", "😤", "💪", "👀", "🏆", "😂", "👋", "🥊", "😎", "🤝", "👏", "🙌", "😅", "🤔", "😱", "🥳", "🎉", "⚡", "🧠", "🏃", "👑", "🤯", "😴", "🙏"])
+        XCTAssertEqual(Set(Emotes.all).count, Emotes.all.count)
         XCTAssertTrue(Set(Emotes.map).isSubset(of: Set(Emotes.all)))
     }
 

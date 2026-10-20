@@ -468,7 +468,7 @@ struct BattleView: View {
 
                 if showEmotePicker {
                     HStack(spacing: 2) {
-                        ForEach(Emotes.all, id: \.self) { emoji in
+                        ForEach(Emotes.battle, id: \.self) { emoji in
                             Button {
                                 onSendEmote(emoji)
                                 withAnimation { showEmotePicker = false }

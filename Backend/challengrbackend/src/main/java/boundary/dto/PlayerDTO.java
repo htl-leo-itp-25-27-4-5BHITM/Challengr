@@ -13,5 +13,6 @@ public record PlayerDTO(
         String rankName,  // Liga-Rang nach Trophäen (z.B. für die Ringfarbe auf der Karte)
         String character, // gewählte Spielfigur, null = App-Standard
         int trophies,     // Liga-Trophäen (Quiz-Show und Real-Life gemeinsam)
-        Boolean invisible // nur beim eigenen Konto gesetzt
+        Boolean invisible, // nur beim eigenen Konto gesetzt
+        int highestTrophies // persönlicher Rekord (höchster je erreichter Trophäen-Stand)
 ) {}

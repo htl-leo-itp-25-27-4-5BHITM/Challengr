@@ -34,6 +34,8 @@ struct PlayerDTO: Codable, Identifiable {
     var trophies: Int? = nil
     /// "Unsichtbar" (nur beim eigenen Konto gesetzt)
     var invisible: Bool? = nil
+    /// Persönlicher Rekord: höchster je erreichter Trophäen-Stand (nil bei alten Backends)
+    var highestTrophies: Int? = nil
 }
 
 // MARK: - Challenge DTOs (Challenge-DTOs)

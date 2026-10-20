@@ -59,6 +59,10 @@ public class FriendRequestResource {
         if (blocks.blockedEitherWay(dto.fromPlayerId(), dto.toPlayerId())) {
             throw new WebApplicationException("Dieser Spieler ist nicht erreichbar", 403);
         }
+        // Sonst bekäme ein bestehender Freund erneut eine Anfrage (z. B. über die Karte oder die Suche)
+        if (friendshipRepository.areFriends(dto.fromPlayerId(), dto.toPlayerId())) {
+            throw new WebApplicationException("Ihr seid schon Freunde", 409);
+        }
         FriendRequest request = friendRequestRepository.create(dto.fromPlayerId(), dto.toPlayerId());
         GameSocket.emitFriendRequestCreated(request.getId(), request.getFromPlayerId(), request.getToPlayerId());
         return toDTO(request);

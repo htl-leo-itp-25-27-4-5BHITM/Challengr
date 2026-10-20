@@ -184,6 +184,33 @@ public class PlayerRessources {
         return toOwnDTO(player);
     }
 
+    /** Spieler per Namen finden (Freunde hinzufügen ohne QR-Code): ab 2 Zeichen, höchstens 15, ohne Standort. */
+    @GET
+    @Path("/search")
+    public List<PlayerDTO> search(@QueryParam("q") String query) {
+        String q = query == null ? "" : query.trim().toLowerCase();
+        if (q.length() < 2) return List.of();
+        java.util.Set<String> blocked = blockRepository.blockedWith(me.id());
+        java.time.Instant now = java.time.Instant.now();
+        String like = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+        return em.createQuery("""
+                        SELECT p FROM Player p WHERE LOWER(p.name) LIKE :q ESCAPE '\\'
+                        AND p.id <> :me AND p.id <> :deleted
+                        ORDER BY CASE WHEN LOWER(p.name) LIKE :prefix ESCAPE '\\' THEN 0 ELSE 1 END, p.trophies DESC
+                        """, Player.class)
+                .setParameter("q", like)
+                .setParameter("prefix", like.substring(1))
+                .setParameter("me", me.id())
+                .setParameter("deleted", control.AccountDeletionService.DELETED_PLAYER_ID)
+                .setMaxResults(40)
+                .getResultStream()
+                .filter(p -> !blocked.contains(p.getId()))
+                .filter(p -> p.getBanUntil() == null || !p.getBanUntil().isAfter(now))
+                .limit(15)
+                .map(this::toPublicDTO)
+                .toList();
+    }
+
     @GET
     @Path("/{id}")
     public PlayerDTO getPlayer(@PathParam("id") String id) {
@@ -416,19 +443,22 @@ public class PlayerRessources {
     /** Eigenes Konto: genaue Position und Sichtbarkeit. */
     private PlayerDTO toOwnDTO(Player p) {
         return new PlayerDTO(p.getId(), p.getName(), p.getLatitude(), p.getLongitude(), p.getPoints(),
-                battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), p.isInvisible());
+                battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), p.isInvisible(),
+                Math.max(p.getHighestTrophies(), p.getTrophies()));
     }
 
     /** Fremdes Profil: ohne Standort. */
     private PlayerDTO toPublicDTO(Player p) {
         return new PlayerDTO(p.getId(), p.getName(), null, null, p.getPoints(),
-                battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), null);
+                battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), null,
+                Math.max(p.getHighestTrophies(), p.getTrophies()));
     }
 
     /** Spieler in der Nähe: nur gerundete Position. */
     private PlayerDTO toNearbyDTO(Player p) {
         return new PlayerDTO(p.getId(), p.getName(), LocationPrivacy.coarse(p.getLatitude()), LocationPrivacy.coarse(p.getLongitude()),
-                p.getPoints(), battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), null);
+                p.getPoints(), battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), null,
+                Math.max(p.getHighestTrophies(), p.getTrophies()));
     }
 
     /** Fortschritt für die Freischalt-Regeln: Siege, Wissens-Siege, Hotspot-Check-ins, Punkte. */

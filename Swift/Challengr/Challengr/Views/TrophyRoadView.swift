@@ -50,6 +50,8 @@ struct TrophyRoadView: View {
     @State private var ranks: [TrophyRank] = []
     /// Liga-Trophäen (Quiz-Show und Real-Life gemeinsam)
     @State private var trophies = 0
+    /// Persönlicher Rekord (höchster je erreichter Stand)
+    @State private var record: Int?
     @State private var unlocks: [String: CharacterUnlockDTO] = [:]
     @State private var loaded = false
     /// Position der Figur auf dem Weg (animiert)
@@ -135,11 +137,36 @@ struct TrophyRoadView: View {
                     .foregroundStyle(.white)
             }
 
+            if let record, loaded {
+                recordChip(record)
+            }
+
             nextRankBar
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
         .padding(.bottom, 10)
+    }
+
+    /// Persönlicher Rekord – zeigt, wie weit man schon einmal war (und dass Verluste nicht alles wegnehmen).
+    private func recordChip(_ record: Int) -> some View {
+        let isNow = record <= trophies
+        return HStack(spacing: 5) {
+            Image(systemName: isNow ? "flame.fill" : "star.fill")
+                .font(.system(size: 11, weight: .black))
+                .foregroundStyle(Color.challengrYellow)
+            Text("REKORD \(record.formatted())")
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .tracking(1.2)
+                .foregroundStyle(.white.opacity(0.85))
+                .monospacedDigit()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(Capsule().fill(GameStyle.panelFill))
+        .overlay(Capsule().stroke(Color.challengrYellow.opacity(0.35), lineWidth: 1))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Persönlicher Rekord: \(record) Trophäen\(isNow ? ", du bist gerade drauf" : "")")
     }
 
     private func roundButton(_ systemImage: String, action: @escaping () -> Void) -> some View {
@@ -289,6 +316,7 @@ struct TrophyRoadView: View {
             ranks = loadedRanks
             // Alte Server ohne Liga: Punkte wie bisher
             trophies = player?.trophies ?? points
+            record = player?.highestTrophies.map { Swift.max($0, trophies) }
             unlocks = Dictionary(list.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
             loaded = true
         } catch {

@@ -26,17 +26,17 @@ struct MapCharacterPin: View {
                         let p = MapVibe.ripplePhase(time: t, offset: Double(i) * 0.5)
                         Ellipse()
                             .stroke(ringColor.opacity(0.8 * (1 - p)), lineWidth: 3)
-                            .frame(width: 50 + 90 * p, height: (50 + 90 * p) * 0.36)
-                            .offset(y: (50 + 90 * p) * 0.18 - 9)
+                            .frame(width: 50 + 90 * p, height: (50 + 90 * p) * MapVibe.groundRatio)
+                            .offset(y: (50 + 90 * p) * MapVibe.groundRatio / 2 - 12)
                     }
                 }
                 Ellipse()
                     .fill(Color.black.opacity(0.3))
-                    .frame(width: 42, height: 13)
+                    .frame(width: 42, height: 42 * MapVibe.groundRatio)
                     .blur(radius: 2)
                 Ellipse()
                     .stroke(ringColor, lineWidth: 3)
-                    .frame(width: 50, height: 18)
+                    .frame(width: 54, height: 54 * MapVibe.groundRatio)
                     // nachts leuchtet der Ring
                     .shadow(color: night ? ringColor.opacity(0.9) : .clear, radius: night ? 8 : 0)
 
@@ -45,11 +45,13 @@ struct MapCharacterPin: View {
                     Image(uiImage: frame)
                         .resizable()
                         .scaledToFit()
-                        .frame(height: height)
+                        // Gleicher Maßstab für alle: höhere Sheets (Merlos Hut) werden größer, nicht gestaucht
+                        .frame(height: height * MapSprites.heightFactor(of: frame))
                         .offset(y: -7)
                 }
             }
-            .frame(width: height * 1.6, height: height + 12, alignment: .bottom)
+            // Platz nach oben, damit nichts abgeschnitten wird (Hüte, Schwerter)
+            .frame(width: height * 1.6, height: height * MapSprites.maxHeightFactor + 12, alignment: .bottom)
         }
         .accessibilityElement()
         .accessibilityLabel(character.displayName)
@@ -70,6 +72,15 @@ enum MapSprites {
         }
         cache[character] = frames
         return frames
+    }
+
+    /// Pixel-Höhe der meisten Sheets – entspricht `MapCharacterPin.height`.
+    static let referenceHeight: CGFloat = 217
+    /// Höchstes Sheet (Merlo, 265 px) im Verhältnis zur Referenz.
+    static let maxHeightFactor: CGFloat = 265 / referenceHeight
+
+    static func heightFactor(of frame: UIImage) -> CGFloat {
+        Swift.max(1, frame.size.height * frame.scale / referenceHeight)
     }
 
     static func frame(of character: GameCharacter, at index: Int) -> UIImage? {
@@ -164,6 +175,9 @@ extension EnvironmentValues {
 
 /// Reine Rechenlogik der Karten-Effekte (testbar).
 enum MapVibe {
+    /// Höhe:Breite eines Kreises auf dem Boden – passt zur gekippten Karte (55°), vorher zu flach.
+    static let groundRatio: CGFloat = 0.5
+
     /// 0…1, eine Welle alle 2 Sekunden; `offset` verschiebt die zweite Welle.
     static func ripplePhase(time: TimeInterval, offset: Double = 0, period: Double = 2) -> Double {
         let x = (time / period + offset).truncatingRemainder(dividingBy: 1)
@@ -202,8 +216,10 @@ enum MapVibe {
 
 /// Emotes, die man schicken kann (muss zur Liste im Backend passen: GameSocket.EMOTES).
 enum Emotes {
-    static let all = ["🔥", "😤", "💪", "👀", "🏆", "😂", "👋", "🥊"]
-    /// Kurze Auswahl für die Karte (Begrüßen/Necken).
+    static let all = ["🔥", "😤", "💪", "👀", "🏆", "😂", "👋", "🥊", "😎", "🤝", "👏", "🙌", "😅", "🤔", "😱", "🥳", "🎉", "⚡", "🧠", "🏃", "👑", "🤯", "😴", "🙏"]
+    /// Leiste im Battle (passt in eine Zeile)
+    static let battle = Array(all.prefix(8))
+    /// Standard-Kurzwahl für die Karte (Begrüßen/Necken); jeder kann sie selbst ändern (EmoteFavorites).
     static let map = ["👋", "🔥", "😤", "💪"]
     /// Wie lange eine Emote-Blase sichtbar bleibt.
     static let visibleSeconds: Double = 2.5
@@ -239,10 +255,14 @@ struct EmoteBubble: View {
 
 // MARK: - Hotspot
 
-/// Hotspot auf der Karte: schwebende 3D-Münze über einem Bodenring. Grau mit Haken, wenn heute erledigt.
+/// Hotspot auf der Karte: 3D-Münze schwebt hoch über einem Lichtstrahl und einer gelben Bodenplatte –
+/// so hebt sie sich klar von Spielern ab, auch wenn man direkt daneben steht. Grau mit Haken, wenn heute erledigt.
 struct HotspotMarker: View {
     let name: String
     let checkedIn: Bool
+
+    /// Wie hoch die Münze über dem Boden schwebt (höher als eine Figur)
+    static let coinLift: CGFloat = 96
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.mapNight) private var night
@@ -253,32 +273,41 @@ struct HotspotMarker: View {
             let t = context.date.timeIntervalSinceReferenceDate
             let hover = (reduceMotion || checkedIn) ? 0 : CGFloat(sin(t * 2.4) * 4)
             let pulse = MapVibe.ripplePhase(time: t, period: 1.6)
+            let accent = checkedIn ? Color.gray : Color.challengrYellow
             ZStack(alignment: .bottom) {
                 if !checkedIn && !reduceMotion {
                     Ellipse()
                         .stroke(Color.challengrYellow.opacity(0.9 * (1 - pulse)), lineWidth: 3)
-                        .frame(width: 44 + 50 * pulse, height: (44 + 50 * pulse) * 0.36)
-                        .offset(y: (44 + 50 * pulse) * 0.18 - 9)
+                        .frame(width: 60 + 50 * pulse, height: (60 + 50 * pulse) * MapVibe.groundRatio)
+                        .offset(y: (60 + 50 * pulse) * MapVibe.groundRatio / 2 - 14)
                 }
+                // Bodenplatte
                 Ellipse()
-                    .fill(Color.black.opacity(0.3))
-                    .frame(width: 34, height: 11)
-                    .blur(radius: 2)
+                    .fill(accent.opacity(0.35))
+                    .overlay(Ellipse().stroke(accent, style: StrokeStyle(lineWidth: 2.5, dash: [6, 4])))
+                    .frame(width: 62, height: 62 * MapVibe.groundRatio)
+                // Lichtstrahl vom Boden zur Münze
+                LinearGradient(colors: [accent.opacity(0), accent.opacity(checkedIn ? 0.35 : 0.75)],
+                               startPoint: .top, endPoint: .bottom)
+                    .frame(width: 10, height: Self.coinLift)
+                    .clipShape(Capsule())
+                    .offset(y: -14)
                 Image("MenuCoin")
                     .resizable()
                     .scaledToFit()
                     .frame(width: 50, height: 50)
                     .saturation(checkedIn ? 0 : 1)
-                    .opacity(checkedIn ? 0.75 : 1)
+                    .opacity(checkedIn ? 0.8 : 1)
                     // nachts glüht die Münze
-                    .shadow(color: night && !checkedIn ? Color.challengrYellow.opacity(0.9) : .clear, radius: night ? 12 : 0)
-                    .offset(y: -16 + hover)
+                    .shadow(color: night && !checkedIn ? Color.challengrYellow.opacity(0.9) : .black.opacity(0.25),
+                            radius: night ? 12 : 4, y: night ? 0 : 3)
+                    .offset(y: -Self.coinLift + hover)
                     .overlay(alignment: .topTrailing) {
                         if checkedIn {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundStyle(.white, Color.challengrGreen)
-                                .offset(x: 4, y: -16)
+                                .offset(x: 4, y: -Self.coinLift)
                         }
                     }
                     .overlay(alignment: .top) {
@@ -291,11 +320,11 @@ struct HotspotMarker: View {
                                 .padding(.horizontal, 6).padding(.vertical, 2)
                                 .background(Capsule().fill(Color.challengrDark.opacity(0.85)))
                                 .fixedSize()
-                                .offset(y: -34)
+                                .offset(y: -Self.coinLift - 18)
                         }
                     }
             }
-            .frame(width: 100, height: 76, alignment: .bottom)
+            .frame(width: 110, height: Self.coinLift + 76, alignment: .bottom)
         }
         .accessibilityElement()
         .accessibilityLabel("Hotspot \(name)\(checkedIn ? ", heute erledigt" : "")")

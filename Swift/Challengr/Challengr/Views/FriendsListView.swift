@@ -125,7 +125,7 @@ struct FriendsListView: View {
                             Text("Noch keine Freunde")
                                 .font(.system(size: 15, weight: .black, design: .rounded))
                                 .foregroundColor(.white)
-                            Text("Füge Leute aus deiner Nähe hinzu oder lade sie per QR-Code ein.")
+                            Text("Tippe auf „Hinzufügen“ und suche Leute per Namen – oder lade sie per QR-Code ein.")
                                 .font(.footnote)
                                 .multilineTextAlignment(.center)
                                 .foregroundColor(GameStyle.secondaryText)
@@ -226,11 +226,13 @@ struct FriendsListView: View {
         .sheet(isPresented: $showAddFriendSheet) {
             AddFriendSheet(
                 ownPlayerId: ownPlayerId,
+                friendIds: Set(vm.friends.map(\.id)),
+                pendingIds: vm.pendingOutgoingToPlayerIds,
                 onDidSendRequest: {
                     Task { await vm.loadAll(ownPlayerId: ownPlayerId, coordinate: currentCoordinate, radiusMeters: radiusMeters) }
                 }
             )
-            .presentationDetents([.medium])
+            .presentationDetents([.medium, .large])
         }
         .task {
             await vm.loadAll(
@@ -312,7 +314,7 @@ struct FriendsListView: View {
                     }
                 }
             )
-            .presentationDetents([.height(260)])
+            .presentationDetents([.height(220)])
         }
         .sheet(item: $openedGift) { gift in
             GiftOpenedSheet(senderName: gift.senderName)
@@ -394,7 +396,15 @@ struct FriendsListView: View {
 
 private struct AddFriendSheet: View {
     let ownPlayerId: String
+    var friendIds: Set<String> = []
+    var pendingIds: Set<String> = []
     let onDidSendRequest: () -> Void
+
+    @State private var query = ""
+    @State private var results: [PlayerDTO] = []
+    @State private var searching = false
+    @State private var sentIds: Set<String> = []
+    @State private var searchError: String? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var showQR: Bool = false
@@ -410,6 +420,29 @@ private struct AddFriendSheet: View {
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass").foregroundColor(.secondary)
+                        TextField("Name eingeben", text: $query)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .submitLabel(.search)
+                        if searching { ProgressView() }
+                    }
+                    ForEach(results) { player in
+                        searchRow(player)
+                    }
+                    if let searchError {
+                        Text(searchError).font(.footnote).foregroundColor(.red)
+                    } else if !searching && results.isEmpty && query.trimmingCharacters(in: .whitespaces).count >= 2 {
+                        Text("Niemand mit diesem Namen gefunden.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                } header: {
+                    Text("Per Namen suchen")
+                }
+
                 Section {
                     Button {
                         showQR = true
@@ -436,12 +469,29 @@ private struct AddFriendSheet: View {
                     }
                     .disabled(isImportingInvite)
                 } header: {
-                    Text("Freund hinzufügen")
+                    Text("Oder per Einladung")
                 } footer: {
                     Text("Du kannst eine Einladung als QR zeigen, per AirDrop teilen oder den QR von jemand anderem scannen. Wenn AirDrop nur eine Datei lädt, öffne sie hier.")
                 }
             }
             .navigationTitle("Hinzufügen")
+            // kurz warten, bis man fertig getippt hat – nicht bei jedem Buchstaben fragen
+            .task(id: query) {
+                let q = query.trimmingCharacters(in: .whitespaces)
+                guard q.count >= 2 else { results = []; searchError = nil; return }
+                try? await Task.sleep(for: .milliseconds(300))
+                guard !Task.isCancelled else { return }
+                searching = true
+                defer { searching = false }
+                do {
+                    let found = try await friendsService.searchPlayers(query: q)
+                    guard !Task.isCancelled else { return }
+                    results = found
+                    searchError = nil
+                } catch {
+                    if !Task.isCancelled { searchError = "Suche gerade nicht möglich." }
+                }
+            }
             .sheet(item: $shareInviteFile) { shareFile in
                 ShareSheet(activityItems: [shareFile.url])
             }
@@ -480,6 +530,46 @@ private struct AddFriendSheet: View {
                     onDidSendRequest()
                     dismiss()
                 }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func searchRow(_ player: PlayerDTO) -> some View {
+        HStack(spacing: 12) {
+            CharacterBadge(character: GameCharacter.from(serverId: player.character) ?? .opponent, size: 38)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(player.name).font(.system(size: 15, weight: .bold, design: .rounded)).lineLimit(1)
+                Text("\(player.rankName) · \(player.trophies ?? 0) Trophäen")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            if friendIds.contains(player.id) {
+                Label("Freund", systemImage: "checkmark").font(.caption.bold()).foregroundColor(.secondary)
+            } else if sentIds.contains(player.id) || pendingIds.contains(player.id) {
+                Label("Gesendet", systemImage: "checkmark").font(.caption.bold()).foregroundColor(.challengrGreen)
+            } else {
+                Button {
+                    Task {
+                        do {
+                            try await friendsService.sendFriendRequest(from: ownPlayerId, to: player.id)
+                            sentIds.insert(player.id)
+                            SoundManager.shared.play(.tap)
+                            onDidSendRequest()
+                        } catch {
+                            searchError = "Anfrage an \(player.name) ging nicht."
+                        }
+                    }
+                } label: {
+                    Image(systemName: "person.badge.plus")
+                        .font(.system(size: 15, weight: .black))
+                        .foregroundColor(.challengrDark)
+                        .padding(9)
+                        .background(Circle().fill(Color.challengrYellow))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(player.name) als Freund hinzufügen")
             }
         }
     }
@@ -604,85 +694,60 @@ private struct IncomingFriendRequestSheet: View {
     let onDecline: () -> Void
 
     var body: some View {
-        VStack(spacing: 14) {
-            Capsule()
-                .fill(Color.black.opacity(0.12))
-                .frame(width: 44, height: 5)
-                .padding(.top, 10)
-
+        VStack(spacing: 16) {
             HStack(spacing: 12) {
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .scaledToFit()
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.system(size: 30, weight: .bold))
+                    .foregroundColor(.challengrYellow)
                     .frame(width: 52, height: 52)
-                    .foregroundColor(Color.black.opacity(0.65))
-                    .background(Color.black.opacity(0.06))
-                    .clipShape(Circle())
+                    .background(Circle().fill(GameStyle.panelFill))
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Freundschaftsanfrage")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.secondary)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(fromName)
-                            .font(.system(size: 22, weight: .black, design: .rounded))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-
-                        if fromName == "Lädt…", let pid = fromPlayerId {
-                            Text(pid)
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                        }
-                    }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("FREUNDSCHAFTSANFRAGE")
+                        .font(.system(size: 11, weight: .black, design: .rounded))
+                        .tracking(1.2)
+                        .foregroundColor(GameStyle.secondaryText)
+                    Text(fromName)
+                        .font(.system(size: 22, weight: .black, design: .rounded))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
-
                 Spacer()
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 6)
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
 
-            Text("Möchtest du die Anfrage annehmen?")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.primary.opacity(0.85))
-                .padding(.horizontal, 16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
+            // Annehmen grün und rechts (wie überall im Spiel), Ablehnen neutral – nicht aus Versehen ablehnen
             HStack(spacing: 12) {
                 Button(action: onDecline) {
-                    Text("Ablehnen")
+                    Label("Ablehnen", systemImage: "xmark")
                         .font(.system(size: 16, weight: .black, design: .rounded))
+                        .foregroundColor(.white.opacity(0.85))
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color.black.opacity(0.06))
-                        )
+                        .padding(.vertical, 14)
+                        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(GameStyle.panelFill))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(GameStyle.panelStroke, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
 
                 Button(action: onAccept) {
-                    Text("Annehmen")
+                    Label("Annehmen", systemImage: "checkmark")
                         .font(.system(size: 16, weight: .black, design: .rounded))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color(red: 0.73, green: 0.12, blue: 0.20))
-                        )
+                        .padding(.vertical, 14)
+                        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.challengrGreen))
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 4)
+            .padding(.horizontal, 20)
 
             Spacer(minLength: 8)
         }
-        .background(Color(.systemBackground))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(GameStyle.background.ignoresSafeArea())
+        .presentationDragIndicator(.visible)
     }
 }
 
