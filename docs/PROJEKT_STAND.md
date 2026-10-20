@@ -1,6 +1,6 @@
 # Challengr – Projektstand und Übergabe
 
-Stand: **16. Oktober 2026** · Branch `feature/liga-modus` (auf GitHub) · `main` steht noch auf `7e39882`
+Stand: **20. Oktober 2026** · Branch `feature/liga-modus` (auf GitHub) · `main` steht noch auf `7e39882`
 
 Diese Datei fasst zusammen, worum es geht, was gebaut wurde, wie alles läuft und was offen ist.
 Sie ist zum Weitermachen gedacht – für das Team und für eine neue Claude-Sitzung
@@ -107,8 +107,9 @@ Tryhard 600, Brawler 950, Dueler 1400, Challengr 2000+ (nach oben offen).
 
 ## 4. Aktueller Stand (live)
 
-**Leo Cloud** – seit 16.10. (17:01) laufen Backend und Dashboard mit dem Stand `d310537`, 235 Wissensfragen:
-- Backend, Dashboard (neues Design, Analysen unter `/`), Keycloak, Postgres laufen; WebApp aus.
+**Leo Cloud** – seit 20.10. (08:30) laufen Backend und Dashboard mit dem Stand `dd519ce`, 235 Wissensfragen:
+- Backend, Dashboard (ruhiges Design, Analysen unter `/`, Feedback unter `/feedback` mit PDF-/ZIP-Export), Keycloak, Postgres laufen; WebApp aus.
+- **TestFlight-Feedback ist eingerichtet und funktioniert** (19.10.): API-Schlüssel „Challengr Dashboard“, Rolle Developer, Key-ID `5837P8K647`, Issuer-ID `e9807cf3-c20e-4a1d-b21e-036f205c8e5d` (beide nicht geheim; geheim ist nur die .p8-Datei). Liegt im Secret `challengr-asc`.
 - Tagesaktivität (`player_activity`) wird erst seit 16.10. erfasst – Verläufe davor sind aus Battles/Check-ins nachgerechnet.
 - Postgres- und Keycloak-Admin-Passwort am 12.10. neu gesetzt (`rotate-secrets.sh`).
 - Keycloak 24 (läuft mit `start-dev`, Daten in Postgres): Selbst-Registrierung **an**, „Verify email“ **aus** (kein Mailserver eingetragen).
@@ -116,7 +117,7 @@ Tryhard 600, Brawler 950, Dueler 1400, Challengr 2000+ (nach oben offen).
   falls erledigt, liegt es im Schlüsselbund „Challengr Dashboard test“.
 - Spieler (Stand 14.10.): 8 Konten. `bin_der_dominik` wurde zum Testen per Hand auf 1342 Trophäen gesetzt → daraufhin
   **offene Meldung** von `mskes07` („zu viele Trophäen“) im Dashboard – einfach „Erledigt“, nicht sperren.
-- Backups vom 12.10., 14.10. und 16.10. (vor jedem Deploy) in `~/Developer/ChallengrProjekt/Backups/` (lokal, nicht im Repo).
+- Backups vom 12.10., 14.10., 16.10., 19.10. und 20.10. (vor jedem Deploy) in `~/Developer/ChallengrProjekt/Backups/` (lokal, nicht im Repo).
 
 **Apple:**
 - Apple Developer Program (Individual, Sebastian Lehner), **Team-ID `9CK2N38H9M`**, Verlängerung 13.10.2027 (Auto-Renew an).
@@ -151,7 +152,8 @@ Erledigt am 13.10.: hängende Keycloak-Konten freigeschaltet, Passwort von `test
 Keycloak-Admin eingerichtet, Kontakt-Mail bestätigt (`challengrapp.official@gmail.com`), alles gepusht,
 Zustimmung der Schule liegt vor, Test mit zwei iPhones durchgeführt (Checkliste Teil C/D).
 
-0. **TestFlight-Feedback einrichten:** App Store Connect → Benutzer und Zugriff → Integrationen → App Store Connect API → Team-Schlüssel (Rolle Developer), dann `./scripts/setup-appstore-api.sh <AuthKey.p8> <Issuer-ID> <Key-ID>`. Hinweis: Die Apple-Schnittstelle für Feedback (betaFeedbackScreenshotSubmissions/CrashSubmissions) ist nur mit Test-Antworten getestet – beim ersten echten Abruf auf Fehlermeldungen auf der Seite achten.
+0. **Feedback abarbeiten:** Im Dashboard → Feedback → „Markdown (ZIP)“ herunterladen und Claude den Pfad geben – Claude kann die ZIP lesen (Text, Screenshots, Absturzberichte) und das Feedback einarbeiten; danach im Dashboard abhaken. (Claude sieht das Feedback sonst nicht – es braucht Admin-Login bzw. den Apple-Schlüssel.)
+   .p8-Datei `AuthKey_5837P8K647.p8` aus *Downloads* in den Passwort-Manager verschieben, falls noch nicht geschehen.
    **Kurzfristig:** Build `2610161702` der Gruppe „Schule“ zuweisen; dunkle Einstellungen und Drehen mit einem Finger am iPhone prüfen; neues Dashboard einmal mit echtem Admin-Login ansehen; Meldung zu `bin_der_dominik` im Dashboard auf „Erledigt“;
    Dashboard-Zugang klären (2FA bei `test` löschen oder eigenes Konto mit Rolle `admin`); **Instagram-Konto `challengr.game`
    prüfen** – im Gmail-Postfach lagen am 14.10. Mails „New login … Samsung SM-A556B/SM-A566B“ und „password has been changed“.
@@ -269,6 +271,14 @@ Demo-Videos: `~/Developer/ChallengrProjekt/Challengr_Demo_1_Liga_und_Friendly.mp
 13. „Freundesprofil hässlich, Namen ändern, mskes07 hat komische Trophäen“ → Profil neu, Rename-Endpunkt; Trophäen nachgerechnet: korrekt.
 14. „Day-Night-Zyklus, aber rein dekorativ – keine Punkteunterschiede.“
 15. Organisatorisch: Mail an den Professor mit dem Plakat (TestFlight-QR-Code) – Vorlage im Chat formuliert.
+16. (16.10.) Acht Fixes: Einstellungen dunkel, Verlauf einklappbar, Geschenke aus, Drehen mit einem Finger, keine Standard-iOS-Knöpfe
+    im Freundesprofil, Neuausrichten-Knopf weg, Avatar-Hintergrund in Figurfarbe, Trophy Road startet bei der Figur. Neues Logo als App-Icon.
+17. Projektbeschreibung für die Präsentationsliste (Spalte D) formuliert; Empfehlung Testplan: erst 5. Klassen, dann ganze Schule.
+18. „Wischen mit einem Finger ist buggy und wird zurückgesetzt“ → Ursache Standort-Updates mit leerer Kamera; Drehen um die Mitte.
+19. „Dashboard komplett überarbeiten, vor allem Design – mit echten Spielern kann man jetzt Analysen machen“ → Statistik-Endpunkt,
+    Tagesaktivität, eigene Diagramme; danach „sieht noch nach KI aus“ → ruhigeres Farbbild ohne Neon/Emojis.
+20. „Kann ich TestFlight-Feedback abhaken?“ → geht bei Apple nicht → Feedback-Seite im Dashboard mit Erledigt-Haken (App Store Connect API),
+    plus Export als PDF / Markdown-ZIP mit Bildern.
 
 Weitere Doku: `docs/audit/TESTFLIGHT_ANLEITUNG.md` (Handgriffe bis zum öffentlichen Link),
 `docs/audit/TESTFLIGHT_SECURITY_CHECKLIST.md` (Checkliste mit Umsetzungsstand), übrige Audit-Berichte in `docs/audit/`.
