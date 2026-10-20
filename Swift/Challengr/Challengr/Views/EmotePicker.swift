@@ -70,7 +70,7 @@ struct EmotePickerSheet: View {
                         if editing {
                             favorites = EmoteFavorites.adding(emoji, to: favorites)
                             EmoteFavorites.save(favorites)
-                            SoundManager.shared.play(.tap)
+                            SoundManager.shared.play(.click)
                         } else {
                             onSend(emoji)
                             dismiss()

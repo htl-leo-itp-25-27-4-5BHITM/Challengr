@@ -9,6 +9,10 @@ import AVFoundation
 /// Raw value = filename in the Sounds folder without ".mp3".
 enum SoundEffect: String, CaseIterable {
     case tap              = "CLICK_01"
+    /// Münz-Menü öffnen (auf den Ton gekürzt, vorher 4 s mit Stille)
+    case menuOpen         = "SWOSH_04"
+    /// Kleine Aktionen: Schalter, Tabs, Menü-Knöpfe, Einstellungen
+    case click            = "CLICK_03"
     case challengeSent    = "CLICK_02"
     case challengeIncoming = "GIFT_04"    // kräftig steigend, fällt auf
     case challengeAccepted = "SWOSH_02"

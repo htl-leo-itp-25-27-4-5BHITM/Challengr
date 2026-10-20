@@ -125,7 +125,7 @@ struct QuestsView: View {
         HStack(spacing: 4) {
             ForEach(Tab.allCases) { t in
                 Button {
-                    SoundManager.shared.play(.tap)
+                    SoundManager.shared.play(.click)
                     withAnimation(.easeOut(duration: 0.2)) { tab = t }
                 } label: {
                     HStack(spacing: 6) {

@@ -91,7 +91,7 @@ struct MapMainMenu: View {
 
     private func menuButton(_ item: MapMenuItem) -> some View {
         Button {
-            close()
+            close()   // spielt den Klick
             item.action()
         } label: {
             // Nur Symbole – die Namen stehen in der Bedienungshilfe (VoiceOver)
@@ -125,7 +125,7 @@ struct MapMainMenu: View {
     }
 
     private func toggle() {
-        SoundManager.shared.play(.tap)
+        SoundManager.shared.play(isOpen ? .click : .menuOpen)
         withAnimation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.7)) {
             isOpen.toggle()
             spin += 360

@@ -31,6 +31,8 @@ struct SettingsView: View {
                             Text("Soundeffekte")
                         }
                     }
+                    // beim Einschalten hört man gleich, dass es wieder Töne gibt
+                    .onChange(of: isSoundEnabled) { _, _ in SoundManager.shared.play(.click) }
                     
                     Toggle(isOn: $isMusicEnabled) {
                         HStack {
@@ -40,6 +42,7 @@ struct SettingsView: View {
                         }
                     }
                     .onChange(of: isMusicEnabled) { _, _ in
+                        SoundManager.shared.play(.click)
                         SoundManager.shared.updateMusic()
                     }
                 }
@@ -53,6 +56,7 @@ struct SettingsView: View {
                         }
                     }
                     .onChange(of: notificationsEnabled) { _, enabled in
+                        SoundManager.shared.play(.click)
                         if enabled {
                             NotificationManager.shared.requestAuthorizationIfNeeded()
                         }
@@ -61,7 +65,7 @@ struct SettingsView: View {
                 
                 Section(header: Text("Privatsphäre"),
                         footer: Text("Andere sehen dich nur in der Nähe (bis 300 m) und nur ungefähr (ca. 50 m genau). Unsichtbar tauchst du bei niemandem auf der Karte auf.")) {
-                    Toggle(isOn: Binding(get: { isInvisible ?? false }, set: { setInvisible($0) })) {
+                    Toggle(isOn: Binding(get: { isInvisible ?? false }, set: { SoundManager.shared.play(.click); setInvisible($0) })) {
                         HStack {
                             Image(systemName: "eye.slash.fill")
                                 .foregroundColor(.purple)
@@ -78,6 +82,7 @@ struct SettingsView: View {
                     }
                     NavigationLink {
                         BlockedPlayersView()
+                            .onAppear { SoundManager.shared.play(.click) }
                     } label: {
                         HStack {
                             Image(systemName: "hand.raised.fill")
@@ -101,6 +106,7 @@ struct SettingsView: View {
                         }
                         Spacer()
                         Button("Ändern") {
+                            SoundManager.shared.play(.click)
                             newName = ownName ?? auth.playerName
                             showRename = true
                         }
@@ -173,6 +179,7 @@ struct SettingsView: View {
                 Button("OK", role: .cancel) {}
             }
             .navigationBarItems(trailing: Button("Fertig") {
+                SoundManager.shared.play(.click)
                 dismiss()
             })
         }
