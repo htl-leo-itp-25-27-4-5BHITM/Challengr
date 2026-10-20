@@ -1,9 +1,9 @@
 .report-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.report-toolbar .count { color: var(--text-3); font-weight: 700; }
+.report-toolbar .count { color: var(--text-3); font-weight: 500; }
 .card.report, .card.empty { padding: 16px 18px; margin-bottom: 12px; }
 .card.report.resolved { opacity: 0.55; }
 .report-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
-.report-head .reason { font-weight: 800; color: #ff8b9a; font-size: 15px; }
+.report-head .reason { font-weight: 600; color: var(--red); font-size: 14px; }
 .report-head .date { color: var(--text-3); font-size: 12px; }
 .report-body { display: flex; flex-direction: column; gap: 4px; }
 .report-body .muted { color: var(--text-3); font-size: 13px; }
@@ -11,5 +11,5 @@
   margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--surface-2);
   font-style: italic; color: var(--text-1);
 }
-.banned { margin-left: 8px; color: #ff8b9a; font-size: 12px; font-weight: 800; }
+.banned { margin-left: 8px; color: var(--red); font-size: 12px; font-weight: 500; }
 .report-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }

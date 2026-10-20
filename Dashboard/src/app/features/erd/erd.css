@@ -1,5 +1,5 @@
 /* Datenbank-Schema: das Diagramm bleibt auf hellem Grund (Mermaid zeichnet dunkle Linien), alles andere dunkel */
-.diagramHeader { font: 800 13px var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-2); margin-bottom: 12px; }
+.diagramHeader { font: 600 14px var(--font-body); color: var(--text-1); margin-bottom: 12px; }
 .muted { color: var(--text-3); }
 
 .diagram {
@@ -79,11 +79,11 @@
   margin-top: 18px; padding: 16px;
   background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
 }
-.tableDataHeader { font-weight: 800; margin-bottom: 10px; color: var(--text-1); }
+.tableDataHeader { font-weight: 600; margin-bottom: 10px; color: var(--text-1); }
 .empty { color: var(--text-3); }
 .dataTable { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
 .dataHeader, .dataRow { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(140px, 1fr); }
-.dataHeader { background: var(--surface-2); font-weight: 800; color: var(--text-2); }
+.dataHeader { background: var(--surface-2); font-weight: 500; color: var(--text-2); }
 .cell { padding: 8px 10px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); font-size: 12px; }
 .dataRow:last-child .cell { border-bottom: none; }
 .dataRow .cell:last-child, .dataHeader .cell:last-child { border-right: none; }

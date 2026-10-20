@@ -1,25 +1,21 @@
 .header {
-  position: fixed; top: 0; left: 0; right: 0; height: 64px; z-index: 10;
+  position: fixed; top: 0; left: 0; right: 0; height: 56px; z-index: 10;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 20px 0 18px;
-  background: rgba(11, 4, 7, 0.82);
-  backdrop-filter: blur(12px);
+  padding: 0 20px 0 16px;
+  background: var(--bg);
   border-bottom: 1px solid var(--border);
 }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-1); }
-.brand img { border-radius: 10px; box-shadow: 0 0 18px rgba(253, 208, 6, 0.25); }
-.brand-name { font: 900 19px var(--font-display); letter-spacing: 0.02em; }
-.brand-tag {
-  font-size: 10px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase;
-  color: #1e000e; background: var(--yellow); border-radius: 999px; padding: 3px 8px;
-}
-.right { display: flex; align-items: center; gap: 14px; }
+.brand img { width: 28px; height: 28px; border-radius: 7px; }
+.brand-name { font-weight: 650; font-size: 15px; letter-spacing: -0.01em; }
+.brand-tag { font-size: 13px; color: var(--text-3); font-weight: 500; padding-left: 10px; border-left: 1px solid var(--border-strong); }
+.right { display: flex; align-items: center; gap: 12px; }
 .user { display: flex; align-items: center; gap: 8px; }
-.user-name { color: var(--text-2); font-weight: 700; }
+.user-name { color: var(--text-2); font-weight: 500; }
 .avatar {
-  width: 32px; height: 32px; border-radius: 50%;
+  width: 28px; height: 28px; border-radius: 50%;
   display: grid; place-items: center;
-  font-size: 12px; font-weight: 900; color: #1e000e; background: var(--yellow);
+  font-size: 11px; font-weight: 600; color: var(--text-1); background: var(--surface-3);
 }
 @media (max-width: 640px) {
   .user-name, .brand-tag { display: none; }

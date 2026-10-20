@@ -1,9 +1,9 @@
 .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
 .stat { padding: 16px 18px; }
-.stat-label { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
-.stat-value { font: 900 30px var(--font-display); margin-top: 4px; }
-.stat-value.ok { color: #6fe0a3; }
-.stat-value.danger { color: #ff8b9a; }
+.stat-label { font-size: 13px; font-weight: 500; color: var(--text-2); }
+.stat-value { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.stat-value.ok { color: var(--green); }
+.stat-value.danger { color: var(--red); }
 
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px; align-items: start; }
 .list-card { padding: 14px; }
@@ -13,33 +13,33 @@
 .row {
   display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 10px 12px; border-radius: 12px; border: 1px solid transparent;
-  background: transparent; color: var(--text-1); font: 600 14px var(--font-body); text-align: left; cursor: pointer;
+  background: transparent; color: var(--text-1); font: 500 14px var(--font-body); text-align: left; cursor: pointer;
 }
 .row:hover { background: var(--surface-2); }
-.row.active { background: rgba(253, 208, 6, 0.1); border-color: rgba(253, 208, 6, 0.3); }
+.row.active { background: var(--surface-2); border-color: var(--border-strong); }
 .row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row-rank { font-size: 12px; font-weight: 800; }
-.row-trophies { width: 70px; text-align: right; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.row-rank { font-size: 12px; font-weight: 500; }
+.row-trophies { width: 56px; text-align: right; }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex: none; }
-.status-dot.on { background: var(--green); box-shadow: 0 0 8px rgba(47, 191, 113, 0.6); }
+.status-dot.on { background: var(--green); }
 .empty-list { padding: 24px 12px; }
 
 .details { position: sticky; top: 16px; }
 .details-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
-.details-name { font-size: 24px; font-weight: 900; text-transform: none; letter-spacing: 0; color: var(--text-1); font-family: var(--font-display); }
-.details-sub { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-weight: 700; }
-.rank-chip { color: #1e000e; font-size: 11px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; }
+.details-name { font-size: 20px; font-weight: 650; letter-spacing: -0.01em; color: var(--text-1); }
+.details-sub { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-weight: 500; }
+.rank-chip { color: #160e12; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
 
 .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0 0 20px; }
 .facts div { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; }
-.facts dt { font-size: 11px; color: var(--text-3); font-weight: 700; margin-bottom: 4px; }
-.facts dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.facts dt { font-size: 12px; color: var(--text-3); font-weight: 500; margin-bottom: 3px; }
+.facts dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 500; }
 
 .ban { border-top: 1px solid var(--border); padding-top: 16px; }
 .ban h2 { margin-bottom: 12px; }
 .ban-row { display: flex; gap: 10px; flex-wrap: wrap; }
-.ban-row label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-3); font-weight: 700; }
+.ban-row label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-3); font-weight: 500; }
 .ban-row .grow { flex: 1; min-width: 180px; }
 .ban-actions { display: flex; gap: 8px; margin-top: 12px; }
 .ban-message { margin-top: 10px; color: var(--text-2); font-size: 13px; }

@@ -33,7 +33,7 @@ class AdminFeedbackTest {
                     {"data":[{"id":"shot-1","type":"betaFeedbackScreenshotSubmissions",
                       "attributes":{"createdDate":"2026-10-18T10:00:00Z","comment":"Knopf ist abgeschnitten",
                         "email":"tester@example.com","deviceModel":"iPhone15,2","osVersion":"18.6",
-                        "screenshots":[{"url":"https://example.com/s.png","width":1170,"height":2532}]},
+                        "screenshots":[{"url":"http://example.invalid/s.png","width":1170,"height":2532}]},
                       "relationships":{"build":{"data":{"type":"builds","id":"b1"}},"tester":{"data":{"type":"betaTesters","id":"t1"}}}}],
                      "included":[{"type":"builds","id":"b1","attributes":{"version":"2610161702"}},
                                  {"type":"betaTesters","id":"t1","attributes":{"firstName":"Lena","lastName":"K"}}],
@@ -49,6 +49,30 @@ class AdminFeedbackTest {
             }
             throw new AppStoreConnectClient.AscException(404, "unbekannt: " + path);
         }
+    }
+
+    @Test
+    void exportIsAZipWithMarkdownAndCrashLogs() throws Exception {
+        QuarkusMock.installMockForType(new FakeAsc(), AppStoreConnectClient.class);
+        byte[] zip = Login.admin().when().get("/api/admin/feedback/export?filter=all")
+                .then().statusCode(200)
+                .header("Content-Disposition", containsString("challengr-feedback-"))
+                .extract().asByteArray();
+        java.util.Map<String, String> files = new java.util.HashMap<>();
+        try (var in = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(zip))) {
+            for (var e = in.getNextEntry(); e != null; e = in.getNextEntry()) {
+                files.put(e.getName(), new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+            }
+        }
+        String md = files.get("feedback.md");
+        assertNotNull(md);
+        assertTrue(md.contains("> Knopf ist abgeschnitten"));
+        assertTrue(md.contains("**Tester:** Lena K"));
+        assertTrue(md.contains("konnte nicht geladen werden"), "nur https-Bilder werden geladen");
+        assertTrue(md.contains("abstuerze/crash-1.txt"));
+        assertTrue(files.get("abstuerze/crash-1.txt").contains("MapView"));
+
+        Login.admin().when().get("/api/admin/feedback/export?filter=kaputt").then().statusCode(400);
     }
 
     @Test
@@ -74,7 +98,7 @@ class AdminFeedbackTest {
                 .body("items[1].comment", is("Knopf ist abgeschnitten"))
                 .body("items[1].tester", is("Lena K"))
                 .body("items[1].appVersion", is("2610161702"))
-                .body("items[1].screenshots[0]", is("https://example.com/s.png"))
+                .body("items[1].screenshots[0]", is("http://example.invalid/s.png"))
                 .body("items[0].kind", is("CRASH"))
                 .body("items[1].done", is(false));
         assertTrue(fake.calls.stream().anyMatch(c -> c.contains("include=build,tester")));

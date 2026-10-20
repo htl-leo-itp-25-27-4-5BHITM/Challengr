@@ -8,6 +8,7 @@ import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
 import { Layout } from './core/layout/layout';
 import { Header } from './core/header/header';
+import { Icon } from './core/icon/icon';
 import { Dashboard } from './features/dashboard/dashboard';
 import { BarChart, HBarList, TrendChart } from './features/dashboard/charts';
 import { Users } from './features/users/users';
@@ -18,7 +19,7 @@ import { Feedback } from './features/feedback/feedback';
 import { FormsModule } from '@angular/forms';
 
 @NgModule({
-  declarations: [App, Layout, Header, Dashboard, TrendChart, BarChart, HBarList, Users, Challenges, Erd, Reports, Feedback],
+  declarations: [App, Layout, Header, Icon, Dashboard, TrendChart, BarChart, HBarList, Users, Challenges, Erd, Reports, Feedback],
   imports: [BrowserModule, AppRoutingModule, FormsModule, HttpClientModule],
   providers: [
     provideBrowserGlobalErrorListeners(),

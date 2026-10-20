@@ -33,7 +33,7 @@
           <span class="row-name">{{ user.name }}</span>
           @if (isBanned(user)) { <span class="pill pill--danger">gesperrt</span> }
           <span class="row-rank" [style.color]="user.rankColor">{{ user.rank }}</span>
-          <span class="row-trophies">🏆 {{ user.trophies }}</span>
+          <span class="row-trophies trophies">{{ user.trophies }}</span>
         </button>
       } @empty {
         <div class="muted empty-list">Keine Spieler gefunden</div>
@@ -48,7 +48,7 @@
           <h2 class="details-name">{{ u.name }}</h2>
           <div class="details-sub">
             <span class="rank-chip" [style.background]="u.rankColor">{{ u.rank }}</span>
-            <span>🏆 {{ u.trophies }}</span>
+            <span class="trophies">{{ u.trophies }} Trophäen</span>
             <span class="muted">· {{ u.character }}</span>
           </div>
         </div>
@@ -58,7 +58,7 @@
       <dl class="facts">
         <div><dt>Zuletzt aktiv</dt><dd>{{ lastSeen(u.lastSeenAt) }}</dd></div>
         <div><dt>Konto seit</dt><dd>{{ u.createdAt ? (u.createdAt | date: 'dd.MM.yyyy') : 'vor dem 16.10.' }}</dd></div>
-        <div><dt>Höchster Stand</dt><dd>🏆 {{ u.highestTrophies }}</dd></div>
+        <div><dt>Höchster Stand</dt><dd>{{ u.highestTrophies }}</dd></div>
         <div><dt>Punkte (Shop, ausgeblendet)</dt><dd>{{ u.points }}</dd></div>
         <div><dt>Auf der Karte</dt><dd>{{ u.invisible ? 'unsichtbar' : 'sichtbar' }}</dd></div>
         <div><dt>ID</dt><dd class="mono">{{ u.id }}</dd></div>
@@ -93,8 +93,7 @@
       </div>
     } @else {
       <div class="empty-state">
-        <div class="empty-icon">👤</div>
-        <h2>Kein Spieler ausgewählt</h2>
+                <h2>Kein Spieler ausgewählt</h2>
         <p>Wähle links einen Spieler aus.</p>
       </div>
     }

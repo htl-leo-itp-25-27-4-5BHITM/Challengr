@@ -113,6 +113,6 @@ export class Dashboard {
   }
 
   eventIcon(type: string): string {
-    return type === 'BATTLE' ? '⚔️' : type === 'SHOP' ? '🛍️' : type === 'REPORT' ? '🚩' : '•';
+    return type === 'BATTLE' ? 'battle' : type === 'REPORT' ? 'flag' : 'package';
   }
 }

@@ -40,6 +40,8 @@ export class Feedback {
   busyId: string | null = null;
   crashLogs: Record<string, string> = {};
   enlarged: string | null = null;
+  exporting = false;
+  readonly today = new Date();
 
   constructor(private readonly http: HttpClient, private readonly cd: ChangeDetectorRef) {
     this.load(false);
@@ -72,6 +74,36 @@ export class Feedback {
   count(filter: Filter): number {
     const all = this.feed?.items ?? [];
     return filter === 'all' ? all.length : all.filter((i) => (filter === 'done') === i.done).length;
+  }
+
+  get filterName(): string {
+    return this.filter === 'open' ? 'offen' : this.filter === 'done' ? 'erledigt' : 'alle';
+  }
+
+  /** Druckansicht des Browsers – dort "Als PDF sichern" (zeigt genau die gefilterten Einträge). */
+  printPdf(): void {
+    if (typeof window !== 'undefined') window.print();
+  }
+
+  /** ZIP vom Server: feedback.md + bilder/ + abstuerze/ (Bilder fest eingepackt, Apples Links laufen ab). */
+  downloadZip(): void {
+    this.exporting = true;
+    this.http.get(`/api/admin/feedback/export?filter=${this.filter}`, { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `challengr-feedback-${this.filter}-${new Date().toISOString().slice(0, 10)}.zip`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
+        this.exporting = false;
+        this.cd.detectChanges();
+      },
+      error: () => {
+        this.exporting = false;
+        this.error = 'Export hat nicht geklappt – bitte nochmal versuchen.';
+        this.cd.detectChanges();
+      },
+    });
   }
 
   toggleDone(item: FeedbackItem): void {

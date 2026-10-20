@@ -42,6 +42,19 @@ public class AdminFeedbackResource {
         return Map.of("id", id, "done", done);
     }
 
+    /** ZIP mit feedback.md, Screenshots und Absturzberichten. */
+    @GET
+    @Path("/export")
+    @Produces("application/zip")
+    public jakarta.ws.rs.core.Response export(@QueryParam("filter") @DefaultValue("open") String filter) {
+        if (!java.util.List.of("open", "done", "all").contains(filter)) throw new BadRequestException("Ungültiger Filter");
+        if (!service.isConfigured()) throw new WebApplicationException("App Store Connect ist nicht eingerichtet", 503);
+        String file = "challengr-feedback-" + java.time.LocalDate.now(java.time.ZoneId.of("Europe/Vienna")) + ".zip";
+        return jakarta.ws.rs.core.Response.ok(service.exportZip(filter))
+                .header("Content-Disposition", "attachment; filename=\"" + file + "\"")
+                .build();
+    }
+
     @GET
     @Path("/{id}/crash-log")
     public Map<String, String> crashLog(@PathParam("id") String id) {

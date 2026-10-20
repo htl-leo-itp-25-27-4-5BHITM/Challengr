@@ -5,7 +5,13 @@
     <div class="subtitle">Was Tester über „Feedback senden“ geschickt haben – Screenshots mit Text und Abstürze. Erledigtes abhaken.</div>
   </div>
   @if (feed?.configured) {
-    <button type="button" class="btn" (click)="load(true)" [disabled]="loading">↻ Neu laden</button>
+    <div class="head-actions no-print">
+      <button type="button" class="btn" (click)="printPdf()" [disabled]="!items.length">Als PDF</button>
+      <button type="button" class="btn" (click)="downloadZip()" [disabled]="exporting || !items.length">
+        {{ exporting ? 'Packe ZIP…' : 'Markdown (ZIP)' }}
+      </button>
+      <button type="button" class="btn" (click)="load(true)" [disabled]="loading"><app-icon name="refresh" [size]="15" />Neu laden</button>
+    </div>
   }
 </div>
 
@@ -30,7 +36,8 @@
 }
 
 @if (feed?.configured) {
-  <div class="tabs" role="group" aria-label="Filter">
+  <div class="print-title print-only">Challengr – TestFlight-Feedback ({{ filterName }}) · {{ today | date: 'dd.MM.yyyy' }}</div>
+  <div class="tabs no-print" role="group" aria-label="Filter">
     <button type="button" [class.active]="filter === 'open'" (click)="filter = 'open'">Offen <span>{{ count('open') }}</span></button>
     <button type="button" [class.active]="filter === 'done'" (click)="filter = 'done'">Erledigt <span>{{ count('done') }}</span></button>
     <button type="button" [class.active]="filter === 'all'" (click)="filter = 'all'">Alle <span>{{ count('all') }}</span></button>
@@ -43,12 +50,12 @@
           <div class="shots">
             @for (url of item.screenshots; track url) {
               <button type="button" class="shot" (click)="enlarged = url" aria-label="Screenshot vergrößern">
-                <img [src]="url" alt="Screenshot des Testers" loading="lazy" referrerpolicy="no-referrer" />
+                <img [src]="url" alt="Screenshot des Testers" referrerpolicy="no-referrer" />
               </button>
             }
           </div>
         } @else if (item.kind === 'CRASH') {
-          <div class="crash-badge" aria-hidden="true">💥</div>
+          <div class="crash-badge" aria-hidden="true"><app-icon name="crash" [size]="26" /></div>
         }
 
         <div class="body">
@@ -62,13 +69,13 @@
             <p class="comment muted">(kein Text)</p>
           }
           <div class="meta">
-            @if (item.tester || item.testerEmail) { <span>👤 {{ item.tester || item.testerEmail }}</span> }
-            @if (item.device) { <span>📱 {{ item.device }}{{ item.osVersion ? ' · iOS ' + item.osVersion : '' }}</span> }
-            @if (item.appVersion) { <span>📦 Build {{ item.appVersion }}</span> }
+            @if (item.tester || item.testerEmail) { <span><app-icon name="user" [size]="14" />{{ item.tester || item.testerEmail }}</span> }
+            @if (item.device) { <span><app-icon name="phone" [size]="14" />{{ item.device }}{{ item.osVersion ? ' · iOS ' + item.osVersion : '' }}</span> }
+            @if (item.appVersion) { <span><app-icon name="package" [size]="14" />Build {{ item.appVersion }}</span> }
           </div>
 
           @if (item.kind === 'CRASH') {
-            <button type="button" class="link" (click)="toggleCrashLog(item)">
+            <button type="button" class="link no-print" (click)="toggleCrashLog(item)">
               {{ crashLogs[item.id] !== undefined ? 'Absturzbericht ausblenden' : 'Absturzbericht anzeigen' }}
             </button>
             @if (crashLogs[item.id] !== undefined) {
@@ -76,9 +83,9 @@
             }
           }
 
-          <div class="actions">
-            <button type="button" class="btn" [class.btn--primary]="!item.done" [disabled]="busyId === item.id" (click)="toggleDone(item)">
-              {{ item.done ? 'Wieder öffnen' : '✓ Erledigt' }}
+          <div class="actions no-print">
+            <button type="button" class="btn" [disabled]="busyId === item.id" (click)="toggleDone(item)">
+              @if (!item.done) { <app-icon name="check" [size]="15" /> }{{ item.done ? 'Wieder öffnen' : 'Erledigt' }}
             </button>
             @if (item.done) {
               <span class="done-info">erledigt{{ item.doneBy ? ' von ' + item.doneBy : '' }}{{ item.doneAt ? ' am ' + (item.doneAt | date: 'dd.MM.') : '' }}</span>
@@ -88,8 +95,8 @@
       </article>
     } @empty {
       <div class="card empty-state">
-        <div class="empty-icon">{{ filter === 'open' ? '🎉' : '📭' }}</div>
         <h2>{{ filter === 'open' ? 'Alles erledigt' : 'Nichts hier' }}</h2>
+        <p>{{ filter === 'open' ? 'Kein offenes Feedback.' : 'Keine Einträge in dieser Ansicht.' }}</p>
       </div>
     }
   </div>
