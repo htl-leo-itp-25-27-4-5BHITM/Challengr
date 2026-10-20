@@ -70,6 +70,7 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 | `0337ac9` | **Feinschliff 16.10.:** Einstellungen dunkel; Battle-Verlauf eingeklappt (letzte 5); Geschenke aus (`FriendGifts.isEnabled`); Karte mit einem Finger drehen (`MapRotation`); Freundesprofil mit runden Spiel-Knöpfen; Neuausrichten-Knopf entfernt; runde Avatare mit Farbe der Figur (`GameCharacter.themeColor`, `CharacterBackdrop`); Trophy Road startet bei der Figur |
 | `7a2563e` | **Karte drehen repariert:** Standort-Updates nehmen die sichtbare Kamera (sprang sonst nach Norden zurück); Ein-Finger-Drehen um die Kartenmitte; zwei Finger gehören MapKit |
 | `a8f3abd`, `d310537` | **Dashboard neu:** Spiel-Look, Übersicht mit echten Analysen (`GET /api/admin/stats`, Tabelle `player_activity`, `Player.createdAt`), Spieler-Seite auf Deutsch mit Trophäen/Rang/Sperren, keine Beispieldaten mehr. Diagramme selbst gebaut (`features/dashboard/charts.ts`) |
+| `1e747f0` | **Dashboard ruhiger** (flache Dunkeltöne, Rot als Akzent, Gelb nur Trophäen, Linien-Symbole `app-icon` statt Emojis) und **Feedback-Export**: „Als PDF“ (Druckansicht) und „Markdown (ZIP)“ (`GET /api/admin/feedback/export`, Bilder fest eingepackt) |
 | `c749200`, `b8ddeda` | **TestFlight-Feedback im Dashboard** (Seite „Feedback“): Screenshots/Abstürze aus der App Store Connect API (`AppStoreConnectClient`, `TestFlightFeedbackService`), Erledigt-Haken in `feedback_status`. Braucht einen API-Schlüssel im Secret `challengr-asc` (`scripts/setup-appstore-api.sh`), ohne ist die Seite eine Anleitung |
 | `fdc1b64` | **Neues Logo:** App-Icon (hell/dunkel/getönt, Quelle 1024 px) und Login-Bildschirm (`AppLogo`) |
 | `62916fe` | **Angemeldet bleiben:** Refresh-Token (Scope `offline_access`) im iOS-Schlüsselbund (`TokenStore`), beim Start stille Anmeldung ohne Browser; ~30 Tage ohne Nutzung gültig (Keycloak „Offline Session Idle“), jede Nutzung verlängert |
@@ -229,6 +230,7 @@ App-Änderungen → `upload-testflight.sh`; intern sofort verfügbar, extern Bui
 - **Postgres-Spaltennamen** in Prod ohne Unterstrich (`highesttrophies`, `winnerpointsdelta`, `reporterid` …).
 - **Karte:** `interactionModes [.rotate, .zoom]` + Zurückspringen auf den Spieler (`recenter`). `MapCameraBounds` nicht mit
   gleichem Min/Max setzen – dann landet der Spieler am Bildschirmrand.
+- **Test-Hilfen fürs Dashboard** (nur TestHarness): `TestHarness/harness-extras/` enthält erfundene Spieldaten und einen vorgetäuschten App-Store-Connect-Zugang – nach `sync_backend.sh` nach `backend/src/main/java/control/` kopieren.
 - **Port 8080 lokal:** Manchmal läuft dort eine andere Anwendung (anderes Projekt). Das Test-Backend dann mit `-Dquarkus.http.port=8081` starten und die Proxy-Datei anpassen; die fremde Anwendung nicht beenden.
 - **Tag/Nacht testen:** Debug-Builds nehmen `AUDIT_FAKE_TIME` (ISO 8601) als Uhrzeit (`SkyCycle.now()`).
 - **UI-Tests im TestHarness:** Sheets aus dem Münz-Menü (Trophy Road, Shop, Einstellungen) öffnen sich in XCUITests oft nicht –
