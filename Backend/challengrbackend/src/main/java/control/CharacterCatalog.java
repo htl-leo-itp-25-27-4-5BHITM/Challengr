@@ -20,21 +20,37 @@ public final class CharacterCatalog {
         /** Check-ins an Hotspots */
         CHECKINS,
         /** Rang auf der Trophy Road: höchster je erreichter Trophäen-Stand (required = Untergrenze des Rangs) */
-        TROPHIES
+        TROPHIES,
+        /** Belohnung eines Events (QuestCatalog) – frei, sobald die Event-Belohnung abgeholt wurde; bleibt für immer */
+        EVENT
     }
 
-    public record Entry(String id, String name, Requirement requirement, int required) {}
+    /** {@code event}: Id des Events bei {@link Requirement#EVENT}, sonst null. */
+    public record Entry(String id, String name, Requirement requirement, int required, String event) {
+        public Entry(String id, String name, Requirement requirement, int required) {
+            this(id, name, requirement, required, null);
+        }
+    }
 
     /** Was ein Spieler bisher erreicht hat – daraus ergibt sich, was frei ist. */
-    public record Progress(int wins, int knowledgeWins, int checkins, int trophies) {
+    public record Progress(int wins, int knowledgeWins, int checkins, int trophies, java.util.Set<String> events) {
+        public Progress(int wins, int knowledgeWins, int checkins, int trophies) {
+            this(wins, knowledgeWins, checkins, trophies, java.util.Set.of());
+        }
+
         public int of(Requirement r) {
             return switch (r) {
-                case NONE -> 0;
+                case NONE, EVENT -> 0;
                 case WINS -> wins;
                 case KNOWLEDGE_WINS -> knowledgeWins;
                 case CHECKINS -> checkins;
                 case TROPHIES -> trophies;
             };
+        }
+
+        /** Fortschritt für eine Figur (Event-Figuren: 1 = abgeholt). */
+        public int of(Entry e) {
+            return e.requirement() == Requirement.EVENT ? (events.contains(e.event()) ? 1 : 0) : of(e.requirement());
         }
     }
 
@@ -49,7 +65,9 @@ public final class CharacterCatalog {
             new Entry("kaeptn-rex", "Käpt'n Rex", Requirement.TROPHIES, 350),  // Contender
             new Entry("hayato", "Hayato", Requirement.TROPHIES, 600),          // Tryhard
             new Entry("kai", "Kai", Requirement.TROPHIES, 950),                // Brawler
-            new Entry("kage", "Kage", Requirement.TROPHIES, 1400)              // Dueler
+            new Entry("kage", "Kage", Requirement.TROPHIES, 1400),             // Dueler
+            // Event-Belohnungen (QuestCatalog.EVENTS)
+            new Entry("crash-dummy", "Crash-Test-Dummy", Requirement.EVENT, 1, "beta")
     );
 
     private CharacterCatalog() {}
@@ -59,6 +77,6 @@ public final class CharacterCatalog {
     }
 
     public static boolean isUnlocked(Entry entry, Progress progress) {
-        return entry.requirement() == Requirement.NONE || progress.of(entry.requirement()) >= entry.required();
+        return entry.requirement() == Requirement.NONE || progress.of(entry) >= entry.required();
     }
 }

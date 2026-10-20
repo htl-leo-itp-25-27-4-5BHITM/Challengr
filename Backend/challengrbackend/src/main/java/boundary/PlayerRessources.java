@@ -56,6 +56,9 @@ public class PlayerRessources {
     @Inject
     control.BlockRepository blockRepository;
 
+    @Inject
+    control.QuestService questService;
+
     /** Alle Spieler inkl. Standort – nur für Admins (Dashboard). */
     @GET
     @RolesAllowed(CurrentPlayer.ADMIN_ROLE)
@@ -472,7 +475,8 @@ public class PlayerRessources {
                 .filter(b -> control.BattleMode.from(b.getType()) == control.BattleMode.RANKED_KNOWLEDGE)
                 .count();
         int checkins = (int) hotspotRepository.countForPlayer(player.getId());
-        return new CharacterCatalog.Progress(won.size(), knowledgeWins, checkins, player.getHighestTrophies());
+        return new CharacterCatalog.Progress(won.size(), knowledgeWins, checkins, player.getHighestTrophies(),
+                questService.claimedEvents(player.getId()));
     }
 
     /** Frei nach den Regeln – oder schon gewählt (z.B. vor einer Regeländerung freigeschaltet), die bleibt dem Spieler. */
@@ -494,7 +498,7 @@ public class PlayerRessources {
         var progress = progressOf(player);
         return CharacterCatalog.ALL.stream()
                 .map(e -> new CharacterUnlockDTO(e.id(), e.name(), e.requirement().name(), e.required(),
-                        Math.min(progress.of(e.requirement()), Math.max(e.required(), 0)),
+                        Math.min(progress.of(e), Math.max(e.required(), 0)),
                         isUnlockedFor(player, e, progress), e.id().equals(player.getCharacter())))
                 .toList();
     }

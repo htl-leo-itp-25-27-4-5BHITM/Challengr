@@ -17,6 +17,8 @@ enum GameCharacter: String, CaseIterable, Identifiable {
     case merlo = "merlo"
     case lyra = "lyra"
     case kaeptnRex = "kaeptn-rex"
+    // Event-Belohnungen (nur solange das Event läuft)
+    case crashDummy = "crash-dummy"
 
     /// Start-Figur, bis man im Figuren-Editor eine andere wählt.
     static let own: GameCharacter = .junge
@@ -46,6 +48,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .merlo:     return "Merlo"
         case .lyra:      return "Lyra"
         case .kaeptnRex: return "Käpt'n Rex"
+        case .crashDummy: return "Crash-Test-Dummy"
         }
     }
 
@@ -61,6 +64,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .merlo:            return "Magier · Wissen"
         case .lyra:             return "Waldläuferin · Ausdauer"
         case .kaeptnRex:        return "Pirat · Glücksritter"
+        case .crashDummy:       return "Beta-Tester · Event"
         }
     }
 
@@ -77,6 +81,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .hayato:           return .rank("Tryhard", trophies: 600)
         case .kai:              return .rank("Brawler", trophies: 950)
         case .kage:             return .rank("Dueler", trophies: 1400)
+        case .crashDummy:       return .event("Beta-Event")
         }
     }
 
@@ -92,6 +97,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .merlo:     return "Merlo"
         case .lyra:      return "Lyra"
         case .kaeptnRex: return "Rex"
+        case .crashDummy: return "Dummy"
         }
     }
 
@@ -108,6 +114,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .merlo:     return Color(red: 0.50, green: 0.30, blue: 0.85)
         case .lyra:      return Color(red: 0.30, green: 0.68, blue: 0.40)
         case .kaeptnRex: return Color(red: 0.20, green: 0.50, blue: 0.60)
+        case .crashDummy: return Color(red: 0.90, green: 0.68, blue: 0.10)
         }
     }
 
@@ -138,10 +145,13 @@ enum UnlockRequirement: Equatable {
     case checkins(Int)
     /// Rang auf der Trophy Road (einmal erreicht – bleibt frei, auch wenn man wieder abrutscht)
     case rank(String, trophies: Int)
+    /// Belohnung eines Events (Aufgaben → Events) – bleibt nach dem Abholen für immer
+    case event(String)
 
     var required: Int {
         switch self {
         case .none: return 0
+        case .event: return 1
         case .wins(let n), .knowledgeWins(let n), .checkins(let n), .rank(_, let n): return n
         }
     }
@@ -156,6 +166,7 @@ enum UnlockRequirement: Equatable {
         case .knowledgeWins(let n): return "\(p)\(n) Quiz-Siege"
         case .checkins(let n):      return "\(p)\(n) Check-ins"
         case .rank(let name, let n): return progress == nil ? "Rang \(name)" : "Rang \(name) · \(p)\(n)"
+        case .event(let name):      return name
         }
     }
 }

@@ -263,6 +263,9 @@ struct MapView: View {
     @State private var showMainMenu = false
     @State private var showCharacterEditor = false
     @State private var showLeaderboard = false
+    @State private var showQuests = false
+    /// Abholbereite Belohnungen (Zahl am Aufgaben-Knopf)
+    @State private var questClaimable = 0
     @State private var characterEditorHighlight: GameCharacter? = nil
     @State private var profileStartTab = 0
     @StateObject private var menuAvatarStore = AvatarCustomizationStore()
@@ -815,6 +818,7 @@ struct MapView: View {
             setupSocket()
             Task { await syncCharacterAndUnlocks() }
             Task { await loadHotspots() }
+            Task { await refreshQuestBadge() }
             seedInitialZoom()
             friendsInbox.start(playerId: ownPlayerId)
             NotificationManager.shared.requestAuthorizationIfNeeded()
@@ -942,6 +946,11 @@ struct MapView: View {
             MapMenuItem(id: "leaderboard", title: "Rangliste", systemImage: "crown.fill", color: .blue) {
                 showLeaderboard = true
             },
+            // Tagesaufgaben (Coins) und Events (z. B. Beta-Event → Crash-Test-Dummy)
+            MapMenuItem(id: "quests", title: "Aufgaben", systemImage: "checklist", color: .purple,
+                        badge: questClaimable) {
+                showQuests = true
+            },
             MapMenuItem(id: "settings", title: "Einstellungen", systemImage: "gearshape.fill", color: .gray) {
                 showSettings = true
             }
@@ -955,6 +964,19 @@ struct MapView: View {
         }
         .sheet(isPresented: $showLeaderboard) {
             LeaderboardView(rankColor: rankColor(for:))
+        }
+        .sheet(isPresented: $showQuests) {
+            QuestsView(onOpenCharacter: { character in
+                // nach dem Schließen der Aufgaben die Figurenwahl mit der neuen Figur öffnen
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                    menuAvatarStore.load()
+                    characterEditorHighlight = character
+                    showCharacterEditor = true
+                }
+            }, onBoardChanged: { questClaimable = $0.claimable })
+        }
+        .onChange(of: showMainMenu) { _, open in
+            if open { Task { await refreshQuestBadge() } }
         }
     }
 
@@ -1174,6 +1196,13 @@ struct MapView: View {
             return character
         }
         return annotations.first(where: { $0.playerId == playerId })?.character ?? .opponent
+    }
+
+    /// Zahl am Aufgaben-Knopf aktualisieren (beim Start und wenn das Menü aufgeht).
+    @MainActor
+    private func refreshQuestBadge() async {
+        guard let board = try? await QuestService().load() else { return }
+        questClaimable = board.claimable
     }
 
     /// Gewählte Figur am Server spiegeln und neu freigeschaltete Figuren ankündigen.

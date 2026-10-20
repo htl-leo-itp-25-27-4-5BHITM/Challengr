@@ -32,7 +32,9 @@ struct MapMainMenu: View {
 
             ZStack {
                 ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                    let offset = MapMenuLayout.offset(index: index, count: items.count)
+                    // ab 6 Knöpfen etwas weiterer Bogen, sonst stoßen sie aneinander
+                    let offset = MapMenuLayout.offset(index: index, count: items.count,
+                                                      radius: items.count > 5 ? 170 : MapMenuLayout.radius)
                     menuButton(item)
                         .offset(x: isOpen ? offset.width : 0, y: isOpen ? offset.height : 0)
                         .scaleEffect(isOpen ? 1 : 0.2)
@@ -59,6 +61,17 @@ struct MapMainMenu: View {
                     .frame(width: 88, height: 88)
                     .rotation3DEffect(.degrees(spin), axis: (x: 0, y: 1, z: 0))
                     .shadow(color: .black.opacity(0.3), radius: 6, x: 0, y: 4)
+
+                // Geschlossen: roter Punkt, wenn im Menü etwas wartet (z. B. Aufgaben-Belohnung)
+                if !isOpen, items.contains(where: { $0.badge > 0 }) {
+                    Circle()
+                        .fill(Color.challengrRed)
+                        .frame(width: 18, height: 18)
+                        .overlay(Circle().stroke(Color.white, lineWidth: 2.5))
+                        .offset(x: 30, y: -30)
+                        .transition(.scale.combined(with: .opacity))
+                        .accessibilityHidden(true)
+                }
 
                 if isOpen {
                     Image(systemName: "xmark")
