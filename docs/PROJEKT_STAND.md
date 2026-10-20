@@ -109,7 +109,7 @@ Tryhard 600, Brawler 950, Dueler 1400, Challengr 2000+ (nach oben offen).
 
 ## 4. Aktueller Stand (live)
 
-**Leo Cloud** – Backend seit 20.10. (10:40) mit Stand `125ff6e` (Rangliste, Namenssuche, 24 Emotes), Dashboard mit `dd519ce`, 235 Wissensfragen:
+**Leo Cloud** – Backend seit 20.10. (11:30) mit Stand `e18975e` (Rangliste, Namenssuche, 24 Emotes, Aufgaben + Beta-Event), Dashboard mit `dd519ce`, 235 Wissensfragen:
 - Backend, Dashboard (ruhiges Design, Analysen unter `/`, Feedback unter `/feedback` mit PDF-/ZIP-Export), Keycloak, Postgres laufen; WebApp aus.
 - **TestFlight-Feedback ist eingerichtet und funktioniert** (19.10.): API-Schlüssel „Challengr Dashboard“, Rolle Developer, Key-ID `5837P8K647`, Issuer-ID `e9807cf3-c20e-4a1d-b21e-036f205c8e5d` (beide nicht geheim; geheim ist nur die .p8-Datei). Liegt im Secret `challengr-asc`.
 - Tagesaktivität (`player_activity`) wird erst seit 16.10. erfasst – Verläufe davor sind aus Battles/Check-ins nachgerechnet.
@@ -154,7 +154,7 @@ Erledigt am 13.10.: hängende Keycloak-Konten freigeschaltet, Passwort von `test
 Keycloak-Admin eingerichtet, Kontakt-Mail bestätigt (`challengrapp.official@gmail.com`), alles gepusht,
 Zustimmung der Schule liegt vor, Test mit zwei iPhones durchgeführt (Checkliste Teil C/D).
 
-0. **Aufgaben-Update ausliefern:** `./scripts/deploy-cloud.sh backend` (neue Tabelle `quest_claim` legt Hibernate selbst an – vorher Backup!), dann `./scripts/upload-testflight.sh 9CK2N38H9M`, Build der Gruppe „Schule“ zuweisen, Tester-Text ergänzen („Nur in der Beta: Crash-Test-Dummy“).
+0. **Aufgaben-Update:** Backend live (20.10., 11:30, Backup vorher), gepusht, Build `2610201127` hochgeladen → der Gruppe „Schule“ zuweisen, Tester-Text aus `docs/TESTFLIGHT_TESTER_TEXT.md` einfügen. Beta-Event endet am 30.11. – danach Event-Tab leer bis zum nächsten Event (z. B. Halloween in `QuestCatalog.EVENTS`).
    **Ranglisten-Update:** Backend ist live (20.10., 10:40), gepusht, Build `2610201041` hochgeladen → in App Store Connect der Gruppe „Schule“ zuweisen. Die 9 Feedback-Einträge vom 13.–19.10. im Dashboard abhaken. Vor dem Deploy konnte Claude kein Backup ziehen (gesperrt) – nachholen.
    Merlo-Sprites wurden mit einer Kopie von `Character3D/pipeline/render_map.swift` (H = 400, Sichtfeld mitskaliert) neu gerendert und oben auf 4 px zugeschnitten – die Pipeline-Datei selbst ist unverändert.
    **Feedback abarbeiten:** Im Dashboard → Feedback → „Markdown (ZIP)“ herunterladen und Claude den Pfad geben – Claude kann die ZIP lesen (Text, Screenshots, Absturzberichte) und das Feedback einarbeiten; danach im Dashboard abhaken. (Claude sieht das Feedback sonst nicht – es braucht Admin-Login bzw. den Apple-Schlüssel.)
