@@ -5,7 +5,13 @@ Stand: Build `2610201041` (20.10.2026). Bei neuen Builds oben die Neuerungen erg
 
 ---
 
-**Neu in diesem Update – vieles davon kommt direkt aus eurem Feedback. Danke!**
+**Neu: Aufgaben und Events!**
+
+✅ **Tägliche Aufgaben:** Tippe auf die Münze und dann auf „Aufgaben“. Jeden Tag gibt es 3 neue Aufgaben, und jede bringt dir **Challengr Coins**. Sammle sie jetzt schon, der Shop öffnet bald!
+
+🤖 **Nur in der Beta: das Crash-Test-Event!** Unter „Events“ findest du 6 Challenges. Schaffst du alle bis 30.11., bekommst du den **Crash-Test-Dummy** als Figur. Nach der Beta gibt es ihn nie wieder. Was du seit Beta-Start gespielt hast, zählt schon mit.
+
+**Außerdem neu – vieles davon kommt direkt aus eurem Feedback. Danke!**
 
 👑 **Ranglisten:** Tippe auf die Münze und dann auf die Krone. Du siehst die Top 10 aller Spieler, eine Rangliste mit deinen Freunden und deinen eigenen Platz.
 
@@ -31,6 +37,8 @@ Stand: Build `2610201041` (20.10.2026). Bei neuen Builds oben die Neuerungen erg
 **Bisher schon drin:** Liga mit Quiz-Show und Real-Life-Challenges, Trophy Road mit Rang-Figuren, über 200 Quizfragen, Karte drehen und zoomen, Tag und Nacht auf der Karte, Namen ändern, angemeldet bleiben. Der Shop und die Geschenke sind vorerst pausiert.
 
 **Bitte testen**
+- Hol dir deine Tagesaufgaben ab: Stimmen die Coins?
+- Schau ins Crash-Test-Event: Zählt dein Fortschritt richtig mit?
 - Öffne die Rangliste: Stimmt dein Platz? Siehst du deine Freunde?
 - Such jemanden per Namen und schick eine Freundschaftsanfrage: Kommt sie an?
 - Füge jemanden direkt auf der Karte hinzu.
