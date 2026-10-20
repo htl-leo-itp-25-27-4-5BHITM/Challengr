@@ -1,51 +1,40 @@
 # Text für TestFlight → „Was soll getestet werden?“
 
 Für App Store Connect → TestFlight → Build → *Testinformationen* (max. 4000 Zeichen).
-Stand: Build `2610161702` (16.10.2026). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
+Stand: Build `2610201041` (20.10.2026). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
 
 ---
 
-**Neu in diesem Update**
+**Neu in diesem Update – vieles davon kommt direkt aus eurem Feedback. Danke!**
 
-✨ **Neues Logo** – schau auf deinen Home-Bildschirm!
+👑 **Ranglisten:** Tippe auf die Münze und dann auf die Krone. Du siehst die Top 10 aller Spieler, eine Rangliste mit deinen Freunden und deinen eigenen Platz.
 
-🔄 **Karte mit einem Finger drehen:** Finger auf die Karte und im Kreis ziehen, wie bei Pokémon GO. Die Drehung bleibt jetzt auch beim Gehen erhalten.
+🔍 **Freunde per Namen suchen:** Profil → Freunde → „Hinzufügen“ und den Namen eintippen. Ein QR-Code ist nicht mehr nötig.
 
-🎨 **Neuer Look:** Einstellungen im dunklen Spiel-Design, Avatare in der Farbe deiner Figur, Freundesprofil mit neuen Knöpfen.
+➕ **Freunde direkt auf der Karte hinzufügen:** Tippe auf einen Spieler und dann auf den Knopf neben „Herausfordern“.
 
-📜 **Aufgeräumtes Profil:** Dein Battle-Verlauf zeigt die letzten 5 Battles, den Rest klappst du bei Bedarf auf.
+😎 **24 Emotes:** Tippe im Spieler-Fenster auf „+“, um alle Emotes zu sehen. Unter „Kurzwahl bearbeiten“ legst du fest, welche 4 Emotes du immer direkt hast.
 
-🏆 Die Trophy Road öffnet jetzt direkt dort, wo du gerade stehst.
+⭐ **Dein Rekord auf der Trophy Road:** Dort siehst du jetzt, wie viele Trophäen du höchstens je hattest.
 
-🎁 Geschenke sind vorerst pausiert.
+🔓 **Neue Figur freigeschaltet?** Tippe auf die Meldung, dann landest du direkt bei der neuen Figur.
 
-🌙 **Tag und Nacht:** Die Karte folgt dem echten Sonnenstand. Abends gibt es Abendrot, nachts wird die Karte dunkel mit Sternenhimmel, morgens kommt das Morgenrot.
+🗺️ **Karte verbessert:**
+- Die Karte bleibt immer schräg und kippt nicht mehr in die Draufsicht.
+- Der Check-in-Spot schwebt jetzt gut sichtbar über einem Lichtstrahl.
+- Die Ringe unter den Figuren passen besser zur Karte, und Merlos Hut wird nicht mehr abgeschnitten.
 
-✏️ **Namen ändern:** Einstellungen → Account → „Ändern“.
+✅ **Freundschaftsanfragen:** „Annehmen“ ist jetzt grün. Kein versehentliches Ablehnen mehr!
 
-👤 **Freundesprofil neu:** Tippe in der Freundesliste auf einen Freund. Du siehst seine Figur, seinen Rang, seine Trophäen und seine Siege.
+👤 Hast du offene Freundschaftsanfragen, öffnet dein Profilbild gleich die Freunde. Die Figurenwahl im Menü hat ein neues Symbol.
 
-🔓 **Angemeldet bleiben:** Nach dem nächsten Login bleibst du angemeldet, auch wenn du die App ganz schließt.
-
-🏆 **Trophy Road neu:** Tippe auf deine Trophäen oben links auf der Karte. Deine Figur läuft den Weg zu deinem Stand, bei einem neuen Rang gibt es eine Feier.
-
-🧑‍🎤 **Neue Figuren über Ränge:** Käpt'n Rex (Contender), Hayato (Tryhard), Kai (Brawler) und Kage (Dueler) bekommst du nur auf der Trophy Road.
-
-⚖️ **Fairere Trophäen:** Gewinnst du gegen jemanden mit mehr Trophäen, bekommst du mehr. Gegen Schwächere bekommst du weniger. Die Regeln findest du in der Trophy Road unter „i“.
-
-🧠 **Über 200 neue Quizfragen**, und Wiederholungen sind seltener.
-
-🗺️ **Karte:** Du kannst sie drehen und zoomen, deine Figur bleibt in der Mitte. Wo du hintippst, erscheint eine Welle.
-
-👥 Nach dem Herausfordern eines Freundes schließt sich das Menü.
-
-🛒 **Shop:** Er ist vorerst geschlossen.
+**Bisher schon drin:** Liga mit Quiz-Show und Real-Life-Challenges, Trophy Road mit Rang-Figuren, über 200 Quizfragen, Karte drehen und zoomen, Tag und Nacht auf der Karte, Namen ändern, angemeldet bleiben. Der Shop und die Geschenke sind vorerst pausiert.
 
 **Bitte testen**
-- Dreh die Karte mit einem Finger: Fühlt sich das gut an?
-- Ändere deinen Namen: Sehen deine Freunde den neuen Namen?
-- Schließ die App ganz und öffne sie wieder: Kommst du ohne Login rein?
-- Schau abends oder nachts auf die Karte: Ist alles gut lesbar?
-- Spiel ein paar Quiz-Shows: Ist eine Frage falsch oder unklar?
+- Öffne die Rangliste: Stimmt dein Platz? Siehst du deine Freunde?
+- Such jemanden per Namen und schick eine Freundschaftsanfrage: Kommt sie an?
+- Füge jemanden direkt auf der Karte hinzu.
+- Stell deine Emote-Kurzwahl um und schick ein paar Emotes.
+- Bleibt die Karte beim Gehen und Drehen immer schräg?
 
 Fehler oder Ideen? Mach einen Screenshot und schick ihn über TestFlight („Feedback senden“).
