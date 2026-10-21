@@ -8,7 +8,7 @@ import java.util.Random;
 
 /**
  * Tagesaufgaben (bringen Challengr Coins) und Events (zeitlich begrenzte Challenges mit Figur als Belohnung).
- * Neues Event (z. B. Halloween) = Eintrag in {@link #EVENTS}, App braucht kein Update.
+ * Events kommen aus der Datenbank ({@link QuestEventStore}, im Dashboard gepflegt) – die App braucht kein Update.
  */
 public final class QuestCatalog {
 
@@ -59,7 +59,8 @@ public final class QuestCatalog {
             new Task("CHECKIN_1", "Check am Hotspot ein", "mappin.and.ellipse", Metric.CHECKINS, 1, 25)
     );
 
-    public static final List<Event> EVENTS = List.of(
+    /** Startinhalt der Event-Tabelle (beim ersten Start angelegt, danach im Dashboard gepflegt). */
+    public static final Event BETA =
             new Event("beta", "Beta-Event: Crash-Test", "Nur in der Testphase – danach nie wieder!",
                     LocalDate.of(2026, 10, 13), LocalDate.of(2026, 11, 30), "crash-dummy", 100,
                     List.of(
@@ -69,8 +70,23 @@ public final class QuestCatalog {
                             new Task("CHECKINS_2", "Check 2× am Hotspot ein", "mappin.and.ellipse", Metric.CHECKINS, 2, 0),
                             new Task("FRIENDS_1", "Finde mindestens 1 Freund", "person.badge.plus", Metric.FRIENDS, 1, 0),
                             new Task("DAILY_6", "Erledige 6 Tagesaufgaben", "checklist", Metric.DAILY_QUESTS, 6, 0)
-                    ))
-    );
+                    ));
+
+    /** Symbol in der App je Messgröße (für im Dashboard angelegte Aufgaben). */
+    public static String iconFor(Metric m) {
+        return switch (m) {
+            case ACTIVE_DAYS -> "calendar";
+            case BATTLES -> "bolt.fill";
+            case LEAGUE_WINS -> "trophy.fill";
+            case QUIZ_SHOWS -> "brain.head.profile";
+            case REALLIFE -> "figure.run";
+            case FRIENDLIES -> "hand.thumbsup.fill";
+            case FRIEND_BATTLES -> "person.2.fill";
+            case CHECKINS -> "mappin.and.ellipse";
+            case FRIENDS -> "person.badge.plus";
+            case DAILY_QUESTS -> "checklist";
+        };
+    }
 
     private QuestCatalog() {}
 
@@ -79,10 +95,6 @@ public final class QuestCatalog {
         List<Task> pool = new ArrayList<>(DAILY_POOL);
         java.util.Collections.shuffle(pool, new Random(day.toEpochDay() * 7919L));
         return List.of(VISIT, pool.get(0), pool.get(1));
-    }
-
-    public static Optional<Event> event(String id) {
-        return EVENTS.stream().filter(e -> e.id().equals(id)).findFirst();
     }
 
     public static String dailyKey(LocalDate day, Task task) {

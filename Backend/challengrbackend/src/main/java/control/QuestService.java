@@ -48,6 +48,9 @@ public class QuestService {
     @Inject
     ActivityTracker activity;
 
+    @Inject
+    QuestEventStore eventStore;
+
     public static LocalDate today() {
         return LocalDate.now(ZONE);
     }
@@ -65,7 +68,7 @@ public class QuestService {
                 .map(t -> view(t, todayCount, claimed.contains(QuestCatalog.dailyKey(today, t))))
                 .toList();
 
-        List<EventView> events = QuestCatalog.EVENTS.stream()
+        List<EventView> events = eventStore.list().stream()
                 // laufende Events; beendete noch eine Woche lang (zum Abholen, falls am letzten Tag geschafft)
                 .filter(e -> !today.isBefore(e.start()) && !today.isAfter(e.end().plusDays(7)))
                 .map(e -> eventView(e, playerId, claimed))
@@ -92,7 +95,7 @@ public class QuestService {
     /** Event-Belohnung abholen: Coins + Figur (die Figur hängt am gespeicherten Abholen). */
     @Transactional
     public Board claimEvent(String playerId, String eventId) {
-        Event event = QuestCatalog.event(eventId).orElseThrow(() -> new WebApplicationException("Unbekanntes Event", 404));
+        Event event = eventStore.find(eventId).orElseThrow(() -> new WebApplicationException("Unbekanntes Event", 404));
         LocalDate today = today();
         if (today.isBefore(event.start())) throw new WebApplicationException("Event hat noch nicht begonnen", 409);
         String key = QuestCatalog.eventKey(eventId);
@@ -102,11 +105,20 @@ public class QuestService {
         return board(playerId);
     }
 
-    /** Events, deren Belohnung der Spieler abgeholt hat (für Event-Figuren). */
-    public Set<String> claimedEvents(String playerId) {
+    /** Figuren, die der Spieler über abgeholte Event-Belohnungen hat (bleiben für immer). */
+    public Set<String> claimedRewardCharacters(String playerId) {
         Set<String> out = new HashSet<>();
-        for (String k : claimedKeys(playerId)) if (k.startsWith("event:")) out.add(k.substring("event:".length()));
+        for (String k : claimedKeys(playerId)) {
+            if (!k.startsWith("event:")) continue;
+            eventStore.find(k.substring("event:".length()))
+                    .map(Event::rewardCharacter).filter(c -> c != null && !c.isBlank()).ifPresent(out::add);
+        }
         return out;
+    }
+
+    /** Für die Dashboard-Auswertung: Fortschritt eines Spielers in einem Event. */
+    public EventView progress(Event e, String playerId) {
+        return eventView(e, playerId, claimedKeys(playerId));
     }
 
     private void credit(String playerId, String key, LocalDate day, int coins) {

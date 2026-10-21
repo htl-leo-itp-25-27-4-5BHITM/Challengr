@@ -476,7 +476,7 @@ public class PlayerRessources {
                 .count();
         int checkins = (int) hotspotRepository.countForPlayer(player.getId());
         return new CharacterCatalog.Progress(won.size(), knowledgeWins, checkins, player.getHighestTrophies(),
-                questService.claimedEvents(player.getId()));
+                questService.claimedRewardCharacters(player.getId()));
     }
 
     /** Frei nach den Regeln – oder schon gewählt (z.B. vor einer Regeländerung freigeschaltet), die bleibt dem Spieler. */

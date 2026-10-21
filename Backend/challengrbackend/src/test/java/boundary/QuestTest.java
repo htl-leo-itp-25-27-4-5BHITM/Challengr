@@ -25,6 +25,9 @@ class QuestTest {
     @Inject
     EntityManager em;
 
+    @Inject
+    control.QuestEventStore eventStore;
+
     private String newPlayer(String prefix) {
         String id = prefix + "-" + System.nanoTime();
         Login.as(id).contentType("application/json")
@@ -80,7 +83,7 @@ class QuestTest {
 
     @Test
     void finishingTheBetaEventUnlocksTheCrashTestDummy() {
-        QuestCatalog.Event beta = QuestCatalog.event("beta").orElseThrow();
+        QuestCatalog.Event beta = eventStore.find("beta").orElseThrow();
         Assumptions.assumeTrue(beta.isActive(QuestService.today()), "Beta-Event läuft nicht mehr");
 
         String me = newPlayer("beta");

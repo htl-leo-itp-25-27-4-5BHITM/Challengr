@@ -33,6 +33,7 @@ public final class CharacterCatalog {
     }
 
     /** Was ein Spieler bisher erreicht hat – daraus ergibt sich, was frei ist. */
+    /** events = Figuren-Ids aus abgeholten Event-Belohnungen */
     public record Progress(int wins, int knowledgeWins, int checkins, int trophies, java.util.Set<String> events) {
         public Progress(int wins, int knowledgeWins, int checkins, int trophies) {
             this(wins, knowledgeWins, checkins, trophies, java.util.Set.of());
@@ -48,9 +49,9 @@ public final class CharacterCatalog {
             };
         }
 
-        /** Fortschritt für eine Figur (Event-Figuren: 1 = abgeholt). */
+        /** Fortschritt für eine Figur (Event-Figuren: 1 = Belohnung eines Events mit dieser Figur abgeholt). */
         public int of(Entry e) {
-            return e.requirement() == Requirement.EVENT ? (events.contains(e.event()) ? 1 : 0) : of(e.requirement());
+            return e.requirement() == Requirement.EVENT ? (events.contains(e.id()) ? 1 : 0) : of(e.requirement());
         }
     }
 
