@@ -36,7 +36,7 @@ public class ChallengeRepository {
                 Challenges.class
         );
         query.setParameter("categorie", kategorie);
-        return query.getResultList().stream().filter(c -> !isDisabled(c)).toList();
+        return query.getResultList().stream().filter(c -> !isDisabled(c) && c.isActive()).toList();
     }
 
     public Challenges findById(Long id) {

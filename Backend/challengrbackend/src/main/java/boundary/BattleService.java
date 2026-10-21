@@ -358,7 +358,7 @@ public class BattleService {
             if (challenge == null) {
                 throw new IllegalArgumentException("challenge not found");
             }
-            if (ChallengeRepository.isDisabled(challenge)) {
+            if (ChallengeRepository.isDisabled(challenge) || !challenge.isActive()) {
                 throw new BattleRejectedException("Diese Challenge ist gerade nicht verfügbar");
             }
             return challenge;

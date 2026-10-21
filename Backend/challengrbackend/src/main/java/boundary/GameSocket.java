@@ -88,6 +88,9 @@ public class GameSocket {
     @Inject
     control.BlockRepository blockRepository;
 
+    @Inject
+    control.QuizStatsService quizStats;
+
     // ---------------------------------------------------------
     // Lifecycle
     // ---------------------------------------------------------
@@ -1371,6 +1374,7 @@ public class GameSocket {
             ObjectNode scores = root.putObject("scores");
             q.scores.forEach(scores::put);
             payload = root.toString();
+            recordQuizStat(c, q.answers.get(q.fromId), q.answers.get(q.toId));
         }
         sendToPlayer(q.fromId, payload);
         sendToPlayer(q.toId, payload);
@@ -1379,6 +1383,20 @@ public class GameSocket {
         } else {
             schedule(() -> startQuizRound(battleId, round + 1), quizRevealPause);
         }
+    }
+
+    /** Statistik fürs Dashboard: welche Fragen fast alle falsch beantworten (oft ein Fehler in der Frage). */
+    private void recordQuizStat(Challenges c, Integer a, Integer b) {
+        if (quizStats == null || c.getCorrectIndex() == null) return;
+        int correct = 0, wrong = 0, none = 0;
+        for (Integer answer : new Integer[]{a, b}) {
+            if (answer == null || answer < 0) none++;
+            else if (answer.equals(c.getCorrectIndex())) correct++;
+            else wrong++;
+        }
+        long id = c.getId();
+        int fc = correct, fw = wrong, fn = none;
+        RESULT_TIMEOUTS.execute(() -> quizStats.record(id, fc, fw, fn));
     }
 
     private void finishQuiz(Long battleId) {

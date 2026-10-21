@@ -56,6 +56,10 @@ public class QuizQuestionSync {
         Set<String> existing = new HashSet<>(em.createQuery(
                         "SELECT c.text FROM Challenges c WHERE c.challengeCategory = :k", String.class)
                 .setParameter("k", wissen).getResultList());
+        // im Dashboard umformulierte Fragen nicht unter dem alten Text neu anlegen
+        existing.addAll(em.createQuery(
+                        "SELECT c.originalText FROM Challenges c WHERE c.challengeCategory = :k AND c.originalText IS NOT NULL", String.class)
+                .setParameter("k", wissen).getResultList());
         int added = 0;
         for (Question q : parse(readFile())) {
             if (existing.add(q.text())) {
