@@ -24,6 +24,12 @@ public class HotspotRepository {
                 .getSingleResult() > 0;
     }
 
+    /** Check-ins eines Spielers an OpenStreetMap-Orten an einem Tag (für das Tageslimit). */
+    public long countLandmarksOnDay(String playerId, LocalDate day) {
+        return em.createQuery("SELECT COUNT(c) FROM HotspotCheckin c WHERE c.playerId = :p AND c.day = :d AND c.hotspotId LIKE 'osm-%'", Long.class)
+                .setParameter("p", playerId).setParameter("d", day).getSingleResult();
+    }
+
     public long countForPlayer(String playerId) {
         return em.createQuery("SELECT COUNT(c) FROM HotspotCheckin c WHERE c.playerId = :p", Long.class)
                 .setParameter("p", playerId).getSingleResult();

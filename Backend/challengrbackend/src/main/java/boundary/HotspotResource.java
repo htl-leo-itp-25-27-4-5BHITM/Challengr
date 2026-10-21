@@ -15,7 +15,7 @@ import jakarta.ws.rs.core.MediaType;
 import java.time.LocalDate;
 import java.util.List;
 
-/** Hotspots: fixe Check-in-Punkte (z.B. die Schule) mit täglichem Bonus. */
+/** Hotspots: fixe Check-in-Punkte (z.B. die Schule) und Orte aus OpenStreetMap, jeweils mit täglichem Bonus. */
 @Path("/api/hotspots")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
@@ -31,23 +31,49 @@ public class HotspotResource {
     @Inject
     PlayerRepository playerRepository;
 
+    /** kind: "school" (feste Hotspots) oder "landmark" (aus OpenStreetMap); category nur bei landmark */
     public record HotspotDTO(String id, String name, double latitude, double longitude, double radiusMeters,
-                             int points, int firstOfDayBonus, boolean checkedInToday, long checkinsToday) {}
+                             int points, int firstOfDayBonus, boolean checkedInToday, long checkinsToday,
+                             String kind, String category) {}
 
     public record CheckinRequest(String playerId, Double latitude, Double longitude) {}
 
     public record CheckinResultDTO(String hotspotId, int points, boolean firstOfDay, int totalPoints) {}
 
+    /** Ein Check-in-Punkt, egal woher (fest oder OpenStreetMap). */
+    private record Spot(String id, String name, double latitude, double longitude, double radiusMeters,
+                        int points, int bonus, String kind, String category) {
+        static Spot of(HotspotCatalog.Hotspot h) {
+            return new Spot(h.id(), h.name(), h.latitude(), h.longitude(), h.radiusMeters(),
+                    HotspotCatalog.DAILY_POINTS, HotspotCatalog.FIRST_OF_DAY_BONUS, "school", null);
+        }
+
+        static Spot of(entity.Landmark l) {
+            return new Spot(l.getId(), l.getName(), l.getLatitude(), l.getLongitude(), l.getRadiusMeters(),
+                    HotspotCatalog.LANDMARK_POINTS, HotspotCatalog.LANDMARK_FIRST_OF_DAY_BONUS, "landmark", l.getCategory());
+        }
+
+        boolean isLandmark() { return "landmark".equals(kind); }
+    }
+
+    @Inject
+    control.LandmarkService landmarks;
+
     @GET
+    @Transactional
     public List<HotspotDTO> list(@QueryParam("playerId") String requested) {
-        // Eingecheckt-Status nur für das eigene Konto
+        // Eingecheckt-Status nur für das eigene Konto; Orte um die beim Server gespeicherte Position (nicht frei wählbar)
         String playerId = me.id();
         LocalDate today = HotspotCatalog.today();
-        return HotspotCatalog.ALL.stream()
-                .map(h -> new HotspotDTO(h.id(), h.name(), h.latitude(), h.longitude(), h.radiusMeters(),
-                        HotspotCatalog.DAILY_POINTS, HotspotCatalog.FIRST_OF_DAY_BONUS,
+        java.util.List<Spot> spots = new java.util.ArrayList<>(HotspotCatalog.ALL.stream().map(Spot::of).toList());
+        Player player = playerId == null ? null : playerRepository.findById(playerId);
+        if (player != null && control.LocationPrivacy.hasPosition(player)) {
+            landmarks.near(player.getLatitude(), player.getLongitude()).forEach(l -> spots.add(Spot.of(l)));
+        }
+        return spots.stream()
+                .map(h -> new HotspotDTO(h.id(), h.name(), h.latitude(), h.longitude(), h.radiusMeters(), h.points(), h.bonus(),
                         playerId != null && hotspotRepository.hasCheckedIn(playerId, h.id(), today),
-                        hotspotRepository.countOnDay(h.id(), today)))
+                        hotspotRepository.countOnDay(h.id(), today), h.kind(), h.category()))
                 .toList();
     }
 
@@ -56,7 +82,8 @@ public class HotspotResource {
     @Path("/{id}/checkin")
     @Transactional
     public synchronized CheckinResultDTO checkin(@PathParam("id") String hotspotId, CheckinRequest req) {
-        var hotspot = HotspotCatalog.find(hotspotId)
+        Spot hotspot = HotspotCatalog.find(hotspotId).map(Spot::of)
+                .or(() -> landmarks.find(hotspotId).map(Spot::of))
                 .orElseThrow(() -> new WebApplicationException("Unbekannter Hotspot", 404));
         if (req == null || req.playerId() == null || req.latitude() == null || req.longitude() == null) {
             throw new WebApplicationException("playerId, latitude und longitude fehlen", 400);
@@ -75,8 +102,12 @@ public class HotspotResource {
             throw new WebApplicationException("Heute schon eingecheckt – morgen wieder!", 409);
         }
 
+        if (hotspot.isLandmark() && hotspotRepository.countLandmarksOnDay(player.getId(), today) >= HotspotCatalog.LANDMARK_DAILY_LIMIT) {
+            throw new WebApplicationException("Heute schon " + HotspotCatalog.LANDMARK_DAILY_LIMIT + " Orte besucht – morgen geht's weiter!", 429);
+        }
+
         boolean first = hotspotRepository.countOnDay(hotspotId, today) == 0;
-        int points = HotspotCatalog.DAILY_POINTS + (first ? HotspotCatalog.FIRST_OF_DAY_BONUS : 0);
+        int points = hotspot.points() + (first ? hotspot.bonus() : 0);
 
         HotspotCheckin checkin = new HotspotCheckin();
         checkin.setPlayerId(player.getId());

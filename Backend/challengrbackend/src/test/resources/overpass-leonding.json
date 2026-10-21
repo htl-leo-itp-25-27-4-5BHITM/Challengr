@@ -1,0 +1,1282 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-10-21T08:36:41Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 303141885,
+  "lat": 48.2961974,
+  "lon": 14.2821212,
+  "tags": {
+    "amenity": "fountain",
+    "artist_name": "Walter Ritter",
+    "name": "Neptunbrunnen",
+    "start_date": "1910"
+  }
+},
+{
+  "type": "node",
+  "id": 347758562,
+  "lat": 48.2986394,
+  "lon": 14.2896391,
+  "tags": {
+    "amenity": "theatre",
+    "name": "Kinderkulturzentrum KUDDELMUDDEL",
+    "website": "https://www.kuddelmuddel.at/"
+  }
+},
+{
+  "type": "node",
+  "id": 441185699,
+  "lat": 48.2977420,
+  "lon": 14.2878623,
+  "tags": {
+    "description": "Friedensobelisk (Pestsäule) in Form eines Obelisken an der Nordspitze des Auerspergplatz in Linz",
+    "heritage": "yes",
+    "historic": "memorial",
+    "image": "https://commons.wikimedia.org/wiki/File:Linz_Innenstadt_Friedensobelisk-02.jpg",
+    "memorial": "stele",
+    "name": "Pestsäule Auerspergplatz",
+    "name:en": "Plague Column Auerspergplatz",
+    "tourism": "attraction",
+    "website": "https://www.linz.at/kultur/denkmal/Default.asp?action=denkmaldetail&id=2752",
+    "wheelchair": "limited"
+  }
+},
+{
+  "type": "node",
+  "id": 676386748,
+  "lat": 48.2795725,
+  "lon": 14.2494845,
+  "tags": {
+    "historic": "monument",
+    "memorial:conflict": "WW1",
+    "name": "Kriegerdenkmal Leonding 1. Weltkrieg"
+  }
+},
+{
+  "type": "node",
+  "id": 821606523,
+  "lat": 48.2908899,
+  "lon": 14.2883884,
+  "tags": {
+    "addr:city": "Linz",
+    "addr:housenumber": "26",
+    "addr:postcode": "4020",
+    "addr:street": "Kärntnerstraße",
+    "amenity": "library",
+    "contact:email": "vhs-bib@mag.linz.at",
+    "contact:fax": "+43 732 70704545",
+    "contact:phone": "+43 732 70700",
+    "contact:website": "http://www.wissensturm.at",
+    "name": "Stadtbibliothek",
+    "opening_hours": "Mo,Tu,Th,Fr 10:00-18:00; We 14:00-18:00; Sa 10:00-15:00; Su off",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 920072490,
+  "lat": 48.2792601,
+  "lon": 14.2484348,
+  "tags": {
+    "addr:city": "Leonding",
+    "addr:country": "AT",
+    "addr:housenumber": "1",
+    "addr:postcode": "4060",
+    "addr:street": "Stadtplatz",
+    "amenity": "townhall",
+    "contact:email": "rathaus@leonding.at",
+    "contact:fax": "+43 732 6878266",
+    "contact:phone": "+43 732 68780",
+    "contact:website": "http://www.leonding.at",
+    "name": "Leonding",
+    "name:prefix:at": "Stadtamt",
+    "opening_hours": "Mo-Th 07:30-18:00; Fr 07:30-12:00",
+    "operator": "Heinz Bindeus",
+    "wheelchair": "yes",
+    "wikidata": "Q125760765"
+  }
+},
+{
+  "type": "node",
+  "id": 920708897,
+  "lat": 48.2792228,
+  "lon": 14.2477414,
+  "tags": {
+    "addr:city": "Leonding",
+    "addr:country": "AT",
+    "addr:housenumber": "2c",
+    "addr:postcode": "4060",
+    "addr:street": "Stadtplatz",
+    "amenity": "library",
+    "contact:email": "stadtbuecherei@leonding.at",
+    "contact:phone": "+43 732 6878200",
+    "name": "Bücherei Leonding",
+    "name:en": "Public Library Leonding",
+    "opening_hours": "Mo off; Tu 13:00-19:00; We 08:00-12:00; Th 08:00-19:00; Fr 15:00-18:00; Sa-Su off"
+  }
+},
+{
+  "type": "node",
+  "id": 961610476,
+  "lat": 48.2520814,
+  "lon": 14.2585759,
+  "tags": {
+    "amenity": "library",
+    "contact:phone": "+43 732 676827",
+    "level": "2",
+    "name": "Bücherei Doppl",
+    "name:en": "Libary Doppl"
+  }
+},
+{
+  "type": "node",
+  "id": 1262185684,
+  "lat": 48.2710123,
+  "lon": 14.2827044,
+  "tags": {
+    "amenity": "library",
+    "name": "Bibliothek - Volkshaus Keferfeld"
+  }
+},
+{
+  "type": "node",
+  "id": 1405307130,
+  "lat": 48.2814749,
+  "lon": 14.2794567,
+  "tags": {
+    "addr:city": "Linz, Donau",
+    "addr:country": "AT",
+    "addr:housenumber": "116",
+    "addr:postcode": "4020",
+    "addr:street": "Waldeggstraße",
+    "alt_name": "Zur Schiassn",
+    "amenity": "arts_centre",
+    "building:levels": "2",
+    "disused:amenity": "restaurant",
+    "name": "Kulturverein zur Schießhalle",
+    "old_name": "Wirtshaus zur Schießhalle",
+    "website": "https://wirtshaus.art",
+    "wheelchair": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 2258291090,
+  "lat": 48.2925794,
+  "lon": 14.2920399,
+  "tags": {
+    "amenity": "townhall",
+    "contact:phone": "+43 732 77200",
+    "designation": "Amt der oberösterreichischen Landesregierung",
+    "name": "Amt der oberösterreichischen Landesregierung",
+    "opening_hours": "Mo,Tu,Th 07:30-12:30,13:00-17:00; We 07:30-14:00; Fr 07:30-13:00",
+    "toilets:wheelchair": "yes",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3563530493,
+  "lat": 48.2694369,
+  "lon": 14.2923660,
+  "tags": {
+    "amenity": "fountain",
+    "name": "Pelikan Brunnen"
+  }
+},
+{
+  "type": "node",
+  "id": 4225953505,
+  "lat": 48.2719736,
+  "lon": 14.2918328,
+  "tags": {
+    "artist_name": "Helmuth Gsöllpointner",
+    "historic": "memorial",
+    "memorial": "war_memorial",
+    "name": "Kriegerdenkmal",
+    "start_date": "1966"
+  }
+},
+{
+  "type": "node",
+  "id": 4862018615,
+  "lat": 48.2617718,
+  "lon": 14.2999639,
+  "tags": {
+    "historic": "memorial",
+    "name": "Unfallgedenkstätte"
+  }
+},
+{
+  "type": "node",
+  "id": 5503709572,
+  "lat": 48.2761002,
+  "lon": 14.2981133,
+  "tags": {
+    "amenity": "fountain",
+    "artist_name": "Irmgard Schaumberger",
+    "name": "Jubiläumsbrunnen",
+    "start_date": "1990"
+  }
+},
+{
+  "type": "node",
+  "id": 6966429081,
+  "lat": 48.2509032,
+  "lon": 14.2593205,
+  "tags": {
+    "historic": "memorial",
+    "memorial": "war_memorial",
+    "name": "Kriegsopfergedenkstein Doppl-Hart"
+  }
+},
+{
+  "type": "node",
+  "id": 6966443001,
+  "lat": 48.2516520,
+  "lon": 14.2594184,
+  "tags": {
+    "historic": "memorial",
+    "memorial": "stone",
+    "name": "Dr. Hubert Sperl"
+  }
+},
+{
+  "type": "node",
+  "id": 6971088728,
+  "lat": 48.2926637,
+  "lon": 14.2983598,
+  "tags": {
+    "addr:housenumber": "19",
+    "addr:postcode": "4020",
+    "addr:street": "Anzengruberstraße",
+    "amenity": "library",
+    "check_date:opening_hours": "2025-08-24",
+    "email": "landesarchiv@ooe.gv.at",
+    "name": "Oberösterreichisches Landesarchiv, Bibliothek",
+    "opening_hours": "Mo-Tu 08:30-17:00; We 08:30-13:30; Th 08:30-17:00",
+    "phone": "+43 732 7720-146 01",
+    "ref:isil": "AT-LAO",
+    "website": "https://www.landesarchiv-ooe.at/bibliothek-verlag/ooela-bibliothek/"
+  }
+},
+{
+  "type": "node",
+  "id": 9885004349,
+  "lat": 48.2912224,
+  "lon": 14.2969696,
+  "tags": {
+    "alt_name": "Phönixtheater",
+    "amenity": "theatre",
+    "check_date": "2026-08-03",
+    "contact:email": "office@theater-phoenix.at",
+    "contact:fax": "+43 732 66264130",
+    "contact:phone": "+43 732 662641",
+    "contact:website": "http://www.theater-phoenix.at",
+    "name": "Theater Phönix",
+    "operator": "Theater Phönix",
+    "wheelchair": "yes",
+    "wikidata": "Q2415930"
+  }
+},
+{
+  "type": "node",
+  "id": 11404279612,
+  "lat": 48.2585765,
+  "lon": 14.2815530,
+  "tags": {
+    "historic": "memorial",
+    "inscription": "Zur Erinnerung an den Bombenabwurf Auf Linz...",
+    "memorial": "war_memorial",
+    "name": "Zur Erinnerung an den Bombenabwurf auf Linz",
+    "outdoor_seating": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 12633566348,
+  "lat": 48.2922747,
+  "lon": 14.2539613,
+  "tags": {
+    "description": "Gedenkstein für die Gefallenen der Franzosenkriege 1809",
+    "historic": "memorial",
+    "memorial": "stone",
+    "name": "Franzosenstein"
+  }
+},
+{
+  "type": "node",
+  "id": 13461818408,
+  "lat": 48.2976227,
+  "lon": 14.2955513,
+  "tags": {
+    "addr:housenumber": "33a",
+    "addr:street": "Humboltstraße",
+    "amenity": "arts_centre",
+    "description": "mail@raumteiler-linz.at",
+    "name": "Raumteiler",
+    "website": "http://www.raumteiler-linz.at/"
+  }
+},
+{
+  "type": "node",
+  "id": 13507029393,
+  "lat": 48.2774275,
+  "lon": 14.2975660,
+  "tags": {
+    "historic": "memorial",
+    "name": "Mariengrotte"
+  }
+},
+{
+  "type": "node",
+  "id": 13784653769,
+  "lat": 48.2849238,
+  "lon": 14.2629487,
+  "tags": {
+    "name": "Leondinger Bienenlehrpfad",
+    "tourism": "attraction"
+  }
+},
+{
+  "type": "way",
+  "id": 4949289,
+  "center": {
+    "lat": 48.2868174,
+    "lon": 14.2970204
+  },
+  "tags": {
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "name": "Andreas-Hofer-Platz"
+  }
+},
+{
+  "type": "way",
+  "id": 5104545,
+  "center": {
+    "lat": 48.2948351,
+    "lon": 14.2916128
+  },
+  "tags": {
+    "leisure": "park",
+    "name": "Volksgarten",
+    "surface": "grass",
+    "wikidata": "Q1677573",
+    "wikipedia": "de:Volksgarten (Linz)"
+  }
+},
+{
+  "type": "way",
+  "id": 13961069,
+  "center": {
+    "lat": 48.3002382,
+    "lon": 14.2860211
+  },
+  "tags": {
+    "alt_name": "Mariä-Empfängnis-Dom;Neuer Dom",
+    "alt_name:en": "Cathedral of the Immaculate Conception;New Cathedral",
+    "amenity": "place_of_worship",
+    "building": "cathedral",
+    "building:colour": "#C6B4A0",
+    "building:material": "stone",
+    "contact:email": "domcenter@dioezese-linz.at",
+    "contact:phone": "+43 732 77788524",
+    "contact:website": "http://www.mariendom.at",
+    "denomination": "roman_catholic",
+    "height": "19",
+    "heritage": "yes",
+    "image": "https://commons.wikimedia.org/wiki/File:Linz_Neuer_Dom-02.jpg",
+    "loc_name": "Neuer Dom",
+    "loc_name:en": "New Cathedral",
+    "name": "Mariendom",
+    "name:en": "St. Mary's Cathedral",
+    "opening_hours": "Su 08:00-19:15; Mo-Sa 07:30-19:00",
+    "religion": "christian",
+    "roof:colour": "#6E646D",
+    "roof:height": "3",
+    "roof:material": "copper",
+    "roof:shape": "flat",
+    "tourism": "attraction",
+    "wheelchair": "yes",
+    "wikidata": "Q257481",
+    "wikipedia": "de:Mariä-Empfängnis-Dom"
+  }
+},
+{
+  "type": "way",
+  "id": 13961937,
+  "center": {
+    "lat": 48.2977796,
+    "lon": 14.2910363
+  },
+  "tags": {
+    "leisure": "park",
+    "name": "Schillerpark"
+  }
+},
+{
+  "type": "way",
+  "id": 15558542,
+  "center": {
+    "lat": 48.2831909,
+    "lon": 14.3042346
+  },
+  "tags": {
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "name": "Panuliwiese"
+  }
+},
+{
+  "type": "way",
+  "id": 15745055,
+  "center": {
+    "lat": 48.2975790,
+    "lon": 14.3160382
+  },
+  "tags": {
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "loc_name": "Großer Park",
+    "name": "Sternpark",
+    "surface": "grass"
+  }
+},
+{
+  "type": "way",
+  "id": 19840042,
+  "center": {
+    "lat": 48.2955287,
+    "lon": 14.2812348
+  },
+  "tags": {
+    "alt_name": "Parkanlage am Bauernberg; Bauernberg-Park",
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "name": "Bauernbergpark",
+    "surface": "grass",
+    "wikidata": "Q24846697"
+  }
+},
+{
+  "type": "way",
+  "id": 27206426,
+  "center": {
+    "lat": 48.2947913,
+    "lon": 14.2940794
+  },
+  "tags": {
+    "addr:city": "Linz",
+    "addr:country": "AT",
+    "addr:housenumber": "1",
+    "addr:postcode": "4020",
+    "addr:street": "Am Volksgarten",
+    "amenity": "theatre",
+    "building": "civic",
+    "building:material": "stone",
+    "check_date": "2026-09-05",
+    "contact:website": "https://www.landestheater-linz.at/musiktheater",
+    "height": "26",
+    "name": "Musiktheater Linz",
+    "operator": "Landestheather Linz",
+    "wheelchair": "yes",
+    "wikidata": "Q1343421",
+    "wikipedia": "de:Musiktheater Linz"
+  }
+},
+{
+  "type": "way",
+  "id": 32925785,
+  "center": {
+    "lat": 48.2708869,
+    "lon": 14.2584261
+  },
+  "tags": {
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "name": "Stadtpark Leonding",
+    "name:de": "Stadtpark Leonding",
+    "name:en": "City park Leonding",
+    "source": "local_knowledge",
+    "surface": "grass"
+  }
+},
+{
+  "type": "way",
+  "id": 32932937,
+  "center": {
+    "lat": 48.2938798,
+    "lon": 14.2462938
+  },
+  "tags": {
+    "addr:city": "Leonding",
+    "addr:country": "AT",
+    "addr:housenumber": "15",
+    "addr:postcode": "4060",
+    "addr:street": "Lugwiesstraße",
+    "alt_name": "12er Turm",
+    "building": "watchtower",
+    "building:levels": "5",
+    "building:material": "stone",
+    "description": "Turmbefestigung Linz",
+    "description:de": "Turmbefestigung Linz",
+    "man_made": "tower",
+    "name": "Turm 12 (Agnes)",
+    "name:de": "Turm 12 (Agnes)",
+    "name:en": "Tower 12 (Agnes)",
+    "roof:material": "copper",
+    "roof:shape": "pyramidal",
+    "tourism": "attraction",
+    "tower:type": "observation",
+    "wikidata": "Q1325557",
+    "wikipedia": "de:Turmbefestigung Linz"
+  }
+},
+{
+  "type": "way",
+  "id": 32932939,
+  "center": {
+    "lat": 48.2989720,
+    "lon": 14.2436241
+  },
+  "tags": {
+    "addr:city": "Leonding",
+    "addr:country": "AT",
+    "addr:housenumber": "59",
+    "addr:postcode": "4060",
+    "addr:street": "Lugwiesstraße",
+    "alt_name": "13er Turm",
+    "building": "watchtower",
+    "building:levels": "2",
+    "building:material": "stone",
+    "description": "Turmbefestigung Linz",
+    "description:de": "Turmbefestigung Linz",
+    "man_made": "tower",
+    "name": "Turm 13 (Genoveva)",
+    "name:en": "Tower 13 (Genoveva)",
+    "roof:levels": "0.5",
+    "roof:material": "copper",
+    "roof:shape": "pyramidal",
+    "tourism": "attraction",
+    "tower:type": "observation",
+    "wikidata": "Q1325557",
+    "wikipedia": "de:Turmbefestigung Linz"
+  }
+},
+{
+  "type": "way",
+  "id": 35324453,
+  "center": {
+    "lat": 48.2862273,
+    "lon": 14.2617453
+  },
+  "tags": {
+    "addr:city": "Leonding",
+    "addr:country": "AT",
+    "addr:housenumber": "55",
+    "addr:postcode": "4060",
+    "addr:street": "Daffingerstraße",
+    "alt_name": "9er Turm - Stadmuseum Leonding",
+    "building": "watchtower",
+    "building:levels": "2",
+    "building:material": "stone",
+    "contact:phone": "+43 732 674746",
+    "description": "Turmbefestigung Linz",
+    "description:de": "Turmbefestigung Linz",
+    "man_made": "tower",
+    "name": "Turm 9 (Apollonia)",
+    "name:en": "Tower 9 (Apollonia)",
+    "roof:levels": "1",
+    "roof:material": "copper",
+    "roof:shape": "pyramidal",
+    "tourism": "museum",
+    "tower:type": "observation",
+    "wikidata": "Q1325557",
+    "wikipedia": "de:Turmbefestigung Linz"
+  }
+},
+{
+  "type": "way",
+  "id": 35913075,
+  "center": {
+    "lat": 48.2662067,
+    "lon": 14.2682527
+  },
+  "tags": {
+    "leisure": "park",
+    "name": "St.-Isidor-Park",
+    "name:de": "St.-Isidor-Park",
+    "name:en": "St. Isidor park",
+    "source": "survey"
+  }
+},
+{
+  "type": "way",
+  "id": 36999545,
+  "center": {
+    "lat": 48.2905616,
+    "lon": 14.2903177
+  },
+  "tags": {
+    "leisure": "park",
+    "name": "Bahnhofplatz"
+  }
+},
+{
+  "type": "way",
+  "id": 37632047,
+  "center": {
+    "lat": 48.2897534,
+    "lon": 14.2840707
+  },
+  "tags": {
+    "alt_name": "Kianispielplatz",
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "loc_name": "KIWANIS-Park",
+    "name": "Ziegeleipark"
+  }
+},
+{
+  "type": "way",
+  "id": 37646650,
+  "center": {
+    "lat": 48.2891040,
+    "lon": 14.2763167
+  },
+  "tags": {
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "name": "Minnesängerplatz"
+  }
+},
+{
+  "type": "way",
+  "id": 37652042,
+  "center": {
+    "lat": 48.2941728,
+    "lon": 14.2749505
+  },
+  "tags": {
+    "area": "yes",
+    "highway": "pedestrian",
+    "lit": "no",
+    "name": "Helmut-Köglberger-Platz",
+    "name:etymology:wikidata": "Q672203",
+    "name:etymology:wikipedia": "de:Helmut Köglberger",
+    "place": "square",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 49286259,
+  "center": {
+    "lat": 48.2796773,
+    "lon": 14.2492618
+  },
+  "tags": {
+    "addr:city": "Leonding",
+    "addr:country": "AT",
+    "addr:housenumber": "44",
+    "addr:postcode": "4060",
+    "addr:street": "Stadtplatz",
+    "building": "yes",
+    "name": "44er Haus",
+    "tourism": "gallery",
+    "wikidata": "Q20754274"
+  }
+},
+{
+  "type": "way",
+  "id": 49422436,
+  "center": {
+    "lat": 48.2960495,
+    "lon": 14.2562533
+  },
+  "tags": {
+    "addr:city": "Leonding",
+    "addr:country": "AT",
+    "addr:housenumber": "2",
+    "addr:postcode": "4060",
+    "addr:street": "Peinherrweg",
+    "alt_name": "Schloss Holzheim",
+    "building": "yes",
+    "building:levels": "3",
+    "historic": "castle",
+    "name": "Peinherrnhof",
+    "website": "http://www.peinherrnhof.at/",
+    "wikidata": "Q1329999",
+    "wikimedia_commons": "Category:Schloss Holzheim",
+    "wikipedia": "de:Schloss Holzheim"
+  }
+},
+{
+  "type": "way",
+  "id": 67505177,
+  "center": {
+    "lat": 48.2959534,
+    "lon": 14.2691726
+  },
+  "tags": {
+    "addr:city": "Linz",
+    "addr:country": "AT",
+    "addr:housenumber": "34",
+    "addr:postcode": "4020",
+    "addr:street": "Freinbergstraße",
+    "alt_name": "Jesuitenkloster Freinberg",
+    "building": "watchtower",
+    "building:levels": "4",
+    "building:material": "stone",
+    "denomination": "catholic",
+    "description": "Probeturm Freinberg der Turmbefestigung Linz, heute Teil des Aloisianums, einer katholischen Privatschule Freinbergstraße 32 in Linz",
+    "heritage": "yes",
+    "historic": "yes",
+    "image": "https://commons.wikimedia.org/wiki/File:Linz_Freinbergstrasse_32_Probeturm.jpg",
+    "man_made": "tower",
+    "name": "Probeturm",
+    "religion": "christian",
+    "roof:material": "copper",
+    "roof:shape": "flat",
+    "tourism": "attraction",
+    "tower:type": "observation"
+  }
+},
+{
+  "type": "way",
+  "id": 73213558,
+  "center": {
+    "lat": 48.2520342,
+    "lon": 14.2852278
+  },
+  "tags": {
+    "access": "children",
+    "alt_name": "Kinderfreibad Negrelliweg",
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "name": "Kinderbad Negrelliweg",
+    "note": "water_park laut Wiki nur bei entsprechend großen Bädern",
+    "sport": "swimming",
+    "water_slide": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 84773651,
+  "center": {
+    "lat": 48.2518795,
+    "lon": 14.3200591
+  },
+  "tags": {
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "name": "Saporoshjepark"
+  }
+},
+{
+  "type": "way",
+  "id": 88538759,
+  "center": {
+    "lat": 48.2996336,
+    "lon": 14.2856674
+  },
+  "tags": {
+    "addr:city": "Linz",
+    "addr:country": "AT",
+    "addr:housenumber": "6",
+    "addr:postcode": "4020",
+    "addr:street": "Stifterstraße",
+    "alt_name": "Dombücherei",
+    "amenity": "library",
+    "building": "yes",
+    "check_date": "2023-09-16",
+    "contact:email": "verein@buechereiamdom.at",
+    "contact:phone": "+43 732 778200",
+    "contact:website": "http://www.buechereiamdom.at",
+    "name": "Bücherei am Dom",
+    "opening_hours": "Mo-Fr 10:00-18:00; Tu,Th 10:00-16:00",
+    "source": "yahoo",
+    "wikidata": "Q56237518"
+  }
+},
+{
+  "type": "way",
+  "id": 88691566,
+  "center": {
+    "lat": 48.2975451,
+    "lon": 14.2879753
+  },
+  "tags": {
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "name": "Auerspergplatz"
+  }
+},
+{
+  "type": "way",
+  "id": 92483976,
+  "center": {
+    "lat": 48.2955838,
+    "lon": 14.2686002
+  },
+  "tags": {
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "name": "Arboretum"
+  }
+},
+{
+  "type": "way",
+  "id": 98913863,
+  "center": {
+    "lat": 48.2971905,
+    "lon": 14.2907140
+  },
+  "tags": {
+    "addr:city": "Linz",
+    "addr:country": "AT",
+    "addr:housenumber": "2",
+    "addr:postcode": "4020",
+    "addr:street": "Schillerplatz",
+    "air_conditioning": "yes",
+    "amenity": "library",
+    "baby_feeding": "no",
+    "building": "library",
+    "changing_table": "yes",
+    "changing_table:count": "1",
+    "changing_table:fee": "no",
+    "changing_table:location": "wheelchair_toilet",
+    "check_date": "2026-03-09",
+    "contact:email": "landesbibliothek@ooe.gv.at",
+    "contact:phone": "+43 732 772053100",
+    "contact:website": "http://www.landesbibliothek.at",
+    "name": "Oberösterreichische Landesbibliothek",
+    "name:de": "Oberösterreichische Landesbibliothek",
+    "name:en": "Upper Austrian Federal State Library",
+    "opening_hours": "Mo-Fr 09:00-19:00; Sa 09:00-16:00; 2026 Aug 01-2026 Aug 31 Mo-Fr 09:00-18:00; 2026 Aug 01-2026 Aug 31 Sa 09:00-12:00; PH off",
+    "ref:isil": "AT-OOeLB",
+    "short_name": "OÖ Landesbibliothek",
+    "toilets:access": "customers",
+    "toilets:wheelchair": "designated",
+    "wheelchair": "yes",
+    "wikidata": "Q1439945",
+    "wikipedia": "de:Oberösterreichische Landesbibliothek"
+  }
+},
+{
+  "type": "way",
+  "id": 101622459,
+  "center": {
+    "lat": 48.2625511,
+    "lon": 14.2876176
+  },
+  "tags": {
+    "alt_name": "Parkanlage Oed",
+    "leisure": "park",
+    "name": "WAG Park"
+  }
+},
+{
+  "type": "way",
+  "id": 102421116,
+  "center": {
+    "lat": 48.2745380,
+    "lon": 14.2952380
+  },
+  "tags": {
+    "alt_name": "Landschaftspark Bindermichl - Spallerhof;Binderbichlpark",
+    "layer": "1",
+    "leisure": "park",
+    "name": "Bellevuepark"
+  }
+},
+{
+  "type": "way",
+  "id": 102421126,
+  "center": {
+    "lat": 48.2690630,
+    "lon": 14.2960641
+  },
+  "tags": {
+    "alt_name": "Landschaftspark Bindermichl - Spallerhof;Bindermichlpark",
+    "layer": "1",
+    "leisure": "park",
+    "name": "Bellevuepark",
+    "surface": "grass"
+  }
+},
+{
+  "type": "way",
+  "id": 105079865,
+  "center": {
+    "lat": 48.2515308,
+    "lon": 14.2872252
+  },
+  "tags": {
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "name": "Haidgatternpark"
+  }
+},
+{
+  "type": "way",
+  "id": 105234062,
+  "center": {
+    "lat": 48.2542856,
+    "lon": 14.2867637
+  },
+  "tags": {
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "name": "Laskahofpark"
+  }
+},
+{
+  "type": "way",
+  "id": 107537598,
+  "center": {
+    "lat": 48.2963319,
+    "lon": 14.2640991
+  },
+  "tags": {
+    "access": "private",
+    "leisure": "park",
+    "name": "Naschgarten",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 108376897,
+  "center": {
+    "lat": 48.2908562,
+    "lon": 14.2856474
+  },
+  "tags": {
+    "leisure": "park",
+    "name": "Bergschlösslpark"
+  }
+},
+{
+  "type": "way",
+  "id": 108376971,
+  "center": {
+    "lat": 48.2908739,
+    "lon": 14.2856718
+  },
+  "tags": {
+    "addr:city": "Linz",
+    "addr:country": "AT",
+    "addr:housenumber": "1",
+    "addr:postcode": "4020",
+    "addr:street": "Bergschlößlgasse",
+    "building": "villa",
+    "building:architecture": "baroque",
+    "building:condition": "renovated",
+    "building:de": "schlössl",
+    "castle_type": "stately",
+    "castle_type:de": "schlössl",
+    "historic": "castle",
+    "name": "Bergschlößl",
+    "renovation_date": "1992-1998",
+    "start_date": "1718",
+    "website": "https://design-center.at/Bergschloessl/-6913-3-3-de-com-/cms,em_url,internal.html",
+    "wikidata": "Q820163",
+    "wikimedia_commons": "Category:Bergschlößl",
+    "wikipedia": "de:Bergschlössl"
+  }
+},
+{
+  "type": "way",
+  "id": 109632183,
+  "center": {
+    "lat": 48.2548845,
+    "lon": 14.3158436
+  },
+  "tags": {
+    "leisure": "park",
+    "name": "Löwenfeldpark"
+  }
+},
+{
+  "type": "way",
+  "id": 110537572,
+  "center": {
+    "lat": 48.2935816,
+    "lon": 14.3141228
+  },
+  "tags": {
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "name": "Lonstorferplatz"
+  }
+},
+{
+  "type": "way",
+  "id": 117650882,
+  "center": {
+    "lat": 48.2869496,
+    "lon": 14.3036923
+  },
+  "tags": {
+    "amenity": "fountain",
+    "artist_name": "Willibald Katteneder",
+    "name": "Jubiläumsbrunnen",
+    "start_date": "1990"
+  }
+},
+{
+  "type": "way",
+  "id": 124369783,
+  "center": {
+    "lat": 48.2769131,
+    "lon": 14.3199824
+  },
+  "tags": {
+    "addr:city": "Linz",
+    "addr:housename": "BG77",
+    "addr:housenumber": "4",
+    "addr:postcode": "4020",
+    "addr:street": "voestalpine-Straße",
+    "alt_name": "Bürogebäude 77",
+    "building": "office",
+    "building:levels": "7",
+    "fee": "yes",
+    "name": "voestalpine Stahlwelt",
+    "opening_hours": "Tu-Sa 09:00-17:00; PH off",
+    "ref": "BG77",
+    "reservation:website": "https://www.voestalpine.com/stahlwelt/en/Booking",
+    "tourism": "museum",
+    "website": "https://www.voestalpine.com/stahlwelt"
+  }
+},
+{
+  "type": "way",
+  "id": 134475591,
+  "center": {
+    "lat": 48.2629582,
+    "lon": 14.3062101
+  },
+  "tags": {
+    "leisure": "park",
+    "name": "Seniorenpark Wasserwald"
+  }
+},
+{
+  "type": "way",
+  "id": 136619359,
+  "center": {
+    "lat": 48.3001555,
+    "lon": 14.2923981
+  },
+  "tags": {
+    "landuse": "recreation_ground",
+    "leisure": "park",
+    "name": "City-Park",
+    "surface": "grass"
+  }
+},
+{
+  "type": "way",
+  "id": 137596682,
+  "center": {
+    "lat": 48.2936517,
+    "lon": 14.2916004
+  },
+  "tags": {
+    "amenity": "fountain",
+    "artist_name": "Alois Dorn",
+    "historic": "memorial",
+    "memorial": "statue",
+    "name": "Brunnen vor der Arbeiterkammer",
+    "start_date": "1950"
+  }
+},
+{
+  "type": "way",
+  "id": 142478423,
+  "center": {
+    "lat": 48.2997603,
+    "lon": 14.2896481
+  },
+  "tags": {
+    "alt_name": "Brunnen der Menschenrechte;Jubiläumsbrunnen Friedensplatz",
+    "amenity": "fountain",
+    "height": "2.8",
+    "historic": "monument",
+    "name": "Menschenrechtsbrunnen"
+  }
+},
+{
+  "type": "way",
+  "id": 349593271,
+  "center": {
+    "lat": 48.2942855,
+    "lon": 14.2922298
+  },
+  "tags": {
+    "amenity": "fountain",
+    "drinking_water": "no",
+    "name": "Freude am Schönen",
+    "surface": "water"
+  }
+},
+{
+  "type": "way",
+  "id": 590527287,
+  "center": {
+    "lat": 48.2943377,
+    "lon": 14.3070648
+  },
+  "tags": {
+    "leisure": "park",
+    "name": "Grüne Mitte"
+  }
+},
+{
+  "type": "way",
+  "id": 1011098666,
+  "center": {
+    "lat": 48.2935797,
+    "lon": 14.2765724
+  },
+  "tags": {
+    "addr:city": "Linz",
+    "addr:country": "AT",
+    "addr:housenumber": "1",
+    "addr:place": "Helmut-Köglberger-Platz",
+    "addr:postcode": "4020",
+    "alt_name": "Linzer Stadion",
+    "capacity:international": "17117",
+    "capacity:national": "19080",
+    "colour": "#DEDEDE",
+    "contact:email": "office@lask.at;ticket@lask.at;shop@lask.at;fanshop@lask.at",
+    "contact:fax": "+43 732 6033329",
+    "contact:phone": "+43 732 6033320",
+    "contact:website": "https://www.lask.at",
+    "description": "Die Raiffeisen Arena in Linz ist die Heimstätte des LASK.",
+    "leisure": "stadium",
+    "loc_name": "Stadion auf der Gugl",
+    "name": "Raiffeisen Arena",
+    "name:en": "Raiffeisen Arena",
+    "old_name": "Linzer Stadion",
+    "old_wikidata": "Q686798",
+    "old_wikipedia": "de:Linzer Stadion",
+    "operator": "LASK GMBH",
+    "sport": "soccer",
+    "start_date": "2023-02-24",
+    "wikidata": "Q116693275",
+    "wikimedia_commons": "File:Raiffeisen Arena, Linz (P1130984).jpg",
+    "wikipedia": "de:Raiffeisen_Arena_(Linz)"
+  }
+},
+{
+  "type": "way",
+  "id": 1535624585,
+  "center": {
+    "lat": 48.2972648,
+    "lon": 14.3123117
+  },
+  "tags": {
+    "access": "yes",
+    "addr:city": "Linz",
+    "addr:postcode": "4020",
+    "addr:street": "Garnisonstraße",
+    "dog": "leashed",
+    "leisure": "park",
+    "name": "Trafikpark, Kleiner Park",
+    "opening_hours": "24/7",
+    "operator": "LinzAG",
+    "operator:type": "government",
+    "smoking": "outside",
+    "surface": "grass"
+  }
+},
+{
+  "type": "way",
+  "id": 1536949675,
+  "center": {
+    "lat": 48.2950968,
+    "lon": 14.3138238
+  },
+  "tags": {
+    "amenity": "fountain",
+    "artist_name": "Klaus Jürgen Trikl",
+    "artwork_type": "installation",
+    "drinking_water": "no",
+    "lit": "yes",
+    "name": "Jubiläumsbrunnen",
+    "start_date": "1990",
+    "tourism": "artwork"
+  }
+},
+{
+  "type": "relation",
+  "id": 1382695,
+  "center": {
+    "lat": 48.2888950,
+    "lon": 14.2600619
+  },
+  "tags": {
+    "addr:city": "Leonding",
+    "addr:country": "AT",
+    "addr:housenumber": "1",
+    "addr:postcode": "4060",
+    "addr:street": "Buchberg",
+    "alt_name": "10er Turm",
+    "building": "watchtower",
+    "building:levels": "1",
+    "building:material": "stone",
+    "description": "Turmbefestigung Linz",
+    "description:de": "Turmbefestigung Linz",
+    "man_made": "tower",
+    "name": "Turm 10 (Gertrude)",
+    "name:de": "Turm 10 (Gertrude)",
+    "name:en": "Tower 10 (Gertrude)",
+    "roof:material": "grass",
+    "roof:shape": "flat",
+    "tourism": "attraction",
+    "tower:type": "observation",
+    "type": "multipolygon",
+    "wikidata": "Q125768068",
+    "wikipedia": "de:Turmbefestigung Linz"
+  }
+},
+{
+  "type": "relation",
+  "id": 1428538,
+  "center": {
+    "lat": 48.2771956,
+    "lon": 14.2924394
+  },
+  "tags": {
+    "landuse": "forest",
+    "leisure": "park",
+    "name": "Hummelhofwald",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 8382375,
+  "center": {
+    "lat": 48.2584660,
+    "lon": 14.3045751
+  },
+  "tags": {
+    "leisure": "park",
+    "name": "Erholungspark Wasserwald",
+    "type": "multipolygon"
+  }
+}
+
+  ]
+}
