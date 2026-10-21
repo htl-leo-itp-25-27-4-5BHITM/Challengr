@@ -11,7 +11,7 @@ import UserNotifications
 ///
 /// Note: this is not remote push. When iOS suspends the app the WebSocket closes,
 /// so events only arrive while the app is still alive (open or recently backgrounded).
-/// Real push needs an APNs key + backend sender (see SwiftDocumentation).
+/// Real push needs an APNs key + backend sender (see Swift/README.md).
 final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationManager()
 

@@ -19,3 +19,10 @@
 
 # Logs
 *.log
+# IDEs
+.vscode/
+*.iml
+
+# Xcode build output
+**/DerivedData/
+**/build/
