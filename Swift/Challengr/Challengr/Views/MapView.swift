@@ -104,6 +104,7 @@ struct MapView: View {
     @State private var isCheckingIn = false
     @State private var announcedHotspotIds: Set<String> = []
     @State private var lastHotspotLoad: Date? = nil
+    @State private var lastHotspotLoadAt: CLLocationCoordinate2D? = nil
     @State private var knownNearbyIds: [String]? = nil
     /// Figur des Gegners im laufenden Battle
     @State private var battleOpponentCharacter: GameCharacter? = nil
@@ -743,7 +744,8 @@ struct MapView: View {
                         closePlayerPopup()
                         withAnimation { selectedHotspotId = hotspot.id }
                     } label: {
-                        HotspotMarker(name: hotspot.name, checkedIn: hotspot.checkedInToday)
+                        HotspotMarker(name: hotspot.name, checkedIn: hotspot.checkedInToday,
+                                      symbol: hotspot.isLandmark ? hotspot.symbol : nil)
                     }
                     .buttonStyle(.plain)
                 }
@@ -1261,6 +1263,7 @@ struct MapView: View {
     private func loadHotspots() async {
         guard !ownPlayerId.isEmpty else { return }
         lastHotspotLoad = Date()
+        lastHotspotLoadAt = ownCoordinate
         guard let list = try? await HotspotService().load(playerId: ownPlayerId) else { return }
         hotspots = list
         announceHotspotIfNear()
@@ -1272,7 +1275,9 @@ struct MapView: View {
         let firstLoadMissing = hotspots.isEmpty && (lastHotspotLoad.map { Date().timeIntervalSince($0) > 20 } ?? true)
         // Nach Mitternacht kann man wieder einchecken → Stand neu holen
         let newDay = lastHotspotLoad.map { HotspotSchedule.isStale(loadedAt: $0) } ?? false
-        guard firstLoadMissing || newDay else { return }
+        // Unterwegs: neue Orte in der Gegend (und vom Server nachgeladene) holen
+        let moved = lastHotspotLoad.map { HotspotSchedule.shouldReload(loadedAt: $0, from: lastHotspotLoadAt, position: ownCoordinate) } ?? false
+        guard firstLoadMissing || newDay || moved else { return }
         if newDay { announcedHotspotIds.removeAll() }
         Task { await loadHotspots() }
     }
@@ -1371,12 +1376,24 @@ struct MapView: View {
                             .resizable().scaledToFit()
                             .frame(width: 56, height: 56)
                             .saturation(hotspot.checkedInToday ? 0 : 1)
+                            .overlay(alignment: .bottomTrailing) {
+                                if hotspot.isLandmark {
+                                    Image(systemName: hotspot.symbol)
+                                        .font(.system(size: 11, weight: .black))
+                                        .foregroundStyle(.white)
+                                        .frame(width: 24, height: 24)
+                                        .background(Circle().fill(Color.challengrDark))
+                                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                                        .offset(x: 6, y: 4)
+                                }
+                            }
 
                         Text(hotspot.name.uppercased())
                             .font(.system(size: 16, weight: .black, design: .rounded))
+                            .multilineTextAlignment(.center)
                             .foregroundStyle(.challengrBlack)
 
-                        Text("HOTSPOT · 1 CHECK-IN PRO TAG")
+                        Text(hotspot.kindText)
                             .font(.system(size: 10, weight: .black, design: .rounded))
                             .tracking(1)
                             .foregroundStyle(Color.challengrRed)
@@ -1421,6 +1438,13 @@ struct MapView: View {
                             Text("Standort wird gesucht …")
                                 .font(.system(size: 13, weight: .bold, design: .rounded))
                                 .foregroundStyle(.challengrBlack.opacity(0.7))
+                        }
+
+                        // Quellenangabe, die OpenStreetMap verlangt
+                        if hotspot.isLandmark {
+                            Text("Ort: © OpenStreetMap-Mitwirkende")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(.challengrBlack.opacity(0.45))
                         }
                     }
                     .padding(16)

@@ -260,9 +260,13 @@ struct EmoteBubble: View {
 struct HotspotMarker: View {
     let name: String
     let checkedIn: Bool
+    /// Orte aus OpenStreetMap: Symbol (Park, Brunnen …) – kleiner und niedriger als die Schule, damit die Karte ruhig bleibt
+    var symbol: String? = nil
 
     /// Wie hoch die Münze über dem Boden schwebt (höher als eine Figur)
     static let coinLift: CGFloat = 96
+    private var lift: CGFloat { symbol == nil ? Self.coinLift : 58 }
+    private var coinSize: CGFloat { symbol == nil ? 50 : 38 }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.mapNight) private var night
@@ -289,25 +293,36 @@ struct HotspotMarker: View {
                 // Lichtstrahl vom Boden zur Münze
                 LinearGradient(colors: [accent.opacity(0), accent.opacity(checkedIn ? 0.35 : 0.75)],
                                startPoint: .top, endPoint: .bottom)
-                    .frame(width: 10, height: Self.coinLift)
+                    .frame(width: 10, height: lift)
                     .clipShape(Capsule())
                     .offset(y: -14)
                 Image("MenuCoin")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 50, height: 50)
+                    .frame(width: coinSize, height: coinSize)
                     .saturation(checkedIn ? 0 : 1)
                     .opacity(checkedIn ? 0.8 : 1)
                     // nachts glüht die Münze
                     .shadow(color: night && !checkedIn ? Color.challengrYellow.opacity(0.9) : .black.opacity(0.25),
                             radius: night ? 12 : 4, y: night ? 0 : 3)
-                    .offset(y: -Self.coinLift + hover)
+                    .offset(y: -lift + hover)
+                    .overlay(alignment: .bottomTrailing) {
+                        if let symbol {
+                            Image(systemName: symbol)
+                                .font(.system(size: 9, weight: .black))
+                                .foregroundStyle(.white)
+                                .frame(width: 18, height: 18)
+                                .background(Circle().fill(Color.challengrDark))
+                                .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
+                                .offset(x: 5, y: -lift + 4)
+                        }
+                    }
                     .overlay(alignment: .topTrailing) {
                         if checkedIn {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundStyle(.white, Color.challengrGreen)
-                                .offset(x: 4, y: -Self.coinLift)
+                                .offset(x: 4, y: -lift)
                         }
                     }
                     .overlay(alignment: .top) {
@@ -320,11 +335,11 @@ struct HotspotMarker: View {
                                 .padding(.horizontal, 6).padding(.vertical, 2)
                                 .background(Capsule().fill(Color.challengrDark.opacity(0.85)))
                                 .fixedSize()
-                                .offset(y: -Self.coinLift - 18)
+                                .offset(y: -lift - 18)
                         }
                     }
             }
-            .frame(width: 110, height: Self.coinLift + 76, alignment: .bottom)
+            .frame(width: 110, height: lift + 76, alignment: .bottom)
         }
         .accessibilityElement()
         .accessibilityLabel("Hotspot \(name)\(checkedIn ? ", heute erledigt" : "")")
