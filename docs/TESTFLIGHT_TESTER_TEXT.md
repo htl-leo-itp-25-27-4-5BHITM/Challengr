@@ -9,7 +9,9 @@ Stand: Build `2610211050` (21.10.2026). Bei neuen Builds oben die Neuerungen erg
 
 📍 **Check-in-Punkte überall:** Parks, Museen, Brunnen, Bibliotheken und Plätze in deiner Gegend sind jetzt Check-in-Punkte – nicht mehr nur die Schule. Geh hin, check ein und hol dir Coins (bis zu 5 Orte pro Tag). Das hilft auch beim Crash-Test-Event!
 
-🎨 **Neuer Look:** Die Karte, der Kompass und der Lade-Screen beim Start sind jetzt im Challengr-Stil.
+🗺️ **Neue Cartoon-Karte!** Die Karte ist jetzt im Spiel-Look: bunte 3D-Häuser, kräftige Wiesen und Straßen mit Kontur – passend zu den Figuren. Lieber die alte Karte? Einstellungen → Karte → „Cartoon-Karte“ aus.
+
+🎨 **Kompass und Lade-Screen** im Challengr-Stil.
 
 🏆 **Aufgeräumtes Menü:** Die Trophy Road öffnest du über deine Trophäen oben links – ein roter Punkt zeigt dir, wenn du einen neuen Rang erreicht hast. Die **Rangliste** findest du jetzt direkt in der Trophy Road.
 
@@ -28,6 +30,7 @@ Stand: Build `2610211050` (21.10.2026). Bei neuen Builds oben die Neuerungen erg
 - Hol dir deine Tagesaufgaben ab: Stimmen die Coins?
 - Schau ins Crash-Test-Event: Zählt dein Fortschritt richtig mit?
 - Öffne die Rangliste in der Trophy Road: Stimmt dein Platz?
-- Wie gefällt dir die neue Karte? Ist alles gut lesbar, auch abends?
+- Wie gefällt dir die neue Cartoon-Karte? Ruckelt etwas beim Drehen oder Zoomen? Ist alles gut lesbar, auch abends?
+- Wird dein Handy mit der neuen Karte wärmer oder leert sich der Akku schneller?
 
 Fehler oder Ideen? Mach einen Screenshot und schick ihn über TestFlight („Feedback senden“).
