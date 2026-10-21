@@ -262,8 +262,10 @@ struct MapView: View {
     @State private var showTrophyRoad = false
     @State private var showMainMenu = false
     @State private var showCharacterEditor = false
-    @State private var showLeaderboard = false
     @State private var showQuests = false
+    /// Ränge (für den roten Punkt am Trophäen-Chip) und zuletzt in der Trophy Road gesehener Stand
+    @State private var allRanks: [TrophyRank] = []
+    @State private var trophyRoadLastSeen: Int? = nil
     /// Abholbereite Belohnungen (Zahl am Aufgaben-Knopf)
     @State private var questClaimable = 0
     @State private var characterEditorHighlight: GameCharacter? = nil
@@ -819,6 +821,7 @@ struct MapView: View {
             Task { await syncCharacterAndUnlocks() }
             Task { await loadHotspots() }
             Task { await refreshQuestBadge() }
+            trophyRoadLastSeen = TrophyRoadMemory.lastSeen(playerId: ownPlayerId)
             seedInitialZoom()
             friendsInbox.start(playerId: ownPlayerId)
             NotificationManager.shared.requestAuthorizationIfNeeded()
@@ -901,8 +904,26 @@ struct MapView: View {
             .background(Color.white.opacity(0.9))
             .clipShape(Capsule())
             .shadow(color: .black.opacity(0.18), radius: 5, x: 0, y: 3)
+            // Neuer Rang erreicht, Trophy Road noch nicht angesehen
+            .overlay(alignment: .topTrailing) {
+                if trophyRoadHasNews {
+                    Circle()
+                        .fill(Color.challengrRed)
+                        .frame(width: 14, height: 14)
+                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                        .offset(x: 4, y: -4)
+                        .transition(.scale)
+                }
+            }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Trophy Road und Rangliste, \(ownTrophies ?? 0) Trophäen\(trophyRoadHasNews ? ", neuer Rang" : "")")
+    }
+
+    /// Roter Punkt am Trophäen-Chip: seit dem letzten Öffnen der Trophy Road einen Rang aufgestiegen.
+    private var trophyRoadHasNews: Bool {
+        guard let ownTrophies else { return false }
+        return TrophyRoadMath(ranks: allRanks).hasNewRank(lastSeen: trophyRoadLastSeen, trophies: ownTrophies)
     }
 
     /// Floating button that centers the map on the current user location.
@@ -930,9 +951,6 @@ struct MapView: View {
     /// Haupt-Menü: 3D-Münze unten in der Mitte, öffnet Trophy Road, Shop, Figur, Freunde, Einstellungen.
     private var mainMenu: some View {
         MapMainMenu(isOpen: $showMainMenu, items: [
-            MapMenuItem(id: "trophy", title: "Trophy Road", systemImage: "trophy.fill", color: .challengrYellow) {
-                showTrophyRoad = true
-            },
             MapMenuItem(id: "shop", title: "Shop", systemImage: "bag.fill", color: .challengrGreen) {
                 showShop = true
             },
@@ -940,11 +958,6 @@ struct MapView: View {
             MapMenuItem(id: "character", title: "Figur", systemImage: "hanger", color: .challengrRed) {
                 menuAvatarStore.load()
                 showCharacterEditor = true
-            },
-            // Freunde sind über das Profilbild erreichbar (dort auch die Anfragen-Zahl) –
-            // hier die Rangliste, der stärkere Grund zum Wiederkommen
-            MapMenuItem(id: "leaderboard", title: "Rangliste", systemImage: "crown.fill", color: .blue) {
-                showLeaderboard = true
             },
             // Tagesaufgaben (Coins) und Events (z. B. Beta-Event → Crash-Test-Dummy)
             MapMenuItem(id: "quests", title: "Aufgaben", systemImage: "checklist", color: .purple,
@@ -955,15 +968,14 @@ struct MapView: View {
                 showSettings = true
             }
         ])
-        .sheet(isPresented: $showTrophyRoad) {
+        .sheet(isPresented: $showTrophyRoad, onDismiss: {
+            trophyRoadLastSeen = TrophyRoadMemory.lastSeen(playerId: ownPlayerId)
+        }) {
             TrophyRoadView(playerId: ownPlayerId)
         }
         .sheet(isPresented: $showCharacterEditor) {
             CharacterEditorSheet(store: menuAvatarStore, playerId: ownPlayerId, highlight: characterEditorHighlight)
                 .onDisappear { characterEditorHighlight = nil }
-        }
-        .sheet(isPresented: $showLeaderboard) {
-            LeaderboardView(rankColor: rankColor(for:))
         }
         .sheet(isPresented: $showQuests) {
             QuestsView(onOpenCharacter: { character in
@@ -2164,6 +2176,7 @@ struct MapView: View {
         do {
             let ranks = try await rankService.loadRanks()
             rankColorsByName = Dictionary(uniqueKeysWithValues: ranks.map { ($0.name, $0.uiColor) })
+            allRanks = ranks
         } catch {
             print("Fehler beim Laden der Rank-Farben:", error)
         }

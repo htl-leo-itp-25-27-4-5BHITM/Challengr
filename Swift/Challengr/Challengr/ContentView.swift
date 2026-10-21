@@ -32,19 +32,11 @@ struct ContentView: View {
                         }
                     }
                 } else {
-                    VStack(spacing: 12) {
-                        if let error = auth.errorMessage {
-                            Text("Fehler beim Laden:")
-                                .font(.headline)
-                                .foregroundColor(.red)
-                            Text(error)
-                                .foregroundColor(.secondary)
-                        } else {
-                            ProgressView("Lade Profil …")
-                        }
-                    }
-                    .padding()
+                    LoadingScreen(error: auth.errorMessage)
                 }
+            } else if auth.isRestoring {
+                // Gespeicherter Login: kurz der Lade-Screen, nicht die Login-Seite
+                LoadingScreen()
             } else {
                 LoginView(auth: auth)
             }

@@ -60,6 +60,7 @@ struct TrophyRoadView: View {
     @State private var shownTrophies = 0
     @State private var rankUp: TrophyRank?
     @State private var showRules = false
+    @State private var showLeaderboard = false
 
     // MARK: - Services (Services)
     private let rankService = RankService()
@@ -92,6 +93,9 @@ struct TrophyRoadView: View {
                 .zIndex(1)
             }
         }
+        .sheet(isPresented: $showLeaderboard) {
+            LeaderboardView(rankColor: { name in ranks.first { $0.name == name }?.uiColor ?? .gray })
+        }
         .sheet(isPresented: $showRules) {
             TrophyRulesSheet()
                 .presentationDetents([.medium, .large])
@@ -105,6 +109,7 @@ struct TrophyRoadView: View {
         VStack(spacing: 10) {
             HStack {
                 roundButton("info") { showRules = true }
+                    .accessibilityLabel("Regeln")
                 Spacer()
                 Text("TROPHY ROAD")
                     .font(.system(size: 15, weight: .black, design: .rounded))
@@ -142,6 +147,26 @@ struct TrophyRoadView: View {
             }
 
             nextRankBar
+
+            // Rangliste (Top 10, Freunde, eigener Platz) – früher eigener Menü-Knopf
+            Button {
+                SoundManager.shared.play(.click)
+                showLeaderboard = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "crown.fill").foregroundStyle(Color.challengrYellow)
+                    Text("RANGLISTE")
+                        .tracking(1.2)
+                    Spacer()
+                    Text("Top 10 · Freunde")
+                        .foregroundStyle(GameStyle.secondaryText)
+                    Image(systemName: "chevron.right").foregroundStyle(GameStyle.secondaryText)
+                }
+                .font(.system(size: 13, weight: .black, design: .rounded))
+                .foregroundStyle(.white)
+                .gamePanel(padding: 12, cornerRadius: 16)
+            }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)

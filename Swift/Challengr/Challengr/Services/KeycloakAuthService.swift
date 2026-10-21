@@ -16,6 +16,8 @@ final class KeycloakAuthService: NSObject, ObservableObject {
     // MARK: - Published State
     @Published var isAuthenticated = false
     @Published var isLoading       = false
+    /// Stille Anmeldung mit gespeichertem Login läuft – dann Lade-Screen statt Login-Seite
+    @Published var isRestoring     = false
     @Published var errorMessage: String? = nil
 
     @Published var accessToken:  String? = nil
@@ -47,6 +49,7 @@ final class KeycloakAuthService: NSObject, ObservableObject {
         // Noch angemeldet vom letzten Mal? Dann ohne Klick wieder rein.
         if !isAuthenticated, TokenStore.load(TokenStore.refreshTokenKey) != nil {
             isLoading = true
+            isRestoring = true
             Task { await restoreSession() }
         }
     }
@@ -59,6 +62,7 @@ final class KeycloakAuthService: NSObject, ObservableObject {
             // abgelaufen oder offline → normaler Login (ungültige Tokens löscht refresh() selbst)
             refreshToken = nil
             isLoading = false
+            isRestoring = false
             return
         }
         parseToken(accessToken)
@@ -71,6 +75,7 @@ final class KeycloakAuthService: NSObject, ObservableObject {
         }
         isAuthenticated = true
         isLoading = false
+        isRestoring = false
     }
 
     private func handleExpiredLogin() {

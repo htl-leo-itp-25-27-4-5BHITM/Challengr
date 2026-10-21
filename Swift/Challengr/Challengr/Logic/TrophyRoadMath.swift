@@ -19,6 +19,12 @@ struct TrophyRoadMath {
         return ranks.lastIndex { trophies >= $0.min } ?? 0
     }
 
+    /// Seit dem letzten Öffnen der Trophy Road einen neuen Rang erreicht? (Noch nie geöffnet → nein.)
+    func hasNewRank(lastSeen: Int?, trophies: Int) -> Bool {
+        guard let lastSeen, let old = rankIndex(for: lastSeen), let now = rankIndex(for: trophies) else { return false }
+        return now > old
+    }
+
     func rank(for trophies: Int) -> TrophyRank? {
         rankIndex(for: trophies).map { ranks[$0] }
     }
