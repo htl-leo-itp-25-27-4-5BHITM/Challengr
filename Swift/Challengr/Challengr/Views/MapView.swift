@@ -337,9 +337,6 @@ struct MapView: View {
                 .environment(\.colorScheme, sky.isDark ? .dark : .light)
                 .environment(\.mapNight, sky.night > 0.3)
 
-            ChallengrMapGrade(night: sky.night)
-                .ignoresSafeArea()
-
             SkyOverlay(sky: sky)
                 .environment(\.mapCrowded, annotations.count > MapCrowd.threshold)
                 .ignoresSafeArea()
@@ -784,7 +781,6 @@ struct MapView: View {
         .mapStyle(
             .standard(
                 elevation: .realistic,
-                emphasis: .muted,   // gedämpft, die Challengr-Tönung darüber gibt die Farbe
                 pointsOfInterest: .excludingAll,
                 showsTraffic: false
             )
