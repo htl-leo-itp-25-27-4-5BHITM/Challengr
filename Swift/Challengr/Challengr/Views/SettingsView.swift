@@ -18,6 +18,7 @@ struct SettingsView: View {
     @State private var showRename = false
     @State private var newName = ""
     @State private var renameMessage: String? = nil
+    @AppStorage(ToonMapSettings.key) private var useToonMap = ToonMapSettings.defaultOn
     private let playerService = PlayerLocationService()
 
     var body: some View {
@@ -47,6 +48,18 @@ struct SettingsView: View {
                     }
                 }
                 
+                Section(header: Text("Karte"),
+                        footer: Text("Die Cartoon-Karte nutzt Kartendaten von OpenStreetMap. Lädt sie nicht, zeigt die App automatisch die Apple-Karte.")) {
+                    Toggle(isOn: $useToonMap) {
+                        HStack {
+                            Image(systemName: "map.fill")
+                                .foregroundColor(.green)
+                            Text("Cartoon-Karte")
+                        }
+                    }
+                    .onChange(of: useToonMap) { _, _ in SoundManager.shared.play(.click) }
+                }
+
                 Section(header: Text("Benachrichtigungen")) {
                     Toggle(isOn: $notificationsEnabled) {
                         HStack {

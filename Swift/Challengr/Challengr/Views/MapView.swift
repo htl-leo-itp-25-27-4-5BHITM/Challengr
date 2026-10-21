@@ -264,6 +264,11 @@ struct MapView: View {
     @State private var showMainMenu = false
     @State private var showCharacterEditor = false
     @State private var showQuests = false
+    /// Cartoon-Karte (Einstellungen → Karte); fällt bei Ladefehlern für diese Sitzung auf die Apple-Karte zurück
+    @AppStorage(ToonMapSettings.key) private var useToonMap = ToonMapSettings.defaultOn
+    @State private var toonMapFailed = false
+    /// Kamera beim Start einer Zwei-Finger-Geste auf der Cartoon-Karte
+    @State private var toonGestureStart: MapCamera? = nil
     /// Ränge (für den roten Punkt am Trophäen-Chip) und zuletzt in der Trophy Road gesehener Stand
     @State private var allRanks: [TrophyRank] = []
     @State private var trophyRoadLastSeen: Int? = nil
@@ -706,8 +711,27 @@ struct MapView: View {
     
     // MARK: - Map & Controls
     
-    /// Main map layer with annotations, camera bounds and appearance.
+    /// Karte: Cartoon-Karte (MapLibre) oder Apple-Karte – Gesten, Kamera und Pins sind für beide gleich.
     private var mapLayer: some View {
+        applyShared(Group {
+            if showsToonMap {
+                ToonMapView(camera: position.camera ?? lastMapCamera, pins: toonPins, circles: toonCircles,
+                            night: sky.night) { reason in
+                    // Sicherheitsnetz: lädt die Cartoon-Karte nicht, sofort die Apple-Karte
+                    print("Cartoon-Karte nicht verfügbar:", reason)
+                    toonMapFailed = true
+                }
+            } else {
+                appleMap
+            }
+        })
+    }
+
+    /// Cartoon-Karte an? (Einstellung, und nur solange sie lädt)
+    private var showsToonMap: Bool { useToonMap && !toonMapFailed }
+
+    /// Apple-Karte (MapKit) – Rückfall und Einstellung „Apple-Karte“.
+    private var appleMap: some View {
         Map(
             position: $position,
             bounds: MapCameraBounds(
@@ -725,13 +749,7 @@ struct MapView: View {
                     .stroke(Color.challengrRed.opacity(0.75), style: StrokeStyle(lineWidth: 2.5, dash: [10, 6]))
 
                 Annotation("Du", coordinate: ownCoordinate, anchor: .bottom) {
-                    MapCharacterPin(
-                        character: AvatarPresets.persistedPreset().character ?? .own,
-                        ringColor: .challengrYellow,
-                        sonar: true,
-                        seed: ownPlayerId
-                    )
-                    .overlay(alignment: .top) { EmoteBubble(event: ownMapEmote).scaleEffect(0.7).offset(y: -30) }
+                    ownPin
                 }
             }
 
@@ -741,38 +759,14 @@ struct MapView: View {
                     .foregroundStyle(Color.challengrYellow.opacity(0.18))
                     .stroke(Color.challengrYellow.opacity(0.8), lineWidth: 2)
                 Annotation(hotspot.name, coordinate: hotspot.coordinate, anchor: .bottom) {
-                    Button {
-                        closePlayerPopup()
-                        withAnimation { selectedHotspotId = hotspot.id }
-                    } label: {
-                        HotspotMarker(name: hotspot.name, checkedIn: hotspot.checkedInToday,
-                                      symbol: hotspot.isLandmark ? hotspot.symbol : nil)
-                    }
-                    .buttonStyle(.plain)
+                    hotspotPin(hotspot)
                 }
             }
 
             // Annotations for all nearby players.
             ForEach(annotations) { annotation in
                 Annotation(annotation.title, coordinate: annotation.coordinate, anchor: .bottom) {
-                    LivelyPin(seed: annotation.playerId, bubble: pinBubbles[annotation.playerId], bobs: false) {
-                        Button {
-                            if selectedPlayer?.id == annotation.id {
-                                showPlayerPopup.toggle()
-                            } else {
-                                selectedPlayer = annotation
-                                showPlayerPopup = true
-                            }
-                        } label: {
-                            MapCharacterPin(
-                                character: annotation.character ?? .opponent,
-                                ringColor: rankColor(for: annotation.rankName),
-                                seed: annotation.playerId
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(annotation.title)
-                    }
+                    playerPin(annotation)
                 }
             }
         }
@@ -785,6 +779,33 @@ struct MapView: View {
                 showsTraffic: false
             )
         )
+        // Kompass während des Drehens laufend nachführen (nicht erst am Ende der Geste)
+        .onMapCameraChange(frequency: .continuous) { ctx in
+            compassAngle = .degrees(ctx.camera.heading)    // 0 = Norden
+            lastMapCamera = ctx.camera
+        }
+        .onMapCameraChange { ctx in
+                if !isProgrammaticCameraUpdate {
+                    currentZoomDistance = ctx.camera.distance
+                    if !hasCapturedInitialZoom {
+                        hasCapturedInitialZoom = true
+                    }
+                    if let ownCoordinate {
+                        let center = ctx.camera.centerCoordinate
+                        let deltaLat = abs(center.latitude - ownCoordinate.latitude)
+                        let deltaLon = abs(center.longitude - ownCoordinate.longitude)
+                        // Zoomen verschiebt die Mitte (zum Finger hin) – zurück zum Spieler
+                        if deltaLat > 0.00025 || deltaLon > 0.00025 {
+                            recenter(on: ownCoordinate, keeping: ctx.camera)
+                        }
+                    }
+                }
+            }
+    }
+
+    /// Gesten, Lebenszyklus und Ereignisse – für beide Karten gleich.
+    private func applyShared<Content: View>(_ content: Content) -> some View {
+        content
         .simultaneousGesture(SpatialTapGesture().onEnded { showTapMark(at: $0.location) })
         // Ein Finger: Karte "greifen" und um die Mitte drehen (Verschieben ist ohnehin aus)
         .simultaneousGesture(
@@ -795,13 +816,19 @@ struct MapView: View {
         // Zwei Finger gehören MapKit (Zoomen und Drehen) – solange ruht das Wischen
         .simultaneousGesture(
             MagnifyGesture()
-                .onChanged { _ in startTwoFingerGesture() }
-                .onEnded { _ in twoFingerGesture = false }
+                .onChanged { value in
+                    startTwoFingerGesture()
+                    if showsToonMap { toonPinch(value.magnification) }
+                }
+                .onEnded { _ in twoFingerGesture = false; toonGestureStart = nil }
         )
         .simultaneousGesture(
             RotateGesture()
-                .onChanged { _ in startTwoFingerGesture() }
-                .onEnded { _ in twoFingerGesture = false }
+                .onChanged { value in
+                    startTwoFingerGesture()
+                    if showsToonMap { toonTwist(value.rotation) }
+                }
+                .onEnded { _ in twoFingerGesture = false; toonGestureStart = nil }
         )
         .onGeometryChange(for: CGSize.self) { $0.size } action: { mapSize = $0 }
         .overlay {
@@ -865,28 +892,16 @@ struct MapView: View {
         }
         /// React to location updates
         .onReceive(locationHelper.$userLocation, perform: handleLocation)
-        // Kompass während des Drehens laufend nachführen (nicht erst am Ende der Geste)
-        .onMapCameraChange(frequency: .continuous) { ctx in
-            compassAngle = .degrees(ctx.camera.heading)    // 0 = Norden
-            lastMapCamera = ctx.camera
-        }
-        .onMapCameraChange { ctx in
-                if !isProgrammaticCameraUpdate {
-                    currentZoomDistance = ctx.camera.distance
-                    if !hasCapturedInitialZoom {
-                        hasCapturedInitialZoom = true
-                    }
-                    if let ownCoordinate {
-                        let center = ctx.camera.centerCoordinate
-                        let deltaLat = abs(center.latitude - ownCoordinate.latitude)
-                        let deltaLon = abs(center.longitude - ownCoordinate.longitude)
-                        // Zoomen verschiebt die Mitte (zum Finger hin) – zurück zum Spieler
-                        if deltaLat > 0.00025 || deltaLon > 0.00025 {
-                            recenter(on: ownCoordinate, keeping: ctx.camera)
-                        }
-                    }
-                }
+        // Cartoon-Karte: die Kamera setzt nur die App selbst – Kompass und letzte Kamera hier nachführen
+        .onChange(of: position) { _, newPosition in
+            guard showsToonMap, let camera = newPosition.camera else { return }
+            compassAngle = .degrees(camera.heading)
+            lastMapCamera = camera
+            if !hasCapturedInitialZoom {
+                currentZoomDistance = camera.distance
+                hasCapturedInitialZoom = true
             }
+        }
     }
 
     /// Immer sichtbarer Trophäen-Stand, öffnet die Trophy Road.
@@ -921,6 +936,89 @@ struct MapView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Trophy Road und Rangliste, \(ownTrophies ?? 0) Trophäen\(trophyRoadHasNews ? ", neuer Rang" : "")")
+    }
+
+    // MARK: - Pins (für beide Karten gleich)
+
+    private var ownPin: some View {
+        MapCharacterPin(
+            character: AvatarPresets.persistedPreset().character ?? .own,
+            ringColor: .challengrYellow,
+            sonar: true,
+            seed: ownPlayerId
+        )
+        .overlay(alignment: .top) { EmoteBubble(event: ownMapEmote).scaleEffect(0.7).offset(y: -30) }
+    }
+
+    private func hotspotPin(_ hotspot: HotspotDTO) -> some View {
+        Button {
+            closePlayerPopup()
+            withAnimation { selectedHotspotId = hotspot.id }
+        } label: {
+            HotspotMarker(name: hotspot.name, checkedIn: hotspot.checkedInToday,
+                          symbol: hotspot.isLandmark ? hotspot.symbol : nil)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func playerPin(_ annotation: PlayerAnnotation) -> some View {
+        LivelyPin(seed: annotation.playerId, bubble: pinBubbles[annotation.playerId], bobs: false) {
+            Button {
+                if selectedPlayer?.id == annotation.id {
+                    showPlayerPopup.toggle()
+                } else {
+                    selectedPlayer = annotation
+                    showPlayerPopup = true
+                }
+            } label: {
+                MapCharacterPin(
+                    character: annotation.character ?? .opponent,
+                    ringColor: rankColor(for: annotation.rankName),
+                    seed: annotation.playerId
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(annotation.title)
+        }
+    }
+
+    private var toonPins: [ToonPin] {
+        var pins: [ToonPin] = hotspots.map {
+            ToonPin(id: "h-" + $0.id, coordinate: $0.coordinate, label: $0.name, content: AnyView(hotspotPin($0)))
+        }
+        pins += annotations.map {
+            ToonPin(id: "p-" + $0.playerId, coordinate: $0.coordinate, label: $0.title, priority: 1, content: AnyView(playerPin($0)))
+        }
+        if let ownCoordinate {
+            pins.append(ToonPin(id: "me", coordinate: ownCoordinate, label: "Du", priority: 2, content: AnyView(ownPin)))
+        }
+        return pins
+    }
+
+    private var toonCircles: [ToonCircle] {
+        var circles = hotspots.map { ToonCircle(id: $0.id, center: $0.coordinate, radius: $0.radiusMeters, kind: .hotspot) }
+        if let ownCoordinate {
+            circles.append(ToonCircle(id: "range", center: ownCoordinate, radius: 200, kind: .range))
+        }
+        return circles
+    }
+
+    /// Cartoon-Karte: mit zwei Fingern zoomen (wie MapKit, Spieler bleibt in der Mitte).
+    private func toonPinch(_ magnification: CGFloat) {
+        guard let ownCoordinate, let start = toonGestureStart ?? lastMapCamera ?? position.camera else { return }
+        if toonGestureStart == nil { toonGestureStart = start }
+        let distance = min(maxDistance, max(minDistance, start.distance / Double(max(magnification, 0.1))))
+        currentZoomDistance = distance
+        position = .camera(MapCamera(centerCoordinate: ownCoordinate, distance: distance,
+                                     heading: (lastMapCamera ?? start).heading, pitch: MapView.mapPitch))
+    }
+
+    /// Cartoon-Karte: mit zwei Fingern drehen.
+    private func toonTwist(_ rotation: Angle) {
+        guard let ownCoordinate, let start = toonGestureStart ?? lastMapCamera ?? position.camera else { return }
+        if toonGestureStart == nil { toonGestureStart = start }
+        position = .camera(MapCamera(centerCoordinate: ownCoordinate, distance: (lastMapCamera ?? start).distance,
+                                     heading: start.heading - rotation.degrees, pitch: MapView.mapPitch))
     }
 
     /// Roter Punkt am Trophäen-Chip: seit dem letzten Öffnen der Trophy Road einen Rang aufgestiegen.

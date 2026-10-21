@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		ABCD00000000000000000001 /* MapLibre in Frameworks */ = {isa = PBXBuildFile; productRef = ABCD00000000000000000003 /* MapLibre */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		C7E57A01000000000000A001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -39,6 +43,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ABCD00000000000000000001 /* MapLibre in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -90,6 +95,7 @@
 			);
 			name = Challengr;
 			packageProductDependencies = (
+				ABCD00000000000000000003 /* MapLibre */,
 			);
 			productName = Challengr;
 			productReference = 00AA7B692E9F7E61004DC66E /* Challengr.app */;
@@ -146,6 +152,9 @@
 			);
 			mainGroup = 00AA7B602E9F7E61004DC66E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				ABCD00000000000000000002 /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 00AA7B6A2E9F7E61004DC66E /* Products */;
 			projectDirPath = "";
@@ -476,6 +485,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		ABCD00000000000000000002 /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/maplibre/maplibre-gl-native-distribution";
+			requirement = {
+				kind = exactVersion;
+				version = 6.31.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		ABCD00000000000000000003 /* MapLibre */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ABCD00000000000000000002 /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */;
+			productName = MapLibre;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 00AA7B612E9F7E61004DC66E /* Project object */;
 }
