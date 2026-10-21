@@ -1,6 +1,17 @@
 FROM eclipse-temurin:21-jre
 
-RUN mkdir -p /opt/application
+# pg_dump für die Backups im Dashboard – Version 17 passend zum Datenbank-Server (postgres:17)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+ && install -d /usr/share/postgresql-common/pgdg \
+ && curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+ && . /etc/os-release \
+ && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends postgresql-client-17 \
+ && apt-get purge -y gnupg && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /opt/application /backups
 COPY target/quarkus-app/lib/ /opt/application/lib/
 COPY target/quarkus-app/*.jar /opt/application/
 COPY target/quarkus-app/app/ /opt/application/app/

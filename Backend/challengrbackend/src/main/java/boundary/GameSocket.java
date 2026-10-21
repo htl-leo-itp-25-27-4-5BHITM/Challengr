@@ -151,6 +151,11 @@ public class GameSocket {
         }
     }
 
+    /** Wie viele Spieler gerade verbunden sind (Dashboard → System). */
+    public static int onlineCount() {
+        return (int) SESSIONS.values().stream().filter(Session::isOpen).count();
+    }
+
     /** Hat der Spieler gerade eine offene Verbindung? (zählt für "nearby" als aktiv) */
     public static boolean isOnline(String playerId) {
         Session s = playerId == null ? null : SESSIONS.get(playerId);

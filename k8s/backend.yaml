@@ -74,6 +74,26 @@ spec:
                   name: challengr-asc
                   key: ASC_PRIVATE_KEY
                   optional: true
+          # Datenbank-Backups (Dashboard → System), eigenes Volume
+          volumeMounts:
+            - name: backups
+              mountPath: /backups
+      volumes:
+        - name: backups
+          persistentVolumeClaim:
+            claimName: challengr-backup-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: challengr-backup-pvc
+  namespace: student-it220257
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 2Gi
 ---
 apiVersion: v1
 kind: Service

@@ -177,6 +177,11 @@ public class Player {
         this.highestTrophies = Math.max(highestTrophies, trophies);
     }
 
+    /** Nur für Admin-Korrekturen: Rekord direkt setzen (z. B. nach einer falschen Test-Gutschrift). */
+    public void setHighestTrophies(int highestTrophies) {
+        this.highestTrophies = Math.max(0, highestTrophies);
+    }
+
     /** Höchster je erreichter Stand (mindestens der aktuelle – ältere Konten haben hier noch 0). */
     public int getHighestTrophies() {
         return Math.max(highestTrophies, trophies);

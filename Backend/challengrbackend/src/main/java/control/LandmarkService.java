@@ -55,6 +55,17 @@ public class LandmarkService {
     private final Set<String> queued = ConcurrentHashMap.newKeySet();
     private final Map<String, Instant> failedAt = new ConcurrentHashMap<>();
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+    private volatile Instant lastFetchOk;
+    private volatile String lastFetchError;
+
+    /** Für Dashboard → System */
+    public record Health(boolean enabled, int queued, int failingTiles, String lastFetchOk, String lastFetchError) {}
+
+    public Health health() {
+        Instant cut = Instant.now().minus(RETRY_AFTER);
+        int failing = (int) failedAt.values().stream().filter(t -> t.isAfter(cut)).count();
+        return new Health(enabled, queued.size(), failing, lastFetchOk == null ? null : lastFetchOk.toString(), lastFetchError);
+    }
 
     @PreDestroy
     void stop() {
@@ -109,8 +120,10 @@ public class LandmarkService {
             if (response.statusCode() != 200) throw new IllegalStateException("Overpass HTTP " + response.statusCode());
             store(key, LandmarkRules.parse(response.body()));
             failedAt.remove(key);
+            lastFetchOk = Instant.now();
         } catch (Exception e) {
             failedAt.put(key, Instant.now());
+            lastFetchError = Instant.now() + ": " + e.getMessage();
             LOG.warnf("Orte für Kachel %s nicht geladen: %s", key, e.getMessage());
         } finally {
             queued.remove(key);
