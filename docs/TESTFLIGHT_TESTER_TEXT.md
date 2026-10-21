@@ -1,48 +1,32 @@
 # Text für TestFlight → „Was soll getestet werden?“
 
 Für App Store Connect → TestFlight → Build → *Testinformationen* (max. 4000 Zeichen).
-Stand: Build `2610201041` (20.10.2026). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
+Stand: 21.10.2026 (Orte-Update). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
 
 ---
 
-**Neu: Aufgaben und Events!**
+**Neu in diesem Update**
 
-✅ **Tägliche Aufgaben:** Tippe auf die Münze und dann auf „Aufgaben“. Jeden Tag gibt es 3 neue Aufgaben, und jede bringt dir **Challengr Coins**. Sammle sie jetzt schon, der Shop öffnet bald!
+📍 **Check-in-Punkte überall:** Parks, Museen, Brunnen, Bibliotheken und Plätze in deiner Gegend sind jetzt Check-in-Punkte – nicht mehr nur die Schule. Geh hin, check ein und hol dir Coins (bis zu 5 Orte pro Tag). Das hilft auch beim Crash-Test-Event!
 
-🤖 **Nur in der Beta: das Crash-Test-Event!** Unter „Events“ findest du 6 Challenges. Schaffst du alle bis 30.11., bekommst du den **Crash-Test-Dummy** als Figur. Nach der Beta gibt es ihn nie wieder. Was du seit Beta-Start gespielt hast, zählt schon mit.
+🧭 **Kompass im Challengr-Look** und ein **Lade-Screen** beim Start statt der Login-Seite.
 
-**Außerdem neu – vieles davon kommt direkt aus eurem Feedback. Danke!**
+🏆 **Aufgeräumtes Menü:** Die Trophy Road öffnest du über deine Trophäen oben links – ein roter Punkt zeigt dir, wenn du einen neuen Rang erreicht hast. Die **Rangliste** findest du jetzt direkt in der Trophy Road.
 
-👑 **Ranglisten:** Tippe auf die Münze und dann auf die Krone. Du siehst die Top 10 aller Spieler, eine Rangliste mit deinen Freunden und deinen eigenen Platz.
+**Schon da:**
 
-🔍 **Freunde per Namen suchen:** Profil → Freunde → „Hinzufügen“ und den Namen eintippen. Ein QR-Code ist nicht mehr nötig.
+✅ **Tägliche Aufgaben:** Münze → „Aufgaben“. Jeden Tag 3 neue Aufgaben, jede bringt **Challengr Coins** für den Shop, der bald öffnet.
 
-➕ **Freunde direkt auf der Karte hinzufügen:** Tippe auf einen Spieler und dann auf den Knopf neben „Herausfordern“.
+🤖 **Nur in der Beta: das Crash-Test-Event!** Unter „Events“ findest du 6 Challenges. Schaffst du alle bis 30.11., bekommst du den **Crash-Test-Dummy** als Figur – nach der Beta nie wieder.
 
-😎 **24 Emotes:** Tippe im Spieler-Fenster auf „+“, um alle Emotes zu sehen. Unter „Kurzwahl bearbeiten“ legst du fest, welche 4 Emotes du immer direkt hast.
-
-⭐ **Dein Rekord auf der Trophy Road:** Dort siehst du jetzt, wie viele Trophäen du höchstens je hattest.
-
-🔓 **Neue Figur freigeschaltet?** Tippe auf die Meldung, dann landest du direkt bei der neuen Figur.
-
-🗺️ **Karte verbessert:**
-- Die Karte bleibt immer schräg und kippt nicht mehr in die Draufsicht.
-- Der Check-in-Spot schwebt jetzt gut sichtbar über einem Lichtstrahl.
-- Die Ringe unter den Figuren passen besser zur Karte, und Merlos Hut wird nicht mehr abgeschnitten.
-
-✅ **Freundschaftsanfragen:** „Annehmen“ ist jetzt grün. Kein versehentliches Ablehnen mehr!
-
-👤 Hast du offene Freundschaftsanfragen, öffnet dein Profilbild gleich die Freunde. Die Figurenwahl im Menü hat ein neues Symbol.
+🔍 Freunde per Namen suchen oder direkt auf der Karte hinzufügen, 24 Emotes mit eigener Kurzwahl, dein Rekord auf der Trophy Road.
 
 **Bisher schon drin:** Liga mit Quiz-Show und Real-Life-Challenges, Trophy Road mit Rang-Figuren, über 200 Quizfragen, Karte drehen und zoomen, Tag und Nacht auf der Karte, Namen ändern, angemeldet bleiben. Der Shop und die Geschenke sind vorerst pausiert.
 
 **Bitte testen**
+- Findest du in deiner Gegend Check-in-Punkte? Passen die Orte – oder ist etwas Unpassendes dabei? (Dann bitte Screenshot!)
 - Hol dir deine Tagesaufgaben ab: Stimmen die Coins?
 - Schau ins Crash-Test-Event: Zählt dein Fortschritt richtig mit?
-- Öffne die Rangliste: Stimmt dein Platz? Siehst du deine Freunde?
-- Such jemanden per Namen und schick eine Freundschaftsanfrage: Kommt sie an?
-- Füge jemanden direkt auf der Karte hinzu.
-- Stell deine Emote-Kurzwahl um und schick ein paar Emotes.
-- Bleibt die Karte beim Gehen und Drehen immer schräg?
+- Öffne die Rangliste in der Trophy Road: Stimmt dein Platz?
 
 Fehler oder Ideen? Mach einen Screenshot und schick ihn über TestFlight („Feedback senden“).
