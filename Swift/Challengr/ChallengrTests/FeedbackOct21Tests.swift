@@ -59,6 +59,15 @@ final class FeedbackOct21Tests: XCTestCase {
             HotspotMarker(name: "Park", checkedIn: false, symbol: "tree.fill")
             HotspotMarker(name: "Brunnen", checkedIn: true, symbol: "drop.fill")
         }.padding(20).background(Color(red: 0.8, green: 0.9, blue: 0.8)), "markers.png")
+        if let shot = UIImage(contentsOfFile: "/private/tmp/claude-501/-Users-basti-Developer-ChallengrProjekt-Challengr/73130b48-74b7-4054-b825-fc399203a177/images/4.jpg") {
+            func map(_ sat: Double = 1) -> some View {
+                Image(uiImage: shot).resizable().scaledToFill().saturation(sat).frame(width: 300, height: 650).clipped()
+            }
+            try save(HStack(spacing: 8) {
+                map()
+                ZStack { map(0.75); ChallengrMapGrade() }.frame(width: 300, height: 650).clipped()
+            }, "mapgrade.png")
+        }
         try save(LoadingScreen().frame(width: 393, height: 852), "loading.png")
     }
 }
