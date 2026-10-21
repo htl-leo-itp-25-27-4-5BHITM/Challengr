@@ -19,6 +19,21 @@ struct ContentView: View {
     // MARK: - Body (UI-Aufbau)
     var body: some View {
         Group {
+            #if DEBUG
+            if ProcessInfo.processInfo.environment["AUDIT_TOON_DEMO"] != nil {
+                ToonMapDemo()
+            } else {
+                content
+            }
+            #else
+            content
+            #endif
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        Group {
             if auth.isAuthenticated {
                 if let playerId = auth.playerId {
                     MapView(

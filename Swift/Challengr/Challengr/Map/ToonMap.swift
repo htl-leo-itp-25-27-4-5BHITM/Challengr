@@ -34,16 +34,35 @@ struct ToonCircle: Equatable {
     }
 }
 
+/// Namen, die sich überlappen würden: der weniger wichtige (bzw. weiter hinten liegende) wird ausgeblendet.
+enum ToonLabels {
+    static let width: CGFloat = 110, height: CGFloat = 18
+
+    static func hidden(_ pins: [(id: String, point: CGPoint, priority: Int)]) -> Set<String> {
+        var shown: [(CGRect, Int)] = []
+        var hidden = Set<String>()
+        // wichtige und vordere zuerst
+        for pin in pins.sorted(by: { ($0.priority, $0.point.y) > ($1.priority, $1.point.y) }) {
+            let rect = CGRect(x: pin.point.x - width / 2, y: pin.point.y, width: width, height: height)
+            if shown.contains(where: { $0.0.intersects(rect) }) {
+                hidden.insert(pin.id)
+            } else {
+                shown.append((rect, pin.priority))
+            }
+        }
+        return hidden
+    }
+}
+
 /// Umrechnung MapKit-Kamera ↔ MapLibre (testbar).
 enum ToonCamera {
-    /// MapKit misst den Abstand Kamera → Kartenmitte, MapLibre die Höhe des Auges über dem Boden.
-    static func altitude(distance: CLLocationDistance, pitch: Double) -> CLLocationDistance {
-        distance * cos(pitch * .pi / 180)
-    }
+    /// MapKit-Abstand → MapLibre-Zoomstufe. Abgestimmt am Prototyp: 700 m ≈ Zoom 16,4
+    /// (doppelter Abstand = eine Zoomstufe weniger), damit beide Karten gleich viel zeigen.
+    static let referenceDistance: CLLocationDistance = 700
+    static let referenceZoom = 16.4
 
-    static func distance(altitude: CLLocationDistance, pitch: Double) -> CLLocationDistance {
-        let c = cos(pitch * .pi / 180)
-        return c > 0.01 ? altitude / c : altitude
+    static func zoom(distance: CLLocationDistance) -> Double {
+        referenceZoom - log2(max(distance, 1) / referenceDistance)
     }
 
     /// Kreis als Vieleck (für MapLibre), Punkte im Uhrzeigersinn.
@@ -87,6 +106,9 @@ struct ToonMapView: View {
             ZStack(alignment: .topLeading) {
                 ToonMapRepresentable(camera: camera, circles: circles, projector: projector, onFailure: onFailure)
                     .allowsHitTesting(false)
+                // Fläche, die Berührungen annimmt – sonst kämen Wischen/Zoomen nur an, wenn man eine Figur trifft
+                Color.clear
+                    .contentShape(Rectangle())
 
                 // Nachts dunkler (die Apple-Karte hat einen Nachtmodus, MapLibre bekommt eine Abdunklung)
                 if night > 0.01 {
@@ -118,11 +140,12 @@ struct ToonMapView: View {
             return (pin, p)
         }
         .sorted { ($0.1.y, $0.0.priority) < ($1.1.y, $1.0.priority) }
+        let hiddenLabels = ToonLabels.hidden(placed.map { (id: $0.0.id, point: $0.1, priority: $0.0.priority) })
 
         ForEach(placed, id: \.0.id) { pin, point in
             VStack(spacing: 1) {
                 pin.content
-                if !pin.label.isEmpty {
+                if !pin.label.isEmpty, !hiddenLabels.contains(pin.id) {
                     Text(pin.label)
                         .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.challengrDark)
@@ -133,10 +156,42 @@ struct ToonMapView: View {
                 }
             }
             // Fuß der Figur auf der Koordinate (Name hängt darunter)
-            .alignmentGuide(VerticalAlignment.center) { d in d[.bottom] - (pin.label.isEmpty ? 0 : 16) }
+            .alignmentGuide(VerticalAlignment.center) { d in
+                d[.bottom] - (pin.label.isEmpty || hiddenLabels.contains(pin.id) ? 0 : 16)
+            }
             .frame(width: 0, height: 0)
             .position(point)
         }
+    }
+}
+
+/// MapLibre-Ansicht, die meldet, wenn sie ihre (neue) Größe bekommt – die Kamera hängt von der Größe ab.
+final class ToonMLNMapView: MLNMapView {
+    var onResize: ((ToonMLNMapView) -> Void)?
+    private var lastSize: CGSize = .zero
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard bounds.size != lastSize, bounds.width > 0, bounds.height > 0 else { return }
+        lastSize = bounds.size
+        onResize?(self)
+    }
+}
+
+/// Prüft, ob die Cartoon-Karte wirklich Kartendaten zeigt.
+@MainActor
+enum ToonMapHealth {
+    /// Wartezeiten zwischen den Prüfungen (zusammen 20 s)
+    static let checkSeconds: [Double] = [8, 12]
+
+    /// Irgendein Kartenelement (Straße, Fläche, Gewässer, Gebäude) im Bild?
+    static func hasMapContent(_ mapView: MLNMapView) -> Bool {
+        guard let style = mapView.style else { return false }
+        let ids = Set(style.layers.compactMap { layer -> String? in
+            (layer as? MLNVectorStyleLayer)?.sourceIdentifier == "o" ? layer.identifier : nil
+        })
+        guard !ids.isEmpty else { return false }
+        return !mapView.visibleFeatures(in: mapView.bounds, styleLayerIdentifiers: ids).isEmpty
     }
 }
 
@@ -149,10 +204,21 @@ private struct ToonMapRepresentable: UIViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(projector: projector, onFailure: onFailure) }
 
-    func makeUIView(context: Context) -> MLNMapView {
+    func makeUIView(context: Context) -> ToonMLNMapView {
         MLNLoggingConfiguration.shared.loggingLevel = .error
-        let styleURL = Bundle.main.url(forResource: "ToonMapStyle", withExtension: "json")
-        let view = MLNMapView(frame: .zero, styleURL: styleURL)
+        var styleURL = Bundle.main.url(forResource: "ToonMapStyle", withExtension: "json")
+        #if DEBUG
+        // Test des Sicherheitsnetzes: Kartenserver nicht erreichbar
+        if ProcessInfo.processInfo.environment["AUDIT_TOON_BADSERVER"] != nil, let url = styleURL,
+           let text = try? String(contentsOf: url, encoding: .utf8) {
+            let broken = FileManager.default.temporaryDirectory.appendingPathComponent("ToonMapStyleBroken.json")
+            try? text.replacingOccurrences(of: "tiles.openfreemap.org", with: "nicht-erreichbar.invalid")
+                .write(to: broken, atomically: true, encoding: .utf8)
+            styleURL = broken
+        }
+        #endif
+        let view = ToonMLNMapView(frame: .zero, styleURL: styleURL)
+        view.onResize = { [weak coordinator = context.coordinator] view in coordinator?.applyCamera(to: view, animated: false) }
         view.delegate = context.coordinator
         // Gesten macht MapView (gleich wie bei der Apple-Karte) – hier nichts
         view.isUserInteractionEnabled = false
@@ -172,25 +238,18 @@ private struct ToonMapRepresentable: UIViewRepresentable {
         return view
     }
 
-    func updateUIView(_ view: MLNMapView, context: Context) {
+    func updateUIView(_ view: ToonMLNMapView, context: Context) {
         let coordinator = context.coordinator
         if let camera, coordinator.lastCamera.map({ !Self.same($0, camera) }) ?? true {
             coordinator.lastCamera = camera
-            let target = MLNMapCamera(lookingAtCenter: camera.centerCoordinate,
-                                      altitude: ToonCamera.altitude(distance: camera.distance, pitch: camera.pitch),
-                                      pitch: camera.pitch, heading: camera.heading)
-            if context.transaction.animation != nil, !context.transaction.disablesAnimations {
-                view.setCamera(target, withDuration: 0.35, animationTimingFunction: CAMediaTimingFunction(name: .easeOut))
-            } else {
-                view.setCamera(target, animated: false)
-            }
-            projector.changed()
+            let animated = context.transaction.animation != nil && !context.transaction.disablesAnimations
+            coordinator.applyCamera(to: view, animated: animated)
         }
         coordinator.circles = circles
         coordinator.applyCircles(to: view)
     }
 
-    private static func same(_ a: MapCamera, _ b: MapCamera) -> Bool {
+    static func same(_ a: MapCamera, _ b: MapCamera) -> Bool {
         abs(a.centerCoordinate.latitude - b.centerCoordinate.latitude) < 1e-7
             && abs(a.centerCoordinate.longitude - b.centerCoordinate.longitude) < 1e-7
             && abs(a.distance - b.distance) < 0.5 && abs(a.heading - b.heading) < 0.05 && abs(a.pitch - b.pitch) < 0.05
@@ -211,14 +270,49 @@ private struct ToonMapRepresentable: UIViewRepresentable {
             self.onFailure = onFailure
         }
 
+        /// Kamera setzen – erst wenn die Ansicht eine Größe hat (sonst rechnet MapLibre die Zoomstufe falsch).
+        func applyCamera(to view: MLNMapView, animated: Bool) {
+            guard let camera = lastCamera, view.bounds.width > 0, view.bounds.height > 0 else { return }
+            let altitude = MLNAltitudeForZoomLevel(ToonCamera.zoom(distance: camera.distance), camera.pitch,
+                                                   camera.centerCoordinate.latitude, view.bounds.size)
+            let target = MLNMapCamera(lookingAtCenter: camera.centerCoordinate, altitude: altitude,
+                                      pitch: camera.pitch, heading: camera.heading)
+            if animated {
+                view.setCamera(target, withDuration: 0.35, animationTimingFunction: CAMediaTimingFunction(name: .easeOut))
+            } else {
+                view.setCamera(target, animated: false)
+            }
+            projector.changed()
+        }
+
         nonisolated func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
             MainActor.assumeIsolated {
                 addCircleLayers(to: style)
                 appliedCircles = nil
                 applyCircles(to: mapView)
                 projector.changed()
+                startWatchdog(mapView)
             }
         }
+
+        /// Wächter: Ist der Kartenserver nicht erreichbar, meldet MapLibre keinen Fehler, sondern zeigt nur
+        /// eine leere Fläche. Ist nach 8 s (und nochmal 12 s später) nichts von der Karte zu sehen → Apple-Karte.
+        private var watchdog: Task<Void, Never>?
+
+        private func startWatchdog(_ mapView: MLNMapView) {
+            watchdog?.cancel()
+            watchdog = Task { [weak self, weak mapView] in
+                for wait in ToonMapHealth.checkSeconds {
+                    try? await Task.sleep(for: .seconds(wait))
+                    guard !Task.isCancelled, let self, let mapView else { return }
+                    if ToonMapHealth.hasMapContent(mapView) { return }
+                }
+                guard !Task.isCancelled, let self else { return }
+                self.onFailure("Kartenserver nicht erreichbar")
+            }
+        }
+
+        deinit { watchdog?.cancel() }
 
         nonisolated func mapViewDidFailLoadingMap(_ mapView: MLNMapView, withError error: Error) {
             let message = error.localizedDescription
