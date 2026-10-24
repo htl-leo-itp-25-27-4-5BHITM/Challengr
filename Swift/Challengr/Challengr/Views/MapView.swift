@@ -851,6 +851,7 @@ struct MapView: View {
             Task { await syncCharacterAndUnlocks() }
             Task { await loadHotspots() }
             Task { await refreshQuestBadge() }
+            Task { await showAnnouncementIfNew() }
             trophyRoadLastSeen = TrophyRoadMemory.lastSeen(playerId: ownPlayerId)
             seedInitialZoom()
             friendsInbox.start(playerId: ownPlayerId)
@@ -1313,6 +1314,14 @@ struct MapView: View {
 
     /// Zahl am Aufgaben-Knopf aktualisieren (beim Start und wenn das Menü aufgeht).
     @MainActor
+    private func showAnnouncementIfNew() async {
+        guard let a = try? await AppContentService().currentAnnouncement(), AnnouncementMemory.isNew(a) else { return }
+        AnnouncementMemory.markSeen(a)
+        try? await Task.sleep(for: .seconds(1.5))
+        SoundManager.shared.play(.friendAccepted)
+        showMapBanner(icon: "megaphone.fill", text: a.text, seconds: 7)
+    }
+
     private func refreshQuestBadge() async {
         guard let board = try? await QuestService().load() else { return }
         questClaimable = board.claimable

@@ -16,6 +16,9 @@ struct QuizShowView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var introAppeared = false
     @State private var pointsPop = false
+    /// „Frage melden“: Frage, für die das Auswahlfenster offen ist, und schon gemeldete Fragen
+    @State private var reportingQuestionId: Int64?
+    @State private var reportedIds: Set<Int64> = []
     /// Was das 3D-Studio gerade spielt
     @State private var stageEvent = QuizStageEvent(kind: .intro, id: 0)
 
@@ -234,6 +237,45 @@ struct QuizShowView: View {
             .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Color.white))
             .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color.purple, lineWidth: 3))
             .shadow(color: .purple.opacity(0.5), radius: 14)
+            .overlay(alignment: .topTrailing) { reportButton(q) }
+    }
+
+    /// Kleine Fahne: Frage melden (falsche Antwort, unklar, Tippfehler) – landet im Dashboard.
+    @ViewBuilder
+    private func reportButton(_ q: QuizQuestion) -> some View {
+        if q.questionId > 0 {
+            let done = reportedIds.contains(q.questionId)
+            Button {
+                guard !done else { return }
+                SoundManager.shared.play(.click)
+                reportingQuestionId = q.questionId
+            } label: {
+                Image(systemName: done ? "checkmark" : "flag.fill")
+                    .font(.system(size: 11, weight: .black))
+                    .foregroundStyle(done ? Color.challengrGreen : Color.purple.opacity(0.7))
+                    .frame(width: 30, height: 30)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(4)
+            .accessibilityLabel(done ? "Frage gemeldet" : "Frage melden")
+            .confirmationDialog("Was stimmt mit der Frage nicht?",
+                                isPresented: Binding(get: { reportingQuestionId == q.questionId },
+                                                     set: { if !$0 { reportingQuestionId = nil } }),
+                                titleVisibility: .visible) {
+                ForEach(QuizReportReason.allCases) { reason in
+                    Button(reason.title) { report(q.questionId, reason) }
+                }
+                Button("Abbrechen", role: .cancel) {}
+            } message: {
+                Text("Danke! Wir schauen uns die Frage an.")
+            }
+        }
+    }
+
+    private func report(_ id: Int64, _ reason: QuizReportReason) {
+        reportedIds.insert(id)
+        Task { try? await AppContentService().reportQuestion(id: id, reason: reason) }
     }
 
     private func answers(_ q: QuizQuestion) -> some View {
