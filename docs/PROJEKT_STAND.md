@@ -156,12 +156,12 @@ Erledigt am 13.10.: hängende Keycloak-Konten freigeschaltet, Passwort von `test
 Keycloak-Admin eingerichtet, Kontakt-Mail bestätigt (`challengrapp.official@gmail.com`), alles gepusht,
 Zustimmung der Schule liegt vor, Test mit zwei iPhones durchgeführt (Checkliste Teil C/D).
 
-0. **IN ARBEIT (21.10.): Dashboard-Ausbau** – Server-Teil 1–3 fertig und committet (`09acf2d`, `5858e83`/`0693abf`, Teil 3), **nicht deployt**:
-   Backups (`BackupService`: pg_dump 17 im Image, Volume `/backups` = neue PVC `challengr-backup-pvc` in `k8s/backend.yaml` → beim Deploy `kubectl apply -f k8s/backend.yaml`, nachts 3 Uhr, 14 auto/20 manuell; `GET/POST /api/admin/backups`, Download `/{name}`),
-   Korrekturen `POST /api/admin/corrections/{playerId}` {trophies, coins, resetRecord, reason} + Protokoll `GET /api/admin/audit` (Tabelle `admin_audit`), Systemstatus `GET /api/admin/status`,
-   Quiz `…/api/admin/quiz/questions|reports` (+ `Challenges.active/originalText`, `quiz_stat`, `quiz_report`, App-Endpunkt `POST /api/quiz/questions/{id}/report`),
-   Events jetzt in Tabelle `quest_event` (`QuestEventStore`, Beta wird beim ersten Start angelegt), `…/api/admin/events` (+ `/meta`, `/{id}/progress`).
-   **Noch offen:** Orte ausblenden/eigene Orte (7), Ankündigung (8), beliebte Orte + Heatmap (11), alle Dashboard-Seiten (Angular), App: „Frage melden“-Knopf in der Quiz-Show + Ankündigungs-Banner, dann Backup → Deploy (Backend inkl. `kubectl apply -f k8s/backend.yaml`, Dashboard) → Build. Sicherheit (eigene Admin-Konten, Namensfilter) hat der Nutzer noch nicht entschieden.
+0. **Dashboard-Ausbau (fertig 24.10., noch nicht deployt):** Server `09acf2d` … `1fa97ea`, Dashboard `9cd7fc1`, App `511e84b`.
+   Neue Dashboard-Seiten: **Quiz** (Fragen anlegen/bearbeiten/abschalten, gemeldete und „fast alle falsch“ zuerst), **Events** (anlegen/bearbeiten, Fortschritt pro Challenge), **Orte** (Heatmap ~250-m-Felder ab 3 Spielern, beliebteste Orte, eigene Orte für alle sichtbar, OSM-Orte ausblenden), **System** (Status, Backups, Ankündigung, Protokoll); Spieler-Seite: Trophäen/Coins korrigieren (Grund Pflicht, Rekord optional zurücksetzen) + Verlauf.
+   App: Fahne „Frage melden“ in der Quiz-Show, Ankündigungs-Banner beim Öffnen.
+   **Deploy-Reihenfolge:** Backup per Hand → `kubectl apply -f k8s/backend.yaml` (neue PVC `challengr-backup-pvc` + Volume) → `./scripts/deploy-cloud.sh backend` (Image mit pg_dump 17) → `./scripts/deploy-cloud.sh dashboard` → im Dashboard unter System „Backup jetzt“ testen → `upload-testflight.sh`.
+   Wiederherstellen eines Backups (nur per Hand): `gunzip -c challengr-….sql.gz | kubectl -n student-it220257 exec -i deploy/challengr-postgres -- psql -U postgres postgres` (vorher Backend stoppen).
+   Offen: Sicherheit (eigene Admin-Konten, pflegbarer Namensfilter) – Nutzer hat noch nicht entschieden.
    **Aufgaben-Update:** Backend live (20.10., 11:30, Backup vorher), gepusht, Build `2610201127` hochgeladen, am 21.10. ersetzt durch `2610210821` (nur Sounds) → **`2610210821`** der Gruppe „Schule“ zuweisen, Tester-Text aus `docs/TESTFLIGHT_TESTER_TEXT.md` einfügen. Beta-Event endet am 30.11. – danach Event-Tab leer bis zum nächsten Event (z. B. Halloween in `QuestCatalog.EVENTS`).
    **Ranglisten-Update:** Backend ist live (20.10., 10:40), gepusht, Build `2610201041` hochgeladen → in App Store Connect der Gruppe „Schule“ zuweisen. Die 9 Feedback-Einträge vom 13.–19.10. im Dashboard abhaken. Vor dem Deploy konnte Claude kein Backup ziehen (gesperrt) – nachholen.
    Merlo-Sprites wurden mit einer Kopie von `Character3D/pipeline/render_map.swift` (H = 400, Sichtfeld mitskaliert) neu gerendert und oben auf 4 px zugeschnitten – die Pipeline-Datei selbst ist unverändert.
