@@ -76,6 +76,7 @@ public class LandmarkService {
     public List<Landmark> near(double latitude, double longitude) {
         List<String> tiles = LandmarkRules.tilesAround(latitude, longitude, VISIBLE_RADIUS);
         ensureLoaded(tiles);
+        Set<String> hidden = hiddenIds();
         double dLat = VISIBLE_RADIUS / 111_320.0, dLon = VISIBLE_RADIUS / (111_320.0 * Math.cos(Math.toRadians(latitude)));
         return em.createQuery("""
                         SELECT l FROM Landmark l WHERE l.latitude BETWEEN :s AND :n AND l.longitude BETWEEN :w AND :e
@@ -83,14 +84,21 @@ public class LandmarkService {
                 .setParameter("s", latitude - dLat).setParameter("n", latitude + dLat)
                 .setParameter("w", longitude - dLon).setParameter("e", longitude + dLon)
                 .getResultList().stream()
+                .filter(l -> !hidden.contains(l.getId()))
                 .filter(l -> HotspotCatalog.distanceMeters(latitude, longitude, l.getLatitude(), l.getLongitude()) <= VISIBLE_RADIUS)
                 .sorted(Comparator.comparingDouble(l -> HotspotCatalog.distanceMeters(latitude, longitude, l.getLatitude(), l.getLongitude())))
                 .limit(MAX_VISIBLE)
                 .toList();
     }
 
+    /** Ausgeblendete Orte zählen nicht (auch nicht zum Einchecken). */
     public Optional<Landmark> find(String id) {
+        if (id == null || em.find(entity.LandmarkHidden.class, id) != null) return Optional.empty();
         return Optional.ofNullable(em.find(Landmark.class, id));
+    }
+
+    public Set<String> hiddenIds() {
+        return new HashSet<>(em.createQuery("SELECT h.id FROM LandmarkHidden h", String.class).getResultList());
     }
 
     private void ensureLoaded(List<String> tiles) {
@@ -133,7 +141,10 @@ public class LandmarkService {
     /** Kachel speichern: alte Punkte der Kachel ersetzen (Check-ins bleiben, die hängen nur an der Id). */
     public void store(String key, List<LandmarkRules.Candidate> candidates) {
         List<double[]> blocked = HotspotCatalog.ALL.stream().map(h -> new double[]{h.latitude(), h.longitude()}).toList();
-        List<LandmarkRules.Candidate> chosen = LandmarkRules.select(candidates, blocked);
+        // ausgeblendete Orte gar nicht erst auswählen – dann rückt ein anderer Ort nach
+        Set<String> hidden = QuarkusTransaction.requiringNew().call(this::hiddenIds);
+        List<LandmarkRules.Candidate> chosen = LandmarkRules.select(
+                candidates.stream().filter(c -> !hidden.contains(c.id())).toList(), blocked);
         QuarkusTransaction.requiringNew().run(() -> {
             em.createQuery("DELETE FROM Landmark l WHERE l.tileKey = :k").setParameter("k", key).executeUpdate();
             for (LandmarkRules.Candidate c : chosen) {

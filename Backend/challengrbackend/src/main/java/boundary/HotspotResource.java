@@ -53,11 +53,19 @@ public class HotspotResource {
                     HotspotCatalog.LANDMARK_POINTS, HotspotCatalog.LANDMARK_FIRST_OF_DAY_BONUS, "landmark", l.getCategory());
         }
 
+        static Spot of(entity.CustomSpot c) {
+            return new Spot(c.getId(), c.getName(), c.getLatitude(), c.getLongitude(), c.getRadiusMeters(),
+                    c.getPoints(), c.getBonus(), "custom", null);
+        }
+
         boolean isLandmark() { return "landmark".equals(kind); }
     }
 
     @Inject
     control.LandmarkService landmarks;
+
+    @Inject
+    jakarta.persistence.EntityManager em;
 
     @GET
     @Transactional
@@ -66,6 +74,9 @@ public class HotspotResource {
         String playerId = me.id();
         LocalDate today = HotspotCatalog.today();
         java.util.List<Spot> spots = new java.util.ArrayList<>(HotspotCatalog.ALL.stream().map(Spot::of).toList());
+        // eigene Orte aus dem Dashboard: für alle sichtbar wie die Schule
+        em.createQuery("SELECT c FROM CustomSpot c WHERE c.active = true", entity.CustomSpot.class)
+                .getResultStream().forEach(c -> spots.add(Spot.of(c)));
         Player player = playerId == null ? null : playerRepository.findById(playerId);
         if (player != null && control.LocationPrivacy.hasPosition(player)) {
             landmarks.near(player.getLatitude(), player.getLongitude()).forEach(l -> spots.add(Spot.of(l)));
@@ -84,6 +95,8 @@ public class HotspotResource {
     public synchronized CheckinResultDTO checkin(@PathParam("id") String hotspotId, CheckinRequest req) {
         Spot hotspot = HotspotCatalog.find(hotspotId).map(Spot::of)
                 .or(() -> landmarks.find(hotspotId).map(Spot::of))
+                .or(() -> java.util.Optional.ofNullable(em.find(entity.CustomSpot.class, hotspotId))
+                        .filter(entity.CustomSpot::isActive).map(Spot::of))
                 .orElseThrow(() -> new WebApplicationException("Unbekannter Hotspot", 404));
         if (req == null || req.playerId() == null || req.latitude() == null || req.longitude() == null) {
             throw new WebApplicationException("playerId, latitude und longitude fehlen", 400);
