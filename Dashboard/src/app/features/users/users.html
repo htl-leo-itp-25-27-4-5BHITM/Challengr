@@ -71,6 +71,37 @@
       </dl>
 
       <div class="ban">
+        <h2>Trophäen und Coins korrigieren</h2>
+        <div class="ban-row">
+          <label>Trophäen
+            <input type="number" min="0" max="100000" [(ngModel)]="fixTrophies" />
+          </label>
+          <label>Coins
+            <input type="number" min="0" max="100000" [(ngModel)]="fixCoins" />
+          </label>
+          <label class="grow">Grund (Pflicht)
+            <input type="text" [(ngModel)]="fixReason" placeholder="z. B. Test-Gutschrift rückgängig" />
+          </label>
+        </div>
+        <label class="check"><input type="checkbox" [(ngModel)]="fixResetRecord" /> Rekord ({{ u.highestTrophies }}) auf die neuen Trophäen setzen – Rang-Figuren werden dann wieder gesperrt</label>
+        <div class="ban-actions">
+          <button class="btn btn--primary" (click)="saveFix()" [disabled]="fixBusy || !fixChanged || fixReason.trim().length < 3">Speichern</button>
+        </div>
+        @if (fixMessage) { <div class="ban-message">{{ fixMessage }}</div> }
+        @if (history.length) {
+          <div class="history">
+            @for (h of history; track h.id) {
+              <div class="history-row">
+                <span class="muted">{{ h.createdAt | date: 'dd.MM. HH:mm' }}</span>
+                <span>{{ actionText(h.action) }}: {{ h.oldValue }} → {{ h.newValue }}</span>
+                <span class="muted">{{ h.adminName }} · {{ h.reason }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="ban">
         <h2>Sperren</h2>
         <div class="ban-row">
           <label>Dauer

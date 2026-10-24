@@ -22,6 +22,10 @@ import { Component, Input } from '@angular/core';
         @case ('phone') { <rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/> }
         @case ('package') { <path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5zM3.5 7.5L12 12l8.5-4.5M12 12v9"/> }
         @case ('battle') { <path d="M4 4l8.5 8.5M14 14l6 6M4 4h3v3M17.5 15.5l3-3M15.5 17.5l-3 3M20 4l-8.5 8.5M10 14l-6 6M20 4h-3v3M6.5 15.5l-3-3M8.5 17.5l3 3"/> }
+        @case ('quiz') { <circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.6M12 17.2v.1"/> }
+        @case ('calendar') { <rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/> }
+        @case ('pin') { <path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/> }
+        @case ('pulse') { <path d="M3 12h4l2.5-6 4 12 2.5-6H21"/> }
         @case ('close') { <path d="M6 6l12 12M18 6L6 18"/> }
         @default { <circle cx="12" cy="12" r="2"/> }
       }

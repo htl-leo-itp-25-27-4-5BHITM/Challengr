@@ -49,3 +49,9 @@
   .details { position: static; }
   .list { max-height: 420px; }
 }
+
+.check { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--text-2); }
+.history { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.history-row { display: grid; grid-template-columns: 90px 1fr; gap: 2px 10px; font-size: 13px; padding: 8px 10px; background: var(--surface-2); border-radius: 10px; }
+.history-row span:last-child { grid-column: 2; font-size: 12px; }
+.ban + .ban { margin-top: 18px; }

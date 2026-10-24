@@ -24,7 +24,7 @@ interface PlayerRow {
 /** Figuren-Ids → Namen (wie GameCharacter in der App) */
 const CHARACTERS: Record<string, string> = {
   'junge': 'Junge', 'maedchen': 'Mädchen', 'sir-brecht': 'Sir Brecht', 'ragnar': 'Ragnar', 'hayato': 'Hayato',
-  'kage': 'Kage', 'kai': 'Kai', 'merlo': 'Merlo', 'lyra': 'Lyra', 'kaeptn-rex': "Käpt'n Rex",
+  'kage': 'Kage', 'kai': 'Kai', 'merlo': 'Merlo', 'lyra': 'Lyra', 'kaeptn-rex': "Käpt'n Rex", 'crash-dummy': 'Crash-Test-Dummy',
 };
 
 /** Rangfarben wie in der App (TrophyRank.uiColor), für dunklen Grund leicht aufgehellt */
@@ -33,6 +33,20 @@ const RANK_COLORS: Record<string, string> = {
 };
 
 const ACTIVE_DAYS = 7;
+
+export interface AuditRow {
+  id: number; createdAt: string; adminName: string; action: string; playerId: string | null; playerName: string | null;
+  oldValue: string | null; newValue: string | null; reason: string | null;
+}
+
+/** Protokoll-Aktionen lesbar */
+export const ACTIONS: Record<string, string> = {
+  TROPHIES: 'Trophäen', COINS: 'Coins', RECORD: 'Rekord', BACKUP: 'Backup', QUIZ_NEW: 'Frage neu', QUIZ_EDIT: 'Frage geändert',
+  QUIZ_ON: 'Frage aktiviert', QUIZ_OFF: 'Frage deaktiviert', QUIZ_REPORTS: 'Fragen-Meldungen erledigt', EVENT_NEW: 'Event neu',
+  EVENT_EDIT: 'Event geändert', EVENT_DELETE: 'Event gelöscht', SPOT_HIDE: 'Ort ausgeblendet', SPOT_SHOW: 'Ort eingeblendet',
+  SPOT_NEW: 'Eigener Ort neu', SPOT_EDIT: 'Eigener Ort geändert', SPOT_OFF: 'Eigener Ort aus', ANNOUNCE: 'Ankündigung',
+  ANNOUNCE_END: 'Ankündigung beendet',
+};
 
 /** Spieler suchen, ansehen und sperren. */
 @Component({
@@ -53,6 +67,15 @@ export class Users implements OnInit {
   search = '';
   orderBy: 'trophies' | 'name' | 'lastSeen' = 'trophies';
   error: string | null = null;
+
+  /** Korrektur von Trophäen/Coins (mit Pflicht-Grund, landet im Protokoll) */
+  fixTrophies: number | null = null;
+  fixCoins: number | null = null;
+  fixResetRecord = false;
+  fixReason = '';
+  fixBusy = false;
+  fixMessage: string | null = null;
+  history: AuditRow[] = [];
 
   banHours = 24;
   banReason = '';
@@ -121,6 +144,61 @@ export class Users implements OnInit {
   selectUser(user: PlayerRow): void {
     this.selectedUser = user;
     this.banMessage = null;
+    this.fixTrophies = user.trophies;
+    this.fixCoins = user.points;
+    this.fixResetRecord = false;
+    this.fixReason = '';
+    this.fixMessage = null;
+    this.loadHistory(user.id);
+  }
+
+  loadHistory(playerId: string): void {
+    this.history = [];
+    this.http.get<AuditRow[]>(`/api/admin/audit?playerId=${encodeURIComponent(playerId)}&limit=20`).subscribe({
+      next: (rows) => { this.history = rows; this.cd.detectChanges(); },
+      error: () => {},
+    });
+  }
+
+  get fixChanged(): boolean {
+    const u = this.selectedUser;
+    return !!u && (this.fixTrophies !== u.trophies || this.fixCoins !== u.points || this.fixResetRecord);
+  }
+
+  saveFix(): void {
+    const u = this.selectedUser;
+    if (!u || this.fixBusy || !this.fixChanged || this.fixReason.trim().length < 3) return;
+    this.fixBusy = true;
+    this.fixMessage = null;
+    this.http.post<{ trophies: number; highestTrophies: number; coins: number }>(
+      `/api/admin/corrections/${encodeURIComponent(u.id)}`, {
+        trophies: this.fixTrophies !== u.trophies ? this.fixTrophies : null,
+        coins: this.fixCoins !== u.points ? this.fixCoins : null,
+        resetRecord: this.fixResetRecord,
+        reason: this.fixReason.trim(),
+      }).subscribe({
+      next: (r) => {
+        u.trophies = r.trophies;
+        u.highestTrophies = r.highestTrophies;
+        u.points = r.coins;
+        this.fixBusy = false;
+        this.fixReason = '';
+        this.fixResetRecord = false;
+        this.fixMessage = 'Gespeichert und protokolliert.';
+        this.loadHistory(u.id);
+        this.applyFilters();
+        this.cd.detectChanges();
+      },
+      error: (e) => {
+        this.fixBusy = false;
+        this.fixMessage = e?.error?.message ?? e?.error ?? 'Speichern fehlgeschlagen.';
+        this.cd.detectChanges();
+      },
+    });
+  }
+
+  actionText(a: string): string {
+    return ACTIONS[a] ?? a;
   }
 
   banSelected(): void {

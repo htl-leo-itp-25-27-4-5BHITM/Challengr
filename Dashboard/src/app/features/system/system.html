@@ -1,0 +1,84 @@
+<div class="hero">
+  <div class="hero-inner">
+    <div class="crumbs">Admin <span>/</span> System</div>
+    <h1>System</h1>
+    <div class="subtitle">Läuft alles? Backups, Ankündigung in der App und wer im Dashboard was geändert hat.</div>
+  </div>
+</div>
+
+@if (error) { <div class="error">{{ error }}</div> }
+
+@if (status; as s) {
+  <div class="grid3 section">
+    <div class="card pad"><div class="card-sub">Gerade online</div><div class="big">{{ s.online }}</div></div>
+    <div class="card pad"><div class="card-sub">Spieler gesamt</div><div class="big">{{ s.players }}</div></div>
+    <div class="card pad"><div class="card-sub">Server läuft seit</div><div class="big">{{ uptime(s.uptimeSeconds) }}</div></div>
+  </div>
+  <div class="card pad section">
+    <div class="card-head"><h2>Status</h2><button class="btn" (click)="loadStatus()"><app-icon name="refresh" /> Prüfen</button></div>
+    <div class="rows">
+      @for (c of s.checks; track c.name) {
+        <div class="row-item">
+          <span class="dot is-{{ c.state }}"></span>
+          <div class="grow"><div>{{ c.name }}</div><div class="sub">{{ c.detail }}</div></div>
+        </div>
+      }
+      <div class="row-item"><span class="dot is-ok"></span><div class="grow"><div>Check-in-Orte</div><div class="sub">{{ s.landmarks }} Orte in {{ s.landmarkTiles }} geladenen Gebieten</div></div></div>
+    </div>
+  </div>
+}
+
+<div class="grid2 section">
+  <div class="card pad">
+    <div class="card-head">
+      <h2>Backups</h2>
+      <button class="btn btn--primary" (click)="backupNow()" [disabled]="backupBusy || !backups?.available">Backup jetzt</button>
+    </div>
+    @if (backups; as b) {
+      @if (!b.available) { <div class="msg err">pg_dump ist auf dem Server nicht verfügbar – Backups gehen hier noch nicht.</div> }
+      <div class="card-sub">Jede Nacht um 3 Uhr automatisch (14 bleiben), dazu Backups per Knopf (20 bleiben).</div>
+      @if (b.lastError) { <div class="msg err">Letzter Fehler: {{ b.lastError }}</div> }
+      <div class="rows" style="margin-top:10px">
+        @for (f of b.files; track f.name) {
+          <div class="row-item">
+            <div class="grow"><div>{{ f.createdAt | date: 'dd.MM.yyyy HH:mm' }}</div><div class="sub">{{ f.automatic ? 'automatisch' : 'per Knopf' }} · {{ size(f.sizeBytes) }}</div></div>
+            <button class="btn" (click)="download(f)">Herunterladen</button>
+          </div>
+        } @empty { <div class="muted">Noch keine Backups.</div> }
+      </div>
+    }
+    @if (backupMsg) { <div class="msg">{{ backupMsg }}</div> }
+  </div>
+
+  <div class="card pad">
+    <h2>Ankündigung in der App</h2>
+    <div class="card-sub">Alle sehen sie einmal beim Öffnen der App. Immer nur eine gleichzeitig.</div>
+    @if (currentAnnouncement; as a) {
+      <div class="row-item" style="margin-top:10px">
+        <div class="grow"><div>„{{ a.text }}“</div><div class="sub">{{ a.showing ? 'wird gezeigt' : 'geplant' }}@if (a.endsAt) { · bis {{ a.endsAt | date: 'dd.MM. HH:mm' }} } · {{ a.createdBy }}</div></div>
+        <button class="btn btn--danger" (click)="endAnnouncement(a)">Beenden</button>
+      </div>
+    }
+    <div class="form" style="margin-top:12px">
+      <label>Text (max. 200 Zeichen)<textarea maxlength="200" [(ngModel)]="annText" placeholder="Halloween-Event startet morgen!"></textarea></label>
+      <label>Endet am (optional)<input type="datetime-local" [(ngModel)]="annEnd" /></label>
+      <div class="actions"><button class="btn btn--primary" (click)="announce()" [disabled]="annText.trim().length < 3">Veröffentlichen</button></div>
+      @if (annMsg) { <div class="msg">{{ annMsg }}</div> }
+    </div>
+  </div>
+</div>
+
+<div class="card pad section">
+  <h2>Protokoll</h2>
+  <div class="card-sub">Alle Änderungen im Dashboard, neueste zuerst.</div>
+  <div class="rows" style="margin-top:10px">
+    @for (a of audit; track a.id) {
+      <div class="row-item">
+        <div class="grow">
+          <div>{{ actionText(a.action) }}@if (a.playerName) { · {{ a.playerName }} }@if (a.oldValue || a.newValue) { : {{ a.oldValue ?? '–' }} → {{ a.newValue ?? '–' }} }</div>
+          <div class="sub">{{ a.createdAt | date: 'dd.MM.yyyy HH:mm' }} · {{ a.adminName }}@if (a.reason) { · {{ a.reason }} }</div>
+        </div>
+      </div>
+    } @empty { <div class="muted">Noch keine Einträge.</div> }
+  </div>
+</div>
