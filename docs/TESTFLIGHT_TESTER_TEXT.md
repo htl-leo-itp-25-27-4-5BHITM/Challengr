@@ -7,6 +7,10 @@ Stand: Build `2610241022` (24.10.2026). Bei neuen Builds oben die Neuerungen erg
 
 **Neu in diesem Update**
 
+🌍 **3 neue Real-Life-Challenges:** Länder-Kompass (zeig in die Richtung eines Landes), Reaktions-Test (tippe, sobald es grün wird) und Zeitgefühl (stoppe nach genau X Sekunden – ohne Uhr).
+
+📋 **Vor jeder Challenge steht jetzt kurz erklärt, was zu tun ist** – und es geht erst los, wenn du bereit bist.
+
 🚩 **Quizfrage melden:** Stimmt eine Antwort nicht oder ist eine Frage unklar? Tippe auf die kleine Fahne an der Frage – wir schauen sie uns an.
 
 📣 Neuigkeiten (z. B. neue Events) siehst du ab jetzt als Hinweis beim Öffnen der App.
