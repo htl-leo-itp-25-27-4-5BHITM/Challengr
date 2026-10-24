@@ -16,7 +16,13 @@ public class MetricResults {
         COMPASS("compass", false, Double.MAX_VALUE, Tie.DRAW, false),
         CAMERA("camera", true, 0.0, Tie.DRAW, false),
         SHAKE("shake", true, 0.0, Tie.DRAW, true),
-        PUSHUP("pushup", true, 0.0, Tie.CONFLICT, true);
+        PUSHUP("pushup", true, 0.0, Tie.CONFLICT, true),
+        /** Länder-Kompass: Abweichung zur Richtung des Landes in Grad (0–180), weniger gewinnt */
+        COUNTRY("country", false, Double.MAX_VALUE, Tie.DRAW, false),
+        /** Reaktionstest: Mittel aus 3 Runden in ms, weniger gewinnt (zu früh getippt = Strafzeit) */
+        REACTION("reaction", false, Double.MAX_VALUE, Tie.DRAW, true),
+        /** Zeitgefühl: Abweichung zur Zielzeit in ms, weniger gewinnt */
+        TIMING("timing", false, Double.MAX_VALUE, Tie.DRAW, true);
 
         /** Name im "metrics"-Block von battle-result. */
         public final String key;
@@ -37,6 +43,17 @@ public class MetricResults {
         }
     }
 
+    /** Unmögliche Werte begrenzen (Schutz gegen manipulierte Nachrichten). */
+    static double clamp(Kind kind, double v) {
+        if (Double.isNaN(v) || Double.isInfinite(v)) return kind.missingValue;
+        return switch (kind) {
+            case COUNTRY, COMPASS -> Math.max(0, Math.min(180, v));
+            case REACTION -> Math.max(100, Math.min(5000, v));   // unter 100 ms schafft niemand
+            case TIMING -> Math.max(0, Math.min(60_000, v));
+            default -> v;
+        };
+    }
+
     public enum Tie { DRAW, CONFLICT }
 
     public enum Outcome { FROM_WINS, TO_WINS, DRAW, CONFLICT }
@@ -53,7 +70,7 @@ public class MetricResults {
     public synchronized boolean record(Long battleId, Kind kind, String playerId, double value,
                                        String fromId, String toId) {
         Entry entry = entries.computeIfAbsent(battleId, id -> new Entry(kind, new LinkedHashMap<>()));
-        entry.values().putIfAbsent(playerId, value);
+        entry.values().putIfAbsent(playerId, clamp(kind, value));
         return entry.values().containsKey(fromId) && entry.values().containsKey(toId);
     }
 

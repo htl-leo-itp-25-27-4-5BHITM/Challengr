@@ -214,6 +214,9 @@ public class GameSocket {
                 case "camera-result"        -> handleMetricResult(msg, playerId, MetricResults.Kind.CAMERA, "score");
                 case "shake-result"         -> handleMetricResult(msg, playerId, MetricResults.Kind.SHAKE, "shakes");
                 case "pushup-result"        -> handleMetricResult(msg, playerId, MetricResults.Kind.PUSHUP, "reps");
+                case "country-result"       -> handleMetricResult(msg, playerId, MetricResults.Kind.COUNTRY, "deviation");
+                case "reaction-result"      -> handleMetricResult(msg, playerId, MetricResults.Kind.REACTION, "ms");
+                case "timing-result"        -> handleMetricResult(msg, playerId, MetricResults.Kind.TIMING, "ms");
                 case "send-emote"           -> handleEmote(msg, playerId);
                 case "quiz-answer"          -> handleQuizAnswer(msg, playerId);
                 case "friendly-finished"    -> handleFriendlyFinished(msg, playerId);
