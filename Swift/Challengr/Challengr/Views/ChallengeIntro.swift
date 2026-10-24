@@ -84,7 +84,10 @@ struct ChallengeIntroGate<Content: View>: View {
     enum Stage { case intro, getReady(Int), running }
     @State private var stage: Stage = .intro
     @State private var autoLeft = 20
-    @State private var timer: Timer?
+    /// Zwei getrennte Timer: die Erklär-Karte stoppt beim Verschwinden nur ihren eigenen
+    /// (vorher teilten sie sich einen – dann blieb „Bereit machen“ hängen)
+    @State private var autoTimer: Timer?
+    @State private var readyTimer: Timer?
 
     var body: some View {
         if let intro {
@@ -104,7 +107,7 @@ struct ChallengeIntroGate<Content: View>: View {
             case .intro:
                 introCard(intro)
                     .onAppear { startAutoTimer(intro) }
-                    .onDisappear { timer?.invalidate() }
+                    .onDisappear { autoTimer?.invalidate() }
             }
         } else {
             content()
@@ -160,9 +163,9 @@ struct ChallengeIntroGate<Content: View>: View {
     }
 
     private func startAutoTimer(_ intro: ChallengeIntro) {
-        timer?.invalidate()
+        autoTimer?.invalidate()
         autoLeft = Self.autoStartSeconds
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+        autoTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in
                 autoLeft -= 1
                 if autoLeft <= 0 { go(intro) }
@@ -172,7 +175,7 @@ struct ChallengeIntroGate<Content: View>: View {
 
     private func go(_ intro: ChallengeIntro) {
         guard case .intro = stage else { return }
-        timer?.invalidate()
+        autoTimer?.invalidate()
         SoundManager.shared.play(.click)
         var left = intro.getReadySeconds
         guard left > 0 else {
@@ -180,7 +183,8 @@ struct ChallengeIntroGate<Content: View>: View {
             return
         }
         stage = .getReady(left)
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { t in
+        readyTimer?.invalidate()
+        readyTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { t in
             Task { @MainActor in
                 left -= 1
                 if left > 0 {

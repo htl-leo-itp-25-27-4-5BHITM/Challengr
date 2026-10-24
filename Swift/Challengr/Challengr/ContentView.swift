@@ -22,6 +22,8 @@ struct ContentView: View {
             #if DEBUG
             if ProcessInfo.processInfo.environment["AUDIT_TOON_DEMO"] != nil {
                 ToonMapDemo()
+            } else if let demo = ProcessInfo.processInfo.environment["AUDIT_CHALLENGE_DEMO"] {
+                ChallengeDemo(kind: demo)
             } else {
                 content
             }
