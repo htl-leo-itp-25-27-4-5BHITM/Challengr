@@ -50,7 +50,7 @@ public class SystemStatusService {
     @ConfigProperty(name = "challengr.status.tiles-url", defaultValue = "https://tiles.openfreemap.org/planet")
     String tilesUrl;
 
-    @ConfigProperty(name = "challengr.status.keycloak-url", defaultValue = "${KEYCLOAK_URL:http://localhost:9090}/realms/challengr/.well-known/openid-configuration")
+    @ConfigProperty(name = "challengr.status.keycloak-url")
     String keycloakUrl;
 
     @ConfigProperty(name = "challengr.status.external-checks", defaultValue = "true")
@@ -114,8 +114,14 @@ public class SystemStatusService {
 
     private CompletableFuture<Check> probe(String name, String url) {
         long t0 = System.nanoTime();
-        HttpRequest req = HttpRequest.newBuilder(URI.create(url)).timeout(TIMEOUT)
-                .header("User-Agent", "Challengr/1.0 (challengrapp.official@gmail.com)").GET().build();
+        HttpRequest req;
+        try {
+            req = HttpRequest.newBuilder(URI.create(url)).timeout(TIMEOUT)
+                    .header("User-Agent", "Challengr/1.0 (challengrapp.official@gmail.com)").GET().build();
+        } catch (RuntimeException e) {
+            // falsch eingetragene Adresse: nur diese Prüfung rot, der Rest des Status bleibt sichtbar
+            return CompletableFuture.completedFuture(new Check(name, "error", "Adresse ungültig: " + url));
+        }
         return http.sendAsync(req, HttpResponse.BodyHandlers.discarding())
                 .thenApply(r -> {
                     long ms = (System.nanoTime() - t0) / 1_000_000;

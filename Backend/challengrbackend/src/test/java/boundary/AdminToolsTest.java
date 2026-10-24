@@ -64,6 +64,14 @@ class AdminToolsTest {
     }
 
     @Test
+    void keycloakUrlIsResolvedFromTheConfig() {
+        String url = org.eclipse.microprofile.config.ConfigProvider.getConfig()
+                .getValue("challengr.status.keycloak-url", String.class);
+        org.junit.jupiter.api.Assertions.assertTrue(url.startsWith("http"), "keine unaufgelöste ${…}-Angabe: " + url);
+        java.net.URI.create(url);
+    }
+
+    @Test
     void backupsWithoutPostgresAreReportedNotCrashed() {
         // im Test läuft H2, kein pg_dump → keine Backups, aber eine klare Antwort
         Login.admin().when().get("/api/admin/backups").then().statusCode(200)
