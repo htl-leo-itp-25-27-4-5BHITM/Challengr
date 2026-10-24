@@ -1,11 +1,15 @@
 # Text für TestFlight → „Was soll getestet werden?“
 
 Für App Store Connect → TestFlight → Build → *Testinformationen* (max. 4000 Zeichen).
-Stand: Build `2610211050` (21.10.2026). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
+Stand: Build `2610241022` (24.10.2026). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
 
 ---
 
 **Neu in diesem Update**
+
+🚩 **Quizfrage melden:** Stimmt eine Antwort nicht oder ist eine Frage unklar? Tippe auf die kleine Fahne an der Frage – wir schauen sie uns an.
+
+📣 Neuigkeiten (z. B. neue Events) siehst du ab jetzt als Hinweis beim Öffnen der App.
 
 📍 **Check-in-Punkte überall:** Parks, Museen, Brunnen, Bibliotheken und Plätze in deiner Gegend sind jetzt Check-in-Punkte – nicht mehr nur die Schule. Geh hin, check ein und hol dir Coins (bis zu 5 Orte pro Tag). Das hilft auch beim Crash-Test-Event!
 

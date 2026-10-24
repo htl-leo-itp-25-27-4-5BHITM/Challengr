@@ -111,7 +111,7 @@ Tryhard 600, Brawler 950, Dueler 1400, Challengr 2000+ (nach oben offen).
 
 ## 4. Aktueller Stand (live)
 
-**Leo Cloud** – Backend seit 21.10. (10:45) mit Stand `eb9c966` (Rangliste, Namenssuche, 24 Emotes, Aufgaben + Beta-Event, Orte aus OpenStreetMap), Dashboard mit `dd519ce`, 235 Wissensfragen:
+**Leo Cloud** – Backend und Dashboard seit 24.10. (10:20) mit Stand `6f0154c` (inkl. Dashboard-Ausbau, nächtliche Backups im Volume `challengr-backup-pvc`); davor Backend `eb9c966` (Rangliste, Namenssuche, 24 Emotes, Aufgaben + Beta-Event, Orte aus OpenStreetMap), Dashboard mit `dd519ce`, 235 Wissensfragen:
 - Backend, Dashboard (ruhiges Design, Analysen unter `/`, Feedback unter `/feedback` mit PDF-/ZIP-Export), Keycloak, Postgres laufen; WebApp aus.
 - **TestFlight-Feedback ist eingerichtet und funktioniert** (19.10.): API-Schlüssel „Challengr Dashboard“, Rolle Developer, Key-ID `5837P8K647`, Issuer-ID `e9807cf3-c20e-4a1d-b21e-036f205c8e5d` (beide nicht geheim; geheim ist nur die .p8-Datei). Liegt im Secret `challengr-asc`.
 - Tagesaktivität (`player_activity`) wird erst seit 16.10. erfasst – Verläufe davor sind aus Battles/Check-ins nachgerechnet.
@@ -127,7 +127,7 @@ Tryhard 600, Brawler 950, Dueler 1400, Challengr 2000+ (nach oben offen).
 - Apple Developer Program (Individual, Sebastian Lehner), **Team-ID `9CK2N38H9M`**, Verlängerung 13.10.2027 (Auto-Renew an).
 - App Store Connect: App „Challengr“, SKU `challengr-ios`.
 - TestFlight-Gruppen: intern **„Team“**, extern **„Schule“** (2 Tester). Testinformationen inkl. `applereview`-Login ausgefüllt.
-- Builds: `2610121422` (Im Test, alt – Kartenfilter-Bug), `2610130934` (Kartenfix), **`2610131028`** (Kartenfix + viele Spieler), `2610141130` (Trophy Road neu, Rang-Figuren, Karte nur drehbar, Shop zu, nur Trophäen), **`2610141213`** (+ Karte zoombar mit Spieler in der Mitte, Freundes-Menü schließt nach Herausfordern, angemeldet bleiben über Offline-Token im Schlüsselbund), `2610141631` (+ Freundesprofil im Spiel-Look, Namen ändern, Tag/Nacht), `2610161251` (+ Feinschliff 16.10., neues Logo), **`2610161702`** (+ Karten-Drehen repariert), `2610201041` (+ Rangliste, Freunde per Namen/auf der Karte, Feedback 13.–19.10.), `2610201127` (+ Aufgaben, Coins, Beta-Event mit Crash-Test-Dummy), `2610210821` (+ Sounds), `2610211050` (+ Orte aus OpenStreetMap, Kompass, Lade-Screen, Menü kleiner – mit „Nebel“-Fehler auf der Karte), **`2610211130`** (+ Cartoon-Karte, Nebel weg) – **`2610211130` der Gruppe „Schule“ zuweisen**. Text für „Was soll getestet werden?“: `docs/TESTFLIGHT_TESTER_TEXT.md`.
+- Builds: `2610121422` (Im Test, alt – Kartenfilter-Bug), `2610130934` (Kartenfix), **`2610131028`** (Kartenfix + viele Spieler), `2610141130` (Trophy Road neu, Rang-Figuren, Karte nur drehbar, Shop zu, nur Trophäen), **`2610141213`** (+ Karte zoombar mit Spieler in der Mitte, Freundes-Menü schließt nach Herausfordern, angemeldet bleiben über Offline-Token im Schlüsselbund), `2610141631` (+ Freundesprofil im Spiel-Look, Namen ändern, Tag/Nacht), `2610161251` (+ Feinschliff 16.10., neues Logo), **`2610161702`** (+ Karten-Drehen repariert), `2610201041` (+ Rangliste, Freunde per Namen/auf der Karte, Feedback 13.–19.10.), `2610201127` (+ Aufgaben, Coins, Beta-Event mit Crash-Test-Dummy), `2610210821` (+ Sounds), `2610211050` (+ Orte aus OpenStreetMap, Kompass, Lade-Screen, Menü kleiner – mit „Nebel“-Fehler auf der Karte), `2610211130` (+ Cartoon-Karte, Nebel weg), **`2610241022`** (+ Frage melden, Ankündigungs-Banner) – **`2610241022` der Gruppe „Schule“ zuweisen**. Text für „Was soll getestet werden?“: `docs/TESTFLIGHT_TESTER_TEXT.md`.
 
 **Git:** `feature/liga-modus` ist auf GitHub aktuell. `main` hängt hinterher (Stand `7e39882`, 13.10.) – bei Bedarf mergen.
 
@@ -156,7 +156,7 @@ Erledigt am 13.10.: hängende Keycloak-Konten freigeschaltet, Passwort von `test
 Keycloak-Admin eingerichtet, Kontakt-Mail bestätigt (`challengrapp.official@gmail.com`), alles gepusht,
 Zustimmung der Schule liegt vor, Test mit zwei iPhones durchgeführt (Checkliste Teil C/D).
 
-0. **Dashboard-Ausbau (fertig 24.10., noch nicht deployt):** Server `09acf2d` … `1fa97ea`, Dashboard `9cd7fc1`, App `511e84b`.
+0. **Dashboard-Ausbau (live seit 24.10., Build `2610241022` hochgeladen → der Gruppe „Schule“ zuweisen):** Server `09acf2d` … `1fa97ea`, Dashboard `9cd7fc1`, App `511e84b`.
    Neue Dashboard-Seiten: **Quiz** (Fragen anlegen/bearbeiten/abschalten, gemeldete und „fast alle falsch“ zuerst), **Events** (anlegen/bearbeiten, Fortschritt pro Challenge), **Orte** (Heatmap ~250-m-Felder ab 3 Spielern, beliebteste Orte, eigene Orte für alle sichtbar, OSM-Orte ausblenden), **System** (Status, Backups, Ankündigung, Protokoll); Spieler-Seite: Trophäen/Coins korrigieren (Grund Pflicht, Rekord optional zurücksetzen) + Verlauf.
    App: Fahne „Frage melden“ in der Quiz-Show, Ankündigungs-Banner beim Öffnen.
    **Deploy-Reihenfolge:** Backup per Hand → `kubectl apply -f k8s/backend.yaml` (neue PVC `challengr-backup-pvc` + Volume) → `./scripts/deploy-cloud.sh backend` (Image mit pg_dump 17) → `./scripts/deploy-cloud.sh dashboard` → im Dashboard unter System „Backup jetzt“ testen → `upload-testflight.sh`.
