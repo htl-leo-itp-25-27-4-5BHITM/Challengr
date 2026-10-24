@@ -290,49 +290,7 @@ struct BattleLoseView: View {
     }
 
     private func metricRows(from metrics: BattleMetrics) -> [MetricRow] {
-        var rows: [MetricRow] = []
-
-        if let sprint = metrics.sprint {
-            rows.append(MetricRow(
-                title: "SPRINT",
-                winnerValue: String(format: "%.1f m", sprint.winner),
-                loserValue: String(format: "%.1f m", sprint.loser)
-            ))
-        }
-
-        if let loudness = metrics.loudness {
-            rows.append(MetricRow(
-                title: "LAUTSTÄRKE",
-                winnerValue: String(format: "%.1f dB", loudness.winner),
-                loserValue: String(format: "%.1f dB", loudness.loser)
-            ))
-        }
-
-        if let compass = metrics.compass {
-            rows.append(MetricRow(
-                title: "KOMPASS",
-                winnerValue: String(format: "%.0f°", compass.winner),
-                loserValue: String(format: "%.0f°", compass.loser)
-            ))
-        }
-
-        if let shake = metrics.shake {
-            rows.append(MetricRow(
-                title: "SHAKE",
-                winnerValue: "\(shake.winner) Shakes",
-                loserValue: "\(shake.loser) Shakes"
-            ))
-        }
-
-        if let pushup = metrics.pushup {
-            rows.append(MetricRow(
-                title: "LIEGESTÜTZ",
-                winnerValue: "\(pushup.winner) Reps",
-                loserValue: "\(pushup.loser) Reps"
-            ))
-        }
-
-        return rows
+        metrics.rows.map { MetricRow(title: $0.title, winnerValue: $0.winner, loserValue: $0.loser) }
     }
 
     private func metricsSection(rows: [MetricRow]) -> some View {

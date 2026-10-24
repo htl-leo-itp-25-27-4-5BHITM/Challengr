@@ -11,6 +11,25 @@ struct BattleMetrics {
     let compass: BattleMetricPair<Double>?
     let shake: BattleMetricPair<Int>?
     let pushup: BattleMetricPair<Int>?
+    var country: BattleMetricPair<Double>? = nil
+    var reaction: BattleMetricPair<Int>? = nil
+    var timing: BattleMetricPair<Int>? = nil
+
+    /// Zeilen für die Ergebnis-Screens (Sieger und Verlierer)
+    var rows: [(title: String, winner: String, loser: String)] {
+        var r: [(String, String, String)] = []
+        if let m = sprint { r.append(("SPRINT", String(format: "%.1f m", m.winner), String(format: "%.1f m", m.loser))) }
+        if let m = loudness { r.append(("LAUTSTÄRKE", String(format: "%.1f dB", m.winner), String(format: "%.1f dB", m.loser))) }
+        if let m = compass { r.append(("KOMPASS", String(format: "%.0f° daneben", m.winner), String(format: "%.0f° daneben", m.loser))) }
+        if let m = shake { r.append(("SHAKE", "\(m.winner) Shakes", "\(m.loser) Shakes")) }
+        if let m = pushup { r.append(("LIEGESTÜTZ", "\(m.winner) Reps", "\(m.loser) Reps")) }
+        if let m = country { r.append(("LÄNDER-KOMPASS", String(format: "%.0f° daneben", m.winner), String(format: "%.0f° daneben", m.loser))) }
+        if let m = reaction { r.append(("REAKTION", "\(m.winner) ms", "\(m.loser) ms")) }
+        if let m = timing {
+            r.append(("ZEITGEFÜHL", String(format: "%.2f s daneben", Double(m.winner) / 1000), String(format: "%.2f s daneben", Double(m.loser) / 1000)))
+        }
+        return r
+    }
 }
 
 struct BattleResultData {

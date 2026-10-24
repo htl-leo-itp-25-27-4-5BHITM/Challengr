@@ -550,7 +550,10 @@ struct MapView: View {
                             onSurrendered: { activeFullScreen = .none; activeOverlay = .resultPending }
                         )
                     } else {
-                    switch BattleScreen.forChallenge(category: info.category, name: info.challengeName) {
+                    let screen = BattleScreen.forChallenge(category: info.category, name: info.challengeName)
+                    // Erst erklären, was zu tun ist – dann die Challenge (startet sonst sofort)
+                    ChallengeIntroGate(intro: ChallengeIntro.for(screen)) {
+                    switch screen {
                     case .knowledge:
                         KnowledgeBattleView(
                             battleId: battleId,
@@ -637,9 +640,21 @@ struct MapView: View {
                             onClose: { activeFullScreen = .none }
                         )
 
+                    case .country:
+                        CountryCompassView(battleId: battleId, socket: socket, position: ownCoordinate,
+                                           onClose: { activeFullScreen = .none })
+
+                    case .reaction:
+                        ReactionChallengeView(battleId: battleId, socket: socket, onClose: { activeFullScreen = .none })
+
+                    case .timing:
+                        TimingChallengeView(battleId: battleId, socket: socket, onClose: { activeFullScreen = .none })
+
                     case .generic:
                         genericBattleView(info: info)
                     }
+                    }
+                    .id(battleId)   // neues Battle = Erklärung wieder von vorne
                     }
 
                 } else {

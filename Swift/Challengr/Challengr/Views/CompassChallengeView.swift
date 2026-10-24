@@ -37,7 +37,7 @@ struct CompassChallengeView: View {
             Color.black.opacity(0.9).ignoresSafeArea()
 
             VStack(spacing: 20) {
-                Text("🧭 COMPASS CHALLENGE")
+                Text("🧭 KOMPASS")
                     .font(.system(size: 16, weight: .black, design: .rounded))
                     .foregroundColor(.white)
 
@@ -60,7 +60,7 @@ struct CompassChallengeView: View {
                 }
 
                 if phase == .ready {
-                    Text("Richte dich auf 0° aus")
+                    Text("So schaust du gerade · 0° = Norden, 90° = Osten, 180° = Süden, 270° = Westen")
                         .font(.system(size: 14, weight: .medium, design: .rounded))
                         .foregroundColor(.white.opacity(0.8))
 
@@ -162,8 +162,8 @@ struct CompassChallengeView: View {
                 prepCountdown -= 1
             }
 
-            // Reveal a random target when running starts
-            targetHeading = Int.random(in: 0..<360)
+            // Zielwinkel aus der Battle-Nummer – beide Spieler bekommen denselben (vorher zufällig pro Handy)
+            targetHeading = ChallengeSeed.compassTarget(battleId: battleId)
             phase = .running
 
             // Running: player must orient without seeing own heading

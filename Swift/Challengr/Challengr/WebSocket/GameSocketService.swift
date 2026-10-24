@@ -391,6 +391,11 @@ final class GameSocketService: ObservableObject {
         send(json: payload)
     }
 
+    /// Neue Real-Life-Challenges: "country-result" (deviation), "reaction-result" (ms), "timing-result" (ms)
+    func sendMetricResult(type: String, battleId: Int64, field: String, value: Double) {
+        send(json: ["type": type, "battleId": battleId, field: value])
+    }
+
     func sendCompassResult(battleId: Int64, distance: Double) {
         let payload: [String: Any] = [
             "type": "compass-result",
@@ -692,8 +697,12 @@ final class GameSocketService: ObservableObject {
         let compass = parseDoubleMetric(metricsJson["compass"])
         let shake = parseIntMetric(metricsJson["shake"])
         let pushup = parseIntMetric(metricsJson["pushup"])
+        let country = parseDoubleMetric(metricsJson["country"])
+        let reaction = parseIntMetric(metricsJson["reaction"])
+        let timing = parseIntMetric(metricsJson["timing"])
 
-        if sprint == nil, loudness == nil, compass == nil, shake == nil, pushup == nil {
+        if sprint == nil, loudness == nil, compass == nil, shake == nil, pushup == nil,
+           country == nil, reaction == nil, timing == nil {
             return nil
         }
 
@@ -702,7 +711,10 @@ final class GameSocketService: ObservableObject {
             loudness: loudness,
             compass: compass,
             shake: shake,
-            pushup: pushup
+            pushup: pushup,
+            country: country,
+            reaction: reaction,
+            timing: timing
         )
     }
 
