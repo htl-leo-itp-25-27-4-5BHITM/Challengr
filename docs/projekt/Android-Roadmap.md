@@ -1,560 +1,167 @@
-# Android-Roadmap fuer Challengr
-
-Stand: 30.06.2026
-
-Ziel: Die Android-App soll funktional gleich zur bestehenden iOS-App werden. Die Webapp ist fuer Android nicht die Grundlage. Android wird als native Kotlin-App gebaut und nutzt dasselbe Quarkus-Backend, dieselben REST-Endpunkte und dasselbe WebSocket-Protokoll wie die Swift-App.
-
-## Leitentscheidung
-
-- Hauptreferenz: `Swift/Challengr`
-- Vergleichsreferenz: `Swift Kopie/Challengr`
-- Zielplattform: Android native
-- Empfohlener Stack: Kotlin, Jetpack Compose, Material 3, AppAuth, Retrofit oder Ktor, OkHttp WebSocket, kotlinx.serialization, CameraX, Android SensorManager
-- Backend: bestehendes Challengr-Backend unter `https://it220257.cloud.htl-leonding.ac.at`
-
-## Phase 1: Projektgrundlage
-
-Ziel: Eine lauffaehige Android-App-Struktur mit Navigation, Designbasis und Backend-Konfiguration.
-
-Aufgaben:
-
-- Android-Projekt anlegen, z.B. `Android/Challengr`.
-- Package-Struktur definieren:
-  - `auth`
-  - `network`
-  - `models`
-  - `websocket`
-  - `location`
-  - `friends`
-  - `battle`
-  - `challenges`
-  - `profile`
-  - `shop`
-  - `ui`
-- Compose Navigation einrichten.
-- App-Theme aus Swift uebernehmen:
-  - Challengr Rot
-  - Challengr Dunkel
-  - Challengr Gelb
-  - helle Surface-Flaechen
-- Assets uebernehmen:
-  - App Icon
-  - Player-Bilder
-  - Shop-Icons
-  - Charakterbilder
-  - Sounds
-- BackendConfig fuer REST und WebSocket anlegen.
-
-Ergebnis:
-
-- Android-App startet.
-- Login-Screen und Platzhalter-Map sind erreichbar.
-- Backend-Basis-URL ist zentral konfiguriert.
-
-## Phase 2: Authentifizierung mit Keycloak
-
-Ziel: Android kann sich wie iOS ueber Keycloak anmelden und einen Player im Backend zuordnen.
-
-Aufgaben:
-
-- Keycloak-Client `challengr-android` anlegen.
-- Redirect URI definieren, z.B. `challengr://callback`.
-- Login mit PKCE ueber AppAuth for Android implementieren.
-- Token Exchange implementieren.
-- Access Token und ID Token sicher speichern.
-- JWT auslesen:
-  - `preferred_username`
-  - `name`
-  - `sub`
-  - `player_id`
-- Falls `player_id` fehlt: Player ueber Backend erstellen.
-- Logout implementieren.
-- Session-Restore beim App-Start bauen.
-
-Swift-Referenz:
-
-- `Swift/Challengr/Challengr/Services/KeycloakAuthService.swift`
-
-Ergebnis:
-
-- Nutzer kann sich anmelden.
-- Android kennt `playerId`, `playerName` und `keycloakUserId`.
-- Nach Login wird die Map geoeffnet.
-
-## Phase 3: REST-API und Datenmodelle
-
-Ziel: Android kann alle benoetigten Backend-Daten laden und schreiben.
-
-Aufgaben:
-
-- Kotlin-DTOs portieren:
-  - `PlayerDTO`
-  - `PlayerRequestDTO`
-  - `ChallengeDTO`
-  - `PlayerStatsDTO`
-  - `PlayerProfileDTO`
-  - `PlayerPointsHistoryDTO`
-  - `BattleHistoryDTO`
-  - `PlayerLoudnessBestDTO`
-  - `FriendRequestDTO`
-  - `FriendDTO`
-  - `FriendGiftDTO`
-  - Rank/Trophy DTOs
-- API-Services implementieren:
-  - Players
-  - Challenges
-  - Friends
-  - Ranks
-- Fehlerbehandlung fuer 4xx/5xx Antworten.
-- Loading- und Retry-Zustaende in ViewModels abbilden.
-
-Wichtige Endpunkte:
-
-- `GET /api/challenges/{category}`
-- `GET /api/challenges/id/{id}`
-- `GET /api/players/{id}`
-- `POST /api/players`
-- `PUT /api/players/{id}`
-- `GET /api/players/nearby`
-- `GET /api/players/{id}/points`
-- `GET /api/players/{id}/stats`
-- `GET /api/players/{id}/battles`
-- `GET /api/players/{id}/profile`
-- `GET /api/players/{id}/streak`
-- `GET /api/players/{id}/points-history`
-- `GET /api/players/{id}/loudness-best`
-- `PUT /api/players/{id}/loudness-best`
-- `GET /api/friends/list`
-- `POST /api/friends/requests`
-- `GET /api/friends/requests/incoming`
-- `GET /api/friends/requests/outgoing`
-- `POST /api/friends/requests/{id}/accept`
-- `POST /api/friends/requests/{id}/decline`
-- `DELETE /api/friends/remove`
-- `POST /api/friends/gifts`
-- `GET /api/friends/gifts/incoming`
-- `POST /api/friends/gifts/{id}/claim`
-- `GET /api/ranks`
-
-Swift-Referenzen:
-
-- `Swift/Challengr/Challengr/Model.swift`
-- `Swift/Challengr/Challengr/Services/PlayerLocationService.swift`
-- `Swift/Challengr/Challengr/Services/ChallengesService.swift`
-- `Swift/Challengr/Challengr/Services/FriendsService.swift`
-- `Swift/Challengr/Challengr/Views/TrophyRoadView.swift`
-
-Ergebnis:
-
-- Android kann Spieler, Challenges, Freunde, Profil, Punkte und Ranks laden.
-
-## Phase 4: Map, Standort und Nearby Players
-
-Ziel: Die Android-Map entspricht funktional der iOS-Map.
-
-Aufgaben:
-
-- Kartenanbieter festlegen:
-  - Google Maps: schnell, stabil, API-Key noetig
-  - MapLibre/OpenStreetMap: weniger Google-Abhaengigkeit
-- Standortfreigabe implementieren.
-- Live-Standort mit Fused Location Provider.
-- Eigenen Standort ans Backend senden.
-- Spieler in der Naehe ueber `/api/players/nearby` laden.
-- Nearby-Spieler als Marker anzeigen.
-- Marker-Auswahl mit Spieler-Popup.
-- Radius-/Distance-Logik portieren.
-- Follow-User-Modus und Recenter-Button bauen.
-- WebSocket-Position-Updates in Nearby-Refresh einbauen.
-
-Swift-Referenzen:
-
-- `Swift/Challengr/Challengr/Views/MapView.swift`
-- `Swift/Challengr/Challengr/Services/LocationHelper.swift`
-
-Ergebnis:
-
-- Nutzer sieht sich selbst und andere Spieler in der Naehe.
-- Position wird regelmaessig aktualisiert.
-- Spieler koennen fuer Battles ausgewaehlt werden.
-
-## Phase 5: WebSocket und Battle-Protokoll
-
-Ziel: Android spricht dasselbe Realtime-Protokoll wie iOS.
-
-Aufgaben:
-
-- OkHttp WebSocket fuer `/ws/game?playerId={playerId}` implementieren.
-- Automatisches Reconnect mit Backoff.
-- Ping/Keepalive.
-- Queue fuer Nachrichten, die vor Verbindungsaufbau gesendet werden.
-- Nur eine aktive Socket-Verbindung pro Player in der App zulassen.
-- Ausgehende Events implementieren:
-  - `create-battle`
-  - `update-battle-status`
-  - `battle-vote`
-  - `battle-answer`
-  - `sprint-result`
-  - `loudness-result`
-  - `shake-result`
-  - `pushup-result`
-  - `compass-result`
-  - `camera-result`
-- Eingehende Events implementieren:
-  - `battle-requested`
-  - `battle-created`
-  - `battle-updated`
-  - `battle-pending`
-  - `battle-result`
-  - `battle-question`
-  - `friend-request-created`
-  - `friend-request-updated`
-  - `friend-removed`
-  - `player-position-updated`
-
-Swift-Referenz:
-
-- `Swift/Challengr/Challengr/WebSocket/GameSocketService.swift`
-
-Backend-Referenz:
-
-- `Backend/challengrbackend/src/main/java/boundary/GameSocket.java`
-
-Ergebnis:
+# Android-Roadmap für Challengr
+
+Stand: **25.10.2026** (ersetzt die Fassung vom 30.06.2026). Referenz ist die iOS-App in `Swift/Challengr`
+(Build `2610241214`) und das Backend auf `https://it220257.cloud.htl-leonding.ac.at`.
+
+**Ziel:** Eine native Android-App, mit der Android-Schüler gegen iPhone-Spieler antreten – gleiche Karte, gleiche Liga,
+gleiche Challenges, faire Messungen. Erst eine spielbare Version für den Schultest, danach Gleichstand mit iOS.
+
+**Schätzung** (im bisherigen Arbeitstempo): spielbare Version **3–4 Wochen**, voller Gleichstand inkl. 3D **6–8 Wochen**.
+Der Engpass ist nicht das Programmieren, sondern Testen auf verschiedenen echten Android-Geräten und Google-Play-Fristen.
+
+---
+
+## 1. Was bleibt, was neu kommt
+
+| Bereich | Android | Anmerkung |
+|---|---|---|
+| Backend (Quarkus), Datenbank, Dashboard | **unverändert** | dieselben REST-Endpunkte und dasselbe WebSocket-Protokoll |
+| Login (Keycloak, Realm `challengr`) | neuer Client `challengr-android` | sonst gleich (PKCE, `offline_access`) |
+| Spiellogik (Trophäen, Ränge, Aufgaben, Events, Auswertung) | **am Server** | App zeigt nur an |
+| Cartoon-Karte | MapLibre Android | **`ToonMapStyle.json` 1:1 übernehmen** |
+| Figuren auf der Karte (Sprite-Sheets `*MapSheet.png`), Avatare, Sounds, Logo | übernehmen | Assets aus `Swift/Challengr/Challengr/Assets.xcassets` und `Sounds/` |
+| App-Code (~20.000 Zeilen SwiftUI) | **neu in Kotlin** | Struktur kann 1:1 gespiegelt werden |
+| 3D (SceneKit `.scn`) | **neu** | Figuren direkt aus der three.js-Pipeline als `.glb` exportieren (`Character3D/pipeline`) |
+
+---
+
+## 2. Leitentscheidungen
+
+- **Kotlin + Jetpack Compose + Material 3**, Mindestversion Android 8 (API 26), Ziel aktuelle API.
+- **Package / Application-ID:** `com.challengrapp.challengr` (wie die iOS-Release-Bundle-ID). Keine Schule im Namen.
+- **Netzwerk:** Retrofit oder Ktor + `kotlinx.serialization`, WebSocket über OkHttp.
+- **Login:** AppAuth-Android (PKCE), Redirect `com.challengrapp.challengr:/callback`, Scope `openid profile email offline_access`.
+  Refresh-Token in Android Keystore / EncryptedSharedPreferences („angemeldet bleiben“ wie `TokenStore` auf iOS).
+- **Karte:** MapLibre Native Android mit dem Challengr-Stil (OpenFreeMap-Kacheln). Kein Google Maps nötig.
+  Rückfall bei nicht erreichbarem Kartenserver wie auf iOS (`ToonMapHealth`: nach 8 + 12 s prüfen, ob Kartendaten sichtbar sind).
+- **3D später:** SceneView/Filament mit `.glb`. In der ersten Version Quiz-Show und Figurenwahl in 2D (gerenderte Bilder gibt es schon).
+- **Liegestütze:** ML Kit Face Detection (Gesichtsgröße ≈ Abstand) statt ARKit; gleiche Regel: unter 25 cm runter, über 35 cm hoch = 1.
+
+---
+
+## 3. Was auf Android exakt gleich sein muss (Fairness iPhone ↔ Android)
+
+### 3.1 Gemeinsamer „Zufall“ pro Battle — `Logic/ChallengeSeed.swift`
+Land, Kompass-Zielwinkel, Wartezeiten des Reaktions-Tests und Zielzeit kommen aus der **Battle-Nummer**, damit beide
+Spieler dasselbe bekommen. Android muss den Algorithmus **bitgenau** nachbauen (Kotlin `ULong`, Überlauf wie `&*`/`&+`):
+
+```
+state = battleId.toULong() * 0x9E3779B97F4A7C15 + salt + 0x12345678
+next(): state += 0x9E3779B97F4A7C15
+        z = state; z = (z xor (z ushr 30)) * 0xBF58476D1CE4E5B9
+        z = (z xor (z ushr 27)) * 0x94D049BB133111EB
+        return z xor (z ushr 31)
+int(range)    = lower + (next() % count)
+double(range) = lower + (next() % 1_000_000) / 1_000_000.0 * (upper - lower)
+```
+- Salt 1: Kompass-Zielwinkel `int(0..<360)`
+- Salt 2: Land = `Country.all[int(0..<count)]` – **Liste in exakt derselben Reihenfolge** übernehmen (28 Länder mit Hauptstadt-Koordinaten)
+- Salt 3: Reaktions-Test 3 Wartezeiten `double(1.5...4.0)` s
+- Salt 4: Zielzeit `[5, 6, 7, 8, 10][int(0..<5)]` s
+- Pflicht: **Kreuztest** – für Battle-IDs 1…100 müssen iOS und Android dieselben Werte liefern (Werte aus einem iOS-Unit-Test als Tabelle übernehmen).
+
+Richtung zur Hauptstadt: Großkreis-Anfangskurs (`Country.bearing`), Abweichung = kleinster Winkel 0–180°.
+
+### 3.2 Messungen vergleichbar machen
+| Challenge | iOS | Android | Risiko |
+|---|---|---|---|
+| Kompass / Länder-Kompass | `trueHeading` | Rotation-Vector-Sensor + `GeomagneticField`-Deklination → **geografischer** Norden | Kalibrierung, Kalibrier-Hinweis anzeigen |
+| Sprint | GPS-Strecke in 15 s | Fused Location, gleiche Glättung | GPS-Genauigkeit je Gerät |
+| Schrei-Challenge | Mikrofon-Pegel | `AudioRecord`-Pegel | **Mikrofone unterschiedlich laut** → vor Liga-Einsatz mit beiden Geräten nebeneinander abgleichen, sonst iOS↔Android nur im Friendly |
+| Schütteln | CoreMotion-Score | Beschleunigungssensor, gleiche Formel | Formel aus `MotionManager.swift` übernehmen |
+| Reaktions-Test / Zeitgefühl | Bildschirm-Tipp | gleich | Touch-Latenz minimal unterschiedlich – akzeptabel |
+| Liegestütze | ARKit-Gesichtsabstand | ML Kit | Schwellen am Gerät justieren |
+
+### 3.3 Erklär-Bildschirm vor jeder gemessenen Challenge
+Gleiche Texte wie `Views/ChallengeIntro.swift`, „Los geht's“ oder automatisch nach **20 s**, danach Bereit-Countdown
+**3 s** (Liegestütze **5 s**). Achtung iOS-Fehler aus Build `2610241107`: Auto-Start- und Countdown-Timer **getrennt** halten.
+
+---
+
+## 4. Schnittstellen (Stand 25.10.)
+
+Alle Aufrufe mit `Authorization: Bearer <Keycloak-Token>`; Spieler-ID = Token-Claim `sub`. Fremde IDs → 403.
+
+**REST (App-relevant):**
+- Spieler: `POST /api/players` (anlegen), `PUT /api/players` (Position), `GET/PUT /api/players/{id}`, `PUT /{id}/name`,
+  `PUT /{id}/visibility`, `GET /{id}/profile`, `/{id}/stats`, `/{id}/battles`, `/{id}/characters`, `PUT /{id}/character`,
+  `GET /api/players/nearby` (Header `X-Nearby-Total`), `GET /api/players/search?q=`, `DELETE /api/players/me`
+- Liga/Meta: `GET /api/ranks`, `GET /api/leaderboard`, `GET /api/quests`, `POST /api/quests/daily/{id}/claim`,
+  `POST /api/quests/events/{id}/claim`, `GET /api/announcement` (204 = keine)
+- Orte: `GET /api/hotspots`, `POST /api/hotspots/{id}/checkin` (403 zu weit, 409 schon heute, 429 Tageslimit Orte)
+- Freunde: `/api/friends/requests` (+ `/incoming`, `/outgoing`, `/{id}/accept|decline`), `/api/friends/list`, `/api/friends/remove`
+- Sicherheit: `POST /api/safety/blocks/{id}`, `DELETE …`, `GET /api/safety/blocks`, `POST /api/safety/reports/{id}`
+- Quiz: `POST /api/quiz/questions/{id}/report` (`FALSCHE_ANTWORT|UNKLAR|TIPPFEHLER|SONSTIGES`)
+- Challenges: `GET /api/challenges`, `/api/challenges/categories` (für Friendly-Auswahl)
+
+**WebSocket `wss://…/ws/game`** (Login beim Upgrade per Token):
+- App → Server: `create-battle`, `update-battle-status`, `battle-answer`, `quiz-answer`, `friendly-finished`, `send-emote`,
+  Messwerte `sprint-result {distance}`, `loudness-result {loudness}`, `compass-result {distance}`, `shake-result {shakes}`,
+  `pushup-result {reps}`, `country-result {deviation}`, `reaction-result {ms}`, `timing-result {ms}`
+- Server → App: `battle-requested`, `battle-updated`, `battle-rejected`, `battle-running`, `battle-pending`, `battle-result`
+  (mit `metrics`, Trophäen, Teilnehmern), `battle-question`, `battle-answer-feedback`, `quiz-question`, `quiz-round-result`,
+  `quiz-opponent-answered`, `opponent-finished`, `player-position-updated`, `emote`, `friend-request-created|updated`, `friend-removed`
 
-- Android kann Battles erstellen, empfangen, akzeptieren, abschliessen und Ergebnisse empfangen.
+Welcher Bildschirm zu welcher Challenge gehört: `Logic/BattleScreen.swift` – erkannt am **Textanfang** der Challenge
+(z. B. `Länder-Kompass`, `Reaktions-Test`, `Zeitgefühl`; Länder-Kompass **vor** „kompass“ prüfen).
 
-## Phase 6: Battle UI und Battle Flow
+---
 
-Ziel: Der komplette Battle-Ablauf funktioniert wie auf iOS.
+## 5. Phasen
 
-Aufgaben:
+| # | Phase | Dauer | Fertig, wenn … |
+|---|---|---|---|
+| 0 | Vorbereitung | 1 Tag | Keycloak-Client `challengr-android` angelegt (Redirect wie oben); Google-Play-Konto (25 $); 2–3 Test-Geräte (verschiedene Hersteller) |
+| 1 | Grundgerüst + Login | 4 Tage | App startet, Login mit PKCE, bleibt angemeldet, Lade-Screen, Onboarding mit Datenschutz/Alter ab 14, Spieler wird angelegt |
+| 2 | Karte | 5 Tage | Cartoon-Karte mit fester Neigung 55°, Drehen (1 Finger) und Zoomen (200 m–2,5 km), Spieler bleibt mittig, eigene Figur + Gegner (Sprites), Hotspots/Orte mit Check-in, Kompass, Tag/Nacht, Münz-Menü |
+| 3 | Battle-Ablauf | 4 Tage | Herausfordern (Liga Quiz / Liga Real-Life / Friendly), Anfragen annehmen/ablehnen, Warten, Ergebnis-Screens mit Messwerten, Aufgeben, Emotes |
+| 4 | Gemessene Challenges | 4 Tage | Erklär-Bildschirm + Sprint, Schrei, Kompass, Schütteln, Check-in-Spot, Länder-Kompass, Reaktions-Test, Zeitgefühl; Kreuztest der Seeds grün |
+| 4b | Liegestütze | 2 Tage | ML Kit zählt zuverlässig auf 2 Geräten |
+| 5 | Quiz-Show (2D) | 2 Tage | 4 Fragen à 15 s, Tempo-Punkte, Auflösung, „Frage melden“ |
+| 6 | Rund ums Spiel | 6 Tage | Profil, Freunde (Suche, Karte, QR), Freundesprofil, Rangliste, Trophy Road mit Rekord, Aufgaben + Events, Figurenwahl (2D), Einstellungen (Töne, Mitteilungen, unsichtbar, Name, Karte), Melden/Blockieren, Konto löschen, Ankündigungs-Banner, Sounds |
+| 7 | Test + Veröffentlichung | ~1 Woche (parallel) | Geschlossener Test bei Google Play läuft, Feedback-Weg steht |
+| 8 | Später | 1–2 Wochen | Quiz-Show im 3D-Studio, 3D-Figurenwahl (SceneView + `.glb`), Shop (wenn er auf iOS öffnet) |
 
-- Challenge-Auswahl-Dialog portieren.
-- Eingehende Challenge anzeigen.
-- Ausgehende Challenge anzeigen.
-- Battle-Screen portieren.
-- Statuswechsel abbilden:
-  - requested
-  - accepted
-  - check-in
-  - running
-  - ready for voting
-  - pending
-  - result
-- Voting-Screen portieren.
-- Win-/Lose-Screen portieren.
-- Result-Metriken anzeigen.
-- Surrender-Flow einbauen.
-- Haptisches Feedback ueber Android Vibrator API.
-- Sounds ueber Android MediaPlayer/SoundPool.
+**Spielbare Version für den Schultest = Phasen 0–6.**
 
-Swift-Referenzen:
+---
 
-- `Swift/Challengr/Challengr/Views/ChallengeDialogView.swift`
-- `Swift/Challengr/Challengr/Views/BattleView.swift`
-- `Swift/Challengr/Challengr/Views/BattleVotingView.swift`
-- `Swift/Challengr/Challengr/Views/BattleWinView.swift`
-- `Swift/Challengr/Challengr/Views/BattleLoseView.swift`
-- `Swift/Challengr/Challengr/BattleResultModels.swift`
+## 6. Google Play – vorher wissen
 
-Ergebnis:
+- Neues **privates** Entwicklerkonto: Vor der öffentlichen Veröffentlichung muss die App **14 Tage lang mit mindestens 12 Testern**
+  im geschlossenen Test laufen. Für den Schultest reicht der **interne Test** (bis 100 Tester per E-Mail-Liste) oder ein geschlossener Test mit Link.
+- **Konto löschen**: Google verlangt zusätzlich eine **Web-Möglichkeit** zum Löschen (z. B. Seite auf dem Dashboard-Server, die
+  auf `DELETE /api/players/me` nach Login führt) und die Angabe im Formular „Datensicherheit“.
+- Nutzerinhalte (Namen, Emotes): Melden/Blockieren ist Pflicht – gibt es schon.
+- Jüngere Nutzer: Zielgruppe ehrlich angeben (13+ bzw. 14+ wie in der App), Datenschutzerklärung `/datenschutz.html` verlinken.
 
-- Zwei Android-Clients koennen einen kompletten Battle durchspielen.
-- Android und iOS koennen gegeneinander spielen.
+---
 
-## Phase 7: Challenge-Typen
+## 7. Server-Änderungen, die für Android sinnvoll sind
 
-Ziel: Alle iOS-Challenges werden auf Android umgesetzt.
+1. **App-Version mitschicken** (Header `X-App-Platform`, `X-App-Version`) und den Liga-Real-Life-Pool danach filtern:
+   Am 24.10. bekamen alte iOS-Builds neue Challenges zugelost, die sie nicht kannten. Mit zwei Plattformen wird das häufiger.
+2. Optional **Schrei-Challenge iOS↔Android** aus der Liga nehmen, bis die Mikrofone abgeglichen sind.
+3. Feedback: Android hat kein TestFlight – Feedback-Knopf in der App (Text + Screenshot) an einen neuen Endpunkt, im Dashboard unter „Feedback“ anzeigen.
 
-### Wissen
+---
 
-Aufgaben:
+## 8. Offene Entscheidungen
 
-- Frage und Antwortmoeglichkeiten anzeigen.
-- Antwort per `battle-answer` senden.
-- Ergebnis vom Backend empfangen.
+- Wann starten: vor oder nach dem Test mit den 5. Klassen? (Hängt davon ab, wie viele Schüler Android haben.)
+- Wer betreut die Test-Geräte, welche Modelle (mindestens Samsung + ein günstiges Gerät).
+- Eigener Server vor dem Play-Store-Start? (Gleiche Frage wie für den App Store.)
 
-Swift-Referenz:
+---
 
-- `Swift/Challengr/Challengr/Views/KnowledgeBattleView.swift`
+## 9. Erster Sprint (Phase 0–1)
 
-### Sprint
+1. Projekt `Android/Challengr` anlegen (Compose, Navigation, Theme in Challengr-Farben: Rot `#BA1F33`, Dunkel `#1E000E`, Gelb `#FDD006`).
+2. Keycloak-Client `challengr-android` anlegen, AppAuth-Login mit PKCE + `offline_access`, Token sicher speichern.
+3. `BackendConfig`, HTTP-Client mit Bearer-Token und Erneuerung bei 401, WebSocket-Verbindung.
+4. Nach Login `POST /api/players`, Lade-Screen, Onboarding.
+5. MapLibre mit `ToonMapStyle.json`, eigener Standort, `PUT /api/players`.
+6. `ChallengeSeed` + Länderliste portieren und den Kreuztest mit iOS-Werten schreiben.
 
-Aufgaben:
-
-- Countdown.
-- GPS-Strecke messen.
-- Ergebnis per `sprint-result` senden.
-
-Swift-Referenz:
-
-- `Swift/Challengr/Challengr/Views/SprintChallengeView.swift`
-
-### Lautstaerke
-
-Aufgaben:
-
-- Mikrofon-Berechtigung.
-- Lautstaerke messen.
-- Bestwert laden und aktualisieren.
-- Ergebnis per `loudness-result` senden.
-
-Swift-Referenzen:
-
-- `Swift/Challengr/Challengr/Views/LoudnessChallengeView.swift`
-- `Swift/Challengr/Challengr/Services/SoundMeter.swift`
-
-### Shake
-
-Aufgaben:
-
-- Beschleunigungssensor auslesen.
-- Shake-Zaehler implementieren.
-- Ergebnis per `shake-result` senden.
-
-Swift-Referenzen:
-
-- `Swift/Challengr/Challengr/Views/ShakeChallengeView.swift`
-- `Swift/Challengr/Challengr/Services/MotionManager.swift`
-
-### Compass
-
-Aufgaben:
-
-- Rotation Vector oder Magnetometer nutzen.
-- Zielrichtung und Distanz berechnen.
-- Ergebnis per `compass-result` senden.
-
-Swift-Referenz:
-
-- `Swift/Challengr/Challengr/Views/CompassChallengeView.swift`
-
-### Kamera/Farbe
-
-Aufgaben:
-
-- CameraX Preview.
-- Live-Bildanalyse.
-- Farbziel erkennen.
-- Ergebnis per `camera-result` senden.
-
-Swift-Referenz:
-
-- `Swift/Challengr/Challengr/Views/CameraChallengeView.swift`
-
-### Pushups
-
-Aufgaben:
-
-- Android-Ersatz fuer ARKit festlegen.
-- Empfohlen: ML Kit Pose Detection oder MediaPipe.
-- Pose-Erkennung testen.
-- Wiederholungen zaehlen.
-- Ergebnis per `pushup-result` senden.
-
-Swift-Referenz:
-
-- `Swift/Challengr/Challengr/Views/PushupChallengeView.swift`
-
-Risiko:
-
-- Pushups sind der groesste Android-Portierungsaufwand, weil iOS ARKit nutzt und Android dafuer eine andere Technologie braucht.
-
-Ergebnis:
-
-- Alle Challenge-Typen sind auf Android verfuegbar.
-
-## Phase 8: Freunde, QR und Einladungen
-
-Ziel: Social-Funktionen wie auf iOS.
-
-Aufgaben:
-
-- Freundesliste portieren.
-- Eingehende und ausgehende Anfragen.
-- Anfrage senden, akzeptieren, ablehnen.
-- Freund entfernen.
-- Gifts senden und claimen.
-- QR-Code fuer Invite erzeugen.
-- QR-Code scannen.
-- Deep Links fuer Invite-Dateien/URLs einrichten.
-- Friend-Realtime-Events vom WebSocket verarbeiten.
-
-Swift-Referenzen:
-
-- `Swift/Challengr/Challengr/Views/FriendsListView.swift`
-- `Swift/Challengr/Challengr/Views/FriendInviteQRView.swift`
-- `Swift/Challengr/Challengr/Views/FriendInviteScannerView.swift`
-- `Swift/Challengr/Challengr/Services/FriendInviteTransfer.swift`
-- `Swift/Challengr/Challengr/ViewModels/FriendsViewModel.swift`
-
-Ergebnis:
-
-- Android-Nutzer koennen iOS-Nutzer als Freunde hinzufuegen und umgekehrt.
-
-## Phase 9: Profil, Avatar und Trophy Road
-
-Ziel: Profil- und Progression-Systeme wie auf iOS.
-
-Aufgaben:
-
-- Eigenes Profil portieren.
-- Friend Profile portieren.
-- Punkte, Stats, Battle-History, Badges, Streak anzeigen.
-- Avatar-Auswahl portieren.
-- Avatar lokal speichern.
-- Trophy Road mit Backend-Ranks anzeigen.
-- Profilstatus und Badges laden.
-
-Swift-Referenzen:
-
-- `Swift/Challengr/Challengr/Views/UserProfileView.swift`
-- `Swift/Challengr/Challengr/Views/FriendProfileView.swift`
-- `Swift/Challengr/Challengr/Views/ProfileContainerView.swift`
-- `Swift/Challengr/Challengr/Views/AvatarCustomization.swift`
-- `Swift/Challengr/Challengr/Views/CharacterEditorSheet.swift`
-- `Swift/Challengr/Challengr/Views/TrophyRoadView.swift`
-
-Ergebnis:
-
-- Android zeigt denselben Progressionsstand wie iOS.
-
-## Phase 10: Shop und Items
-
-Ziel: Shop-Ansicht und Item-Darstellung wie auf iOS.
-
-Aufgaben:
-
-- Shop UI portieren.
-- Item-Kategorien und Rarity portieren.
-- Shop-Assets uebernehmen.
-- Coins/Punkte sichtbar machen.
-- Falls Backend-Kauf-Logik fehlt: Shop zuerst als Anzeige bauen.
-- Spaeter Kauf- und Inventarlogik mit Backend ergaenzen.
-
-Swift-Referenz:
-
-- `Swift/Challengr/Challengr/Views/ShopView.swift`
-
-Ergebnis:
-
-- Android-Shop ist visuell und funktional auf Stand der iOS-App.
-
-## Phase 11: Settings, Permissions und Polishing
-
-Ziel: Android fuehlt sich komplett und stabil an.
-
-Aufgaben:
-
-- Settings-Screen portieren.
-- Logout.
-- Berechtigungsdialoge sauber fuehren:
-  - Standort
-  - Kamera
-  - Mikrofon
-  - Bewegung/Sensoren
-  - Benachrichtigungen, falls spaeter Push kommt
-- Fehlerzustaende nutzerfreundlich anzeigen.
-- Loading States.
-- Empty States.
-- Offline-/Reconnect-Hinweise.
-- UI auf kleinen und grossen Android-Geraeten testen.
-
-Swift-Referenz:
-
-- `Swift/Challengr/Challengr/Views/SettingsView.swift`
-
-Ergebnis:
-
-- Android-App ist alltagstauglich bedienbar.
-
-## Phase 12: Tests und Release
-
-Ziel: Android ist bereit fuer echte Tests und spaeter Play Store.
-
-Aufgaben:
-
-- Unit Tests fuer DTOs, API Parsing und WebSocket-Event-Parsing.
-- ViewModel Tests.
-- Manuelle Tests mit zwei Android-Geraeten.
-- Crossplay-Test Android gegen iOS.
-- Sensor-Tests auf echten Geraeten.
-- Permission-Testmatrix.
-- Netzwerk-Testmatrix:
-  - WLAN
-  - mobile Daten
-  - Verbindungsabbruch
-  - App im Hintergrund
-- Play Store Vorbereitungen:
-  - App-ID
-  - Signing
-  - Datenschutzangaben
-  - Standort-/Kamera-/Mikrofon-Begruendungen
-  - interne Testgruppe
-
-Ergebnis:
-
-- Android-App kann in einen internen Test-Track.
-
-## Prioritaeten
-
-P0:
-
-- Projektgrundlage
-- Keycloak Login
-- Player-Zuordnung
-- REST-Grundlage
-- Map und Standort
-- WebSocket
-- Battle Flow
-
-P1:
-
-- Wissen
-- Sprint
-- Lautstaerke
-- Shake
-- Compass
-- Kamera/Farbe
-- Freunde
-- Profil
-- Trophy Road
-
-P2:
-
-- Pushups
-- Shop mit voller Kauf-/Inventarlogik
-- Polishing
-- Release-Vorbereitung
-
-## Offene Entscheidungen
-
-- Kartenanbieter: Google Maps oder MapLibre/OpenStreetMap.
-- Pushup-Technologie: ML Kit Pose Detection oder MediaPipe.
-- Android-Projektname und Package-ID.
-- Ob `Swift Kopie` noch aktive Features enthaelt, die in `Swift` fehlen.
-
-## Empfohlener erster Sprint fuer Android
-
-Ziel: Login bis Map.
-
-Tasks:
-
-- Android-Projekt anlegen.
-- Compose Navigation einrichten.
-- Theme und Basis-UI anlegen.
-- Keycloak Android-Client konfigurieren.
-- Login mit PKCE implementieren.
-- Player nach Login erstellen/aufladen.
-- Backend DTOs fuer Player portieren.
-- Leere Map mit Standortpermission anzeigen.
-- Eigenen Standort laden und ans Backend senden.
-
-Definition of Done:
-
-- App startet auf Android.
-- Login funktioniert.
-- PlayerId wird erzeugt oder geladen.
-- Nutzer landet nach Login auf der Map.
-- Eigener Standort wird angezeigt und ans Backend geschickt.
+**Fertig, wenn:** Login klappt, man bleibt angemeldet, landet auf der Cartoon-Karte, die eigene Figur steht am Standort,
+und der Seed-Kreuztest ist grün.
