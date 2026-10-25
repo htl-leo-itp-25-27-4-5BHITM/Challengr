@@ -24,6 +24,8 @@ struct ContentView: View {
                 ToonMapDemo()
             } else if let demo = ProcessInfo.processInfo.environment["AUDIT_CHALLENGE_DEMO"] {
                 ChallengeDemo(kind: demo)
+            } else if let demo = ProcessInfo.processInfo.environment["AUDIT_RESULT_DEMO"] {
+                ResultDemo(kind: demo)
             } else {
                 content
             }

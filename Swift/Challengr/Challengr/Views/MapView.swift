@@ -667,7 +667,7 @@ struct MapView: View {
 
             case .win:
                 if let data = resultData {
-                    BattleWinView(data: data, ownPlayerName: ownPlayerName) {
+                    BattleResultView(data: data, ownPlayerName: ownPlayerName, ownWins: true) {
                         activeFullScreen = .none   // zurück zur Map
                         Task { await syncCharacterAndUnlocks() }
                     }
@@ -678,7 +678,7 @@ struct MapView: View {
 
             case .lose:
                 if let data = resultData {
-                    BattleLoseView(data: data, ownPlayerName: ownPlayerName) {
+                    BattleResultView(data: data, ownPlayerName: ownPlayerName, ownWins: false) {
                         activeFullScreen = .none   // schließt das Fullscreen-Cover
                         Task { await syncCharacterAndUnlocks() }
                     }

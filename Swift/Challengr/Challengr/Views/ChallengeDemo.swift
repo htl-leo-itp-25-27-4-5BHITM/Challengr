@@ -34,3 +34,34 @@ struct ChallengeDemo: View {
     }
 }
 #endif
+
+#if DEBUG
+import SwiftUI
+
+/// Nur Entwickler-Builds: Ergebnis-Bildschirm ohne Battle (AUDIT_RESULT_DEMO=win|lose|draw|friendly).
+struct ResultDemo: View {
+    let kind: String
+    @State private var round = 0
+
+    var body: some View {
+        BattleResultView(data: data, ownPlayerName: "Basti", ownWins: kind == "win" || kind == "friendly") {
+            round += 1   // "Weiter" spielt die Animation erneut ab
+        }
+        .id(round)
+    }
+
+    private var data: BattleResultData {
+        let ownWins = kind == "win" || kind == "friendly"
+        var d = BattleResultData(
+            winnerName: ownWins ? "Basti" : "Mia", winnerAvatar: "", winnerPointsDelta: kind == "draw" ? 0 : 28,
+            loserName: ownWins ? "Mia" : "Basti", loserAvatar: "", loserPointsDelta: kind == "draw" ? 0 : -20,
+            trashTalk: "Nächstes Mal vielleicht mit Aufwärmen?",
+            metrics: BattleMetrics(sprint: nil, loudness: nil, compass: nil, shake: nil, pushup: nil, reaction: BattleMetricPair(winner: 212, loser: 305)))
+        d.outcome = kind == "draw" ? "DRAW" : "WIN"
+        d.mode = kind == "friendly" ? .friendly : .rankedRealLife
+        d.participants = BattleParticipants(fromId: "a", toId: "b", fromName: "Basti", toName: "Mia",
+                                            fromCharacter: .junge, toCharacter: .maedchen)
+        return d
+    }
+}
+#endif
