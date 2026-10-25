@@ -1,6 +1,6 @@
 # Challengr – Projektstand und Übergabe
 
-Stand: **20. Oktober 2026** · Branch `feature/liga-modus` (auf GitHub) · `main` steht noch auf `7e39882`
+Stand: **25. Oktober 2026** · Branch `feature/liga-modus` (auf GitHub) · `main` steht noch auf `7e39882`
 
 Diese Datei fasst zusammen, worum es geht, was gebaut wurde, wie alles läuft und was offen ist.
 Sie ist zum Weitermachen gedacht – für das Team und für eine neue Claude-Sitzung
@@ -230,6 +230,12 @@ App-Änderungen → `upload-testflight.sh`; intern sofort verfügbar, extern Bui
 
 ## 7. Stolperfallen
 
+- **Pfad-Konflikte im Backend:** Eine Klasse mit `@Path("/api/admin/players")` (Sperren) „schluckt“ alle Pfade darunter – neue Admin-Endpunkte deshalb unter eigenem Pfad (z. B. `/api/admin/corrections/{id}`); Klassen mit `@Path("/api")` nicht mit `/api/admin/...` mischen (→ 404).
+- **Konfig-Defaults:** `${ENV:...}` in `@ConfigProperty(defaultValue=…)` wird **nicht** aufgelöst – solche Werte in `application.properties` setzen.
+- **Dashboard:** CSS-Klasse `error` ist global (roter Kasten) – nicht für Status-Punkte verwenden; bei mehreren gleichzeitigen HTTP-Antworten `markForCheck()` statt `detectChanges()` (sonst NG0100). `package-lock.json` muss zu npm im Build-Container (node:20) passen – nach `npm install` ggf. per `docker run … node:20-alpine npm install --package-lock-only` neu erzeugen.
+- **Challenge-Erklärung (`ChallengeIntroGate`):** zwei getrennte Timer (Auto-Start / Bereit-Countdown) – ein gemeinsamer Timer ließ „Bereit machen“ hängen (Build `2610241107`).
+- **Entwickler-Demos ohne Login (nur Debug):** `AUDIT_TOON_DEMO=1` (Cartoon-Karte), `AUDIT_CHALLENGE_DEMO=reaction|timing|country|compass|shake` (Challenge mit Erklärung). Lokales Test-Backend auf Port **8081** (8080 belegt ein anderes Projekt).
+
 - **„Swift Kopie“ gibt es nicht mehr** (gelöscht am 13.10., in der Git-Historie bis `8ea2877`). Zum Testen mit
   zwei Geräten: TestFlight oder zwei Simulatoren mit verschiedenen Konten.
 - **Nicht committen:** `…/xcuserdata/…/UserInterfaceState.xcuserstate`.
@@ -293,7 +299,13 @@ Demo-Videos: `~/Developer/ChallengrProjekt/Challengr_Demo_1_Liga_und_Friendly.mp
 19. „Dashboard komplett überarbeiten, vor allem Design – mit echten Spielern kann man jetzt Analysen machen“ → Statistik-Endpunkt,
     Tagesaktivität, eigene Diagramme; danach „sieht noch nach KI aus“ → ruhigeres Farbbild ohne Neon/Emojis.
 20. „Kann ich TestFlight-Feedback abhaken?“ → geht bei Apple nicht → Feedback-Seite im Dashboard mit Erledigt-Haken (App Store Connect API),
+21. (20.–21.10.) Ranglisten (Top 10/Freunde/eigener Platz), Feedback-Paket (Freunde per Namen, Karte immer schräg, Rekord, Emotes …), tägliche Aufgaben mit Coins + Beta-Event mit Crash-Test-Dummy, Sounds, Check-in-Orte aus OpenStreetMap, Cartoon-Karte (MapLibre).
+22. (21.10.) Präsentation „Entwicklung seit September“; Beta-Skin-Konzepte (Dummy gewählt).
+23. (24.10.) Dashboard-Ausbau: Backups, Korrekturen mit Protokoll, Status, Quiz, Events, Orte/Heatmap, Ankündigungen; App: Frage melden, Ankündigungs-Banner.
+24. (24.10.) Neue Real-Life-Challenges Länder-Kompass, Reaktions-Test, Zeitgefühl + Erklär-Bildschirm vor jeder Challenge; Fix „Bereit machen hängt“ (Build `2610241214`). WhatsApp-Sticker.
     plus Export als PDF / Markdown-ZIP mit Bildern.
+
+**Material außerhalb des Repos:** Präsentation „Challengr – Entwicklung seit September“: https://claude.ai/artifact/38ZBn5HvMEeupkN5L6ZfDd (privat, über „Teilen“ freigeben). WhatsApp-Sticker (32, zwei Pakete als `.wastickers` + PNG-ZIP): `~/Developer/ChallengrProjekt/Sticker/pakete/` (Skripte zum Neu-Erzeugen lagen nur im Scratchpad – Sticker = Figuren-Renders aus `Character3D/app_modelle/*_full.png` + Arial Rounded Bold, Apple-Emojis nur für privaten Gebrauch). Karten-Konzept und Verlauf-Screenshots: `~/Developer/ChallengrProjekt/Karten_Konzept/`, Beta-Figur-Konzepte: `~/Developer/ChallengrProjekt/BetaSkin_Konzepte/`.
 
 Weitere Doku: `docs/audit/TESTFLIGHT_ANLEITUNG.md` (Handgriffe bis zum öffentlichen Link),
 `docs/audit/TESTFLIGHT_SECURITY_CHECKLIST.md` (Checkliste mit Umsetzungsstand), übrige Audit-Berichte in `docs/audit/`.
