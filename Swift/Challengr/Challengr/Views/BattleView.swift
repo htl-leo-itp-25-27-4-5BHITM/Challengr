@@ -30,6 +30,7 @@ struct BattleView: View {
     @State private var vsFlash = false
     @State private var showEmotePicker = false
     @State private var showStickerPicker = false
+    @ObservedObject private var stickers = StickerCollection.shared
 
     // MARK: - Body (UI-Aufbau)
     var body: some View {
@@ -509,18 +510,31 @@ struct BattleView: View {
                     .transition(.scale(scale: 0.3, anchor: .leading).combined(with: .opacity))
                 }
             }
-            // Sticker-Raster klappt unter den Knöpfen auf, ohne die Leiste zu verschieben
+            // Sticker-Raster klappt unter den Knöpfen auf, ohne die Leiste zu verschieben (nur eigene Sticker)
             .overlay(alignment: .topLeading) {
                 if showStickerPicker {
-                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(54), spacing: 4), count: 5), spacing: 4) {
-                        ForEach(Stickers.all) { sticker in
-                            Button {
-                                onSendEmote(sticker.token)
-                                withAnimation { showStickerPicker = false }
-                            } label: {
-                                StickerImage(sticker: sticker, size: 54)
+                    Group {
+                        if stickers.owned.isEmpty {
+                            Text("Noch keine Sticker – sie stecken in Geschenken von Freunden.")
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .foregroundColor(.white.opacity(0.85))
+                                .frame(width: 220, alignment: .leading)
+                                .padding(6)
+                        } else {
+                            LazyVGrid(columns: Array(repeating: GridItem(.fixed(54), spacing: 4), count: 5), spacing: 4) {
+                                ForEach(stickers.owned) { sticker in
+                                    Button {
+                                        onSendEmote(sticker.token)
+                                        withAnimation { showStickerPicker = false }
+                                    } label: {
+                                        StickerImage(sticker: sticker, size: 54)
+                                            .overlay(alignment: .topTrailing) {
+                                                StickerCountBadge(count: stickers.count(of: sticker.id))
+                                            }
+                                    }
+                                    .accessibilityLabel("Sticker: \(sticker.label), \(stickers.count(of: sticker.id)) übrig")
+                                }
                             }
-                            .accessibilityLabel("Sticker: \(sticker.label)")
                         }
                     }
                     .padding(8)

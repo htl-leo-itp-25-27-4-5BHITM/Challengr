@@ -66,7 +66,7 @@ final class MapFeaturesTests: XCTestCase {
     }
 
     func testStickersMatchTheBackendList() {
-        // Backend: GameSocket.STICKERS (Sticker-ID → Ersatz-Emoji für alte Apps)
+        // Backend: StickerCatalog.FALLBACK (Sticker-ID → Ersatz-Emoji für alte Apps)
         let backend = ["aura": "🔥", "gogogo": "⚡", "1hit": "🥊", "locked": "😤", "mvp": "🏆", "schularbeit": "😴",
                        "vorbei": "💪", "farming": "😎", "skillissue": "😂", "oida": "😤", "minusaura": "😅", "brodachte": "😂",
                        "diskussion": "👑", "baba": "👋", "hue": "🤔", "crazy": "🤯", "1v1": "🥊", "bigbrain": "🧠",
@@ -188,8 +188,8 @@ final class MapRotationTests: XCTestCase {
         XCTAssertEqual(MapRotation.heading(start: 350, turnedDegrees: -40), 30, accuracy: 0.001, "über 360 → 30")
     }
 
-    func testGiftsAndShopAreOffForNow() {
-        XCTAssertFalse(FriendGifts.isEnabled)
+    func testShopIsOffButGiftsAreOn() {
+        XCTAssertTrue(FriendGifts.isEnabled, "seit 04.11.: Geschenke mit Stickern")
         XCTAssertFalse(ShopView.isOpen)
     }
 }

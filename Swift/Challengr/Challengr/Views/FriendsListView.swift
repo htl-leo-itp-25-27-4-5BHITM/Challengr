@@ -103,9 +103,9 @@ struct FriendsListView: View {
                             ) {
                                 Task {
                                     let senderName = giftSenderName(for: gift)
-                                    let claimed = await vm.claimGift(giftId: gift.id, ownPlayerId: ownPlayerId)
-                                    if claimed {
-                                        openedGift = OpenedGiftPresentation(senderName: senderName)
+                                    let result = await vm.claimGift(giftId: gift.id, ownPlayerId: ownPlayerId)
+                                    if result.opened {
+                                        openedGift = OpenedGiftPresentation(senderName: senderName, sticker: result.sticker)
                                     }
                                 }
                             }
@@ -149,7 +149,7 @@ struct FriendsListView: View {
                                 },
                                 onSendGift: {
                                     Task {
-                                        await vm.sendGift(ownPlayerId: ownPlayerId, to: friend.id)
+                                        await vm.sendGift(ownPlayerId: ownPlayerId, to: friend.id, name: friend.name)
                                     }
                                 },
                                 onRemove: {
@@ -190,6 +190,11 @@ struct FriendsListView: View {
                         Text(error)
                             .font(.footnote)
                             .foregroundColor(.challengrRed)
+                    }
+                    if let info = vm.infoText {
+                        Text(info)
+                            .font(.footnote)
+                            .foregroundColor(.challengrGreen)
                     }
 
                     if currentCoordinate == nil {
@@ -317,8 +322,8 @@ struct FriendsListView: View {
             .presentationDetents([.height(220)])
         }
         .sheet(item: $openedGift) { gift in
-            GiftOpenedSheet(senderName: gift.senderName)
-                .presentationDetents([.height(300)])
+            GiftOpenedSheet(senderName: gift.senderName, sticker: gift.sticker)
+                .presentationDetents([.height(gift.sticker == nil ? 300 : 440)])
         }
         .overlay(friendBattleOverlay)
     }
@@ -391,6 +396,7 @@ struct FriendsListView: View {
     private struct OpenedGiftPresentation: Identifiable {
         let id = UUID()
         let senderName: String
+        let sticker: Sticker?
     }
 }
 
@@ -751,9 +757,9 @@ private struct IncomingFriendRequestSheet: View {
     }
 }
 
-/// Geschenke sind vorerst aus (wie der Shop): sie bringen noch nichts, solange Punkte nicht sichtbar sind.
+/// Geschenke an Freunde: eins pro Freund und Tag, drin ist ein zufälliger Sticker für die Sammlung.
 enum FriendGifts {
-    static let isEnabled = false
+    static let isEnabled = true
 }
 
 private struct GiftInboxRow: View {
@@ -804,57 +810,72 @@ private struct GiftInboxRow: View {
 
 private struct GiftOpenedSheet: View {
     let senderName: String
+    let sticker: Sticker?
 
     @Environment(\.dismiss) private var dismiss
-    @State private var animateGift = false
+    @ObservedObject private var collection = StickerCollection.shared
+    @State private var opened = false
 
     var body: some View {
-        VStack(spacing: 18) {
-            Capsule()
-                .fill(Color.black.opacity(0.12))
-                .frame(width: 44, height: 5)
-                .padding(.top, 10)
-
+        VStack(spacing: 14) {
             ZStack {
-                Circle()
-                    .fill(Color(red: 0.73, green: 0.12, blue: 0.20).opacity(0.12))
-                    .frame(width: 110, height: 110)
-                    .scaleEffect(animateGift ? 1.08 : 0.9)
-
+                // Erst wackelt das Geschenk, dann ploppt der Sticker heraus
                 Image(systemName: "gift.fill")
-                    .font(.system(size: 46, weight: .bold))
-                    .foregroundColor(Color(red: 0.73, green: 0.12, blue: 0.20))
-                    .scaleEffect(animateGift ? 1.0 : 0.6)
-                    .rotationEffect(.degrees(animateGift ? 0 : -12))
+                    .font(.system(size: 52, weight: .bold))
+                    .foregroundColor(.challengrRed)
+                    .rotationEffect(.degrees(opened ? 0 : -10))
+                    .scaleEffect(opened && sticker != nil ? 0.2 : 1)
+                    .opacity(opened && sticker != nil ? 0 : 1)
+                if let sticker {
+                    StickerImage(sticker: sticker, size: 170, animated: true)
+                        .shadow(color: .black.opacity(0.4), radius: 10, y: 4)
+                        .scaleEffect(opened ? 1 : 0.2)
+                        .opacity(opened ? 1 : 0)
+                }
             }
-            .animation(.spring(response: 0.45, dampingFraction: 0.62), value: animateGift)
+            .frame(height: sticker == nil ? 90 : 180)
+            .padding(.top, 24)
 
-            Text("Geschenk erhalten")
-                .font(.system(size: 24, weight: .black, design: .rounded))
+            Text(sticker.map { "STICKER „\($0.label.uppercased())“" } ?? "GESCHENK ERHALTEN")
+                .font(.system(size: 20, weight: .black, design: .rounded))
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
 
-            Text("\(senderName) hat dir ein Geschenk geschickt.")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.secondary)
-
-            Button("Schließen") {
-                dismiss()
+            if let sticker {
+                if Stickers.animatedIds.contains(sticker.id) {
+                    Text("SELTEN · BEWEGT SICH")
+                        .font(.system(size: 11, weight: .black, design: .rounded))
+                        .tracking(1.2)
+                        .foregroundColor(.challengrDark)
+                        .padding(.horizontal, 10).padding(.vertical, 4)
+                        .background(Capsule().fill(Color.challengrYellow))
+                }
+                Text("Von \(senderName). Du hast ihn jetzt \(collection.count(of: sticker.id))× – jedes Verschicken braucht einen.")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(GameStyle.secondaryText)
+                    .multilineTextAlignment(.center)
+            } else {
+                Text("\(senderName) hat dir ein Geschenk geschickt.")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(GameStyle.secondaryText)
             }
-            .font(.system(size: 16, weight: .bold))
-            .foregroundColor(.white)
-            .padding(.horizontal, 28)
-            .padding(.vertical, 12)
-            .background(
-                Capsule()
-                    .fill(Color(red: 0.73, green: 0.12, blue: 0.20))
-            )
-            .buttonStyle(.plain)
+
+            Button("Weiter") { dismiss() }
+                .font(.system(size: 16, weight: .black, design: .rounded))
+                .foregroundColor(.challengrDark)
+                .padding(.horizontal, 36)
+                .padding(.vertical, 12)
+                .background(Capsule().fill(Color.challengrYellow))
+                .buttonStyle(.plain)
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20)
-        .background(Color(.systemBackground))
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity)
+        .background(GameStyle.background.ignoresSafeArea())
+        .presentationDragIndicator(.visible)
         .onAppear {
-            animateGift = true
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.55).delay(0.35)) { opened = true }
         }
     }
 }

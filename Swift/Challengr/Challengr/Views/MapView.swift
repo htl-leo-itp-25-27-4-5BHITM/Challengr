@@ -287,6 +287,8 @@ struct MapView: View {
     @State private var requestedFriendIds: Set<String> = []
     /// Eigene Emote-Kurzwahl und für wen das Emote-Fenster offen ist
     @State private var emoteFavorites = EmoteFavorites.load()
+    /// Gesammelte Sticker (jeder Versand verbraucht einen)
+    @ObservedObject private var stickers = StickerCollection.shared
     @State private var emotePickerTarget: PlayerAnnotation? = nil
 
     @State private var showNearbyText = true
@@ -867,6 +869,7 @@ struct MapView: View {
             Task { await loadHotspots() }
             Task { await refreshQuestBadge() }
             Task { await showAnnouncementIfNew() }
+            Task { await StickerCollection.shared.load() }
             trophyRoadLastSeen = TrophyRoadMemory.lastSeen(playerId: ownPlayerId)
             seedInitialZoom()
             friendsInbox.start(playerId: ownPlayerId)
@@ -1194,11 +1197,18 @@ struct MapView: View {
                     // Emote schicken statt gleich herausfordern
                     HStack(spacing: 6) {
                         ForEach(emoteFavorites, id: \.self) { token in
+                            let sticker = Stickers.from(token: token)
+                            let usable = sticker.map { stickers.count(of: $0.id) > 0 } ?? true
                             Button { sendMapEmote(token, to: player) } label: {
                                 EmoteGlyph(token: token, emojiSize: 22, stickerSize: 44)
+                                    .opacity(usable ? 1 : 0.35)
                                     .frame(width: 40, height: 40)
                                     .background(Circle().fill(Color.white.opacity(0.85)))
+                                    .overlay(alignment: .topTrailing) {
+                                        if let sticker { StickerCountBadge(count: stickers.count(of: sticker.id)) }
+                                    }
                             }
+                            .disabled(!usable)
                             .accessibilityLabel("\(Emotes.spokenName(token)) an \(cleanPlayerName(player.title)) senden")
                         }
                         // Alle Emotes + eigene Kurzwahl
@@ -1585,6 +1595,7 @@ struct MapView: View {
     /// Emote an einen Spieler auf der Karte schicken (aus dem Spieler-Popup); token = Emoji oder "stk:<id>".
     private func sendMapEmote(_ token: String, to player: PlayerAnnotation) {
         let event = EmoteEvent(token: token)
+        guard spendSticker(event) else { return }
         socket.sendEmote(toId: player.playerId, emoji: event.emoji, sticker: event.sticker?.id)
         SoundManager.shared.play(.tap)
         ownMapEmote = event
@@ -1598,11 +1609,20 @@ struct MapView: View {
     private func sendBattleEmote(_ token: String, opponentId: String) {
         guard let battleId = currentBattleId else { return }
         let event = EmoteEvent(token: token)
+        guard spendSticker(event) else { return }
         socket.sendEmote(toId: opponentId, emoji: event.emoji, sticker: event.sticker?.id, battleId: battleId)
         ownBattleEmote = event
         DispatchQueue.main.asyncAfter(deadline: .now() + event.visibleSeconds) {
             if ownBattleEmote == event { ownBattleEmote = nil }
         }
+    }
+
+    /// Sticker sind gesammelt: ohne Sticker in der Sammlung nichts schicken, sonst gleich einen abziehen.
+    private func spendSticker(_ event: EmoteEvent) -> Bool {
+        guard let sticker = event.sticker else { return true }
+        guard stickers.count(of: sticker.id) > 0 else { return false }
+        stickers.used(sticker.id)
+        return true
     }
 
     /// Emote von einem anderen Spieler: im Battle über der Gegner-Figur, sonst über seinem Pin.
@@ -2245,6 +2265,15 @@ struct MapView: View {
 
         socket.onEmote = { fromId, event, battleId in
             receiveEmote(from: fromId, event: event, battleId: battleId)
+        }
+
+        socket.onStickerStock = { stickerId, count in
+            StickerCollection.shared.setCount(count, of: stickerId)
+        }
+
+        socket.onGiftReceived = { fromId in
+            guard activeFullScreen == .none else { return }
+            showMapBanner(icon: "gift.fill", text: "\(opponentDisplayName(fromId, battleId: nil)) hat dir ein Geschenk geschickt – öffne es bei den Freunden", seconds: 5)
         }
 
         socket.onBattleUpdatedStatus = { battleId, status in

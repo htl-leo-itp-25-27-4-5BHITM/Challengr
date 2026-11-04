@@ -28,8 +28,10 @@ struct EmotePickerSheet: View {
     let onSend: (String) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var collection = StickerCollection.shared
     @State private var editing = false
     @State private var showStickers = false
+    @State private var showAlbum = false
 
     private let emojiColumns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 6)
     private let stickerColumns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
@@ -52,9 +54,14 @@ struct EmotePickerSheet: View {
             // Aktuelle Kurzwahl
             HStack(spacing: 8) {
                 ForEach(favorites, id: \.self) { token in
+                    let sticker = Stickers.from(token: token)
                     EmoteGlyph(token: token, emojiSize: 24, stickerSize: 48)
+                        .opacity(sticker.map { collection.count(of: $0.id) > 0 } ?? true ? 1 : 0.35)
                         .frame(width: 44, height: 44)
                         .background(Circle().fill(Color.white.opacity(editing ? 0.18 : 0.1)))
+                        .overlay(alignment: .topTrailing) {
+                            if let sticker { StickerCountBadge(count: collection.count(of: sticker.id)) }
+                        }
                         .accessibilityLabel(Emotes.spokenName(token))
                 }
                 Spacer()
@@ -70,11 +77,33 @@ struct EmotePickerSheet: View {
 
             ScrollView(showsIndicators: false) {
                 if showStickers {
-                    LazyVGrid(columns: stickerColumns, spacing: 10) {
-                        ForEach(Stickers.all) { sticker in
-                            cell(sticker.token) {
-                                StickerImage(sticker: sticker, size: 72)
-                                    .frame(maxWidth: .infinity, minHeight: 80)
+                    // Schicken: nur, was man hat; Kurzwahl: alles, was man schon einmal gefunden hat
+                    let list = editing ? Stickers.all.filter { collection.hasFound($0.id) } : collection.owned
+                    VStack(spacing: 10) {
+                        Button { showAlbum = true } label: {
+                            Label("ALBUM \(collection.foundCount)/\(Stickers.all.count)", systemImage: "book.closed.fill")
+                                .font(.system(size: 12, weight: .black, design: .rounded))
+                                .foregroundColor(.challengrYellow)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                        }
+                        .buttonStyle(.plain)
+                        if list.isEmpty {
+                            Text("Noch keine Sticker. Freunde können dir Geschenke schicken – in jedem steckt ein Sticker.")
+                                .font(.footnote)
+                                .foregroundColor(GameStyle.secondaryText)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(14)
+                                .background(RoundedRectangle(cornerRadius: 14).fill(GameStyle.panelFill))
+                        }
+                        LazyVGrid(columns: stickerColumns, spacing: 10) {
+                            ForEach(list) { sticker in
+                                cell(sticker.token) {
+                                    StickerImage(sticker: sticker, size: 72)
+                                        .frame(maxWidth: .infinity, minHeight: 80)
+                                        .overlay(alignment: .topTrailing) {
+                                            StickerCountBadge(count: collection.count(of: sticker.id)).padding(6)
+                                        }
+                                }
                             }
                         }
                     }
@@ -95,6 +124,8 @@ struct EmotePickerSheet: View {
         .background(GameStyle.background.ignoresSafeArea())
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .sheet(isPresented: $showAlbum) { StickerAlbumView() }
+        .task { await collection.load() }
     }
 
     /// Umschalter "Emojis | Sticker" im Spiel-Look

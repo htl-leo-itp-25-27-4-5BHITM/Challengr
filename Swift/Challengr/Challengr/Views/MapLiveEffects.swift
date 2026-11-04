@@ -262,7 +262,7 @@ struct Sticker: Hashable, Identifiable {
     }
 }
 
-/// Sticker, die man schicken kann (muss zur Liste im Backend passen: GameSocket.STICKERS).
+/// Sticker, die man schicken kann (muss zur Liste im Backend passen: StickerCatalog.FALLBACK).
 enum Stickers {
     static let all: [Sticker] = [
         Sticker(id: "aura", label: "+1000 Aura", fallbackEmoji: "🔥"),

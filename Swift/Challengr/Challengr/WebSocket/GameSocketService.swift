@@ -64,6 +64,10 @@ final class GameSocketService: ObservableObject {
     var onBattleResult: ((BattleResultData) -> Void)?
     /// Emote von einem anderen Spieler: fromId, Emoji/Sticker, battleId (nil = auf der Karte)
     var onEmote: ((String, EmoteEvent, Int64?) -> Void)?
+    /// Neuer Stand eines Stickers nach dem Verschicken: stickerId, wie viele noch übrig sind
+    var onStickerStock: ((String, Int) -> Void)?
+    /// Ein Freund hat ein Geschenk geschickt: fromId
+    var onGiftReceived: ((String) -> Void)?
     /// Quiz-Show (Liga Wissen)
     var onQuizQuestion: ((QuizQuestion) -> Void)?
     var onQuizRoundResult: ((QuizRoundResult) -> Void)?
@@ -635,6 +639,16 @@ final class GameSocketService: ObservableObject {
                 DispatchQueue.main.async {
                     self.onEmote?(fromId, event, battleId)
                 }
+            }
+
+            if type == "sticker-stock", let sticker = json["sticker"] as? String {
+                let count = (json["count"] as? NSNumber)?.intValue ?? 0
+                DispatchQueue.main.async { self.onStickerStock?(sticker, count) }
+            }
+
+            if type == "gift-received" {
+                let fromId = parsePlayerId(json["fromPlayerId"])
+                DispatchQueue.main.async { self.onGiftReceived?(fromId) }
             }
 
             if type == "battle-rejected" {

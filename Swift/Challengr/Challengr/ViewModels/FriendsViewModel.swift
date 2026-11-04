@@ -7,6 +7,8 @@ final class FriendsViewModel: ObservableObject {
     @Published var friends: [PlayerDTO] = []
     @Published var nearbyPlayers: [PlayerDTO] = []
     @Published var incomingGifts: [FriendGiftDTO] = []
+    /// Kurze Erfolgsmeldung (z. B. Geschenk verschickt)
+    @Published var infoText: String? = nil
     @Published var pendingOutgoingToPlayerIds: Set<String> = []
     @Published var isLoadingNearby = false
     @Published var errorText: String? = nil
@@ -134,27 +136,34 @@ final class FriendsViewModel: ObservableObject {
         }
     }
 
-    func sendGift(ownPlayerId: String, to playerId: String) async {
+    func sendGift(ownPlayerId: String, to playerId: String, name: String) async {
         errorText = nil
+        infoText = nil
         do {
             try await friendsService.sendGift(from: ownPlayerId, to: playerId)
             SoundManager.shared.play(.giftSent)
+            infoText = "Geschenk an \(name) geschickt – drin ist ein zufälliger Sticker."
             await refreshIfPossible()
+        } catch GiftError.alreadySentToday {
+            errorText = GiftError.alreadySentToday.errorDescription
         } catch {
             errorText = "Konnte Geschenk nicht senden: \(error.localizedDescription)"
         }
     }
 
-    func claimGift(giftId: Int64, ownPlayerId: String) async -> Bool {
+    /// Geschenk öffnen: der Sticker darin kommt in die Sammlung
+    func claimGift(giftId: Int64, ownPlayerId: String) async -> (opened: Bool, sticker: Sticker?) {
         errorText = nil
         do {
-            try await friendsService.claimGift(giftId: giftId, playerId: ownPlayerId)
+            let stickerId = try await friendsService.claimGift(giftId: giftId, playerId: ownPlayerId)
             SoundManager.shared.play(.giftClaimed)
+            let sticker = Stickers.byId(stickerId)
+            if let sticker { StickerCollection.shared.received(sticker.id) }
             await refreshIfPossible()
-            return true
+            return (true, sticker)
         } catch {
             errorText = "Konnte Geschenk nicht öffnen: \(error.localizedDescription)"
-            return false
+            return (false, nil)
         }
     }
 

@@ -29,6 +29,14 @@ struct FriendGiftDTO: Decodable, Identifiable {
     let status: String
     let createdAt: String
     let claimedAt: String?
+    /// Sticker, der drin war (erst nach dem Öffnen)
+    var stickerId: String? = nil
+}
+
+enum GiftError: LocalizedError {
+    case alreadySentToday
+
+    var errorDescription: String? { "Heute hast du diesem Freund schon ein Geschenk geschickt – morgen wieder." }
 }
 
 final class FriendsService {
@@ -142,6 +150,9 @@ final class FriendsService {
         )
 
         let (_, response) = try await API.data(for: request)
+        if let http = response as? HTTPURLResponse, http.statusCode == 429 {
+            throw GiftError.alreadySentToday
+        }
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
             throw URLError(.badServerResponse)
         }
@@ -156,7 +167,8 @@ final class FriendsService {
         return try JSONDecoder().decode([FriendGiftDTO].self, from: data)
     }
 
-    func claimGift(giftId: Int64, playerId: String) async throws {
+    /// Öffnet das Geschenk; gibt den Sticker zurück, der drin war
+    func claimGift(giftId: Int64, playerId: String) async throws -> String? {
         var components = URLComponents(
             url: baseURL
                 .appendingPathComponent("gifts")
@@ -165,14 +177,15 @@ final class FriendsService {
             resolvingAgainstBaseURL: false
         )!
         components.queryItems = [URLQueryItem(name: "playerId", value: playerId)]
-        guard let url = components.url else { return }
+        guard let url = components.url else { return nil }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
 
-        let (_, response) = try await API.data(for: request)
+        let (data, response) = try await API.data(for: request)
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
             throw URLError(.badServerResponse)
         }
+        return (try? JSONDecoder().decode(FriendGiftDTO.self, from: data))?.stickerId
     }
 }
