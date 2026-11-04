@@ -1,44 +1,33 @@
 # Text für TestFlight → „Was soll getestet werden?“
 
 Für App Store Connect → TestFlight → Build → *Testinformationen* (max. 4000 Zeichen).
-Stand: Build `2610241022` (24.10.2026). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
+Stand: Build `2611041538` (04.11.2026). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
 
 ---
 
 **Neu in diesem Update**
 
-🌍 **3 neue Real-Life-Challenges:** Länder-Kompass (zeig in die Richtung eines Landes), Reaktions-Test (tippe, sobald es grün wird) und Zeitgefühl (stoppe nach genau X Sekunden – ohne Uhr).
+🔥 **Sticker!** Schick anderen Spielern Sticker mit den Challengr-Figuren – auf der Karte (Spieler antippen → „+“ → „Sticker“) und im Battle (weißer Knopf neben dem Smiley). Sechs davon bewegen sich sogar.
 
-📋 **Vor jeder Challenge steht jetzt kurz erklärt, was zu tun ist** – und es geht erst los, wenn du bereit bist.
+🎁 **Geschenke sind zurück – und in jedem steckt ein Sticker.** Schick jedem Freund einmal am Tag ein Geschenk: Profilbild → „Freunde“ → rotes Geschenk beim Freund. Beim Öffnen bekommst du einen zufälligen Sticker. Bewegte Sticker sind selten!
 
-🚩 **Quizfrage melden:** Stimmt eine Antwort nicht oder ist eine Frage unklar? Tippe auf die kleine Fahne an der Frage – wir schauen sie uns an.
+📒 **Sammeln:** Jeder Sticker lässt sich einmal verschicken, danach ist er weg – sammle also ruhig doppelt und dreifach. Im **Sticker-Album** („Album“ im Sticker-Tab) siehst du, welche du schon hast und welche noch fehlen. Zum Start bekommst du 3 Sticker geschenkt.
 
-📣 Neuigkeiten (z. B. neue Events) siehst du ab jetzt als Hinweis beim Öffnen der App.
-
-📍 **Check-in-Punkte überall:** Parks, Museen, Brunnen, Bibliotheken und Plätze in deiner Gegend sind jetzt Check-in-Punkte – nicht mehr nur die Schule. Geh hin, check ein und hol dir Coins (bis zu 5 Orte pro Tag). Das hilft auch beim Crash-Test-Event!
-
-🗺️ **Neue Cartoon-Karte!** Die Karte ist jetzt im Spiel-Look: bunte 3D-Häuser, kräftige Wiesen und Straßen mit Kontur – passend zu den Figuren. Lieber die alte Karte? Einstellungen → Karte → „Cartoon-Karte“ aus.
-
-🎨 **Kompass und Lade-Screen** im Challengr-Stil.
-
-🏆 **Aufgeräumtes Menü:** Die Trophy Road öffnest du über deine Trophäen oben links – ein roter Punkt zeigt dir, wenn du einen neuen Rang erreicht hast. Die **Rangliste** findest du jetzt direkt in der Trophy Road.
+🏆 **Neue Siegerehrung:** Nach jedem Battle gibt's eine 3D-Siegerehrung mit Podest, Pokal und Konfetti – und eine Regenwolke für den Verlierer.
 
 **Schon da:**
 
-✅ **Tägliche Aufgaben:** Münze → „Aufgaben“. Jeden Tag 3 neue Aufgaben, jede bringt **Challengr Coins** für den Shop, der bald öffnet.
+🤖 **Nur in der Beta: das Crash-Test-Event!** Schaffst du alle 6 Challenges unter „Events“ bis 30.11., bekommst du den **Crash-Test-Dummy** als Figur – nach der Beta nie wieder.
 
-🤖 **Nur in der Beta: das Crash-Test-Event!** Unter „Events“ findest du 6 Challenges. Schaffst du alle bis 30.11., bekommst du den **Crash-Test-Dummy** als Figur – nach der Beta nie wieder.
+🌍 Real-Life-Challenges Länder-Kompass, Reaktions-Test und Zeitgefühl (vorher kurz erklärt), 🚩 Quizfragen melden über die Fahne, 📍 Check-in-Punkte in deiner Gegend (bis zu 5 pro Tag), ✅ tägliche Aufgaben mit Challengr Coins, 🗺️ Cartoon-Karte (die alte gibt's unter Einstellungen → Karte).
 
-🔍 Freunde per Namen suchen oder direkt auf der Karte hinzufügen, 24 Emotes mit eigener Kurzwahl, dein Rekord auf der Trophy Road.
-
-**Bisher schon drin:** Liga mit Quiz-Show und Real-Life-Challenges, Trophy Road mit Rang-Figuren, über 200 Quizfragen, Karte drehen und zoomen, Tag und Nacht auf der Karte, Namen ändern, angemeldet bleiben. Der Shop und die Geschenke sind vorerst pausiert.
+**Bisher schon drin:** Liga mit Quiz-Show und Real-Life-Challenges, Trophy Road mit Rang-Figuren und Rangliste, über 200 Quizfragen, Freunde per Namen suchen, 24 Emotes mit eigener Kurzwahl, Tag und Nacht auf der Karte, Namen ändern, angemeldet bleiben. Der Shop ist vorerst pausiert.
 
 **Bitte testen**
-- Findest du in deiner Gegend Check-in-Punkte? Passen die Orte – oder ist etwas Unpassendes dabei? (Dann bitte Screenshot!)
-- Hol dir deine Tagesaufgaben ab: Stimmen die Coins?
-- Schau ins Crash-Test-Event: Zählt dein Fortschritt richtig mit?
-- Öffne die Rangliste in der Trophy Road: Stimmt dein Platz?
-- Wie gefällt dir die neue Cartoon-Karte? Ruckelt etwas beim Drehen oder Zoomen? Ist alles gut lesbar, auch abends?
-- Wird dein Handy mit der neuen Karte wärmer oder leert sich der Akku schneller?
+- Schick einem Freund ein Geschenk und lass dir eins schicken: Kommt es an, und springt beim Öffnen ein Sticker raus?
+- Verschick Sticker auf der Karte und im Battle: Sieht der andere sie? Geht deine Anzahl um eins runter?
+- Stimmt dein Sticker-Album?
+- Kannst du die Sticker gut lesen, auch auf der Karte?
+- Wie gefällt dir die neue Siegerehrung? Ruckelt etwas?
 
 Fehler oder Ideen? Mach einen Screenshot und schick ihn über TestFlight („Feedback senden“).
