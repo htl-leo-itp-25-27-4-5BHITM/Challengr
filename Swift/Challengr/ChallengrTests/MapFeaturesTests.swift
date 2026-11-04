@@ -1,5 +1,6 @@
 import XCTest
 import CoreLocation
+import UIKit
 @testable import Challengr
 
 /// Karten-Menü, Hotspot und Emotes.
@@ -48,9 +49,10 @@ final class MapFeaturesTests: XCTestCase {
     func testEmoteMessageIsParsed() async {
         let socket = GameSocketService(playerId: "me")
         let exp = expectation(description: "emote")
-        socket.onEmote = { from, emoji, battleId in
+        socket.onEmote = { from, event, battleId in
             XCTAssertEqual(from, "a")
-            XCTAssertEqual(emoji, "🔥")
+            XCTAssertEqual(event.emoji, "🔥")
+            XCTAssertNil(event.sticker)
             XCTAssertEqual(battleId, 7)
             exp.fulfill()
         }
@@ -60,6 +62,60 @@ final class MapFeaturesTests: XCTestCase {
 
     func testSameEmojiTwiceIsANewEvent() {
         XCTAssertNotEqual(EmoteEvent(emoji: "🔥"), EmoteEvent(emoji: "🔥"), "zweimal 🔥 ploppt zweimal auf")
+    }
+
+    func testStickersMatchTheBackendList() {
+        // Backend: GameSocket.STICKERS (Sticker-ID → Ersatz-Emoji für alte Apps)
+        let backend = ["aura": "🔥", "gogogo": "⚡", "1hit": "🥊", "locked": "😤", "mvp": "🏆", "schularbeit": "😴",
+                       "vorbei": "💪", "farming": "😎", "skillissue": "😂", "oida": "😤", "minusaura": "😅", "brodachte": "😂",
+                       "diskussion": "👑", "baba": "👋", "hue": "🤔", "crazy": "🤯", "1v1": "🥊", "bigbrain": "🧠",
+                       "zauber": "⚡", "naechste": "👀"]
+        XCTAssertEqual(Dictionary(uniqueKeysWithValues: Stickers.all.map { ($0.id, $0.fallbackEmoji) }), backend)
+        XCTAssertEqual(Stickers.all.first?.id, "aura", "Reihenfolge wie in der Übersicht")
+        for sticker in Stickers.all {
+            XCTAssertTrue(Emotes.all.contains(sticker.fallbackEmoji), sticker.id)
+            XCTAssertNotNil(UIImage(named: sticker.assetName), "Bild \(sticker.assetName) fehlt")
+        }
+    }
+
+    func testStickerMessageIsParsed() async {
+        let socket = GameSocketService(playerId: "me")
+        let exp = expectation(description: "sticker")
+        socket.onEmote = { from, event, battleId in
+            XCTAssertEqual(from, "a")
+            XCTAssertEqual(event.sticker?.id, "oida")
+            XCTAssertEqual(event.emoji, "😤")
+            XCTAssertNil(battleId)
+            exp.fulfill()
+        }
+        socket.handleIncoming(text: #"{"type":"emote","fromId":"a","emoji":"😤","sticker":"oida","battleId":null}"#)
+        await fulfillment(of: [exp], timeout: 2)
+    }
+
+    func testUnknownStickerFallsBackToTheEmoji() async {
+        // neuerer Server mit Stickern, die diese App-Version noch nicht hat
+        let socket = GameSocketService(playerId: "me")
+        let exp = expectation(description: "fallback")
+        socket.onEmote = { _, event, _ in
+            XCTAssertNil(event.sticker)
+            XCTAssertEqual(event.emoji, "🎉")
+            exp.fulfill()
+        }
+        socket.handleIncoming(text: #"{"type":"emote","fromId":"a","emoji":"🎉","sticker":"neu-im-update","battleId":null}"#)
+        await fulfillment(of: [exp], timeout: 2)
+    }
+
+    func testEmoteTokens() {
+        let sticker = EmoteEvent(token: "stk:aura")
+        XCTAssertEqual(sticker.sticker?.id, "aura")
+        XCTAssertEqual(sticker.emoji, "🔥", "Ersatz-Emoji geht mit")
+        XCTAssertEqual(sticker.visibleSeconds, Stickers.visibleSeconds)
+        let emoji = EmoteEvent(token: "👋")
+        XCTAssertNil(emoji.sticker)
+        XCTAssertEqual(emoji.visibleSeconds, Emotes.visibleSeconds)
+        XCTAssertNil(Stickers.from(token: "stk:gibtsnicht"))
+        XCTAssertEqual(Emotes.spokenName("stk:oida"), "Sticker: Oida")
+        XCTAssertEqual(Emotes.spokenName("🔥"), "🔥")
     }
 }
 

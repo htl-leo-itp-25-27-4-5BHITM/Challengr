@@ -30,4 +30,15 @@ final class LeaderboardAndEmoteTests: XCTestCase {
         EmoteFavorites.save(["😎", "👋", "🔥", "😤"], defaults: defaults)
         XCTAssertEqual(EmoteFavorites.load(defaults: defaults), ["😎", "👋", "🔥", "😤"])
     }
+
+    func testEmoteFavoritesCanHoldStickers() {
+        let defaults = UserDefaults(suiteName: "emote-test-\(UUID())")!
+        let mixed = EmoteFavorites.adding("stk:oida", to: ["👋", "stk:aura", "🔥", "😤"])
+        XCTAssertEqual(mixed, ["stk:oida", "👋", "stk:aura", "🔥"])
+        EmoteFavorites.save(mixed, defaults: defaults)
+        XCTAssertEqual(EmoteFavorites.load(defaults: defaults), mixed)
+        // Sticker, den es nicht (mehr) gibt → wieder die Standard-Kurzwahl
+        EmoteFavorites.save(["stk:gibtsnicht", "👋", "🔥", "😤"], defaults: defaults)
+        XCTAssertEqual(EmoteFavorites.load(defaults: defaults), Emotes.map)
+    }
 }

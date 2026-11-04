@@ -13,7 +13,7 @@ struct BattleView: View {
     /// Zuletzt gesendetes eigenes Emote und zuletzt empfangenes vom Gegner (Blasen über den Figuren).
     var ownEmote: EmoteEvent? = nil
     var opponentEmote: EmoteEvent? = nil
-    /// nil = keine Emotes (z.B. Vorschau)
+    /// nil = keine Emotes (z.B. Vorschau); bekommt ein Emoji oder einen Sticker als "stk:<id>"
     var onSendEmote: ((String) -> Void)? = nil
     let onClose: () -> Void
     let onSurrender: () -> Void
@@ -29,6 +29,7 @@ struct BattleView: View {
     @State private var vsAppeared = false
     @State private var vsFlash = false
     @State private var showEmotePicker = false
+    @State private var showStickerPicker = false
 
     // MARK: - Body (UI-Aufbau)
     var body: some View {
@@ -449,13 +450,16 @@ struct BattleView: View {
         }
     }
 
-    /// Emoji-Button links neben dem VS – klappt die Emote-Auswahl auf.
+    /// Emoji- und Sticker-Button links neben dem VS – klappen die Emote-Auswahl auf.
     @ViewBuilder
     private var emoteControl: some View {
         if let onSendEmote {
             HStack(spacing: 6) {
                 Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { showEmotePicker.toggle() }
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                        showEmotePicker.toggle()
+                        showStickerPicker = false
+                    }
                 } label: {
                     Image(systemName: showEmotePicker ? "xmark" : "face.smiling.inverse")
                         .font(.system(size: 20, weight: .bold))
@@ -465,6 +469,27 @@ struct BattleView: View {
                         .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
                 }
                 .accessibilityLabel(showEmotePicker ? "Emotes schließen" : "Emote senden")
+
+                if !showEmotePicker {
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { showStickerPicker.toggle() }
+                    } label: {
+                        Group {
+                            if showStickerPicker {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 20, weight: .bold))
+                                    .foregroundColor(.challengrDark)
+                            } else {
+                                StickerImage(sticker: Stickers.all[0], size: 42)
+                            }
+                        }
+                        .frame(width: 44, height: 44)
+                        .background(Circle().fill(showStickerPicker ? Color.challengrYellow : Color.white))
+                        .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
+                    }
+                    .accessibilityLabel(showStickerPicker ? "Sticker schließen" : "Sticker senden")
+                    .transition(.scale.combined(with: .opacity))
+                }
 
                 if showEmotePicker {
                     HStack(spacing: 2) {
@@ -482,6 +507,29 @@ struct BattleView: View {
                     .background(Capsule().fill(Color.white))
                     .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
                     .transition(.scale(scale: 0.3, anchor: .leading).combined(with: .opacity))
+                }
+            }
+            // Sticker-Raster klappt unter den Knöpfen auf, ohne die Leiste zu verschieben
+            .overlay(alignment: .topLeading) {
+                if showStickerPicker {
+                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(54), spacing: 4), count: 5), spacing: 4) {
+                        ForEach(Stickers.all) { sticker in
+                            Button {
+                                onSendEmote(sticker.token)
+                                withAnimation { showStickerPicker = false }
+                            } label: {
+                                StickerImage(sticker: sticker, size: 54)
+                            }
+                            .accessibilityLabel("Sticker: \(sticker.label)")
+                        }
+                    }
+                    .padding(8)
+                    .background(RoundedRectangle(cornerRadius: 18).fill(Color.challengrDark.opacity(0.96)))
+                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.15), lineWidth: 1))
+                    .shadow(color: .black.opacity(0.45), radius: 10, y: 4)
+                    .fixedSize()
+                    .offset(y: 52)
+                    .transition(.scale(scale: 0.3, anchor: .topLeading).combined(with: .opacity))
                 }
             }
             .padding(.leading, 10)

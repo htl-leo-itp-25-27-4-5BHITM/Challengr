@@ -62,8 +62,8 @@ final class GameSocketService: ObservableObject {
     }
     
     var onBattleResult: ((BattleResultData) -> Void)?
-    /// Emote von einem anderen Spieler: fromId, emoji, battleId (nil = auf der Karte)
-    var onEmote: ((String, String, Int64?) -> Void)?
+    /// Emote von einem anderen Spieler: fromId, Emoji/Sticker, battleId (nil = auf der Karte)
+    var onEmote: ((String, EmoteEvent, Int64?) -> Void)?
     /// Quiz-Show (Liga Wissen)
     var onQuizQuestion: ((QuizQuestion) -> Void)?
     var onQuizRoundResult: ((QuizRoundResult) -> Void)?
@@ -336,8 +336,10 @@ final class GameSocketService: ObservableObject {
     }
     
     /// Emote an einen Spieler: im Battle (battleId) an den Gegner, sonst an den angetippten Spieler auf der Karte.
-    func sendEmote(toId: String, emoji: String, battleId: Int64? = nil) {
+    /// Bei einem Sticker bleibt `emoji` als Ersatz für alte App-Versionen drin.
+    func sendEmote(toId: String, emoji: String, sticker: String? = nil, battleId: Int64? = nil) {
         var payload: [String: Any] = ["type": "send-emote", "toId": toId, "emoji": emoji]
+        if let sticker { payload["sticker"] = sticker }
         if let battleId { payload["battleId"] = battleId }
         send(json: payload)
     }
@@ -628,8 +630,10 @@ final class GameSocketService: ObservableObject {
                 let emoji = json["emoji"] as? String ?? ""
                 let battleId = (json["battleId"] as? NSNumber)?.int64Value
                 guard !emoji.isEmpty else { return }
+                // Sticker, den diese App-Version nicht kennt → einfach das Ersatz-Emoji zeigen
+                let event = EmoteEvent(emoji: emoji, sticker: Stickers.byId(json["sticker"] as? String))
                 DispatchQueue.main.async {
-                    self.onEmote?(fromId, emoji, battleId)
+                    self.onEmote?(fromId, event, battleId)
                 }
             }
 

@@ -102,10 +102,10 @@ enum MapPlayerFilter {
 }
 
 /// Pin eines anderen Spielers: wippt leicht im eigenen Takt, ploppt beim Erscheinen auf
-/// und zeigt ab und zu eine Emoji-Blase.
+/// und zeigt ab und zu eine Emoji-Blase oder einen Sticker.
 struct LivelyPin<Content: View>: View {
     let seed: String
-    var bubble: String? = nil
+    var bubble: EmoteEvent? = nil
     /// Figuren-Pins bewegen sich schon selbst
     var bobs = true
     @ViewBuilder let content: Content
@@ -137,16 +137,26 @@ struct LivelyPin<Content: View>: View {
             .offset(y: bob)
             .overlay(alignment: .top) {
                 if let bubble {
-                    Text(bubble)
-                        .font(.system(size: 18))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Capsule().fill(.white))
-                        .overlay(Capsule().stroke(Color.challengrBlack.opacity(0.15), lineWidth: 1))
-                        .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
-                        .offset(y: (bobs ? -40 : -24) + bob)
-                        .transition(.scale(scale: 0.3, anchor: .bottom).combined(with: .opacity))
-                        .allowsHitTesting(false)
+                    Group {
+                        if let sticker = bubble.sticker {
+                            // groß genug zum Lesen; wächst nach oben, Unterkante wie bei der Emoji-Blase
+                            StickerImage(sticker: sticker, size: 84)
+                                .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+                                .frame(height: 30, alignment: .bottom)
+                        } else {
+                            Text(bubble.emoji)
+                                .font(.system(size: 18))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Capsule().fill(.white))
+                                .overlay(Capsule().stroke(Color.challengrBlack.opacity(0.15), lineWidth: 1))
+                                .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
+                        }
+                    }
+                    .id(bubble.id)
+                    .offset(y: (bobs ? -40 : -24) + bob)
+                    .transition(.scale(scale: 0.3, anchor: .bottom).combined(with: .opacity))
+                    .allowsHitTesting(false)
                 }
             }
     }
@@ -223,29 +233,141 @@ enum Emotes {
     static let map = ["👋", "🔥", "😤", "💪"]
     /// Wie lange eine Emote-Blase sichtbar bleibt.
     static let visibleSeconds: Double = 2.5
+
+    /// Für VoiceOver: "🔥" bzw. "Sticker: Oida"
+    static func spokenName(_ token: String) -> String {
+        Stickers.from(token: token).map { "Sticker: \($0.label)" } ?? token
+    }
 }
 
-/// Ein angezeigtes Emote; die id sorgt dafür, dass dasselbe Emoji zweimal hintereinander neu aufploppt.
+/// Sticker mit Figuren aus dem Fight-Video (Bilder im Asset-Katalog unter "Sticker").
+struct Sticker: Hashable, Identifiable {
+    let id: String
+    let label: String
+    /// Was alte App-Versionen statt des Stickers zeigen (setzt der Server)
+    let fallbackEmoji: String
+
+    var assetName: String { "Sticker_\(id)" }
+    /// So steht der Sticker in der Kurzwahl neben den Emojis
+    var token: String { Stickers.tokenPrefix + id }
+}
+
+/// Sticker, die man schicken kann (muss zur Liste im Backend passen: GameSocket.STICKERS).
+enum Stickers {
+    static let all: [Sticker] = [
+        Sticker(id: "aura", label: "+1000 Aura", fallbackEmoji: "🔥"),
+        Sticker(id: "gogogo", label: "Gogogo", fallbackEmoji: "⚡"),
+        Sticker(id: "1hit", label: "1 Hit", fallbackEmoji: "🥊"),
+        Sticker(id: "locked", label: "Locked in", fallbackEmoji: "😤"),
+        Sticker(id: "mvp", label: "MVP", fallbackEmoji: "🏆"),
+        Sticker(id: "schularbeit", label: "Nach der Schularbeit", fallbackEmoji: "😴"),
+        Sticker(id: "vorbei", label: "Noch nicht vorbei", fallbackEmoji: "💪"),
+        Sticker(id: "farming", label: "Aura Farming", fallbackEmoji: "😎"),
+        Sticker(id: "skillissue", label: "Skill Issue", fallbackEmoji: "😂"),
+        Sticker(id: "oida", label: "Oida", fallbackEmoji: "😤"),
+        Sticker(id: "minusaura", label: "-1000 Aura", fallbackEmoji: "😅"),
+        Sticker(id: "brodachte", label: "Bro dachte", fallbackEmoji: "😂"),
+        Sticker(id: "diskussion", label: "Diskussion beendet", fallbackEmoji: "👑"),
+        Sticker(id: "baba", label: "Baba", fallbackEmoji: "👋"),
+        Sticker(id: "hue", label: "Hü? Nie gsehn", fallbackEmoji: "🤔"),
+        Sticker(id: "crazy", label: "Das crazy", fallbackEmoji: "🤯"),
+        Sticker(id: "1v1", label: "1v1 mich", fallbackEmoji: "🥊"),
+        Sticker(id: "bigbrain", label: "Big Brain", fallbackEmoji: "🧠"),
+        Sticker(id: "zauber", label: "Lernen? Ich zauber", fallbackEmoji: "⚡"),
+        Sticker(id: "naechste", label: "Wer ist der Nächste?", fallbackEmoji: "👀"),
+    ]
+    static let tokenPrefix = "stk:"
+    /// Sticker bleiben etwas länger stehen als Emojis
+    static let visibleSeconds: Double = 3
+
+    static func byId(_ id: String?) -> Sticker? {
+        all.first { $0.id == id }
+    }
+
+    /// "stk:aura" → Sticker; Emojis und unbekannte Sticker → nil
+    static func from(token: String) -> Sticker? {
+        guard token.hasPrefix(tokenPrefix) else { return nil }
+        return byId(String(token.dropFirst(tokenPrefix.count)))
+    }
+}
+
+/// Ein angezeigtes Emote (Emoji oder Sticker); die id sorgt dafür, dass dasselbe Emote zweimal hintereinander neu aufploppt.
 struct EmoteEvent: Equatable {
     let id = UUID()
     let emoji: String
+    var sticker: Sticker? = nil
+
+    var visibleSeconds: Double { sticker == nil ? Emotes.visibleSeconds : Stickers.visibleSeconds }
 }
 
-/// Sprechblase mit Emote über einer Figur (Battle).
+extension EmoteEvent {
+    /// Aus Auswahl oder Kurzwahl: Emoji oder "stk:<id>"
+    init(token: String) {
+        if let sticker = Stickers.from(token: token) {
+            self.init(emoji: sticker.fallbackEmoji, sticker: sticker)
+        } else {
+            self.init(emoji: token)
+        }
+    }
+}
+
+/// Sticker-Bild (hat schon einen weißen Rand, braucht keine Blase).
+struct StickerImage: View {
+    let sticker: Sticker
+    var size: CGFloat
+
+    var body: some View {
+        Image(sticker.assetName)
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .accessibilityLabel("Sticker: \(sticker.label)")
+    }
+}
+
+/// Emoji oder Sticker in Kurzwahl und Auswahl ("🔥" oder "stk:aura").
+struct EmoteGlyph: View {
+    let token: String
+    var emojiSize: CGFloat = 22
+    var stickerSize: CGFloat = 40
+
+    var body: some View {
+        if let sticker = Stickers.from(token: token) {
+            StickerImage(sticker: sticker, size: stickerSize)
+        } else {
+            Text(token).font(.system(size: emojiSize))
+        }
+    }
+}
+
+/// Sprechblase mit Emote über einer Figur (Battle, eigener Pin auf der Karte).
+/// Sticker stehen ohne Kreis und wachsen nach oben – die Unterkante bleibt dort, wo die Emoji-Blase endet.
 struct EmoteBubble: View {
     let event: EmoteEvent?
+    var stickerSize: CGFloat = 104
+
+    /// Höhe der Emoji-Blase (34 pt Emoji + Rand)
+    private static let emojiBubbleHeight: CGFloat = 60
 
     var body: some View {
         ZStack {
             if let event {
-                Text(event.emoji)
-                    .font(.system(size: 34))
-                    .padding(10)
-                    .background(Circle().fill(.white))
-                    .overlay(Circle().stroke(Color.challengrDark.opacity(0.2), lineWidth: 1))
-                    .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
-                    .id(event.id)
-                    .transition(.scale(scale: 0.2, anchor: .bottom).combined(with: .opacity))
+                Group {
+                    if let sticker = event.sticker {
+                        StickerImage(sticker: sticker, size: stickerSize)
+                            .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
+                            .frame(height: Self.emojiBubbleHeight, alignment: .bottom)
+                    } else {
+                        Text(event.emoji)
+                            .font(.system(size: 34))
+                            .padding(10)
+                            .background(Circle().fill(.white))
+                            .overlay(Circle().stroke(Color.challengrDark.opacity(0.2), lineWidth: 1))
+                            .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
+                    }
+                }
+                .id(event.id)
+                .transition(.scale(scale: 0.2, anchor: .bottom).combined(with: .opacity))
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.55), value: event)

@@ -90,8 +90,8 @@ struct MapView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     // Lebendige Karte: Emoji-Blasen über Spielern und "neu in der Nähe"-Hinweise
-    /// Echte Emotes anderer Spieler auf der Karte (playerId → Emoji)
-    @State private var pinBubbles: [String: String] = [:]
+    /// Echte Emotes anderer Spieler auf der Karte (playerId → Emoji/Sticker)
+    @State private var pinBubbles: [String: EmoteEvent] = [:]
     /// Eigenes zuletzt gesendetes Emote (Karte)
     @State private var ownMapEmote: EmoteEvent? = nil
     /// Emotes im laufenden Battle
@@ -435,8 +435,8 @@ struct MapView: View {
                 }
         .overlay(playerPopupOverlay)
         .sheet(item: $emotePickerTarget) { player in
-            EmotePickerSheet(favorites: $emoteFavorites) { emoji in
-                sendMapEmote(emoji, to: player)
+            EmotePickerSheet(favorites: $emoteFavorites) { token in
+                sendMapEmote(token, to: player)
             }
         }
         .onChange(of: showPlayerPopup) { _, shown in
@@ -963,7 +963,8 @@ struct MapView: View {
             sonar: true,
             seed: ownPlayerId
         )
-        .overlay(alignment: .top) { EmoteBubble(event: ownMapEmote).scaleEffect(0.7).offset(y: -30) }
+        // Sticker × 0.7 ≈ 84 pt wie über fremden Pins
+        .overlay(alignment: .top) { EmoteBubble(event: ownMapEmote, stickerSize: 120).scaleEffect(0.7).offset(y: -30) }
     }
 
     private func hotspotPin(_ hotspot: HotspotDTO) -> some View {
@@ -1192,14 +1193,13 @@ struct MapView: View {
 
                     // Emote schicken statt gleich herausfordern
                     HStack(spacing: 6) {
-                        ForEach(emoteFavorites, id: \.self) { emoji in
-                            Button { sendMapEmote(emoji, to: player) } label: {
-                                Text(emoji)
-                                    .font(.system(size: 22))
+                        ForEach(emoteFavorites, id: \.self) { token in
+                            Button { sendMapEmote(token, to: player) } label: {
+                                EmoteGlyph(token: token, emojiSize: 22, stickerSize: 44)
                                     .frame(width: 40, height: 40)
                                     .background(Circle().fill(Color.white.opacity(0.85)))
                             }
-                            .accessibilityLabel("Emote \(emoji) an \(cleanPlayerName(player.title)) senden")
+                            .accessibilityLabel("\(Emotes.spokenName(token)) an \(cleanPlayerName(player.title)) senden")
                         }
                         // Alle Emotes + eigene Kurzwahl
                         Button { emotePickerTarget = player } label: {
@@ -1582,48 +1582,48 @@ struct MapView: View {
         }
     }
 
-    /// Emote an einen Spieler auf der Karte schicken (aus dem Spieler-Popup).
-    private func sendMapEmote(_ emoji: String, to player: PlayerAnnotation) {
-        socket.sendEmote(toId: player.playerId, emoji: emoji)
+    /// Emote an einen Spieler auf der Karte schicken (aus dem Spieler-Popup); token = Emoji oder "stk:<id>".
+    private func sendMapEmote(_ token: String, to player: PlayerAnnotation) {
+        let event = EmoteEvent(token: token)
+        socket.sendEmote(toId: player.playerId, emoji: event.emoji, sticker: event.sticker?.id)
         SoundManager.shared.play(.tap)
-        let event = EmoteEvent(emoji: emoji)
         ownMapEmote = event
         closePlayerPopup()
-        DispatchQueue.main.asyncAfter(deadline: .now() + Emotes.visibleSeconds) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + event.visibleSeconds) {
             if ownMapEmote == event { ownMapEmote = nil }
         }
     }
 
     /// Emote im Battle an den Gegner.
-    private func sendBattleEmote(_ emoji: String, opponentId: String) {
+    private func sendBattleEmote(_ token: String, opponentId: String) {
         guard let battleId = currentBattleId else { return }
-        socket.sendEmote(toId: opponentId, emoji: emoji, battleId: battleId)
-        let event = EmoteEvent(emoji: emoji)
+        let event = EmoteEvent(token: token)
+        socket.sendEmote(toId: opponentId, emoji: event.emoji, sticker: event.sticker?.id, battleId: battleId)
         ownBattleEmote = event
-        DispatchQueue.main.asyncAfter(deadline: .now() + Emotes.visibleSeconds) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + event.visibleSeconds) {
             if ownBattleEmote == event { ownBattleEmote = nil }
         }
     }
 
     /// Emote von einem anderen Spieler: im Battle über der Gegner-Figur, sonst über seinem Pin.
-    private func receiveEmote(from playerId: String, emoji: String, battleId: Int64?) {
+    private func receiveEmote(from playerId: String, event: EmoteEvent, battleId: Int64?) {
         if let battleId {
             guard battleId == currentBattleId else { return }
-            let event = EmoteEvent(emoji: emoji)
             opponentBattleEmote = event
-            DispatchQueue.main.asyncAfter(deadline: .now() + Emotes.visibleSeconds) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + event.visibleSeconds) {
                 if opponentBattleEmote == event { opponentBattleEmote = nil }
             }
             return
         }
         guard activeFullScreen == .none else { return }
         if annotations.contains(where: { $0.playerId == playerId }) {
-            pinBubbles[playerId] = emoji
-            DispatchQueue.main.asyncAfter(deadline: .now() + Emotes.visibleSeconds + 0.5) {
-                if pinBubbles[playerId] == emoji { pinBubbles[playerId] = nil }
+            pinBubbles[playerId] = event
+            DispatchQueue.main.asyncAfter(deadline: .now() + event.visibleSeconds + 0.5) {
+                if pinBubbles[playerId] == event { pinBubbles[playerId] = nil }
             }
         } else {
-            showMapBanner(icon: "face.smiling", text: "\(opponentDisplayName(playerId, battleId: nil)) schickt dir \(emoji)")
+            let what = event.sticker.map { "den Sticker „\($0.label)“" } ?? event.emoji
+            showMapBanner(icon: "face.smiling", text: "\(opponentDisplayName(playerId, battleId: nil)) schickt dir \(what)")
         }
     }
 
@@ -2243,8 +2243,8 @@ struct MapView: View {
             friendsInbox.handleRequestUpdated(fromId: fromId, toId: toId, status: status)
         }
 
-        socket.onEmote = { fromId, emoji, battleId in
-            receiveEmote(from: fromId, emoji: emoji, battleId: battleId)
+        socket.onEmote = { fromId, event, battleId in
+            receiveEmote(from: fromId, event: event, battleId: battleId)
         }
 
         socket.onBattleUpdatedStatus = { battleId, status in
