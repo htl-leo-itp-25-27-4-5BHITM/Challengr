@@ -1,6 +1,7 @@
 import XCTest
 import CoreLocation
 import UIKit
+import ImageIO
 @testable import Challengr
 
 /// Karten-Menü, Hotspot und Emotes.
@@ -76,6 +77,16 @@ final class MapFeaturesTests: XCTestCase {
             XCTAssertTrue(Emotes.all.contains(sticker.fallbackEmoji), sticker.id)
             XCTAssertNotNil(UIImage(named: sticker.assetName), "Bild \(sticker.assetName) fehlt")
         }
+    }
+
+    func testAnimatedStickersHaveSeveralFrames() throws {
+        XCTAssertEqual(Stickers.animatedIds, ["aura", "gogogo", "1hit", "oida", "crazy", "farming"])
+        for id in Stickers.animatedIds {
+            let data = try XCTUnwrap(Stickers.byId(id)?.animationData, "Animation \(id) fehlt")
+            let source = try XCTUnwrap(CGImageSourceCreateWithData(data as CFData, nil))
+            XCTAssertGreaterThan(CGImageSourceGetCount(source), 10, id)
+        }
+        XCTAssertNil(Stickers.byId("mvp")?.animationData, "nicht jeder Sticker bewegt sich")
     }
 
     func testStickerMessageIsParsed() async {

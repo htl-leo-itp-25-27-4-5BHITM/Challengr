@@ -1,4 +1,5 @@
 import SwiftUI
+import ImageIO
 
 // Kleine Animationen, damit die Karte lebendig wirkt (alles rein lokal, kein Backend nötig).
 // Bei "Bewegung reduzieren" bleiben die Pins ruhig.
@@ -140,7 +141,7 @@ struct LivelyPin<Content: View>: View {
                     Group {
                         if let sticker = bubble.sticker {
                             // groß genug zum Lesen; wächst nach oben, Unterkante wie bei der Emoji-Blase
-                            StickerImage(sticker: sticker, size: 84)
+                            StickerImage(sticker: sticker, size: 84, animated: true)
                                 .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
                                 .frame(height: 30, alignment: .bottom)
                         } else {
@@ -250,6 +251,15 @@ struct Sticker: Hashable, Identifiable {
     var assetName: String { "Sticker_\(id)" }
     /// So steht der Sticker in der Kurzwahl neben den Emojis
     var token: String { Stickers.tokenPrefix + id }
+
+    /// Bewegte Fassung (animiertes WebP, Data-Asset "StickerAnim_<id>") – nur für einige Sticker
+    var animationData: Data? {
+        guard Stickers.animatedIds.contains(id) else { return nil }
+        if let cached = Stickers.animationCache[id] { return cached }
+        let data = NSDataAsset(name: "StickerAnim_\(id)")?.data
+        Stickers.animationCache[id] = data
+        return data
+    }
 }
 
 /// Sticker, die man schicken kann (muss zur Liste im Backend passen: GameSocket.STICKERS).
@@ -279,6 +289,9 @@ enum Stickers {
     static let tokenPrefix = "stk:"
     /// Sticker bleiben etwas länger stehen als Emojis
     static let visibleSeconds: Double = 3
+    /// Diese bewegen sich in der Blase (10 fps, 1,6–2 s in Schleife); in der Auswahl reicht das Standbild
+    static let animatedIds: Set<String> = ["aura", "gogogo", "1hit", "oida", "crazy", "farming"]
+    fileprivate static var animationCache: [String: Data?] = [:]
 
     static func byId(_ id: String?) -> Sticker? {
         all.first { $0.id == id }
@@ -311,18 +324,65 @@ extension EmoteEvent {
     }
 }
 
-/// Sticker-Bild (hat schon einen weißen Rand, braucht keine Blase).
+/// Sticker-Bild (hat schon einen weißen Rand, braucht keine Blase); `animated` spielt die bewegte Fassung, falls es eine gibt.
 struct StickerImage: View {
     let sticker: Sticker
     var size: CGFloat
+    var animated = false
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        Image(sticker.assetName)
-            .resizable()
-            .scaledToFit()
-            .frame(width: size, height: size)
-            .accessibilityLabel("Sticker: \(sticker.label)")
+        Group {
+            if animated, !reduceMotion, let data = sticker.animationData {
+                AnimatedStickerImage(data: data, still: sticker.assetName)
+            } else {
+                Image(sticker.assetName)
+                    .resizable()
+                    .scaledToFit()
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityLabel("Sticker: \(sticker.label)")
     }
+}
+
+/// Spielt ein animiertes WebP ab (ImageIO liefert die Bilder im Takt der Datei); bis zum ersten Bild das Standbild.
+private struct AnimatedStickerImage: View {
+    let data: Data
+    let still: String
+
+    @State private var frame: CGImage?
+    @State private var player = StickerPlayer()
+
+    var body: some View {
+        Group {
+            if let frame {
+                Image(decorative: frame, scale: 1).resizable().scaledToFit()
+            } else {
+                Image(still).resizable().scaledToFit()
+            }
+        }
+        .onAppear { player.play(data) { frame = $0 } }
+        .onDisappear { player.stop() }
+    }
+}
+
+/// Hält das Abspielen an, sobald die Blase verschwindet (sonst liefe ImageIO in der Schleife weiter).
+private final class StickerPlayer {
+    private var running = false
+
+    func play(_ data: Data, onFrame: @escaping (CGImage) -> Void) {
+        guard !running else { return }
+        running = true
+        // Block kommt auf der Main-Queue
+        CGAnimateImageDataWithBlock(data as CFData, nil) { [weak self] _, image, stop in
+            guard let self, self.running else { stop.pointee = true; return }
+            onFrame(image)
+        }
+    }
+
+    func stop() { running = false }
 }
 
 /// Emoji oder Sticker in Kurzwahl und Auswahl ("🔥" oder "stk:aura").
@@ -354,7 +414,7 @@ struct EmoteBubble: View {
             if let event {
                 Group {
                     if let sticker = event.sticker {
-                        StickerImage(sticker: sticker, size: stickerSize)
+                        StickerImage(sticker: sticker, size: stickerSize, animated: true)
                             .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
                             .frame(height: Self.emojiBubbleHeight, alignment: .bottom)
                     } else {
