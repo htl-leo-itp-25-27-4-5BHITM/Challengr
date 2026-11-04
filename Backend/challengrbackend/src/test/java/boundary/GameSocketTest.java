@@ -773,6 +773,48 @@ class GameSocketTest {
         assertNull(defender.await("emote", 1), "zweites Emote sofort danach wird gedrosselt");
     }
 
+    private static String sticker(String to, String emoji, String sticker, Long battleId) {
+        return "{\"type\":\"send-emote\",\"toId\":\"" + to + "\",\"emoji\":\"" + emoji + "\",\"sticker\":\"" + sticker + "\""
+                + (battleId == null ? "" : ",\"battleId\":" + battleId) + "}";
+    }
+
+    @Test
+    void stickerFallbacksAreAllowedEmotes() {
+        assertEquals(20, GameSocket.STICKERS.size());
+        GameSocket.STICKERS.forEach((id, emoji) ->
+                assertTrue(GameSocket.EMOTES.contains(emoji), id + " → " + emoji + " fehlt in EMOTES"));
+    }
+
+    @Test
+    void stickerIsForwardedWithTheServersFallbackEmoji() throws Exception {
+        GameSocket.resetEmoteCooldowns();
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        long battleId = createAcceptedBattle(attacker, defender);
+
+        attacker.send(sticker(B, "👀", "oida", battleId)); // Absender schickt ein anderes Emoji mit
+        JsonNode got = defender.await("emote", 5);
+        assertNotNull(got, "Gegner bekommt den Sticker");
+        assertEquals("oida", got.get("sticker").asText());
+        assertEquals("😤", got.get("emoji").asText(), "Server setzt das Ersatz-Emoji für alte Apps");
+        assertEquals(battleId, got.get("battleId").asLong());
+    }
+
+    @Test
+    void unknownStickerIsIgnoredAndEmojisHaveNoSticker() throws Exception {
+        GameSocket.resetEmoteCooldowns();
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+
+        attacker.send(sticker(B, "🔥", "du-bist-doof", null));
+        assertNull(defender.await("emote", 1), "unbekannter Sticker wird nicht weitergeleitet, auch nicht als Emoji");
+
+        attacker.send(emote(B, "🔥", null));
+        JsonNode got = defender.await("emote", 3);
+        assertNotNull(got);
+        assertTrue(got.get("sticker").isNull(), "normales Emoji ohne Sticker");
+    }
+
     @Test
     void cancelledRequestCannotBeAccepted() throws Exception {
         WsTestClient attacker = connect(A);

@@ -235,20 +235,36 @@ public class GameSocket {
     // gleiche Liste wie in der App (Emotes.all) – nur harmlose Emojis, kein freier Text
     static final List<String> EMOTES = List.of("🔥", "😤", "💪", "👀", "🏆", "😂", "👋", "🥊", "😎", "🤝", "👏", "🙌", "😅", "🤔", "😱", "🥳", "🎉", "⚡", "🧠", "🏃", "👑", "🤯", "😴", "🙏");
 
+    /**
+     * Erlaubte Sticker (Figuren aus dem Fight-Video) → Ersatz-Emoji für alte App-Versionen.
+     * Gleiche IDs wie in der App (Stickers.all); jedes Ersatz-Emoji steht auch in EMOTES.
+     */
+    static final Map<String, String> STICKERS = Map.ofEntries(
+            Map.entry("aura", "🔥"), Map.entry("gogogo", "⚡"), Map.entry("1hit", "🥊"), Map.entry("locked", "😤"),
+            Map.entry("mvp", "🏆"), Map.entry("schularbeit", "😴"), Map.entry("vorbei", "💪"), Map.entry("farming", "😎"),
+            Map.entry("skillissue", "😂"), Map.entry("oida", "😤"), Map.entry("minusaura", "😅"), Map.entry("brodachte", "😂"),
+            Map.entry("diskussion", "👑"), Map.entry("baba", "👋"), Map.entry("hue", "🤔"), Map.entry("crazy", "🤯"),
+            Map.entry("1v1", "🥊"), Map.entry("bigbrain", "🧠"), Map.entry("zauber", "⚡"), Map.entry("naechste", "👀"));
+
     /** Mindestabstand zwischen zwei Emotes eines Spielers (gegen Spam). */
     static final Duration EMOTE_COOLDOWN = Duration.ofMillis(1500);
 
     private static final Map<String, Long> LAST_EMOTE_AT = new ConcurrentHashMap<>();
 
     /**
-     * Emote an einen Spieler schicken: {"type":"send-emote","toId":"…","emoji":"🔥","battleId":12?}
+     * Emote an einen Spieler schicken: {"type":"send-emote","toId":"…","emoji":"🔥","sticker":"aura"?,"battleId":12?}
      * Mit battleId nur an den Gegner im laufenden Battle, sonst an den angetippten Spieler auf der Karte.
+     * Bei einem Sticker setzt der Server das Ersatz-Emoji selbst – alte Apps zeigen dann einfach das Emoji.
      */
     private void handleEmote(JsonNode msg, String senderId) {
         String toId  = msg.path("toId").asText(null);
         String emoji = msg.path("emoji").asText(null);
+        String sticker = msg.hasNonNull("sticker") ? msg.get("sticker").asText() : null;
+        if (sticker != null) {
+            emoji = STICKERS.get(sticker); // unbekannter Sticker → null → ignoriert
+        }
         Long battleId = msg.hasNonNull("battleId") ? msg.get("battleId").asLong() : null;
-        if (senderId == null || toId == null || toId.equals(senderId) || !EMOTES.contains(emoji)) {
+        if (senderId == null || toId == null || toId.equals(senderId) || emoji == null || !EMOTES.contains(emoji)) {
             System.out.println("send-emote ignoriert (ungültig)");
             return;
         }
@@ -274,9 +290,11 @@ public class GameSocket {
           "type": "emote",
           "fromId": "%s",
           "emoji": "%s",
+          "sticker": %s,
           "battleId": %s
         }
-        """.formatted(escapeJson(senderId), escapeJson(emoji), battleId == null ? "null" : battleId.toString()));
+        """.formatted(escapeJson(senderId), escapeJson(emoji), sticker == null ? "null" : "\"" + escapeJson(sticker) + "\"",
+                battleId == null ? "null" : battleId.toString()));
     }
 
     /** Nur für Tests: Cooldown zurücksetzen. */
