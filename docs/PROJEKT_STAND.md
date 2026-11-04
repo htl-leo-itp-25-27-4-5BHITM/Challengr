@@ -155,7 +155,7 @@ Kubernetes-Secret `challengr-secrets`. Verloren? `./scripts/rotate-secrets.sh` s
 **Der öffentliche TestFlight-Test läuft:** Neuester Build ist der externen Gruppe „Schule“ zugewiesen, der
 öffentliche Link ist aktiv, Schüler spielen bereits.
 
-**Sticker-Update (04.11.):** Sticker-Emotes + Sammeln/Geschenke – Backend live (Backups `Backups/backup-2026-11-04-sticker.sql` und `…-sticker-sammeln.sql`), gepusht, Build hochgeladen (siehe Builds).
+**Sticker-Update (04.11.):** Sticker-Emotes + Sammeln/Geschenke – Backend live (Backups `Backups/backup-2026-11-04-sticker.sql` und `…-sticker-sammeln.sql`), gepusht. Build `2611041538` ist gebaut, der **Upload scheiterte an Apple: „PLA Update available“** – das neue Program License Agreement muss der Kontoinhaber unter developer.apple.com/account bestätigen, danach `upload-testflight.sh` erneut.
 **Offen:** Build in TestFlight erst selbst testen (Geschenk an einen Freund, öffnen, Sticker schicken, Album), dann der Gruppe „Schule“ zuweisen.
 Alte App-Versionen sehen keine Sticker; kommt einer bei ihnen an, zeigen sie das Ersatz-Emoji. Pull Request `feature/liga-modus` → `main` ist offen (nicht gemergt).
 
