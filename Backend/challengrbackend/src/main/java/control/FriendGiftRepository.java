@@ -15,6 +15,20 @@ public class FriendGiftRepository {
     @Inject
     EntityManager em;
 
+    @Inject
+    StickerRepository stickers;
+
+    /** Hat from seit `since` schon ein Geschenk an to geschickt? (eins pro Freund und Tag) */
+    public boolean sentSince(String fromPlayerId, String toPlayerId, Instant since) {
+        return em.createQuery(
+                        "SELECT COUNT(g) FROM FriendGift g WHERE g.fromPlayerId = :f AND g.toPlayerId = :t AND g.createdAt >= :since",
+                        Long.class)
+                .setParameter("f", fromPlayerId)
+                .setParameter("t", toPlayerId)
+                .setParameter("since", since)
+                .getSingleResult() > 0;
+    }
+
     @Transactional
     public FriendGift create(String fromPlayerId, String toPlayerId) {
         if (fromPlayerId == null || fromPlayerId.isBlank() || toPlayerId == null || toPlayerId.isBlank()) {
@@ -57,6 +71,10 @@ public class FriendGiftRepository {
 
         gift.setStatus(FriendGift.Status.CLAIMED);
         gift.setClaimedAt(Instant.now());
+        // Drin ist ein zufälliger Sticker – kommt in die Sammlung (Start-Paket zuerst, falls noch nicht bekommen)
+        stickers.listWithStarterPack(playerId);
+        gift.setStickerId(stickers.randomSticker());
+        stickers.grant(playerId, gift.getStickerId());
         return gift;
     }
 }

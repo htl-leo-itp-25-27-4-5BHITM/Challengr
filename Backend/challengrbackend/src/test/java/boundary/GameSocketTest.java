@@ -33,6 +33,9 @@ class GameSocketTest {
     private static final String B = "demo-2";
     private static final String BYSTANDER = "3";
 
+    @Inject
+    control.StickerRepository stickers;
+
     @TestHTTPResource("/ws/game")
     URI wsUri;
 
@@ -780,8 +783,8 @@ class GameSocketTest {
 
     @Test
     void stickerFallbacksAreAllowedEmotes() {
-        assertEquals(20, GameSocket.STICKERS.size());
-        GameSocket.STICKERS.forEach((id, emoji) ->
+        assertEquals(20, control.StickerCatalog.FALLBACK.size());
+        control.StickerCatalog.FALLBACK.forEach((id, emoji) ->
                 assertTrue(GameSocket.EMOTES.contains(emoji), id + " → " + emoji + " fehlt in EMOTES"));
     }
 
@@ -791,6 +794,7 @@ class GameSocketTest {
         WsTestClient attacker = connect(A);
         WsTestClient defender = connect(B);
         long battleId = createAcceptedBattle(attacker, defender);
+        int owned = stickers.grant(A, "oida").getAmount();
 
         attacker.send(sticker(B, "👀", "oida", battleId)); // Absender schickt ein anderes Emoji mit
         JsonNode got = defender.await("emote", 5);
@@ -798,6 +802,21 @@ class GameSocketTest {
         assertEquals("oida", got.get("sticker").asText());
         assertEquals("😤", got.get("emoji").asText(), "Server setzt das Ersatz-Emoji für alte Apps");
         assertEquals(battleId, got.get("battleId").asLong());
+
+        JsonNode stock = attacker.await("sticker-stock", 3);
+        assertNotNull(stock, "Absender erfährt den neuen Stand");
+        assertEquals(owned - 1, stock.get("count").asInt(), "ein Sticker verbraucht");
+    }
+
+    @Test
+    void stickerThatIsNotOwnedIsNotSent() throws Exception {
+        GameSocket.resetEmoteCooldowns();
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        while (stickers.consume(A, "naechste") >= 0) { } // sicher leer
+
+        attacker.send(sticker(B, "👀", "naechste", null));
+        assertNull(defender.await("emote", 1), "ohne Sticker in der Sammlung kommt nichts an");
     }
 
     @Test

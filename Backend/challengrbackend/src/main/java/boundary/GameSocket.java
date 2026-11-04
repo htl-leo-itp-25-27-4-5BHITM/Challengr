@@ -89,6 +89,9 @@ public class GameSocket {
     control.BlockRepository blockRepository;
 
     @Inject
+    control.StickerRepository stickerRepository;
+
+    @Inject
     control.QuizStatsService quizStats;
 
     // ---------------------------------------------------------
@@ -235,17 +238,6 @@ public class GameSocket {
     // gleiche Liste wie in der App (Emotes.all) – nur harmlose Emojis, kein freier Text
     static final List<String> EMOTES = List.of("🔥", "😤", "💪", "👀", "🏆", "😂", "👋", "🥊", "😎", "🤝", "👏", "🙌", "😅", "🤔", "😱", "🥳", "🎉", "⚡", "🧠", "🏃", "👑", "🤯", "😴", "🙏");
 
-    /**
-     * Erlaubte Sticker (Figuren aus dem Fight-Video) → Ersatz-Emoji für alte App-Versionen.
-     * Gleiche IDs wie in der App (Stickers.all); jedes Ersatz-Emoji steht auch in EMOTES.
-     */
-    static final Map<String, String> STICKERS = Map.ofEntries(
-            Map.entry("aura", "🔥"), Map.entry("gogogo", "⚡"), Map.entry("1hit", "🥊"), Map.entry("locked", "😤"),
-            Map.entry("mvp", "🏆"), Map.entry("schularbeit", "😴"), Map.entry("vorbei", "💪"), Map.entry("farming", "😎"),
-            Map.entry("skillissue", "😂"), Map.entry("oida", "😤"), Map.entry("minusaura", "😅"), Map.entry("brodachte", "😂"),
-            Map.entry("diskussion", "👑"), Map.entry("baba", "👋"), Map.entry("hue", "🤔"), Map.entry("crazy", "🤯"),
-            Map.entry("1v1", "🥊"), Map.entry("bigbrain", "🧠"), Map.entry("zauber", "⚡"), Map.entry("naechste", "👀"));
-
     /** Mindestabstand zwischen zwei Emotes eines Spielers (gegen Spam). */
     static final Duration EMOTE_COOLDOWN = Duration.ofMillis(1500);
 
@@ -255,13 +247,14 @@ public class GameSocket {
      * Emote an einen Spieler schicken: {"type":"send-emote","toId":"…","emoji":"🔥","sticker":"aura"?,"battleId":12?}
      * Mit battleId nur an den Gegner im laufenden Battle, sonst an den angetippten Spieler auf der Karte.
      * Bei einem Sticker setzt der Server das Ersatz-Emoji selbst – alte Apps zeigen dann einfach das Emoji.
+     * Sticker sind gesammelt (StickerRepository): jeder Versand verbraucht einen, der Absender bekommt den neuen Stand.
      */
     private void handleEmote(JsonNode msg, String senderId) {
         String toId  = msg.path("toId").asText(null);
         String emoji = msg.path("emoji").asText(null);
         String sticker = msg.hasNonNull("sticker") ? msg.get("sticker").asText() : null;
         if (sticker != null) {
-            emoji = STICKERS.get(sticker); // unbekannter Sticker → null → ignoriert
+            emoji = control.StickerCatalog.FALLBACK.get(sticker); // unbekannter Sticker → null → ignoriert
         }
         Long battleId = msg.hasNonNull("battleId") ? msg.get("battleId").asLong() : null;
         if (senderId == null || toId == null || toId.equals(senderId) || emoji == null || !EMOTES.contains(emoji)) {
@@ -282,6 +275,17 @@ public class GameSocket {
         Long last = LAST_EMOTE_AT.get(senderId);
         if (last != null && now - last < EMOTE_COOLDOWN.toMillis()) {
             return; // zu schnell hintereinander
+        }
+        if (sticker != null) {
+            if (!isOnline(toId)) return; // sonst wäre der Sticker weg, ohne dass ihn jemand sieht
+            int left = stickerRepository.consume(senderId, sticker);
+            if (left < 0) {
+                System.out.println("send-emote ignoriert: Sticker nicht in der Sammlung");
+                return;
+            }
+            sendToPlayer(senderId, """
+            {"type": "sticker-stock", "sticker": "%s", "count": %d}
+            """.formatted(escapeJson(sticker), left));
         }
         LAST_EMOTE_AT.put(senderId, now);
 
@@ -902,6 +906,13 @@ public class GameSocket {
             """.formatted(requestId, escapeJsonStatic(fromPlayerId), escapeJsonStatic(toPlayerId));
         sendToPlayerStatic(fromPlayerId, payload);
         sendToPlayerStatic(toPlayerId, payload);
+    }
+
+    /** Freund hat ein Geschenk geschickt (Banner auf der Karte). */
+    public static void emitGiftReceived(String fromPlayerId, String toPlayerId) {
+        sendToPlayerStatic(toPlayerId, """
+            {"type": "gift-received", "fromPlayerId": "%s"}
+            """.formatted(escapeJsonStatic(fromPlayerId)));
     }
 
     public static void emitFriendRequestUpdated(Long requestId, String fromPlayerId, String toPlayerId, String status) {

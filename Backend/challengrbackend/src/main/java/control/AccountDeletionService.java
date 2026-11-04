@@ -64,6 +64,7 @@ public class AccountDeletionService {
         em.createQuery("DELETE FROM FriendGift g WHERE g.fromPlayerId = :id OR g.toPlayerId = :id")
                 .setParameter("id", playerId).executeUpdate();
         em.createQuery("DELETE FROM QuestClaim c WHERE c.playerId = :id").setParameter("id", playerId).executeUpdate();
+        em.createQuery("DELETE FROM StickerStock s WHERE s.playerId = :id").setParameter("id", playerId).executeUpdate();
         em.createQuery("DELETE FROM PlayerActivity a WHERE a.playerId = :id")
                 .setParameter("id", playerId).executeUpdate();
         em.createQuery("DELETE FROM HotspotCheckin c WHERE c.playerId = :id")

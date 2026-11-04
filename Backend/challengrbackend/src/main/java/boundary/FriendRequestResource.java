@@ -141,7 +141,13 @@ public class FriendRequestResource {
         if (!friendshipRepository.areFriends(dto.fromPlayerId(), dto.toPlayerId())) {
             throw new WebApplicationException("Gift can only be sent to friends", 400);
         }
+        // Eins pro Freund und Tag (Wiener Zeit) – sonst könnten sich zwei Freunde endlos Sticker zuschieben
+        java.time.Instant today = java.time.LocalDate.now(control.HotspotCatalog.ZONE).atStartOfDay(control.HotspotCatalog.ZONE).toInstant();
+        if (friendGiftRepository.sentSince(dto.fromPlayerId(), dto.toPlayerId(), today)) {
+            throw new WebApplicationException("Heute schon ein Geschenk an diesen Freund geschickt", 429);
+        }
         FriendGift gift = friendGiftRepository.create(dto.fromPlayerId(), dto.toPlayerId());
+        GameSocket.emitGiftReceived(gift.getFromPlayerId(), gift.getToPlayerId());
         return toDTO(gift);
     }
 
@@ -229,7 +235,8 @@ public class FriendRequestResource {
                 g.getToPlayerId(),
                 g.getStatus(),
                 g.getCreatedAt(),
-                g.getClaimedAt()
+                g.getClaimedAt(),
+                g.getStickerId()
         );
     }
 }

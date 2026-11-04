@@ -10,6 +10,7 @@ public record FriendGiftDTO(
         String toPlayerId,
         FriendGift.Status status,
         Instant createdAt,
-        Instant claimedAt
+        Instant claimedAt,
+        String stickerId
 ) {
 }

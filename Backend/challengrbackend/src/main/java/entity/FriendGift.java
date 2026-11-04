@@ -33,6 +33,18 @@ public class FriendGift {
     @Column(name = "claimed_at")
     private Instant claimedAt;
 
+    /** Sticker, der beim Öffnen drin war (wird erst beim Öffnen ausgelost) */
+    @Column(name = "sticker_id", length = 32)
+    private String stickerId;
+
+    public String getStickerId() {
+        return stickerId;
+    }
+
+    public void setStickerId(String stickerId) {
+        this.stickerId = stickerId;
+    }
+
     public Long getId() {
         return id;
     }
