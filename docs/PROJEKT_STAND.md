@@ -1,6 +1,6 @@
 # Challengr – Projektstand und Übergabe
 
-Stand: **25. Oktober 2026** · Branch `feature/liga-modus` (auf GitHub) · `main` steht noch auf `7e39882`
+Stand: **4. November 2026** · Branch `feature/liga-modus` (auf GitHub) · `main` steht noch auf `7e39882`
 
 Diese Datei fasst zusammen, worum es geht, was gebaut wurde, wie alles läuft und was offen ist.
 Sie ist zum Weitermachen gedacht – für das Team und für eine neue Claude-Sitzung
@@ -78,6 +78,7 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 | `34bcc79`, `cdaa37d`, `9759dd0`, `f907f44` | **Feedback 20./21.10. + Orte:** Kompass als gelbe Münze, Lade-Screen (`LoadingScreen`) beim stillen Login, Münz-Menü nur noch Shop/Figur/Aufgaben/Einstellungen – Trophy Road über den Trophäen-Chip (roter Punkt bei neuem Rang, `TrophyRoadMath.hasNewRank`), Rangliste als Zeile in der Trophy Road. **Karte im Challengr-Look** (`ChallengrMapGrade`: MapKit `emphasis: .muted` + Rosé-Multiply + roter Rand, nachts schwächer; Reichweite rot gestrichelt). **Check-in-Punkte aus OpenStreetMap** (`LandmarkService`, `LandmarkRules`): Overpass-Abfrage pro Kachel (~2 × 2 km) im Hintergrund-Thread (Overpass braucht oft 30–40 s, verlangt User-Agent), gespeichert in `landmark`/`landmark_tile` (30 Tage gültig); nur öffentliche Orte (Museum, Sehenswürdigkeit, Burg, Denkmal-Bauwerk, Theater, Aussicht, Platz, Brunnen, Bibliothek, Stadion, Park), keine Gedenkstätten/Friedhöfe/privaten Orte (Namensfilter); max. 12 pro Kachel, 250 m Abstand; Spieler sieht 25 im Umkreis von 1,5 km um seine Server-Position; 5 + 5 Bonus Coins, **max. 5 Orte pro Tag** (429). Quellenangabe „© OpenStreetMap-Mitwirkende“ im Popup (Pflicht der ODbL). Unpassende Orte: Namensmuster in `LandmarkRules.SOMBRE` ergänzen |
 | `acb2507`, `a66b37b` | **Cartoon-Karte (MapLibre 6.31.0, SPM, fest gepinnt):** `Map/ToonMap.swift` + Stil `Map/ToonMapStyle.json` (Kacheln/Schriften von OpenFreeMap, OSM-Daten, kein Konto). Liegt *neben* der Apple-Karte: Kamera bleibt `position` in MapView (MapKit-Werte, Abstand → Zoom über `ToonCamera.zoom`, 700 m ≈ Zoom 16,4), Gesten macht MapView selbst (MLN nimmt keine Berührungen an; Zoomen/Drehen mit zwei Fingern über `toonPinch`/`toonTwist`), Figuren/Hotspots sind dieselben SwiftUI-Pins (auf Bildschirm umgerechnet, überdeckte Namen ausgeblendet), Kreise zeichnet MapLibre unter den Gebäuden. **Sicherheitsnetz:** Einstellungen → Karte → „Cartoon-Karte“ (Standard an); Wächter `ToonMapHealth` prüft nach 8 + 12 s, ob Kartendaten sichtbar sind – sonst für die Sitzung zurück auf die Apple-Karte (MapLibre selbst meldet bei nicht erreichbarem Server *keinen* Fehler). Nachts dunkelblaue Abdeckung. Messung im Simulator: ruhig ~8 % CPU, Dauerdrehen ~30 %. Entwickler-Vorschau ohne Login: Debug-Build mit `AUDIT_TOON_DEMO=1` (`AUDIT_TOON_SPIN=1` dreht, `AUDIT_TOON_BADSERVER=1` testet den Rückfall). Gesten-UI-Test: `TestHarness/ChallengrUITests/ToonMapGestureTests.swift`. Vorher (`f907f44`) Farbschicht über MapKit → auf dem iPhone „Nebel“, wieder entfernt (`3674045`) |
 | `aacb627` | **Sieg-/Niederlage-Screen neu (`BattleResultView` + `ResultStageView`):** 3D-Siegerehrung in *einem* SceneKit-Fenster (wie Quiz-Studio, 2D-Ersatz bei Magenta): Sieger fällt aufs Podest „1“ (Stauchen, Druckwelle, Vibration), Jubelsprung, goldener 3D-Pokal aus Grundkörpern, 3D-Konfetti; Verlierer geht K.O. mit Sternen (eigener Sieg) bzw. steht unter einer Regenwolke (eigene Niederlage); Unentschieden: gleich hohe Podeste, Pokal in der Mitte. Titel knallt als Stempel ins Bild, Trophäen-Zähler läuft hoch/runter, darunter Challenge-Werte und Trash Talk, Knopf „Weiter“. Ersetzt `BattleWinView`/`BattleLoseView`. Entwickler-Demo: `AUDIT_RESULT_DEMO=win\|lose\|draw\|friendly` |
+| `7a1f65d`, `dae1538`, `9662b35` | **Sticker als Emotes** (Auftrag `docs/STICKER_EMOTES.md`): 20 Sticker aus dem Fight-Video (`Stickers.all` in `MapLiveEffects.swift`, Bilder 256 px in `Assets.xcassets/Sticker/`) – auf der Karte übers Spieler-Popup (Umschalter „Emojis \| Sticker“, Kurzwahl kann Sticker, gespeichert als `stk:<id>`) und im Battle (weißer Sticker-Knopf neben dem Smiley, klappt ein Raster auf). Blase ohne Kreis (104 pt Battle, 84 pt Karte), 3 s sichtbar. **Protokoll rückwärtskompatibel:** `send-emote` hat zusätzlich `sticker`; der Server prüft gegen `GameSocket.STICKERS` und setzt das Ersatz-Emoji selbst – alte Apps zeigen nur das Emoji, unbekannte Sticker werden ignoriert, Cooldown/Blockieren wie bei Emojis. **6 animiert** (Aura, ゴゴゴ, 1 Hit, Oida, Das crazy, Aura Farming): WebP 256 px als Data-Asset `StickerAnim_<id>`, abgespielt mit ImageIO (`CGAnimateImageDataWithBlock`), nur in der Blase; „Bewegung reduzieren“ → Standbild. Bro dachte, Big Brain und Zauber ohne Apple-Emoji neu gerendert (`Werbevideo/sticker/app_ohne_emoji/`) |
 | `62916fe` | **Angemeldet bleiben:** Refresh-Token (Scope `offline_access`) im iOS-Schlüsselbund (`TokenStore`), beim Start stille Anmeldung ohne Browser; ~30 Tage ohne Nutzung gültig (Keycloak „Offline Session Idle“), jede Nutzung verlängert |
 
 **Trophäen-Regel (`control/TrophyMath`):** Sieg +30 / Niederlage −20 bei gleich vielen Trophäen; pro 25 Trophäen, die der Verlierer
@@ -112,7 +113,7 @@ Tryhard 600, Brawler 950, Dueler 1400, Challengr 2000+ (nach oben offen).
 
 ## 4. Aktueller Stand (live)
 
-**Leo Cloud** – Backend und Dashboard seit 24.10. (10:20) mit Stand `6f0154c` (inkl. Dashboard-Ausbau, nächtliche Backups im Volume `challengr-backup-pvc`); davor Backend `eb9c966` (Rangliste, Namenssuche, 24 Emotes, Aufgaben + Beta-Event, Orte aus OpenStreetMap), Dashboard mit `dd519ce`, 235 Wissensfragen:
+**Leo Cloud** – Backend seit 04.11. (15:17) mit Stand `9662b35` (Sticker-Emotes, Backup vorher); Dashboard seit 24.10. (10:20) und Backend davor mit Stand `6f0154c` (inkl. Dashboard-Ausbau, nächtliche Backups im Volume `challengr-backup-pvc`); davor Backend `eb9c966` (Rangliste, Namenssuche, 24 Emotes, Aufgaben + Beta-Event, Orte aus OpenStreetMap), Dashboard mit `dd519ce`, 235 Wissensfragen:
 - Backend, Dashboard (ruhiges Design, Analysen unter `/`, Feedback unter `/feedback` mit PDF-/ZIP-Export), Keycloak, Postgres laufen; WebApp aus.
 - **TestFlight-Feedback ist eingerichtet und funktioniert** (19.10.): API-Schlüssel „Challengr Dashboard“, Rolle Developer, Key-ID `5837P8K647`, Issuer-ID `e9807cf3-c20e-4a1d-b21e-036f205c8e5d` (beide nicht geheim; geheim ist nur die .p8-Datei). Liegt im Secret `challengr-asc`.
 - Tagesaktivität (`player_activity`) wird erst seit 16.10. erfasst – Verläufe davor sind aus Battles/Check-ins nachgerechnet.
@@ -122,7 +123,7 @@ Tryhard 600, Brawler 950, Dueler 1400, Challengr 2000+ (nach oben offen).
   falls erledigt, liegt es im Schlüsselbund „Challengr Dashboard test“.
 - Spieler (Stand 14.10.): 8 Konten. `bin_der_dominik` wurde zum Testen per Hand auf 1342 Trophäen gesetzt → daraufhin
   **offene Meldung** von `mskes07` („zu viele Trophäen“) im Dashboard – einfach „Erledigt“, nicht sperren.
-- Backups vom 12.10., 14.10., 16.10., 19.10. und 20.10. (vor jedem Deploy) in `~/Developer/ChallengrProjekt/Backups/` (lokal, nicht im Repo).
+- Backups vom 12.10., 14.10., 16.10., 19.10., 20.10., 21.10., 24.10. und 04.11. (vor jedem Deploy) in `~/Developer/ChallengrProjekt/Backups/` (lokal, nicht im Repo).
 
 **Apple:**
 - Apple Developer Program (Individual, Sebastian Lehner), **Team-ID `9CK2N38H9M`**, Verlängerung 13.10.2027 (Auto-Renew an).
@@ -152,6 +153,10 @@ Kubernetes-Secret `challengr-secrets`. Verloren? `./scripts/rotate-secrets.sh` s
 
 **Der öffentliche TestFlight-Test läuft:** Neuester Build ist der externen Gruppe „Schule“ zugewiesen, der
 öffentliche Link ist aktiv, Schüler spielen bereits.
+
+**Sticker-Update (04.11.):** Backend live (15:17, Backup `Backups/backup-2026-11-04-sticker.sql`), gepusht.
+**Offen: App-Build mit Stickern hochladen** (`./scripts/upload-testflight.sh 9CK2N38H9M`) und der Gruppe „Schule“ zuweisen.
+Bis dahin sieht niemand Sticker. Wer später mit dem neuen Build einen Sticker an eine alte App schickt, bei dem kommt das Ersatz-Emoji an.
 
 Erledigt am 13.10.: hängende Keycloak-Konten freigeschaltet, Passwort von `test` geändert, 2FA für den
 Keycloak-Admin eingerichtet, Kontakt-Mail bestätigt (`challengrapp.official@gmail.com`), alles gepusht,
@@ -256,6 +261,8 @@ App-Änderungen → `upload-testflight.sh`; intern sofort verfügbar, extern Bui
   gleichem Min/Max setzen – dann landet der Spieler am Bildschirmrand.
 - **Test-Hilfen fürs Dashboard** (nur TestHarness): `TestHarness/harness-extras/` enthält erfundene Spieldaten und einen vorgetäuschten App-Store-Connect-Zugang – nach `sync_backend.sh` nach `backend/src/main/java/control/` kopieren.
 - **Port 8080 lokal:** Manchmal läuft dort eine andere Anwendung (anderes Projekt). Das Test-Backend dann mit `-Dquarkus.http.port=8081` starten und die Proxy-Datei anpassen; die fremde Anwendung nicht beenden.
+- **Sticker:** Neuer Sticker = Eintrag in `Stickers.all` (App) **und** `GameSocket.STICKERS` (Backend, Ersatz-Emoji muss in `EMOTES` stehen) + Imageset `Sticker_<id>` (256 px, `sips -Z 256` + `pngquant`); die Tests vergleichen beide Listen. Erst Backend deployen, dann App. `Werbevideo/fightvideo/sticker.mjs <ids>` nummeriert die Ausgabe neu ab `01_` (überschreibt also nicht, erzeugt aber falsch benannte Dateien) – WhatsApp-Originale gesichert in `Werbevideo/sticker/_sicherung_whatsapp_2026-11-04/`. Animierte für die App: Einzelbilder per ImageIO aus `animiert/*.webp` holen, auf 256 px, `img2webp -lossy -q 65 -d 100`.
+- **Zwei Simulatoren zum Selbsttesten** (Harness-App, lokales Backend): `xcrun simctl install <UDID> TestHarness/dd/Build/Products/Debug-iphonesimulator/Challengr.app`, dann `SIMCTL_CHILD_AUDIT_BACKEND_URL=http://localhost:8080 SIMCTL_CHILD_AUDIT_PLAYER_ID=audit-1 SIMCTL_CHILD_AUDIT_PLAYER_NAME=Basti xcrun simctl launch <UDID> at.htl.leonding.challengr.binder -hasSeenOnboarding YES` (zweiter mit `audit-2`/Mia). Spieler vorher per `POST /api/players` mit Header `X-Player-Id` anlegen. Simulatoren „Challengr Tests“ (A) und „Challengr Demo B“ (B).
 - **Tag/Nacht testen:** Debug-Builds nehmen `AUDIT_FAKE_TIME` (ISO 8601) als Uhrzeit (`SkyCycle.now()`).
 - **UI-Tests im TestHarness:** Sheets aus dem Münz-Menü (Trophy Road, Shop, Einstellungen) öffnen sich in XCUITests oft nicht –
   die Trophy Road lässt sich in der Harness-Kopie über `AUDIT_TROPHY_ROAD=<playerId>` direkt starten. NavigationLinks per Koordinate antippen.
@@ -306,6 +313,7 @@ Demo-Videos: `~/Developer/ChallengrProjekt/Challengr_Demo_1_Liga_und_Friendly.mp
 24. (24.10.) Neue Real-Life-Challenges Länder-Kompass, Reaktions-Test, Zeitgefühl + Erklär-Bildschirm vor jeder Challenge; Fix „Bereit machen hängt“ (Build `2610241214`). WhatsApp-Sticker.
     plus Export als PDF / Markdown-ZIP mit Bildern.
 25. (25.10.) „Win- und Lose-Screen sieht langweilig aus – vielleicht mit 3D-Animation“ → 3D-Siegerehrung (`aacb627`); Demo-Video mit zwei Simulatoren (TestHarness `ResultDemoTests`, Harness-Backend lost dafür in der Liga Real-Life immer den Reaktions-Test).
+26. (04.11.) „Die WhatsApp-Sticker sollen im Spiel als Emotes verschickt werden können, erst statisch, dann animiert“ (`docs/STICKER_EMOTES.md`) → 20 Sticker, 6 animiert, rückwärtskompatibles Protokoll; vom Nutzer mit zwei Simulatoren getestet, Backend vor dem Deploy gesichert.
 
 **Material außerhalb des Repos:** Präsentation „Challengr – Entwicklung seit September“: https://claude.ai/artifact/38ZBn5HvMEeupkN5L6ZfDd (privat, über „Teilen“ freigeben). WhatsApp-Sticker (32, zwei Pakete als `.wastickers` + PNG-ZIP): `~/Developer/ChallengrProjekt/Sticker/pakete/` (Skripte zum Neu-Erzeugen lagen nur im Scratchpad – Sticker = Figuren-Renders aus `Character3D/app_modelle/*_full.png` + Arial Rounded Bold, Apple-Emojis nur für privaten Gebrauch). Karten-Konzept und Verlauf-Screenshots: `~/Developer/ChallengrProjekt/Karten_Konzept/`, Beta-Figur-Konzepte: `~/Developer/ChallengrProjekt/BetaSkin_Konzepte/`.
 

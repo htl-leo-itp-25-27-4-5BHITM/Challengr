@@ -1,5 +1,7 @@
 # Auftrag: Sticker-Emotes im Spiel
 
+> **Erledigt am 4.11.2026** (Commits `7a1f65d`, `dae1538`, `9662b35`, Phase 2 inklusive) – Stand und Pflege-Hinweise in `docs/PROJEKT_STAND.md`.
+
 **Für einen neuen Chat.** Lies zuerst `docs/PROJEKT_STAND.md` (Projektstand, Deploy, Stolperfallen). Antworte auf Deutsch.
 Committen darfst du selbst, **pushen, auf Leo Cloud deployen und TestFlight-Uploads nur nach Rückfrage**.
 
