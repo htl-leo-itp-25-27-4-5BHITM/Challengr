@@ -299,6 +299,8 @@ struct StickerDetailSheet: View {
     @State private var gifting = false
     @State private var missing: Set<String> = []
     @State private var sendingTo: String? = nil
+    /// Beim Schenken ganz hochfahren, damit die Freundesliste Platz hat
+    @State private var detent: PresentationDetent = .medium
 
     private var count: Int { collection.count(of: sticker.id) }
     private var inFavorites: Bool { favorites.contains(sticker.token) }
@@ -335,6 +337,7 @@ struct StickerDetailSheet: View {
                     if ownPlayerId != nil {
                         Button {
                             withAnimation { gifting.toggle() }
+                            if gifting { detent = .large }
                         } label: {
                             Label("FREUND SCHENKEN", systemImage: "gift.fill").frame(maxWidth: .infinity)
                         }
@@ -355,7 +358,7 @@ struct StickerDetailSheet: View {
             .padding(20)
         }
         .background(GameStyle.background.ignoresSafeArea())
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.medium, .large], selection: $detent)
         .presentationDragIndicator(.visible)
         .task(id: gifting) {
             if gifting { missing = await collection.friendsMissing(sticker) }
