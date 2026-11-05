@@ -16,8 +16,12 @@ struct ProfileContainerView: View {
     
     // Used for Nearby friends suggestions (Option A: reuse Map coordinate)
     var currentCoordinate: CLLocationCoordinate2D? = nil
+    /// Für die Einstellungen (Zahnrad oben rechts, wie in den meisten Spielen)
+    var auth: KeycloakAuthService? = nil
+    var onSettingsClosed: () -> Void = {}
     
     @State private var selectedTab = 0
+    @State private var showSettings = false
     @Environment(\.dismiss) private var dismiss
 
     private let challengrRed = Color(red: 0.73, green: 0.12, blue: 0.20)
@@ -42,6 +46,19 @@ struct ProfileContainerView: View {
                     textColor: challengrDark
                 ) {
                     withAnimation(.easeInOut(duration: 0.2)) { selectedTab = 1 }
+                }
+
+                if auth != nil {
+                    Button { showSettings = true } label: {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .background(Circle().fill(GameStyle.panelFill))
+                            .overlay(Circle().stroke(GameStyle.panelStroke, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Einstellungen")
                 }
             }
             .padding(.horizontal, 16)
@@ -76,6 +93,9 @@ struct ProfileContainerView: View {
         // Spiel-Look: immer dunkel (Charts, Textfelder, System-Farben passen sich an)
         .environment(\.colorScheme, .dark)
         .onAppear { selectedTab = initialTab }
+        .sheet(isPresented: $showSettings, onDismiss: onSettingsClosed) {
+            if let auth { SettingsView(auth: auth) }
+        }
     }
 }
 

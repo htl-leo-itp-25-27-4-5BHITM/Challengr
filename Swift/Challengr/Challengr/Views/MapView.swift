@@ -166,7 +166,6 @@ struct MapView: View {
     @State private var profileBadges: [String] = []
     
     @State private var showProfile = false
-    @State private var showSettings = false
     @State private var showShop = false
     @State private var currentTargetCoordinate: CLLocationCoordinate2D? = nil
 
@@ -296,6 +295,8 @@ struct MapView: View {
     @State private var emotePickerStickers = false
     /// Sticker-Bereich (Menü → Sticker)
     @State private var showStickerHub = false
+    /// Volle Flecken auf der Karte: Liste "Spieler hier"
+    @State private var crowdChooser: MapSpots.Crowd? = nil
     /// Einmaliger Hinweis "Du hast Sticker!"
     @AppStorage("stickerHintShown") private var stickerHintShown = false
 
@@ -450,6 +451,16 @@ struct MapView: View {
                 sendMapEmote(token, to: player)
             }
         }
+        .sheet(item: $crowdChooser) { crowd in
+            MapCrowdSheet(entries: crowdEntries(crowd)) { id in
+                // erst das Blatt zu, dann das Popup des Spielers
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    guard let player = annotations.first(where: { $0.playerId == id }) else { return }
+                    selectedPlayer = player
+                    showPlayerPopup = true
+                }
+            }
+        }
         .onChange(of: showPlayerPopup) { _, shown in
             if shown { Task { await loadMapFriends() } }
         }
@@ -461,19 +472,6 @@ struct MapView: View {
         .overlay(alignment: .top) { mapBannerOverlay }
         .sheet(isPresented: $showChallengeView) {
             challengeSheet
-        }
-        .onChange(of: showSettings) { _, shown in
-            // z.B. neuer Name aus den Einstellungen
-            if !shown { reloadOwnPlayerData() }
-        }
-        .sheet(isPresented: $showSettings) {
-            if let auth {
-                SettingsView(auth: auth)
-            } else {
-                // Fallback for previews / default init
-                Text("Einstellungen sind erst nach dem Login verfügbar")
-                    .padding()
-            }
         }
         .sheet(isPresented: $showShop) {
             ShopView(
@@ -509,7 +507,10 @@ struct MapView: View {
                 rankColor: rankColor(for: ownRankName),
                 allChallenges: allChallenges,
                 socket: socket,
-                currentCoordinate: ownCoordinate
+                currentCoordinate: ownCoordinate,
+                auth: auth,
+                // z.B. neuer Name aus den Einstellungen
+                onSettingsClosed: { reloadOwnPlayerData() }
             )
         }
         .onChange(of: currentBattleId) { _, battleId in
@@ -789,10 +790,17 @@ struct MapView: View {
                 }
             }
 
-            // Annotations for all nearby players.
-            ForEach(annotations) { annotation in
-                Annotation(annotation.title, coordinate: annotation.coordinate, anchor: .bottom) {
+            // Spieler – auf vollen Flecken aufgefächert bzw. als Figur mit Zahl (MapSpots)
+            let spots = spotLayout
+            ForEach(annotations.filter { !spots.hidden.contains($0.playerId) }) { annotation in
+                Annotation(annotation.title, coordinate: spots.positions[annotation.playerId] ?? annotation.coordinate,
+                           anchor: .bottom) {
                     playerPin(annotation)
+                }
+            }
+            ForEach(spots.crowds) { crowd in
+                Annotation("\(crowd.playerIds.count) Spieler", coordinate: crowd.coordinate, anchor: .bottom) {
+                    crowdPin(crowd)
                 }
             }
         }
@@ -1017,12 +1025,44 @@ struct MapView: View {
         }
     }
 
+    /// Gedränge: wer aufgefächert wird und wo eine Figur mit Zahl steht (Abstand bleibt beim Zoomen gleich)
+    private var spotLayout: MapSpots.Layout {
+        MapSpots.layout(players: annotations.map { (id: $0.playerId, coordinate: $0.coordinate) },
+                        own: ownCoordinate, cameraDistance: currentZoomDistance)
+    }
+
+    private func crowdPin(_ crowd: MapSpots.Crowd) -> some View {
+        let front = annotations.first { $0.playerId == crowd.playerIds.first }
+        return MapCrowdPin(front: front?.character ?? .opponent, count: crowd.playerIds.count) {
+            closePlayerPopup()
+            crowdChooser = crowd
+            Task { await loadMapFriends() }
+        }
+    }
+
+    /// Liste "Spieler hier": Freunde zuerst, dann nach Namen
+    private func crowdEntries(_ crowd: MapSpots.Crowd) -> [MapCrowdSheet.Entry] {
+        crowd.playerIds.compactMap { id in annotations.first { $0.playerId == id } }
+            .map {
+                MapCrowdSheet.Entry(id: $0.playerId, name: cleanPlayerName($0.title), rankName: $0.rankName,
+                                    character: $0.character ?? .opponent, ringColor: rankColor(for: $0.rankName),
+                                    isFriend: mapFriendIds.contains($0.playerId))
+            }
+            .sorted { ($0.isFriend ? 0 : 1, $0.name.lowercased()) < ($1.isFriend ? 0 : 1, $1.name.lowercased()) }
+    }
+
     private var toonPins: [ToonPin] {
         var pins: [ToonPin] = hotspots.map {
             ToonPin(id: "h-" + $0.id, coordinate: $0.coordinate, label: $0.name, content: AnyView(hotspotPin($0)))
         }
-        pins += annotations.map {
-            ToonPin(id: "p-" + $0.playerId, coordinate: $0.coordinate, label: $0.title, priority: 1, content: AnyView(playerPin($0)))
+        let spots = spotLayout
+        pins += annotations.filter { !spots.hidden.contains($0.playerId) }.map {
+            ToonPin(id: "p-" + $0.playerId, coordinate: spots.positions[$0.playerId] ?? $0.coordinate, label: $0.title,
+                    priority: 1, content: AnyView(playerPin($0)))
+        }
+        pins += spots.crowds.map {
+            ToonPin(id: "c-" + $0.id, coordinate: $0.coordinate, label: "\($0.playerIds.count) Spieler", priority: 1,
+                    content: AnyView(crowdPin($0)))
         }
         if let ownCoordinate {
             pins.append(ToonPin(id: "me", coordinate: ownCoordinate, label: "Du", priority: 2, content: AnyView(ownPin)))
@@ -1084,7 +1124,7 @@ struct MapView: View {
         .padding()
     }
 
-    /// Haupt-Menü: 3D-Münze unten in der Mitte, öffnet Trophy Road, Shop, Figur, Freunde, Einstellungen.
+    /// Haupt-Menü: 3D-Münze unten in der Mitte, öffnet Shop, Figur, Aufgaben, Sticker (Einstellungen: im Profil).
     private var mainMenu: some View {
         MapMainMenu(isOpen: $showMainMenu, items: [
             MapMenuItem(id: "shop", title: "Shop", systemImage: "bag.fill", color: .challengrGreen) {
@@ -1104,9 +1144,6 @@ struct MapView: View {
             MapMenuItem(id: "stickers", title: "Sticker", systemImage: "book.closed.fill", color: .orange,
                         badge: stickers.badge, assetImage: Stickers.all[0].assetName) {
                 showStickerHub = true
-            },
-            MapMenuItem(id: "settings", title: "Einstellungen", systemImage: "gearshape.fill", color: .gray) {
-                showSettings = true
             }
         ])
         .sheet(isPresented: $showStickerHub, onDismiss: {
