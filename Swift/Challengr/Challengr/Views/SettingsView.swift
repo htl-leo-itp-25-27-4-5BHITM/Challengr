@@ -3,6 +3,8 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     let auth: KeycloakAuthService
+    /// Über den Stift am Namen im Profil geöffnet → gleich "Name ändern"
+    var startWithRename = false
     
     @AppStorage("isSoundEnabled") private var isSoundEnabled = true
     @AppStorage("isMusicEnabled") private var isMusicEnabled = true
@@ -218,6 +220,10 @@ struct SettingsView: View {
         guard let id = auth.playerId, let me = try? await playerService.loadPlayerById(id: id) else { return }
         isInvisible = me.invisible ?? false
         ownName = me.name
+        if startWithRename && !showRename {
+            newName = me.name
+            showRename = true
+        }
     }
 
     private func rename() {

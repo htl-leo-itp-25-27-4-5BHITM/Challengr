@@ -22,6 +22,7 @@ struct ProfileContainerView: View {
     
     @State private var selectedTab = 0
     @State private var showSettings = false
+    @State private var settingsRename = false
     @Environment(\.dismiss) private var dismiss
 
     private let challengrRed = Color(red: 0.73, green: 0.12, blue: 0.20)
@@ -49,7 +50,7 @@ struct ProfileContainerView: View {
                 }
 
                 if auth != nil {
-                    Button { showSettings = true } label: {
+                    Button { settingsRename = false; showSettings = true } label: {
                         Image(systemName: "gearshape.fill")
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)
@@ -72,7 +73,9 @@ struct ProfileContainerView: View {
                     battleHistory: battleHistory,
                     profileStatusText: profileStatusText,
                     profileBadges: profileBadges,
-                    rankColor: rankColor
+                    rankColor: rankColor,
+                    // Feedback 23.10.: Namen ändern war schwer zu finden
+                    onEditName: auth == nil ? nil : { settingsRename = true; showSettings = true }
                 )
                 .tag(0)
 
@@ -94,7 +97,7 @@ struct ProfileContainerView: View {
         .environment(\.colorScheme, .dark)
         .onAppear { selectedTab = initialTab }
         .sheet(isPresented: $showSettings, onDismiss: onSettingsClosed) {
-            if let auth { SettingsView(auth: auth) }
+            if let auth { SettingsView(auth: auth, startWithRename: settingsRename) }
         }
     }
 }

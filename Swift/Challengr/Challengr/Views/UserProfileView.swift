@@ -44,6 +44,8 @@ struct UserProfileView: View {
     let profileStatusText: String?
     let profileBadges: [String]
     var rankColor: Color = .gray
+    /// Stift neben dem Namen (öffnet "Name ändern"); nil = keiner
+    var onEditName: (() -> Void)? = nil
 
     @State private var selectedDate: String? = nil
     @State private var selectedTrophies: Int? = nil
@@ -142,12 +144,25 @@ struct UserProfileView: View {
                     .accessibilityLabel("Deine Figur")
                     .accessibilityHint("Zum Drehen wischen")
 
-                Text(data.name.uppercased())
-                    .font(.system(size: 26, weight: .black, design: .rounded))
-                    .tracking(1)
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
+                HStack(spacing: 8) {
+                    Text(data.name.uppercased())
+                        .font(.system(size: 26, weight: .black, design: .rounded))
+                        .tracking(1)
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    if let onEditName {
+                        Button(action: onEditName) {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 14, weight: .black))
+                                .foregroundColor(.challengrDark)
+                                .frame(width: 30, height: 30)
+                                .background(Circle().fill(Color.challengrYellow))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Name ändern")
+                    }
+                }
 
                 HStack(spacing: 8) {
                     Text(data.rankName.uppercased())

@@ -230,7 +230,9 @@ enum MapVibe {
 
 /// Emotes, die man schicken kann (muss zur Liste im Backend passen: GameSocket.EMOTES).
 enum Emotes {
-    static let all = ["🔥", "😤", "💪", "👀", "🏆", "😂", "👋", "🥊", "😎", "🤝", "👏", "🙌", "😅", "🤔", "😱", "🥳", "🎉", "⚡", "🧠", "🏃", "👑", "🤯", "😴", "🙏"]
+    /// Feste Auswahl statt aller Apple-Emojis (manche sind beleidigend, viele Spieler minderjährig) – wie GameSocket.EMOTES
+    static let all = ["🔥", "😤", "💪", "👀", "🏆", "😂", "👋", "🥊", "😎", "🤝", "👏", "🙌", "😅", "🤔", "😱", "🥳", "🎉", "⚡", "🧠", "🏃", "👑", "🤯", "😴", "🙏",
+                      "😁", "😆", "🤩", "😏", "🙄", "😬", "🥲", "😭", "😡", "🤫", "🫡", "🤠", "👍", "👎", "🤙", "💯", "🎯", "🚀", "💥", "⚽", "🏀", "🎮", "🐐", "🍕"]
     /// Leiste im Battle (passt in eine Zeile)
     static let battle = Array(all.prefix(8))
     /// Standard-Kurzwahl für die Karte (Begrüßen/Necken); jeder kann sie selbst ändern (EmoteFavorites).

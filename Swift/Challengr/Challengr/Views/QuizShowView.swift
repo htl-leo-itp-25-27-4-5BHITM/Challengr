@@ -286,6 +286,24 @@ struct QuizShowView: View {
         }
     }
 
+    /// "Mia" bzw. "Du" an der gewählten Antwort
+    private func pickChip(name: String, character: GameCharacter?, ring: Color) -> some View {
+        HStack(spacing: 4) {
+            if let character {
+                CharacterBadge(character: character, ringColor: ring, size: 22)
+            }
+            Text(name.uppercased())
+                .font(.system(size: 10, weight: .black, design: .rounded))
+                .lineLimit(1)
+                .frame(maxWidth: 70)
+        }
+        .foregroundColor(.challengrDark)
+        .padding(.leading, character == nil ? 8 : 2).padding(.trailing, 8).padding(.vertical, 2)
+        .background(Capsule().fill(Color.white))
+        .shadow(color: .black.opacity(0.3), radius: 3, y: 2)
+        .accessibilityLabel(character == nil ? "Deine Antwort" : "Antwort von \(name)")
+    }
+
     private func answerButton(index: Int, text: String) -> some View {
         let reveal = model.phase == .reveal ? model.lastResult : nil
         let isCorrect = reveal?.correctIndex == index
@@ -326,10 +344,17 @@ struct QuizShowView: View {
             .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color.white, lineWidth: isMine ? 3 : 0))
             .overlay(alignment: .topTrailing) {
-                // Wahl des Gegners erst bei der Auflösung zeigen
+                // Wahl des Gegners erst bei der Auflösung zeigen – mit Namen, damit man es sofort sieht (Feedback 23.10.)
                 if isOpponents {
-                    CharacterBadge(character: opponentCharacter, ringColor: .challengrRed, size: 26)
-                        .offset(x: 6, y: -8)
+                    pickChip(name: opponentName, character: opponentCharacter, ring: .challengrRed)
+                        .offset(x: 6, y: -12)
+                        .transition(.scale)
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                if reveal != nil && isMine {
+                    pickChip(name: "Du", character: nil, ring: .white)
+                        .offset(x: -6, y: -12)
                         .transition(.scale)
                 }
             }

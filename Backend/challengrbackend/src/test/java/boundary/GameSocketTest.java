@@ -782,6 +782,13 @@ class GameSocketTest {
     }
 
     @Test
+    void emotesAreACuratedListWithoutRudeOnes() {
+        assertEquals(48, GameSocket.EMOTES.size());
+        assertEquals(48, new java.util.HashSet<>(GameSocket.EMOTES).size(), "keine doppelten");
+        for (String rude : List.of("🖕", "🍆", "🍑", "💩")) assertFalse(GameSocket.EMOTES.contains(rude), rude);
+    }
+
+    @Test
     void stickerFallbacksAreAllowedEmotes() {
         assertEquals(20, control.StickerCatalog.FALLBACK.size());
         control.StickerCatalog.FALLBACK.forEach((id, emoji) ->

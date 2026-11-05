@@ -916,6 +916,8 @@ struct MapView: View {
             case .active:
                 NotificationManager.shared.endBackgroundWindow()
                 Task { await friendsInbox.refreshCount() }
+                Task { await refreshQuestBadge() }
+                Task { await StickerCollection.shared.refreshGifts(playerId: ownPlayerId) }
             default:
                 break
             }
@@ -1252,7 +1254,7 @@ struct MapView: View {
                         Text(cleanPlayerName(player.title).uppercased())
                             .font(.system(size: 14, weight: .black, design: .rounded))
                             .tracking(1)
-                            .foregroundStyle(.challengrBlack)
+                            .foregroundStyle(.white)
 
                         Text(player.rankName.uppercased())
                             .font(.system(size: 10, weight: .bold, design: .rounded))
@@ -1275,7 +1277,7 @@ struct MapView: View {
                                 EmoteGlyph(token: token, emojiSize: 22, stickerSize: 44)
                                     .opacity(usable ? 1 : 0.35)
                                     .frame(width: 40, height: 40)
-                                    .background(Circle().fill(Color.white.opacity(0.85)))
+                                    .background(Circle().fill(Color.white.opacity(0.12)))
                                     .overlay(alignment: .topTrailing) {
                                         if let sticker { StickerCountBadge(count: stickers.count(of: sticker.id)) }
                                     }
@@ -1290,9 +1292,9 @@ struct MapView: View {
                         } label: {
                             Image(systemName: "plus")
                                 .font(.system(size: 16, weight: .black))
-                                .foregroundStyle(Color.challengrBlack)
+                                .foregroundStyle(Color.white)
                                 .frame(width: 40, height: 40)
-                                .background(Circle().fill(Color.white.opacity(0.6)))
+                                .background(Circle().fill(Color.white.opacity(0.12)))
                         }
                         .accessibilityLabel("Mehr Emojis")
                     }
@@ -1322,24 +1324,17 @@ struct MapView: View {
                         }
                     }
                 }
-                .padding(14)
-                .background(
-                    RoundedRectangle(cornerRadius: 18)
-                        .fill(.ultraThinMaterial)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(.white.opacity(0.15), lineWidth: 1)
-                )
+                .padding(16)
+                .gameOverlayCard()
                 // Melden / Blockieren (Apple-Regel 1.2)
                 .overlay(alignment: .topTrailing) {
-                    PlayerSafetyMenu(playerId: player.playerId, playerName: cleanPlayerName(player.title)) {
+                    PlayerSafetyMenu(playerId: player.playerId, playerName: cleanPlayerName(player.title), onBlocked: {
                         let blockedId = player.playerId
                         closePlayerPopup()
                         withAnimation { annotations.removeAll { $0.playerId == blockedId } }
                         showMapBanner(icon: "hand.raised.fill", text: "Blockiert – ihr seht euch nicht mehr")
-                    }
-                    .padding(4)
+                    }, gameStyle: true)
+                    .padding(8)
                 }
                 .shadow(radius: 15)
                 .padding(.top, 80)
@@ -1360,11 +1355,11 @@ struct MapView: View {
         } label: {
             Image(systemName: isFriend ? "person.2.fill" : requested ? "checkmark" : "person.badge.plus")
                 .font(.system(size: 15, weight: .black))
-                .foregroundStyle(isFriend || requested ? Color.white : Color.challengrBlack)
+                .foregroundStyle(Color.white)
                 .frame(width: 40, height: 38)
                 .background(
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(isFriend || requested ? Color.challengrGreen : Color.white.opacity(0.9))
+                        .fill(isFriend || requested ? Color.challengrGreen : Color.white.opacity(0.12))
                 )
         }
         .buttonStyle(.plain)
@@ -1517,6 +1512,7 @@ struct MapView: View {
             SoundManager.shared.play(.purchase)
             withAnimation { selectedHotspotId = nil }
             ownPoints = result.totalPoints
+            Task { await refreshQuestBadge() }
             showMapBanner(icon: result.firstOfDay ? "crown.fill" : "checkmark.seal.fill",
                           text: result.firstOfDay
                             ? "Eingecheckt – du bist heute der Erste bei \(hotspot.name)!"
@@ -2316,6 +2312,8 @@ struct MapView: View {
 
             // NEU: Punkte/Streak nach Battle neu laden
             reloadOwnPlayerData()
+            // Feedback 22.10.: geschaffte Tagesaufgabe gleich am Menü markieren, nicht erst beim nächsten Start
+            Task { await refreshQuestBadge() }
 
             resultData = data
             activeFullScreen = .none
