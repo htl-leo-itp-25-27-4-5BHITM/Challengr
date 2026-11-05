@@ -25,13 +25,24 @@ enum EmoteFavorites {
 /// Alle Emotes zum Schicken (Emojis oder Sticker); im Bearbeiten-Modus tauscht ein Tipp das Emote in die Kurzwahl.
 struct EmotePickerSheet: View {
     @Binding var favorites: [String]
+    /// Für den Sticker-Bereich (Geschenke, Verschenken); nil = ohne
+    var ownPlayerId: String? = nil
     let onSend: (String) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var collection = StickerCollection.shared
     @State private var editing = false
-    @State private var showStickers = false
-    @State private var showAlbum = false
+    @State private var showStickers: Bool
+    @State private var showHub = false
+
+    /// startWithStickers: über den STICKER-Knopf geöffnet → gleich die Sticker zeigen
+    init(favorites: Binding<[String]>, ownPlayerId: String? = nil, startWithStickers: Bool = false,
+         onSend: @escaping (String) -> Void) {
+        _favorites = favorites
+        self.ownPlayerId = ownPlayerId
+        self.onSend = onSend
+        _showStickers = State(initialValue: startWithStickers)
+    }
 
     private let emojiColumns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 6)
     private let stickerColumns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
@@ -77,10 +88,10 @@ struct EmotePickerSheet: View {
 
             ScrollView(showsIndicators: false) {
                 if showStickers {
-                    // Schicken: nur, was man hat; Kurzwahl: alles, was man schon einmal gefunden hat
-                    let list = editing ? Stickers.all.filter { collection.hasFound($0.id) } : collection.owned
+                    // Alle schon gefundenen – leere bleiben grau stehen, damit nichts "verschwindet"
+                    let list = collection.found
                     VStack(spacing: 10) {
-                        Button { showAlbum = true } label: {
+                        Button { showHub = true } label: {
                             Label("ALBUM \(collection.foundCount)/\(Stickers.all.count)", systemImage: "book.closed.fill")
                                 .font(.system(size: 12, weight: .black, design: .rounded))
                                 .foregroundColor(.challengrYellow)
@@ -88,7 +99,7 @@ struct EmotePickerSheet: View {
                         }
                         .buttonStyle(.plain)
                         if list.isEmpty {
-                            Text("Noch keine Sticker. Freunde können dir Geschenke schicken – in jedem steckt ein Sticker.")
+                            Text("Noch keine Sticker. Wie du welche bekommst, steht im Menü unter „Sticker“.")
                                 .font(.footnote)
                                 .foregroundColor(GameStyle.secondaryText)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -97,14 +108,22 @@ struct EmotePickerSheet: View {
                         }
                         LazyVGrid(columns: stickerColumns, spacing: 10) {
                             ForEach(list) { sticker in
-                                cell(sticker.token) {
+                                let empty = collection.count(of: sticker.id) == 0
+                                cell(sticker.token, disabled: empty && !editing) {
                                     StickerImage(sticker: sticker, size: 72)
+                                        .opacity(empty ? 0.35 : 1)
                                         .frame(maxWidth: .infinity, minHeight: 80)
                                         .overlay(alignment: .topTrailing) {
                                             StickerCountBadge(count: collection.count(of: sticker.id)).padding(6)
                                         }
                                 }
                             }
+                        }
+                        if !list.isEmpty && !editing {
+                            Text("Keine mehr? Neue gibt's über Geschenke, Liga-Siege, die Tagesaufgabe und das Sticker-Paket – alles unter „Album“.")
+                                .font(.footnote)
+                                .foregroundColor(GameStyle.secondaryText)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
                 } else {
@@ -124,7 +143,7 @@ struct EmotePickerSheet: View {
         .background(GameStyle.background.ignoresSafeArea())
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        .sheet(isPresented: $showAlbum) { StickerAlbumView() }
+        .sheet(isPresented: $showHub) { StickerHubView(ownPlayerId: ownPlayerId, favorites: $favorites) }
         .task { await collection.load() }
     }
 
@@ -153,7 +172,7 @@ struct EmotePickerSheet: View {
         .overlay(Capsule().stroke(GameStyle.panelStroke, lineWidth: 1))
     }
 
-    private func cell<Content: View>(_ token: String, @ViewBuilder label: () -> Content) -> some View {
+    private func cell<Content: View>(_ token: String, disabled: Bool = false, @ViewBuilder label: () -> Content) -> some View {
         let isFavorite = favorites.contains(token)
         return Button {
             if editing {
@@ -174,6 +193,8 @@ struct EmotePickerSheet: View {
                 )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(editing ? "\(Emotes.spokenName(token)) zur Kurzwahl" : "\(Emotes.spokenName(token)) schicken")
+        .disabled(disabled)
+        .accessibilityLabel(editing ? "\(Emotes.spokenName(token)) zur Kurzwahl"
+                                    : disabled ? "\(Emotes.spokenName(token)), keiner mehr übrig" : "\(Emotes.spokenName(token)) schicken")
     }
 }

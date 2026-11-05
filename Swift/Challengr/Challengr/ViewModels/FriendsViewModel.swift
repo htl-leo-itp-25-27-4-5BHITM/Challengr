@@ -66,6 +66,7 @@ final class FriendsViewModel: ObservableObject {
             pendingOutgoingToPlayerIds = Set(outgoing.map { $0.toPlayerId })
 
             incomingGifts = try await friendsService.loadIncomingGifts(playerId: ownPlayerId)
+            StickerCollection.shared.setPendingGifts(incomingGifts.count)
 
             await pollIncomingOnce(playerId: ownPlayerId)
         } catch {
@@ -151,19 +152,41 @@ final class FriendsViewModel: ObservableObject {
         }
     }
 
-    /// Geschenk öffnen: der Sticker darin kommt in die Sammlung
-    func claimGift(giftId: Int64, ownPlayerId: String) async -> (opened: Bool, sticker: Sticker?) {
+    /// Eigenen Sticker gezielt an einen Freund verschenken (kostet einen aus der Sammlung)
+    func sendSticker(_ sticker: Sticker, ownPlayerId: String, to playerId: String, name: String) async -> Bool {
+        errorText = nil
+        infoText = nil
+        do {
+            try await friendsService.sendGift(from: ownPlayerId, to: playerId, stickerId: sticker.id)
+            StickerCollection.shared.used(sticker.id)
+            SoundManager.shared.play(.giftSent)
+            infoText = "„\(sticker.label)“ an \(name) verschenkt."
+            return true
+        } catch {
+            errorText = (error as? GiftError)?.errorDescription ?? "Konnte Sticker nicht verschenken: \(error.localizedDescription)"
+            return false
+        }
+    }
+
+    struct OpenedGift {
+        let sticker: Sticker?
+        /// Vom Absender ausgesucht statt Zufall
+        let chosen: Bool
+    }
+
+    /// Geschenk öffnen: der Sticker darin kommt in die Sammlung; nil = ging nicht
+    func claimGift(giftId: Int64, ownPlayerId: String) async -> OpenedGift? {
         errorText = nil
         do {
-            let stickerId = try await friendsService.claimGift(giftId: giftId, playerId: ownPlayerId)
+            let gift = try await friendsService.claimGift(giftId: giftId, playerId: ownPlayerId)
             SoundManager.shared.play(.giftClaimed)
-            let sticker = Stickers.byId(stickerId)
+            let sticker = Stickers.byId(gift?.stickerId)
             if let sticker { StickerCollection.shared.received(sticker.id) }
             await refreshIfPossible()
-            return (true, sticker)
+            return OpenedGift(sticker: sticker, chosen: gift?.fromCollection ?? false)
         } catch {
             errorText = "Konnte Geschenk nicht öffnen: \(error.localizedDescription)"
-            return (false, nil)
+            return nil
         }
     }
 

@@ -40,7 +40,7 @@ enum ItemRarity: String {
 }
 
 struct ShopView: View {
-    /// Solange Items im Spiel noch nichts bewirken, kann man nichts kaufen (nur ansehen).
+    /// Solange Items im Spiel noch nichts bewirken, kann man sie nicht kaufen (nur ansehen) – Sticker-Pakete schon.
     static let isOpen = false
 
     @Environment(\.dismiss) var dismiss
@@ -58,6 +58,7 @@ struct ShopView: View {
     @State private var purchasingCode: String? = nil
     @State private var toastMessage: String? = nil
     @State private var toastIsError = false
+    @State private var stickerReward: StickerReward? = nil
 
     init(ownPlayerId: String, initialPoints: Int, onPointsChanged: @escaping (Int) -> Void = { _ in }) {
         self.ownPlayerId = ownPlayerId
@@ -80,22 +81,29 @@ struct ShopView: View {
                     ProgressView()
                         .tint(.challengrYellow)
                     Spacer()
-                } else if items.isEmpty {
-                    Spacer()
-                    Text("Shop ist gerade nicht erreichbar.")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.7))
-                    Spacer()
                 } else {
                     ScrollView {
+                        // Sticker-Pakete gibt's schon, der Rest öffnet später
+                        StickerPackOffer(onBought: { stickers in
+                            currentPoints = StickerCollection.shared.coins ?? currentPoints
+                            onPointsChanged(currentPoints)
+                            stickerReward = .pack(stickers)
+                        }, onError: { showToast($0, isError: true) })
+                        .padding([.horizontal, .top], 20)
+
                         if !Self.isOpen {
-                            Label("Der Shop öffnet bald – kaufen kannst du noch nichts.", systemImage: "clock.fill")
+                            Label("Alles andere im Shop öffnet bald.", systemImage: "clock.fill")
                                 .font(.system(size: 13, weight: .bold, design: .rounded))
-                                .foregroundColor(.challengrDark)
-                                .frame(maxWidth: .infinity)
-                                .padding(12)
-                                .background(RoundedRectangle(cornerRadius: 12).fill(Color.challengrYellow))
-                                .padding([.horizontal, .top], 20)
+                                .foregroundColor(.white.opacity(0.75))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 8)
+                        }
+                        if items.isEmpty {
+                            Text("Shop ist gerade nicht erreichbar.")
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                .foregroundColor(.white.opacity(0.7))
+                                .padding(.top, 30)
                         }
                         LazyVGrid(columns: [
                             GridItem(.flexible(), spacing: 16),
@@ -138,6 +146,7 @@ struct ShopView: View {
             }
         }
         .task { await loadShop() }
+        .sheet(item: $stickerReward) { StickerRewardSheet(reward: $0) }
     }
 
     // MARK: - Header (Kopfbereich)
@@ -150,17 +159,9 @@ struct ShopView: View {
                     .tracking(2)
                     .foregroundColor(.white)
 
-                if Self.isOpen {
-                    HStack(spacing: 6) {
-                        Image(systemName: "star.circle.fill")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.challengrYellow)
-                        Text("\(currentPoints) PUNKTE")
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundColor(.challengrYellow)
-                    }
-                } else {
-                    Text("BALD VERFÜGBAR")
+                HStack(spacing: 6) {
+                    Image("MenuCoin").resizable().scaledToFit().frame(width: 16, height: 16)
+                    Text("\(currentPoints) COINS")
                         .font(.system(size: 13, weight: .bold, design: .rounded))
                         .foregroundColor(.challengrYellow)
                 }
@@ -187,6 +188,7 @@ struct ShopView: View {
 
         let loadedItems = (try? await itemsAsync) ?? []
         let owned = (try? await ownedAsync) ?? []
+        await StickerCollection.shared.load()
 
         await MainActor.run {
             items = loadedItems

@@ -96,16 +96,12 @@ struct FriendsListView: View {
                         GameSectionHeader(title: "Geschenke", count: vm.incomingGifts.count)
 
                         ForEach(vm.incomingGifts) { gift in
-                            GiftInboxRow(
-                                senderName: giftSenderName(for: gift),
-                                challengrRed: challengrRed,
-                                cardBackground: cardBackground
-                            ) {
+                            GiftInboxRow(senderName: giftSenderName(for: gift)) {
                                 Task {
                                     let senderName = giftSenderName(for: gift)
-                                    let result = await vm.claimGift(giftId: gift.id, ownPlayerId: ownPlayerId)
-                                    if result.opened {
-                                        openedGift = OpenedGiftPresentation(senderName: senderName, sticker: result.sticker)
+                                    if let opened = await vm.claimGift(giftId: gift.id, ownPlayerId: ownPlayerId) {
+                                        openedGift = OpenedGiftPresentation(senderName: senderName, sticker: opened.sticker,
+                                                                            chosen: opened.chosen)
                                     }
                                 }
                             }
@@ -322,7 +318,7 @@ struct FriendsListView: View {
             .presentationDetents([.height(220)])
         }
         .sheet(item: $openedGift) { gift in
-            GiftOpenedSheet(senderName: gift.senderName, sticker: gift.sticker)
+            GiftOpenedSheet(senderName: gift.senderName, sticker: gift.sticker, chosen: gift.chosen)
                 .presentationDetents([.height(gift.sticker == nil ? 300 : 440)])
         }
         .overlay(friendBattleOverlay)
@@ -391,12 +387,6 @@ struct FriendsListView: View {
 
     private func giftSenderName(for gift: FriendGiftDTO) -> String {
         vm.friends.first(where: { $0.id == gift.fromPlayerId })?.name ?? "Ein Freund"
-    }
-
-    private struct OpenedGiftPresentation: Identifiable {
-        let id = UUID()
-        let senderName: String
-        let sticker: Sticker?
     }
 }
 
@@ -760,124 +750,6 @@ private struct IncomingFriendRequestSheet: View {
 /// Geschenke an Freunde: eins pro Freund und Tag, drin ist ein zufälliger Sticker für die Sammlung.
 enum FriendGifts {
     static let isEnabled = true
-}
-
-private struct GiftInboxRow: View {
-    let senderName: String
-    let challengrRed: Color
-    let cardBackground: Color
-    let onOpen: () -> Void
-
-    var body: some View {
-        Button(action: onOpen) {
-            HStack(spacing: 12) {
-                Image(systemName: "gift.fill")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 48, height: 48)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(challengrRed)
-                    )
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Geschenk erhalten")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.primary)
-
-                    Text("Von \(senderName)")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.secondary)
-            }
-            .padding(14)
-            .background(cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(challengrRed.opacity(0.18), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private struct GiftOpenedSheet: View {
-    let senderName: String
-    let sticker: Sticker?
-
-    @Environment(\.dismiss) private var dismiss
-    @ObservedObject private var collection = StickerCollection.shared
-    @State private var opened = false
-
-    var body: some View {
-        VStack(spacing: 14) {
-            ZStack {
-                // Erst wackelt das Geschenk, dann ploppt der Sticker heraus
-                Image(systemName: "gift.fill")
-                    .font(.system(size: 52, weight: .bold))
-                    .foregroundColor(.challengrRed)
-                    .rotationEffect(.degrees(opened ? 0 : -10))
-                    .scaleEffect(opened && sticker != nil ? 0.2 : 1)
-                    .opacity(opened && sticker != nil ? 0 : 1)
-                if let sticker {
-                    StickerImage(sticker: sticker, size: 170, animated: true)
-                        .shadow(color: .black.opacity(0.4), radius: 10, y: 4)
-                        .scaleEffect(opened ? 1 : 0.2)
-                        .opacity(opened ? 1 : 0)
-                }
-            }
-            .frame(height: sticker == nil ? 90 : 180)
-            .padding(.top, 24)
-
-            Text(sticker.map { "STICKER „\($0.label.uppercased())“" } ?? "GESCHENK ERHALTEN")
-                .font(.system(size: 20, weight: .black, design: .rounded))
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
-
-            if let sticker {
-                if Stickers.animatedIds.contains(sticker.id) {
-                    Text("SELTEN · BEWEGT SICH")
-                        .font(.system(size: 11, weight: .black, design: .rounded))
-                        .tracking(1.2)
-                        .foregroundColor(.challengrDark)
-                        .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(Capsule().fill(Color.challengrYellow))
-                }
-                Text("Von \(senderName). Du hast ihn jetzt \(collection.count(of: sticker.id))× – jedes Verschicken braucht einen.")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(GameStyle.secondaryText)
-                    .multilineTextAlignment(.center)
-            } else {
-                Text("\(senderName) hat dir ein Geschenk geschickt.")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(GameStyle.secondaryText)
-            }
-
-            Button("Weiter") { dismiss() }
-                .font(.system(size: 16, weight: .black, design: .rounded))
-                .foregroundColor(.challengrDark)
-                .padding(.horizontal, 36)
-                .padding(.vertical, 12)
-                .background(Capsule().fill(Color.challengrYellow))
-                .buttonStyle(.plain)
-
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 24)
-        .frame(maxWidth: .infinity)
-        .background(GameStyle.background.ignoresSafeArea())
-        .presentationDragIndicator(.visible)
-        .onAppear {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.55).delay(0.35)) { opened = true }
-        }
-    }
 }
 
 private struct NearbyPlayerRow: View {

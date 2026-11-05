@@ -40,6 +40,8 @@ struct PlayerAnnotation: Identifiable {
     let rankName: String
     /// Gewählte Figur des Spielers (nil = unbekannt, z.B. alte App-Version).
     var character: GameCharacter? = nil
+    /// Volles Sticker-Album → goldener Ring
+    var goldFrame = false
 }
 
 enum ActiveFullScreen {
@@ -290,6 +292,12 @@ struct MapView: View {
     /// Gesammelte Sticker (jeder Versand verbraucht einen)
     @ObservedObject private var stickers = StickerCollection.shared
     @State private var emotePickerTarget: PlayerAnnotation? = nil
+    /// Über den STICKER-Knopf geöffnet → die Auswahl startet bei den Stickern
+    @State private var emotePickerStickers = false
+    /// Sticker-Bereich (Menü → Sticker)
+    @State private var showStickerHub = false
+    /// Einmaliger Hinweis "Du hast Sticker!"
+    @AppStorage("stickerHintShown") private var stickerHintShown = false
 
     @State private var showNearbyText = true
 
@@ -437,7 +445,8 @@ struct MapView: View {
                 }
         .overlay(playerPopupOverlay)
         .sheet(item: $emotePickerTarget) { player in
-            EmotePickerSheet(favorites: $emoteFavorites) { token in
+            EmotePickerSheet(favorites: $emoteFavorites, ownPlayerId: ownPlayerId,
+                             startWithStickers: emotePickerStickers) { token in
                 sendMapEmote(token, to: player)
             }
         }
@@ -869,7 +878,11 @@ struct MapView: View {
             Task { await loadHotspots() }
             Task { await refreshQuestBadge() }
             Task { await showAnnouncementIfNew() }
-            Task { await StickerCollection.shared.load() }
+            Task {
+                await StickerCollection.shared.load()
+                await StickerCollection.shared.refreshGifts(playerId: ownPlayerId)
+                await showStickerHintIfNew()
+            }
             trophyRoadLastSeen = TrophyRoadMemory.lastSeen(playerId: ownPlayerId)
             seedInitialZoom()
             friendsInbox.start(playerId: ownPlayerId)
@@ -964,7 +977,8 @@ struct MapView: View {
             character: AvatarPresets.persistedPreset().character ?? .own,
             ringColor: .challengrYellow,
             sonar: true,
-            seed: ownPlayerId
+            seed: ownPlayerId,
+            goldFrame: stickers.hasGoldFrame
         )
         // Sticker × 0.7 ≈ 84 pt wie über fremden Pins
         .overlay(alignment: .top) { EmoteBubble(event: ownMapEmote, stickerSize: 120).scaleEffect(0.7).offset(y: -30) }
@@ -994,7 +1008,8 @@ struct MapView: View {
                 MapCharacterPin(
                     character: annotation.character ?? .opponent,
                     ringColor: rankColor(for: annotation.rankName),
-                    seed: annotation.playerId
+                    seed: annotation.playerId,
+                    goldFrame: annotation.goldFrame
                 )
             }
             .buttonStyle(.plain)
@@ -1085,10 +1100,22 @@ struct MapView: View {
                         badge: questClaimable) {
                 showQuests = true
             },
+            // Sticker: Album, Geschenke öffnen, Paket kaufen (Zahl = ungeöffnete Geschenke + Belohnungen)
+            MapMenuItem(id: "stickers", title: "Sticker", systemImage: "book.closed.fill", color: .orange,
+                        badge: stickers.badge, assetImage: Stickers.all[0].assetName) {
+                showStickerHub = true
+            },
             MapMenuItem(id: "settings", title: "Einstellungen", systemImage: "gearshape.fill", color: .gray) {
                 showSettings = true
             }
         ])
+        .sheet(isPresented: $showStickerHub, onDismiss: {
+            emoteFavorites = EmoteFavorites.load()
+            reloadOwnPlayerData()
+            Task { await StickerCollection.shared.refreshGifts(playerId: ownPlayerId) }
+        }) {
+            StickerHubView(ownPlayerId: ownPlayerId, favorites: $emoteFavorites)
+        }
         .sheet(isPresented: $showTrophyRoad, onDismiss: {
             trophyRoadLastSeen = TrophyRoadMemory.lastSeen(playerId: ownPlayerId)
         }) {
@@ -1134,7 +1161,9 @@ struct MapView: View {
                             .background(CharacterBackdrop(character: AvatarPresets.persistedPreset().character ?? .own))
                             .clipShape(Circle())
                             .overlay(
-                                Circle().stroke(Color.white, lineWidth: 3)
+                                // volles Sticker-Album: goldener Rahmen
+                                Circle().stroke(stickers.hasGoldFrame ? AnyShapeStyle(GoldFrame.gradient) : AnyShapeStyle(Color.white),
+                                                lineWidth: stickers.hasGoldFrame ? 4 : 3)
                             )
                             .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 3)
 
@@ -1192,6 +1221,12 @@ struct MapView: View {
                             .font(.system(size: 10, weight: .bold, design: .rounded))
                             .tracking(1)
                             .foregroundStyle(rankColor(for: player.rankName))
+                        if player.goldFrame {
+                            Text("★ STICKER-ALBUM KOMPLETT")
+                                .font(.system(size: 9, weight: .black, design: .rounded))
+                                .tracking(0.8)
+                                .foregroundStyle(GoldFrame.gradient)
+                        }
                     }
 
                     // Emote schicken statt gleich herausfordern
@@ -1211,15 +1246,24 @@ struct MapView: View {
                             .disabled(!usable)
                             .accessibilityLabel("\(Emotes.spokenName(token)) an \(cleanPlayerName(player.title)) senden")
                         }
-                        // Alle Emotes + eigene Kurzwahl
-                        Button { emotePickerTarget = player } label: {
+                        // Alle Emojis + eigene Kurzwahl
+                        Button {
+                            emotePickerStickers = false
+                            emotePickerTarget = player
+                        } label: {
                             Image(systemName: "plus")
                                 .font(.system(size: 16, weight: .black))
                                 .foregroundStyle(Color.challengrBlack)
                                 .frame(width: 40, height: 40)
                                 .background(Circle().fill(Color.white.opacity(0.6)))
                         }
-                        .accessibilityLabel("Mehr Emotes")
+                        .accessibilityLabel("Mehr Emojis")
+                    }
+
+                    // Sticker: immer derselbe Knopf, mit Anzahl (wie im Battle)
+                    StickerSendButton(count: stickers.sendableCount) {
+                        emotePickerStickers = true
+                        emotePickerTarget = player
                     }
 
                     HStack(spacing: 8) {
@@ -1939,6 +1983,18 @@ struct MapView: View {
         }
     }
 
+    /// Einmal: "Du hast Sticker!" – damit man den STICKER-Knopf überhaupt findet
+    private func showStickerHintIfNew() async {
+        guard !stickerHintShown, StickerCollection.shared.sendableCount > 0 else { return }
+        try? await Task.sleep(for: .seconds(4)) // nicht gleichzeitig mit der Ankündigung
+        guard activeFullScreen == .none else { return }
+        stickerHintShown = true
+        showMapBanner(icon: "sparkles",
+                      text: "Du hast \(StickerCollection.shared.sendableCount) Sticker! Tipp auf einen Spieler → STICKER", seconds: 6) {
+            showStickerHub = true
+        }
+    }
+
     private func showMapBanner(icon: String, text: String, seconds: Double = 3, action: (() -> Void)? = nil) {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
             mapBanner = (icon: icon, text: text, action: action)
@@ -2226,6 +2282,9 @@ struct MapView: View {
 
             resultData = data
             activeFullScreen = .none
+            if let sticker = data.winnerSticker, data.didWin(ownPlayerId: ownPlayerId, ownPlayerName: ownPlayerName) {
+                StickerCollection.shared.received(sticker.id)
+            }
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 activeOverlay = .none
@@ -2272,8 +2331,11 @@ struct MapView: View {
         }
 
         socket.onGiftReceived = { fromId in
+            Task { await StickerCollection.shared.refreshGifts(playerId: ownPlayerId) }
             guard activeFullScreen == .none else { return }
-            showMapBanner(icon: "gift.fill", text: "\(opponentDisplayName(fromId, battleId: nil)) hat dir ein Geschenk geschickt – öffne es bei den Freunden", seconds: 5)
+            showMapBanner(icon: "gift.fill", text: "\(opponentDisplayName(fromId, battleId: nil)) hat dir ein Geschenk geschickt – tippen zum Öffnen", seconds: 5) {
+                showStickerHub = true
+            }
         }
 
         socket.onBattleUpdatedStatus = { battleId, status in
@@ -2510,7 +2572,8 @@ struct MapView: View {
                     coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
                     title: "\(p.name) · \(p.rankName)",
                     rankName: p.rankName,
-                    character: GameCharacter.from(serverId: p.character)
+                    character: GameCharacter.from(serverId: p.character),
+                    goldFrame: p.goldFrame ?? false
                 )
             }
             // Spieler gleiten zur neuen Position statt zu springen

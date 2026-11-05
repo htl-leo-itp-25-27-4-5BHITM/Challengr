@@ -12,6 +12,8 @@ struct MapCharacterPin: View {
     var sonar = false
     var seed: String = ""
     var height: CGFloat = 78
+    /// Volles Sticker-Album: goldener Bodenring
+    var goldFrame = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.mapCrowded) private var crowded
@@ -36,10 +38,11 @@ struct MapCharacterPin: View {
                     .frame(width: 42, height: 42 * MapVibe.groundRatio)
                     .blur(radius: 2)
                 Ellipse()
-                    .stroke(ringColor, lineWidth: 3)
+                    .stroke(goldFrame ? AnyShapeStyle(GoldFrame.gradient) : AnyShapeStyle(ringColor), lineWidth: goldFrame ? 5 : 3)
                     .frame(width: 54, height: 54 * MapVibe.groundRatio)
-                    // nachts leuchtet der Ring
-                    .shadow(color: night ? ringColor.opacity(0.9) : .clear, radius: night ? 8 : 0)
+                    // nachts leuchtet der Ring, der goldene immer ein bisschen
+                    .shadow(color: goldFrame ? Color.yellow.opacity(night ? 0.9 : 0.6) : night ? ringColor.opacity(0.9) : .clear,
+                            radius: goldFrame || night ? 8 : 0)
 
                 if let frame = MapSprites.frame(of: character,
                                                 at: reduceMotion ? 0 : MapVibe.spriteFrame(time: t, seed: seed)) {

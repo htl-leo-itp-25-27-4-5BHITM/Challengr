@@ -9,6 +9,8 @@ struct QuestTask: Codable, Identifiable, Equatable {
     let progress: Int
     let coins: Int
     let claimed: Bool
+    /// Bringt beim Abholen zusätzlich einen Sticker ("Schau vorbei")
+    var sticker: Bool? = nil
 
     var done: Bool { progress >= target }
     var fraction: Double { target == 0 ? 1 : min(1, Double(progress) / Double(target)) }
@@ -48,6 +50,8 @@ struct QuestBoard: Codable, Equatable {
     let resetsAt: String
     let daily: [QuestTask]
     let events: [QuestEvent]
+    /// Gerade beim Abholen bekommen
+    var claimedSticker: String? = nil
 
     /// Wie viele Belohnungen gerade abholbereit sind (Zahl am Menü-Knopf).
     var claimable: Int {

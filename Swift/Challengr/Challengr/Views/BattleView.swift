@@ -487,8 +487,12 @@ struct BattleView: View {
                         .frame(width: 44, height: 44)
                         .background(Circle().fill(showStickerPicker ? Color.challengrYellow : Color.white))
                         .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
+                        // wie auf der Karte: wie viele man noch schicken kann
+                        .overlay(alignment: .topTrailing) {
+                            if !showStickerPicker { StickerCountBadge(count: stickers.sendableCount) }
+                        }
                     }
-                    .accessibilityLabel(showStickerPicker ? "Sticker schließen" : "Sticker senden")
+                    .accessibilityLabel(showStickerPicker ? "Sticker schließen" : "Sticker senden, \(stickers.sendableCount) übrig")
                     .transition(.scale.combined(with: .opacity))
                 }
 
@@ -510,29 +514,32 @@ struct BattleView: View {
                     .transition(.scale(scale: 0.3, anchor: .leading).combined(with: .opacity))
                 }
             }
-            // Sticker-Raster klappt unter den Knöpfen auf, ohne die Leiste zu verschieben (nur eigene Sticker)
+            // Sticker-Raster klappt unter den Knöpfen auf, ohne die Leiste zu verschieben (leere bleiben grau)
             .overlay(alignment: .topLeading) {
                 if showStickerPicker {
                     Group {
-                        if stickers.owned.isEmpty {
-                            Text("Noch keine Sticker – sie stecken in Geschenken von Freunden.")
+                        if stickers.found.isEmpty {
+                            Text("Noch keine Sticker – wie du welche bekommst, steht im Menü unter „Sticker“.")
                                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                                 .foregroundColor(.white.opacity(0.85))
                                 .frame(width: 220, alignment: .leading)
                                 .padding(6)
                         } else {
                             LazyVGrid(columns: Array(repeating: GridItem(.fixed(54), spacing: 4), count: 5), spacing: 4) {
-                                ForEach(stickers.owned) { sticker in
+                                ForEach(stickers.found) { sticker in
+                                    let count = stickers.count(of: sticker.id)
                                     Button {
                                         onSendEmote(sticker.token)
                                         withAnimation { showStickerPicker = false }
                                     } label: {
                                         StickerImage(sticker: sticker, size: 54)
+                                            .opacity(count > 0 ? 1 : 0.35)
                                             .overlay(alignment: .topTrailing) {
-                                                StickerCountBadge(count: stickers.count(of: sticker.id))
+                                                StickerCountBadge(count: count)
                                             }
                                     }
-                                    .accessibilityLabel("Sticker: \(sticker.label), \(stickers.count(of: sticker.id)) übrig")
+                                    .disabled(count == 0)
+                                    .accessibilityLabel("Sticker: \(sticker.label), \(count) übrig")
                                 }
                             }
                         }

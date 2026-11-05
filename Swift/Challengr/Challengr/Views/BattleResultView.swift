@@ -87,6 +87,12 @@ struct BattleResultView: View {
                     trophyCounter
                         .opacity(detailsShown ? 1 : 0)
 
+                    if kind == .win, let sticker = data.winnerSticker {
+                        winnerSticker(sticker)
+                            .scaleEffect(detailsShown ? 1 : 0.3)
+                            .opacity(detailsShown ? 1 : 0)
+                    }
+
                     Group {
                         if let quiz = data.quizScoreLine {
                             Label(quiz, systemImage: "brain.head.profile")
@@ -156,6 +162,24 @@ struct BattleResultView: View {
     }
 
     // MARK: - Subviews (Unteransichten)
+
+    /// Liga-Sieg: manchmal gibt's einen Sticker dazu
+    private func winnerSticker(_ sticker: Sticker) -> some View {
+        HStack(spacing: 12) {
+            StickerImage(sticker: sticker, size: 64, animated: true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("+1 STICKER")
+                    .font(.system(size: 16, weight: .black, design: .rounded))
+                    .foregroundColor(.challengrYellow)
+                Text("„\(sticker.label)“ ist jetzt in deinem Album")
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white.opacity(0.85))
+            }
+            Spacer(minLength: 0)
+        }
+        .gamePanel(padding: 12, cornerRadius: 18, highlight: .challengrYellow)
+        .accessibilityElement(children: .combine)
+    }
 
     private var modeChip: some View {
         Text(data.mode.title.uppercased())

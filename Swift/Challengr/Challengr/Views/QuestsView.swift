@@ -22,6 +22,8 @@ struct QuestsView: View {
     @State private var claiming: String?
     @State private var celebrate = false
     @State private var errorText: String?
+    /// "Schau vorbei" bringt einen Sticker – der wird gleich groß gezeigt
+    @State private var stickerReward: StickerReward?
 
     private let service = QuestService()
 
@@ -63,6 +65,7 @@ struct QuestsView: View {
             }
         }
         .task { if board == nil { await load() } }
+        .sheet(item: $stickerReward) { StickerRewardSheet(reward: $0) }
     }
 
     private func content(_ board: QuestBoard) -> some View {
@@ -186,7 +189,7 @@ struct QuestsView: View {
             .gamePanel(padding: 12, cornerRadius: 18, highlight: task.done && !task.claimed ? .challengrYellow : nil)
             .opacity(task.claimed ? 0.6 : 1)
         }
-        Text("Coins sammelst du für den Shop – der öffnet bald.")
+        Text("Coins kannst du gegen Sticker-Pakete tauschen (Menü → Sticker oder Shop).")
             .font(.footnote)
             .foregroundColor(GameStyle.secondaryText)
             .padding(.top, 4)
@@ -204,6 +207,7 @@ struct QuestsView: View {
                 HStack(spacing: 4) {
                     Image("MenuCoin").resizable().scaledToFit().frame(width: 16, height: 16)
                     Text("+\(task.coins)")
+                    if task.sticker == true { stickerMark }
                 }
                 .font(.system(size: 13, weight: .black, design: .rounded))
                 .foregroundColor(.challengrDark)
@@ -212,15 +216,25 @@ struct QuestsView: View {
             }
             .buttonStyle(.plain)
             .disabled(claiming != nil)
-            .accessibilityLabel("\(task.coins) Coins abholen")
+            .accessibilityLabel("\(task.coins) Coins\(task.sticker == true ? " und einen Sticker" : "") abholen")
         } else {
             HStack(spacing: 3) {
                 Image("MenuCoin").resizable().scaledToFit().frame(width: 14, height: 14).saturation(0.3)
                 Text("\(task.coins)")
+                if task.sticker == true { stickerMark }
             }
             .font(.system(size: 12, weight: .black, design: .rounded))
             .foregroundColor(GameStyle.secondaryText)
         }
+    }
+
+    /// "+ Sticker" an der Belohnung
+    private var stickerMark: some View {
+        HStack(spacing: 2) {
+            Text("+")
+            StickerImage(sticker: Stickers.all[0], size: 20)
+        }
+        .accessibilityHidden(true)
     }
 
     // MARK: - Events
@@ -398,6 +412,10 @@ struct QuestsView: View {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { board = updated }
                 errorText = nil
                 onBoardChanged(updated)
+                if let sticker = Stickers.byId(updated.claimedSticker) {
+                    StickerCollection.shared.received(sticker.id)
+                    stickerReward = .single(sticker, from: "Für's Vorbeischauen – morgen gibt's den nächsten.")
+                }
             } catch {
                 errorText = "Abholen ging gerade nicht – zieh zum Neuladen nach unten."
             }

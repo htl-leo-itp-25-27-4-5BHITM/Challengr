@@ -57,6 +57,8 @@ struct BattleResultData {
     /// Endstand der Quiz-Show (nur Liga Wissen)
     var quizFromScore: Int? = nil
     var quizToScore: Int? = nil
+    /// Liga-Sieg: Sticker, den der Sieger dazu bekommen hat (nicht immer)
+    var winnerSticker: Sticker? = nil
 
     /// "+28 🏆" in der Liga, im Friendly nur "–" (es geht um nichts).
     func deltaLabel(_ delta: Int) -> String {

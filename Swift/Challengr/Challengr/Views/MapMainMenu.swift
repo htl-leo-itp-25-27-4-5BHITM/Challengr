@@ -7,6 +7,8 @@ struct MapMenuItem: Identifiable {
     let systemImage: String
     let color: Color
     var badge: Int = 0
+    /// Bild aus den Assets statt Symbol (z. B. ein Sticker)
+    var assetImage: String? = nil
     let action: () -> Void
 }
 
@@ -97,9 +99,15 @@ struct MapMainMenu: View {
             // Nur Symbole – die Namen stehen in der Bedienungshilfe (VoiceOver)
             VStack(spacing: 4) {
                 ZStack(alignment: .topTrailing) {
-                    Image(systemName: item.systemImage)
-                        .font(.system(size: 21, weight: .bold))
-                        .foregroundColor(.white)
+                    Group {
+                        if let asset = item.assetImage {
+                            Image(asset).resizable().scaledToFit().padding(3)
+                        } else {
+                            Image(systemName: item.systemImage)
+                                .font(.system(size: 21, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                    }
                         .frame(width: 54, height: 54)
                         .background(Circle().fill(item.color))
                         .overlay(Circle().stroke(Color.white, lineWidth: 3))

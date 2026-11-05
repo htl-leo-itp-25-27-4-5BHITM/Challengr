@@ -36,6 +36,8 @@ struct PlayerDTO: Codable, Identifiable {
     var invisible: Bool? = nil
     /// Persönlicher Rekord: höchster je erreichter Trophäen-Stand (nil bei alten Backends)
     var highestTrophies: Int? = nil
+    /// Goldener Rahmen fürs volle Sticker-Album
+    var goldFrame: Bool? = nil
 }
 
 // MARK: - Challenge DTOs (Challenge-DTOs)
