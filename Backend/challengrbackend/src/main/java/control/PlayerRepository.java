@@ -48,15 +48,26 @@ public class PlayerRepository {
 
         Player existingById = findById(normalizedId);
         if (existingById != null) {
-            if (normalizedName != null && !normalizedName.equals(existingById.getName())) {
+            // Name nur setzen, wenn noch keiner da ist – sonst würde jeder Login einen selbst
+            // gewählten Namen wieder mit dem Keycloak-Benutzernamen überschreiben
+            if (normalizedName != null && normalize(existingById.getName()) == null) {
                 existingById.setName(normalizedName);
                 save(existingById);
             }
             return existingById;
         }
 
+        if (player.getCreatedAt() == null) player.setCreatedAt(java.time.Instant.now());
         em.persist(player);
         return player;
+    }
+
+    /** Gibt es den Namen (Groß/Klein egal) schon bei einem anderen Spieler? */
+    public boolean nameTaken(String name, String exceptPlayerId) {
+        return em.createQuery("SELECT COUNT(p) FROM Player p WHERE LOWER(p.name) = :name AND p.id <> :id", Long.class)
+                .setParameter("name", name.toLowerCase())
+                .setParameter("id", exceptPlayerId)
+                .getSingleResult() > 0;
     }
 
     private String normalize(String value) {
@@ -84,11 +95,15 @@ public class PlayerRepository {
                 .orElse(null);
     }
 
+    @Inject
+    ActivityTracker activity;
+
     /** A5: zuletzt aktiv setzen (null = offline). */
     @Transactional
     public void setLastSeen(String playerId, java.time.Instant at) {
         Player p = em.find(Player.class, playerId);
         if (p != null) p.setLastSeenAt(at);
+        if (p != null && at != null) activity.seen(playerId);
     }
 
     @Transactional

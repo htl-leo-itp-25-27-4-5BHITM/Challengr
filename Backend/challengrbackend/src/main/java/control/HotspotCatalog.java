@@ -19,6 +19,12 @@ public final class HotspotCatalog {
     /** Zusätzlich für den ersten Check-in des Tages an diesem Hotspot. */
     public static final int FIRST_OF_DAY_BONUS = 15;
 
+    /** Orte aus OpenStreetMap: weniger als die Schule, dafür überall */
+    public static final int LANDMARK_POINTS = 5;
+    public static final int LANDMARK_FIRST_OF_DAY_BONUS = 5;
+    /** Höchstens so viele Check-ins an Orten pro Tag (gegen Abklappern ganzer Stadtteile) */
+    public static final int LANDMARK_DAILY_LIMIT = 5;
+
     /** "Heute" zählt nach österreichischer Zeit, nicht nach Server-Zeitzone. */
     public static final ZoneId ZONE = ZoneId.of("Europe/Vienna");
 

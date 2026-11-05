@@ -7,7 +7,6 @@ struct ProfileContainerView: View {
     /// 0 = DU, 1 = FREUNDE (z.B. aus dem Karten-Menü)
     var initialTab: Int = 0
     let data: UserProfileData
-    let pointsHistory: [PlayerPointsHistoryDTO]
     let battleHistory: [BattleHistoryDTO]
     let profileStatusText: String?
     let profileBadges: [String]
@@ -17,8 +16,14 @@ struct ProfileContainerView: View {
     
     // Used for Nearby friends suggestions (Option A: reuse Map coordinate)
     var currentCoordinate: CLLocationCoordinate2D? = nil
+    /// Für die Einstellungen (Zahnrad oben rechts, wie in den meisten Spielen)
+    var auth: KeycloakAuthService? = nil
+    var onSettingsClosed: () -> Void = {}
     
     @State private var selectedTab = 0
+    @State private var showSettings = false
+    @State private var settingsRename = false
+    @Environment(\.dismiss) private var dismiss
 
     private let challengrRed = Color(red: 0.73, green: 0.12, blue: 0.20)
     private let challengrDark = Color(red: 0.12, green: 0.00, blue: 0.05)
@@ -43,6 +48,19 @@ struct ProfileContainerView: View {
                 ) {
                     withAnimation(.easeInOut(duration: 0.2)) { selectedTab = 1 }
                 }
+
+                if auth != nil {
+                    Button { settingsRename = false; showSettings = true } label: {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .background(Circle().fill(GameStyle.panelFill))
+                            .overlay(Circle().stroke(GameStyle.panelStroke, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Einstellungen")
+                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -52,11 +70,12 @@ struct ProfileContainerView: View {
                 UserProfileView(
                     playerId: ownPlayerId,
                     data: data,
-                    pointsHistory: pointsHistory,
                     battleHistory: battleHistory,
                     profileStatusText: profileStatusText,
                     profileBadges: profileBadges,
-                    rankColor: rankColor
+                    rankColor: rankColor,
+                    // Feedback 23.10.: Namen ändern war schwer zu finden
+                    onEditName: auth == nil ? nil : { settingsRename = true; showSettings = true }
                 )
                 .tag(0)
 
@@ -65,7 +84,8 @@ struct ProfileContainerView: View {
                     ownPlayerId: ownPlayerId,
                     currentCoordinate: currentCoordinate,
                     allChallenges: allChallenges,
-                    socket: socket
+                    socket: socket,
+                    onBattleSent: { dismiss() }
                 )
                 .tag(1)
             }
@@ -76,6 +96,9 @@ struct ProfileContainerView: View {
         // Spiel-Look: immer dunkel (Charts, Textfelder, System-Farben passen sich an)
         .environment(\.colorScheme, .dark)
         .onAppear { selectedTab = initialTab }
+        .sheet(isPresented: $showSettings, onDismiss: onSettingsClosed) {
+            if let auth { SettingsView(auth: auth, startWithRename: settingsRename) }
+        }
     }
 }
 

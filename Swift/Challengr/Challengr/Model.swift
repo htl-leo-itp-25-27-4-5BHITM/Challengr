@@ -34,6 +34,10 @@ struct PlayerDTO: Codable, Identifiable {
     var trophies: Int? = nil
     /// "Unsichtbar" (nur beim eigenen Konto gesetzt)
     var invisible: Bool? = nil
+    /// Persönlicher Rekord: höchster je erreichter Trophäen-Stand (nil bei alten Backends)
+    var highestTrophies: Int? = nil
+    /// Goldener Rahmen fürs volle Sticker-Album
+    var goldFrame: Bool? = nil
 }
 
 // MARK: - Challenge DTOs (Challenge-DTOs)
@@ -47,12 +51,6 @@ struct ChallengeDTO: Codable, Identifiable {
 }
 
 // MARK: - Profile & History DTOs (Profil & Verlauf DTOs)
-
-struct PlayerPointsHistoryDTO: Codable, Identifiable {
-    let id = UUID()
-    let date: String
-    let points: Int
-}
 
 struct BattleHistoryDTO: Codable, Identifiable {
     let id: Int64

@@ -7,6 +7,8 @@ final class FriendsViewModel: ObservableObject {
     @Published var friends: [PlayerDTO] = []
     @Published var nearbyPlayers: [PlayerDTO] = []
     @Published var incomingGifts: [FriendGiftDTO] = []
+    /// Kurze Erfolgsmeldung (z. B. Geschenk verschickt)
+    @Published var infoText: String? = nil
     @Published var pendingOutgoingToPlayerIds: Set<String> = []
     @Published var isLoadingNearby = false
     @Published var errorText: String? = nil
@@ -64,6 +66,7 @@ final class FriendsViewModel: ObservableObject {
             pendingOutgoingToPlayerIds = Set(outgoing.map { $0.toPlayerId })
 
             incomingGifts = try await friendsService.loadIncomingGifts(playerId: ownPlayerId)
+            StickerCollection.shared.setPendingGifts(incomingGifts.count)
 
             await pollIncomingOnce(playerId: ownPlayerId)
         } catch {
@@ -134,27 +137,56 @@ final class FriendsViewModel: ObservableObject {
         }
     }
 
-    func sendGift(ownPlayerId: String, to playerId: String) async {
+    func sendGift(ownPlayerId: String, to playerId: String, name: String) async {
         errorText = nil
+        infoText = nil
         do {
             try await friendsService.sendGift(from: ownPlayerId, to: playerId)
             SoundManager.shared.play(.giftSent)
+            infoText = "Geschenk an \(name) geschickt – drin ist ein zufälliger Sticker."
             await refreshIfPossible()
+        } catch GiftError.alreadySentToday {
+            errorText = GiftError.alreadySentToday.errorDescription
         } catch {
             errorText = "Konnte Geschenk nicht senden: \(error.localizedDescription)"
         }
     }
 
-    func claimGift(giftId: Int64, ownPlayerId: String) async -> Bool {
+    /// Eigenen Sticker gezielt an einen Freund verschenken (kostet einen aus der Sammlung)
+    func sendSticker(_ sticker: Sticker, ownPlayerId: String, to playerId: String, name: String) async -> Bool {
         errorText = nil
+        infoText = nil
         do {
-            try await friendsService.claimGift(giftId: giftId, playerId: ownPlayerId)
-            SoundManager.shared.play(.giftClaimed)
-            await refreshIfPossible()
+            try await friendsService.sendGift(from: ownPlayerId, to: playerId, stickerId: sticker.id)
+            StickerCollection.shared.used(sticker.id)
+            SoundManager.shared.play(.giftSent)
+            infoText = "„\(sticker.label)“ an \(name) verschenkt."
             return true
         } catch {
-            errorText = "Konnte Geschenk nicht öffnen: \(error.localizedDescription)"
+            errorText = (error as? GiftError)?.errorDescription ?? "Konnte Sticker nicht verschenken: \(error.localizedDescription)"
             return false
+        }
+    }
+
+    struct OpenedGift {
+        let sticker: Sticker?
+        /// Vom Absender ausgesucht statt Zufall
+        let chosen: Bool
+    }
+
+    /// Geschenk öffnen: der Sticker darin kommt in die Sammlung; nil = ging nicht
+    func claimGift(giftId: Int64, ownPlayerId: String) async -> OpenedGift? {
+        errorText = nil
+        do {
+            let gift = try await friendsService.claimGift(giftId: giftId, playerId: ownPlayerId)
+            SoundManager.shared.play(.giftClaimed)
+            let sticker = Stickers.byId(gift?.stickerId)
+            if let sticker { StickerCollection.shared.received(sticker.id) }
+            await refreshIfPossible()
+            return OpenedGift(sticker: sticker, chosen: gift?.fromCollection ?? false)
+        } catch {
+            errorText = "Konnte Geschenk nicht öffnen: \(error.localizedDescription)"
+            return nil
         }
     }
 

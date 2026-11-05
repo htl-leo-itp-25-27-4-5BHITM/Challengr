@@ -1,0 +1,391 @@
+{
+ "version": 8,
+ "name": "Challengr Cartoon",
+ "glyphs": "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
+ "sources": {
+  "o": {
+   "type": "vector",
+   "url": "https://tiles.openfreemap.org/planet"
+  }
+ },
+ "layers": [
+  {
+   "id": "bg",
+   "type": "background",
+   "paint": {
+    "background-color": "#f7e7c6"
+   }
+  },
+  {
+   "id": "res",
+   "type": "fill",
+   "source": "o",
+   "source-layer": "landuse",
+   "filter": [
+    "in",
+    "class",
+    "residential",
+    "suburb",
+    "neighbourhood"
+   ],
+   "paint": {
+    "fill-color": "#f3dcb4"
+   }
+  },
+  {
+   "id": "grass",
+   "type": "fill",
+   "source": "o",
+   "source-layer": "landcover",
+   "filter": [
+    "in",
+    "class",
+    "grass",
+    "farmland",
+    "wood",
+    "forest",
+    "scrub"
+   ],
+   "paint": {
+    "fill-color": [
+     "match",
+     [
+      "get",
+      "class"
+     ],
+     [
+      "wood",
+      "forest"
+     ],
+     "#5fbf4a",
+     "#9be06a"
+    ]
+   }
+  },
+  {
+   "id": "park",
+   "type": "fill",
+   "source": "o",
+   "source-layer": "park",
+   "paint": {
+    "fill-color": "#7fd85a"
+   }
+  },
+  {
+   "id": "pitch",
+   "type": "fill",
+   "source": "o",
+   "source-layer": "landuse",
+   "filter": [
+    "in",
+    "class",
+    "pitch",
+    "stadium",
+    "school",
+    "playground"
+   ],
+   "paint": {
+    "fill-color": [
+     "match",
+     [
+      "get",
+      "class"
+     ],
+     "school",
+     "#ffd76a",
+     "playground",
+     "#ffb36b",
+     "#5cc96a"
+    ]
+   }
+  },
+  {
+   "id": "water",
+   "type": "fill",
+   "source": "o",
+   "source-layer": "water",
+   "paint": {
+    "fill-color": "#4fc3ff"
+   }
+  },
+  {
+   "id": "water-edge",
+   "type": "line",
+   "source": "o",
+   "source-layer": "water",
+   "paint": {
+    "line-color": "#1b7fd1",
+    "line-width": 3
+   }
+  },
+  {
+   "id": "river",
+   "type": "line",
+   "source": "o",
+   "source-layer": "waterway",
+   "paint": {
+    "line-color": "#4fc3ff",
+    "line-width": [
+     "interpolate",
+     [
+      "linear"
+     ],
+     [
+      "zoom"
+     ],
+     13,
+     2,
+     18,
+     10
+    ]
+   }
+  },
+  {
+   "id": "rail",
+   "type": "line",
+   "source": "o",
+   "source-layer": "transportation",
+   "filter": [
+    "in",
+    "class",
+    "rail",
+    "transit"
+   ],
+   "paint": {
+    "line-color": "#8a6b5a",
+    "line-width": 3,
+    "line-dasharray": [
+     2,
+     1
+    ]
+   }
+  },
+  {
+   "id": "road-case",
+   "type": "line",
+   "source": "o",
+   "source-layer": "transportation",
+   "filter": [
+    "!in",
+    "class",
+    "path",
+    "rail",
+    "transit",
+    "ferry"
+   ],
+   "layout": {
+    "line-cap": "round",
+    "line-join": "round"
+   },
+   "paint": {
+    "line-color": "#2a1418",
+    "line-width": [
+     "interpolate",
+     [
+      "exponential",
+      1.6
+     ],
+     [
+      "zoom"
+     ],
+     13,
+     3,
+     18,
+     [
+      "match",
+      [
+       "get",
+       "class"
+      ],
+      [
+       "primary",
+       "trunk",
+       "motorway"
+      ],
+      34,
+      [
+       "secondary",
+       "tertiary"
+      ],
+      28,
+      20
+     ]
+    ]
+   }
+  },
+  {
+   "id": "road",
+   "type": "line",
+   "source": "o",
+   "source-layer": "transportation",
+   "filter": [
+    "!in",
+    "class",
+    "path",
+    "rail",
+    "transit",
+    "ferry"
+   ],
+   "layout": {
+    "line-cap": "round",
+    "line-join": "round"
+   },
+   "paint": {
+    "line-color": [
+     "match",
+     [
+      "get",
+      "class"
+     ],
+     [
+      "primary",
+      "trunk",
+      "motorway"
+     ],
+     "#ffd23f",
+     "#ffffff"
+    ],
+    "line-width": [
+     "interpolate",
+     [
+      "exponential",
+      1.6
+     ],
+     [
+      "zoom"
+     ],
+     13,
+     1.5,
+     18,
+     [
+      "match",
+      [
+       "get",
+       "class"
+      ],
+      [
+       "primary",
+       "trunk",
+       "motorway"
+      ],
+      28,
+      [
+       "secondary",
+       "tertiary"
+      ],
+      22,
+      15
+     ]
+    ]
+   }
+  },
+  {
+   "id": "path",
+   "type": "line",
+   "source": "o",
+   "source-layer": "transportation",
+   "filter": [
+    "==",
+    "class",
+    "path"
+   ],
+   "paint": {
+    "line-color": "#e9b97a",
+    "line-width": 3,
+    "line-dasharray": [
+     1.5,
+     1
+    ]
+   }
+  },
+  {
+   "id": "bld",
+   "type": "fill-extrusion",
+   "source": "o",
+   "source-layer": "building",
+   "minzoom": 14,
+   "paint": {
+    "fill-extrusion-color": [
+     "match",
+     [
+      "%",
+      [
+       "+",
+       [
+        "to-number",
+        [
+         "id"
+        ],
+        0
+       ],
+       [
+        "round",
+        [
+         "*",
+         [
+          "coalesce",
+          [
+           "get",
+           "render_height"
+          ],
+          5
+         ],
+         3
+        ]
+       ]
+      ],
+      4
+     ],
+     0,
+     "#ff8a7a",
+     1,
+     "#ffc46b",
+     2,
+     "#c9a2ff",
+     "#8fd3ff"
+    ],
+    "fill-extrusion-height": [
+     "coalesce",
+     [
+      "get",
+      "render_height"
+     ],
+     8
+    ],
+    "fill-extrusion-base": [
+     "coalesce",
+     [
+      "get",
+      "render_min_height"
+     ],
+     0
+    ],
+    "fill-extrusion-opacity": 1,
+    "fill-extrusion-vertical-gradient": true
+   }
+  },
+  {
+   "id": "label",
+   "type": "symbol",
+   "source": "o",
+   "source-layer": "transportation_name",
+   "minzoom": 15,
+   "layout": {
+    "text-field": [
+     "get",
+     "name"
+    ],
+    "text-font": [
+     "Noto Sans Bold"
+    ],
+    "symbol-placement": "line",
+    "text-size": 13
+   },
+   "paint": {
+    "text-color": "#2a1418",
+    "text-halo-color": "#ffffff",
+    "text-halo-width": 2
+   }
+  }
+ ]
+}

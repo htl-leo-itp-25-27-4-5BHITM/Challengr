@@ -104,6 +104,22 @@ class BattleFlowTest {
         assertEquals("Customer", json.get("challengeCategory").asText());
     }
 
+    @Test
+    void disabledPhotoChallengeCannotBeChosenForAFriendly() {
+        Long photoId = QuarkusTransaction.requiringNew().call(() -> challengeRepository.getAllChallenges().stream()
+                .filter(c -> c.getText().startsWith("Foto-Beweis")).findFirst().orElseThrow().getId());
+        BattleRejectedException e = assertThrows(BattleRejectedException.class,
+                () -> battleService.createRequestedBattle(FROM, TO, photoId));
+        assertTrue(e.getMessage().contains("nicht verfügbar"));
+    }
+
+    @Test
+    void trophiesNeverGoBelowZero() {
+        entity.Player p = new entity.Player("x", 0, 0);
+        p.setTrophies(-15);
+        assertEquals(0, p.getTrophies());
+    }
+
     // ------------------------------------------------------------- transitions
 
     @Test

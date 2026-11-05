@@ -33,6 +33,30 @@ public class FriendGift {
     @Column(name = "claimed_at")
     private Instant claimedAt;
 
+    /** Sticker, der drin ist: zufällig beim Öffnen ausgelost oder vom Absender ausgesucht */
+    @Column(name = "sticker_id", length = 32)
+    private String stickerId;
+
+    /** Absender hat einen eigenen Sticker verschenkt (zählt nicht als Tages-Geschenk) */
+    @Column(name = "from_collection", columnDefinition = "boolean default false not null")
+    private boolean fromCollection = false;
+
+    public String getStickerId() {
+        return stickerId;
+    }
+
+    public void setStickerId(String stickerId) {
+        this.stickerId = stickerId;
+    }
+
+    public boolean isFromCollection() {
+        return fromCollection;
+    }
+
+    public void setFromCollection(boolean fromCollection) {
+        this.fromCollection = fromCollection;
+    }
+
     public Long getId() {
         return id;
     }

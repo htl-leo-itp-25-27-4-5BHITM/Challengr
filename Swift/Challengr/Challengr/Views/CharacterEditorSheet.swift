@@ -5,6 +5,8 @@ struct CharacterEditorSheet: View {
     @ObservedObject var store: AvatarCustomizationStore
     /// Für das Speichern am Server und den Freischalt-Stand.
     var playerId: String = ""
+    /// Gerade freigeschaltete Figur (Tipp auf das Pop-up): gleich ausgewählt und ins Bild gescrollt.
+    var highlight: GameCharacter? = nil
 
     @State private var selectedCategory: AvatarCategory = .outfits
     @State private var detent: PresentationDetent = .large
@@ -65,16 +67,23 @@ struct CharacterEditorSheet: View {
             .padding(.horizontal, 20)
 
             // Items grid
+            ScrollViewReader { proxy in
             ScrollView {
                 if selectedCategory == .outfits {
                     LazyVGrid(columns: columns, spacing: 12) {
                         ForEach(AvatarPresets.presets(for: .outfits)) { preset in
                             presetTile(preset)
+                                .id(preset.id)
                         }
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 10)
                     .padding(.bottom, 10)
+                    .task {
+                        guard let highlight else { return }
+                        try? await Task.sleep(for: .milliseconds(350))
+                        withAnimation { proxy.scrollTo(highlight.rawValue, anchor: .center) }
+                    }
                 } else {
                     VStack(spacing: 10) {
                         Image(systemName: "wand.and.stars")
@@ -96,6 +105,7 @@ struct CharacterEditorSheet: View {
                     .padding(.top, 28)
                     .padding(.bottom, 10)
                 }
+            }
             }
 
             if let error = store.errorMessage {
@@ -139,6 +149,7 @@ struct CharacterEditorSheet: View {
             // Always start in Outfits so the user sees their character immediately.
             selectedCategory = .outfits
             store.load()
+            if let highlight { store.selectedPresetId = highlight.rawValue }
             store.errorMessage = nil
         }
         .task { await store.loadUnlocks(playerId: playerId) }

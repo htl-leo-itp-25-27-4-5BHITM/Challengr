@@ -52,33 +52,44 @@ struct CompassView: View {
     var body: some View {
         Button(action: onTap) {
             ZStack {
+                // Challengr-Look wie die Menü-Münze: gelb, dunkler Rand, innen ein hellerer Ring
                 Circle()
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.28), radius: 6, x: 0, y: 3)
+                    .fill(Color.challengrYellow)
+                    .shadow(color: .black.opacity(0.3), radius: 6, x: 0, y: 3)
                 Circle()
-                    .stroke(isNorthUp ? Color.challengrDark.opacity(0.12) : Color.challengrRed.opacity(0.7), lineWidth: 2)
+                    .stroke(Color.orange.opacity(0.55), lineWidth: 2)
+                    .padding(5)
+                Circle()
+                    .stroke(isNorthUp ? Color.challengrDark : Color.challengrRed, lineWidth: 3)
 
                 // Rose: dreht sich gegen die Karte
                 ZStack {
-                    ForEach(0..<16, id: \.self) { i in
+                    ForEach([1, 2, 3], id: \.self) { i in
                         Capsule()
-                            .fill(Color.challengrDark.opacity(i % 4 == 0 ? 0.55 : 0.2))
-                            .frame(width: i % 4 == 0 ? 2 : 1.2, height: i % 4 == 0 ? 5 : 3)
-                            .offset(y: -17.5)
-                            .rotationEffect(.degrees(Double(i) * 22.5))
+                            .fill(Color.challengrDark.opacity(0.5))
+                            .frame(width: 2, height: 4)
+                            .offset(y: -15)
+                            .rotationEffect(.degrees(Double(i) * 90))
                     }
+                    // Nadel: rot nach Norden, dunkel nach Süden
                     Triangle()
                         .fill(Color.challengrRed)
-                        .frame(width: 10, height: 8)
-                        .offset(y: -15)
+                        .frame(width: 11, height: 14)
+                        .offset(y: -7)
+                    Triangle()
+                        .fill(Color.challengrDark)
+                        .frame(width: 11, height: 14)
+                        .rotationEffect(.degrees(180))
+                        .offset(y: 7)
+                    Circle().fill(Color.white).frame(width: 4, height: 4)
+                    // "N" als kleines rotes Abzeichen auf dem Rand
                     Text("N")
-                        .font(.system(size: 12, weight: .black, design: .rounded))
-                        .foregroundColor(.challengrRed)
-                        .offset(y: -4)
-                    Text("S")
                         .font(.system(size: 8, weight: .black, design: .rounded))
-                        .foregroundColor(.challengrDark.opacity(0.45))
-                        .offset(y: 12)
+                        .foregroundColor(.white)
+                        .frame(width: 14, height: 14)
+                        .background(Circle().fill(Color.challengrRed))
+                        .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
+                        .offset(y: -21)
                 }
                 .rotationEffect(-angle)
                 .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.85), value: angle.degrees)

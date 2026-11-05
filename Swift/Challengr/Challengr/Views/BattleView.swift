@@ -13,7 +13,7 @@ struct BattleView: View {
     /// Zuletzt gesendetes eigenes Emote und zuletzt empfangenes vom Gegner (Blasen über den Figuren).
     var ownEmote: EmoteEvent? = nil
     var opponentEmote: EmoteEvent? = nil
-    /// nil = keine Emotes (z.B. Vorschau)
+    /// nil = keine Emotes (z.B. Vorschau); bekommt ein Emoji oder einen Sticker als "stk:<id>"
     var onSendEmote: ((String) -> Void)? = nil
     let onClose: () -> Void
     let onSurrender: () -> Void
@@ -29,6 +29,8 @@ struct BattleView: View {
     @State private var vsAppeared = false
     @State private var vsFlash = false
     @State private var showEmotePicker = false
+    @State private var showStickerPicker = false
+    @ObservedObject private var stickers = StickerCollection.shared
 
     // MARK: - Body (UI-Aufbau)
     var body: some View {
@@ -449,13 +451,16 @@ struct BattleView: View {
         }
     }
 
-    /// Emoji-Button links neben dem VS – klappt die Emote-Auswahl auf.
+    /// Emoji- und Sticker-Button links neben dem VS – klappen die Emote-Auswahl auf.
     @ViewBuilder
     private var emoteControl: some View {
         if let onSendEmote {
             HStack(spacing: 6) {
                 Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { showEmotePicker.toggle() }
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                        showEmotePicker.toggle()
+                        showStickerPicker = false
+                    }
                 } label: {
                     Image(systemName: showEmotePicker ? "xmark" : "face.smiling.inverse")
                         .font(.system(size: 20, weight: .bold))
@@ -466,9 +471,34 @@ struct BattleView: View {
                 }
                 .accessibilityLabel(showEmotePicker ? "Emotes schließen" : "Emote senden")
 
+                if !showEmotePicker {
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { showStickerPicker.toggle() }
+                    } label: {
+                        Group {
+                            if showStickerPicker {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 20, weight: .bold))
+                                    .foregroundColor(.challengrDark)
+                            } else {
+                                StickerImage(sticker: Stickers.all[0], size: 42)
+                            }
+                        }
+                        .frame(width: 44, height: 44)
+                        .background(Circle().fill(showStickerPicker ? Color.challengrYellow : Color.white))
+                        .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
+                        // wie auf der Karte: wie viele man noch schicken kann
+                        .overlay(alignment: .topTrailing) {
+                            if !showStickerPicker { StickerCountBadge(count: stickers.sendableCount) }
+                        }
+                    }
+                    .accessibilityLabel(showStickerPicker ? "Sticker schließen" : "Sticker senden, \(stickers.sendableCount) übrig")
+                    .transition(.scale.combined(with: .opacity))
+                }
+
                 if showEmotePicker {
                     HStack(spacing: 2) {
-                        ForEach(Emotes.all, id: \.self) { emoji in
+                        ForEach(Emotes.battle, id: \.self) { emoji in
                             Button {
                                 onSendEmote(emoji)
                                 withAnimation { showEmotePicker = false }
@@ -482,6 +512,45 @@ struct BattleView: View {
                     .background(Capsule().fill(Color.white))
                     .shadow(color: .black.opacity(0.35), radius: 6, y: 3)
                     .transition(.scale(scale: 0.3, anchor: .leading).combined(with: .opacity))
+                }
+            }
+            // Sticker-Raster klappt unter den Knöpfen auf, ohne die Leiste zu verschieben (leere bleiben grau)
+            .overlay(alignment: .topLeading) {
+                if showStickerPicker {
+                    Group {
+                        if stickers.found.isEmpty {
+                            Text("Noch keine Sticker – wie du welche bekommst, steht im Menü unter „Sticker“.")
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .foregroundColor(.white.opacity(0.85))
+                                .frame(width: 220, alignment: .leading)
+                                .padding(6)
+                        } else {
+                            LazyVGrid(columns: Array(repeating: GridItem(.fixed(54), spacing: 4), count: 5), spacing: 4) {
+                                ForEach(stickers.found) { sticker in
+                                    let count = stickers.count(of: sticker.id)
+                                    Button {
+                                        onSendEmote(sticker.token)
+                                        withAnimation { showStickerPicker = false }
+                                    } label: {
+                                        StickerImage(sticker: sticker, size: 54)
+                                            .opacity(count > 0 ? 1 : 0.35)
+                                            .overlay(alignment: .topTrailing) {
+                                                StickerCountBadge(count: count)
+                                            }
+                                    }
+                                    .disabled(count == 0)
+                                    .accessibilityLabel("Sticker: \(sticker.label), \(count) übrig")
+                                }
+                            }
+                        }
+                    }
+                    .padding(8)
+                    .background(RoundedRectangle(cornerRadius: 18).fill(Color.challengrDark.opacity(0.96)))
+                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.15), lineWidth: 1))
+                    .shadow(color: .black.opacity(0.45), radius: 10, y: 4)
+                    .fixedSize()
+                    .offset(y: 52)
+                    .transition(.scale(scale: 0.3, anchor: .topLeading).combined(with: .opacity))
                 }
             }
             .padding(.leading, 10)

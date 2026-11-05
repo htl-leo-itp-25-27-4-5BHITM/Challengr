@@ -33,6 +33,9 @@ class GameSocketTest {
     private static final String B = "demo-2";
     private static final String BYSTANDER = "3";
 
+    @Inject
+    control.StickerRepository stickers;
+
     @TestHTTPResource("/ws/game")
     URI wsUri;
 
@@ -771,6 +774,71 @@ class GameSocketTest {
         assertNotNull(defender.await("emote", 3), "Emote auf der Karte kommt an");
         attacker.send(emote(B, "👋", null));
         assertNull(defender.await("emote", 1), "zweites Emote sofort danach wird gedrosselt");
+    }
+
+    private static String sticker(String to, String emoji, String sticker, Long battleId) {
+        return "{\"type\":\"send-emote\",\"toId\":\"" + to + "\",\"emoji\":\"" + emoji + "\",\"sticker\":\"" + sticker + "\""
+                + (battleId == null ? "" : ",\"battleId\":" + battleId) + "}";
+    }
+
+    @Test
+    void emotesAreACuratedListWithoutRudeOnes() {
+        assertEquals(48, GameSocket.EMOTES.size());
+        assertEquals(48, new java.util.HashSet<>(GameSocket.EMOTES).size(), "keine doppelten");
+        for (String rude : List.of("🖕", "🍆", "🍑", "💩")) assertFalse(GameSocket.EMOTES.contains(rude), rude);
+    }
+
+    @Test
+    void stickerFallbacksAreAllowedEmotes() {
+        assertEquals(20, control.StickerCatalog.FALLBACK.size());
+        control.StickerCatalog.FALLBACK.forEach((id, emoji) ->
+                assertTrue(GameSocket.EMOTES.contains(emoji), id + " → " + emoji + " fehlt in EMOTES"));
+    }
+
+    @Test
+    void stickerIsForwardedWithTheServersFallbackEmoji() throws Exception {
+        GameSocket.resetEmoteCooldowns();
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        long battleId = createAcceptedBattle(attacker, defender);
+        int owned = stickers.grant(A, "oida").getAmount();
+
+        attacker.send(sticker(B, "👀", "oida", battleId)); // Absender schickt ein anderes Emoji mit
+        JsonNode got = defender.await("emote", 5);
+        assertNotNull(got, "Gegner bekommt den Sticker");
+        assertEquals("oida", got.get("sticker").asText());
+        assertEquals("😤", got.get("emoji").asText(), "Server setzt das Ersatz-Emoji für alte Apps");
+        assertEquals(battleId, got.get("battleId").asLong());
+
+        JsonNode stock = attacker.await("sticker-stock", 3);
+        assertNotNull(stock, "Absender erfährt den neuen Stand");
+        assertEquals(owned - 1, stock.get("count").asInt(), "ein Sticker verbraucht");
+    }
+
+    @Test
+    void stickerThatIsNotOwnedIsNotSent() throws Exception {
+        GameSocket.resetEmoteCooldowns();
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        while (stickers.consume(A, "naechste") >= 0) { } // sicher leer
+
+        attacker.send(sticker(B, "👀", "naechste", null));
+        assertNull(defender.await("emote", 1), "ohne Sticker in der Sammlung kommt nichts an");
+    }
+
+    @Test
+    void unknownStickerIsIgnoredAndEmojisHaveNoSticker() throws Exception {
+        GameSocket.resetEmoteCooldowns();
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+
+        attacker.send(sticker(B, "🔥", "du-bist-doof", null));
+        assertNull(defender.await("emote", 1), "unbekannter Sticker wird nicht weitergeleitet, auch nicht als Emoji");
+
+        attacker.send(emote(B, "🔥", null));
+        JsonNode got = defender.await("emote", 3);
+        assertNotNull(got);
+        assertTrue(got.get("sticker").isNull(), "normales Emoji ohne Sticker");
     }
 
     @Test

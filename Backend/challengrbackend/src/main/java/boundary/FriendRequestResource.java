@@ -59,6 +59,10 @@ public class FriendRequestResource {
         if (blocks.blockedEitherWay(dto.fromPlayerId(), dto.toPlayerId())) {
             throw new WebApplicationException("Dieser Spieler ist nicht erreichbar", 403);
         }
+        // Sonst bekäme ein bestehender Freund erneut eine Anfrage (z. B. über die Karte oder die Suche)
+        if (friendshipRepository.areFriends(dto.fromPlayerId(), dto.toPlayerId())) {
+            throw new WebApplicationException("Ihr seid schon Freunde", 409);
+        }
         FriendRequest request = friendRequestRepository.create(dto.fromPlayerId(), dto.toPlayerId());
         GameSocket.emitFriendRequestCreated(request.getId(), request.getFromPlayerId(), request.getToPlayerId());
         return toDTO(request);
@@ -137,7 +141,27 @@ public class FriendRequestResource {
         if (!friendshipRepository.areFriends(dto.fromPlayerId(), dto.toPlayerId())) {
             throw new WebApplicationException("Gift can only be sent to friends", 400);
         }
-        FriendGift gift = friendGiftRepository.create(dto.fromPlayerId(), dto.toPlayerId());
+        String stickerId = dto.stickerId();
+        FriendGift gift;
+        if (stickerId != null) {
+            // Eigenen Sticker verschenken: kostet einen aus der Sammlung, darum ohne Tages-Grenze
+            if (!control.StickerCatalog.FALLBACK.containsKey(stickerId)) {
+                throw new WebApplicationException("Unbekannter Sticker", 400);
+            }
+            try {
+                gift = friendGiftRepository.create(dto.fromPlayerId(), dto.toPlayerId(), stickerId);
+            } catch (IllegalStateException ex) {
+                throw new WebApplicationException(ex.getMessage(), 409);
+            }
+        } else {
+            // Eins pro Freund und Tag (Wiener Zeit) – sonst könnten sich zwei Freunde endlos Sticker zuschieben
+            java.time.Instant today = java.time.LocalDate.now(control.HotspotCatalog.ZONE).atStartOfDay(control.HotspotCatalog.ZONE).toInstant();
+            if (friendGiftRepository.sentSince(dto.fromPlayerId(), dto.toPlayerId(), today)) {
+                throw new WebApplicationException("Heute schon ein Geschenk an diesen Freund geschickt", 429);
+            }
+            gift = friendGiftRepository.create(dto.fromPlayerId(), dto.toPlayerId());
+        }
+        GameSocket.emitGiftReceived(gift.getFromPlayerId(), gift.getToPlayerId());
         return toDTO(gift);
     }
 
@@ -225,7 +249,10 @@ public class FriendRequestResource {
                 g.getToPlayerId(),
                 g.getStatus(),
                 g.getCreatedAt(),
-                g.getClaimedAt()
+                g.getClaimedAt(),
+                // Inhalt bleibt bis zum Öffnen eine Überraschung
+                g.getStatus() == FriendGift.Status.CLAIMED ? g.getStickerId() : null,
+                g.isFromCollection()
         );
     }
 }

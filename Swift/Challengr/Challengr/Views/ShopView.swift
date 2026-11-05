@@ -40,6 +40,9 @@ enum ItemRarity: String {
 }
 
 struct ShopView: View {
+    /// Solange Items im Spiel noch nichts bewirken, kann man sie nicht kaufen (nur ansehen) – Sticker-Pakete schon.
+    static let isOpen = false
+
     @Environment(\.dismiss) var dismiss
 
     let ownPlayerId: String
@@ -55,6 +58,7 @@ struct ShopView: View {
     @State private var purchasingCode: String? = nil
     @State private var toastMessage: String? = nil
     @State private var toastIsError = false
+    @State private var stickerReward: StickerReward? = nil
 
     init(ownPlayerId: String, initialPoints: Int, onPointsChanged: @escaping (Int) -> Void = { _ in }) {
         self.ownPlayerId = ownPlayerId
@@ -77,14 +81,30 @@ struct ShopView: View {
                     ProgressView()
                         .tint(.challengrYellow)
                     Spacer()
-                } else if items.isEmpty {
-                    Spacer()
-                    Text("Shop ist gerade nicht erreichbar.")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.7))
-                    Spacer()
                 } else {
                     ScrollView {
+                        // Sticker-Pakete gibt's schon, der Rest öffnet später
+                        StickerPackOffer(onBought: { stickers in
+                            currentPoints = StickerCollection.shared.coins ?? currentPoints
+                            onPointsChanged(currentPoints)
+                            stickerReward = .pack(stickers)
+                        }, onError: { showToast($0, isError: true) })
+                        .padding([.horizontal, .top], 20)
+
+                        if !Self.isOpen {
+                            Label("Alles andere im Shop öffnet bald.", systemImage: "clock.fill")
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundColor(.white.opacity(0.75))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 8)
+                        }
+                        if items.isEmpty {
+                            Text("Shop ist gerade nicht erreichbar.")
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                .foregroundColor(.white.opacity(0.7))
+                                .padding(.top, 30)
+                        }
                         LazyVGrid(columns: [
                             GridItem(.flexible(), spacing: 16),
                             GridItem(.flexible(), spacing: 16),
@@ -94,6 +114,7 @@ struct ShopView: View {
                                 ShopItemView(
                                     item: item,
                                     ownedQuantity: ownedQuantities[item.code] ?? 0,
+                                    isOpen: Self.isOpen,
                                     canAfford: currentPoints >= item.price,
                                     isPurchasing: purchasingCode == item.code
                                 ) {
@@ -125,6 +146,7 @@ struct ShopView: View {
             }
         }
         .task { await loadShop() }
+        .sheet(item: $stickerReward) { StickerRewardSheet(reward: $0) }
     }
 
     // MARK: - Header (Kopfbereich)
@@ -138,10 +160,8 @@ struct ShopView: View {
                     .foregroundColor(.white)
 
                 HStack(spacing: 6) {
-                    Image(systemName: "trophy.fill")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.challengrYellow)
-                    Text("\(currentPoints) PUNKTE")
+                    Image("MenuCoin").resizable().scaledToFit().frame(width: 16, height: 16)
+                    Text("\(currentPoints) COINS")
                         .font(.system(size: 13, weight: .bold, design: .rounded))
                         .foregroundColor(.challengrYellow)
                 }
@@ -168,6 +188,7 @@ struct ShopView: View {
 
         let loadedItems = (try? await itemsAsync) ?? []
         let owned = (try? await ownedAsync) ?? []
+        await StickerCollection.shared.load()
 
         await MainActor.run {
             items = loadedItems
@@ -177,7 +198,7 @@ struct ShopView: View {
     }
 
     private func purchase(_ item: ShopItemDTO) async {
-        guard purchasingCode == nil else { return }
+        guard Self.isOpen, purchasingCode == nil else { return }
         guard currentPoints >= item.price else {
             showToast("Nicht genug Punkte", isError: true)
             return
@@ -225,6 +246,7 @@ struct ShopView: View {
 struct ShopItemView: View {
     let item: ShopItemDTO
     let ownedQuantity: Int
+    var isOpen = true
     let canAfford: Bool
     let isPurchasing: Bool
     let onBuy: () -> Void
@@ -274,14 +296,16 @@ struct ShopItemView: View {
                 .multilineTextAlignment(.center)
                 .frame(height: 32)
 
-            HStack(spacing: 4) {
-                Image(systemName: "trophy.fill")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(rarity.color)
+            if isOpen {
+                HStack(spacing: 4) {
+                    Image(systemName: "star.circle.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(rarity.color)
 
-                Text("\(item.price)")
-                    .font(.system(size: 12, weight: .black, design: .rounded))
-                    .foregroundColor(rarity.color)
+                    Text("\(item.price)")
+                        .font(.system(size: 12, weight: .black, design: .rounded))
+                        .foregroundColor(rarity.color)
+                }
             }
 
             Button(action: onBuy) {
@@ -290,7 +314,7 @@ struct ShopItemView: View {
                         ProgressView()
                             .tint(.challengrDark)
                     } else {
-                        Text("KAUFEN")
+                        Text(isOpen ? "KAUFEN" : "BALD")
                             .font(.system(size: 11, weight: .black, design: .rounded))
                             .tracking(0.5)
                     }
@@ -298,15 +322,15 @@ struct ShopItemView: View {
                 .foregroundColor(.challengrDark)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
-                .background(canAfford ? Color.challengrYellow : Color.white.opacity(0.15))
+                .background(isOpen && canAfford ? Color.challengrYellow : Color.white.opacity(0.15))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            .disabled(!canAfford || isPurchasing)
+            .disabled(!isOpen || !canAfford || isPurchasing)
         }
         .padding(12)
         .background(Color.white.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .opacity(canAfford ? 1.0 : 0.75)
+        .opacity(isOpen && canAfford ? 1.0 : 0.75)
     }
 }
 

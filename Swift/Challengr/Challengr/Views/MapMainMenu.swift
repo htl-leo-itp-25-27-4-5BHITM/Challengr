@@ -7,6 +7,8 @@ struct MapMenuItem: Identifiable {
     let systemImage: String
     let color: Color
     var badge: Int = 0
+    /// Bild aus den Assets statt Symbol (z. B. ein Sticker)
+    var assetImage: String? = nil
     let action: () -> Void
 }
 
@@ -32,7 +34,9 @@ struct MapMainMenu: View {
 
             ZStack {
                 ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                    let offset = MapMenuLayout.offset(index: index, count: items.count)
+                    // ab 6 Knöpfen etwas weiterer Bogen, sonst stoßen sie aneinander
+                    let offset = MapMenuLayout.offset(index: index, count: items.count,
+                                                      radius: items.count > 5 ? 170 : MapMenuLayout.radius)
                     menuButton(item)
                         .offset(x: isOpen ? offset.width : 0, y: isOpen ? offset.height : 0)
                         .scaleEffect(isOpen ? 1 : 0.2)
@@ -60,6 +64,17 @@ struct MapMainMenu: View {
                     .rotation3DEffect(.degrees(spin), axis: (x: 0, y: 1, z: 0))
                     .shadow(color: .black.opacity(0.3), radius: 6, x: 0, y: 4)
 
+                // Geschlossen: roter Punkt, wenn im Menü etwas wartet (z. B. Aufgaben-Belohnung)
+                if !isOpen, items.contains(where: { $0.badge > 0 }) {
+                    Circle()
+                        .fill(Color.challengrRed)
+                        .frame(width: 18, height: 18)
+                        .overlay(Circle().stroke(Color.white, lineWidth: 2.5))
+                        .offset(x: 30, y: -30)
+                        .transition(.scale.combined(with: .opacity))
+                        .accessibilityHidden(true)
+                }
+
                 if isOpen {
                     Image(systemName: "xmark")
                         .font(.system(size: 15, weight: .black))
@@ -78,15 +93,21 @@ struct MapMainMenu: View {
 
     private func menuButton(_ item: MapMenuItem) -> some View {
         Button {
-            close()
+            close()   // spielt den Klick
             item.action()
         } label: {
             // Nur Symbole – die Namen stehen in der Bedienungshilfe (VoiceOver)
             VStack(spacing: 4) {
                 ZStack(alignment: .topTrailing) {
-                    Image(systemName: item.systemImage)
-                        .font(.system(size: 21, weight: .bold))
-                        .foregroundColor(.white)
+                    Group {
+                        if let asset = item.assetImage {
+                            Image(asset).resizable().scaledToFit().padding(3)
+                        } else {
+                            Image(systemName: item.systemImage)
+                                .font(.system(size: 21, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                    }
                         .frame(width: 54, height: 54)
                         .background(Circle().fill(item.color))
                         .overlay(Circle().stroke(Color.white, lineWidth: 3))
@@ -112,7 +133,7 @@ struct MapMainMenu: View {
     }
 
     private func toggle() {
-        SoundManager.shared.play(.tap)
+        SoundManager.shared.play(isOpen ? .click : .menuOpen)
         withAnimation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.7)) {
             isOpen.toggle()
             spin += 360

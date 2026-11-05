@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// Spielbare 3D-Figuren. Jede Figur gibt es als SceneKit-Modell (`Characters/<sceneName>.scn`)
 /// und als daraus gerendertes Bild (ganze Figur + Brustbild für runde Avatare).
@@ -16,6 +17,8 @@ enum GameCharacter: String, CaseIterable, Identifiable {
     case merlo = "merlo"
     case lyra = "lyra"
     case kaeptnRex = "kaeptn-rex"
+    // Event-Belohnungen (nur solange das Event läuft)
+    case crashDummy = "crash-dummy"
 
     /// Start-Figur, bis man im Figuren-Editor eine andere wählt.
     static let own: GameCharacter = .junge
@@ -45,6 +48,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .merlo:     return "Merlo"
         case .lyra:      return "Lyra"
         case .kaeptnRex: return "Käpt'n Rex"
+        case .crashDummy: return "Crash-Test-Dummy"
         }
     }
 
@@ -60,6 +64,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .merlo:            return "Magier · Wissen"
         case .lyra:             return "Waldläuferin · Ausdauer"
         case .kaeptnRex:        return "Pirat · Glücksritter"
+        case .crashDummy:       return "Beta-Tester · Event"
         }
     }
 
@@ -69,12 +74,14 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .junge, .maedchen: return .none
         case .sirBrecht:        return .wins(1)
         case .ragnar:           return .wins(3)
-        case .hayato:           return .wins(5)
-        case .kage:             return .wins(10)
-        case .kai:              return .wins(20)
         case .merlo:            return .knowledgeWins(3)
         case .lyra:             return .checkins(5)
-        case .kaeptnRex:        return .trophies(350)
+        // Rang-Belohnungen der Trophy Road (Grenzen wie im Backend, reference-data.sql)
+        case .kaeptnRex:        return .rank("Contender", trophies: 350)
+        case .hayato:           return .rank("Tryhard", trophies: 600)
+        case .kai:              return .rank("Brawler", trophies: 950)
+        case .kage:             return .rank("Dueler", trophies: 1400)
+        case .crashDummy:       return .event("Beta-Event")
         }
     }
 
@@ -90,6 +97,24 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .merlo:     return "Merlo"
         case .lyra:      return "Lyra"
         case .kaeptnRex: return "Rex"
+        case .crashDummy: return "Dummy"
+        }
+    }
+
+    /// Farbe der Figur – Hintergrund hinter runden Avataren (statt durchsichtig).
+    var themeColor: Color {
+        switch self {
+        case .junge:     return Color(red: 0.98, green: 0.78, blue: 0.20)
+        case .maedchen:  return Color(red: 0.86, green: 0.25, blue: 0.27)
+        case .sirBrecht: return Color(red: 0.42, green: 0.55, blue: 0.75)
+        case .ragnar:    return Color(red: 0.85, green: 0.50, blue: 0.20)
+        case .hayato:    return Color(red: 0.80, green: 0.15, blue: 0.20)
+        case .kage:      return Color(red: 0.30, green: 0.25, blue: 0.55)
+        case .kai:       return Color(red: 0.95, green: 0.40, blue: 0.25)
+        case .merlo:     return Color(red: 0.50, green: 0.30, blue: 0.85)
+        case .lyra:      return Color(red: 0.30, green: 0.68, blue: 0.40)
+        case .kaeptnRex: return Color(red: 0.20, green: 0.50, blue: 0.60)
+        case .crashDummy: return Color(red: 0.90, green: 0.68, blue: 0.10)
         }
     }
 
@@ -102,6 +127,14 @@ enum GameCharacter: String, CaseIterable, Identifiable {
     /// Animation für die Karte: aus dem 3D-Modell gerendert (schräg von oben), Bilder nebeneinander.
     var mapSheetName: String { sceneName + "MapSheet" }
     static let mapSheetFrames = 16
+
+    /// Figuren, die man auf der Trophy Road beim Rang mit dieser Trophäen-Grenze bekommt.
+    static func rankRewards(atTrophies min: Int) -> [GameCharacter] {
+        GameCharacter.allCases.filter {
+            if case .rank(_, let n) = $0.requirement { return n == min }
+            return false
+        }
+    }
 }
 
 /// Freischalt-Bedingung einer Figur – gleiche Typen wie im Backend (`CharacterCatalog.Requirement`).
@@ -110,15 +143,19 @@ enum UnlockRequirement: Equatable {
     case wins(Int)
     case knowledgeWins(Int)
     case checkins(Int)
-    /// Trophäen in der besseren Liga
-    case trophies(Int)
+    /// Rang auf der Trophy Road (einmal erreicht – bleibt frei, auch wenn man wieder abrutscht)
+    case rank(String, trophies: Int)
+    /// Belohnung eines Events (Aufgaben → Events) – bleibt nach dem Abholen für immer
+    case event(String)
 
     var required: Int {
         switch self {
         case .none: return 0
-        case .wins(let n), .knowledgeWins(let n), .checkins(let n), .trophies(let n): return n
+        case .event: return 1
+        case .wins(let n), .knowledgeWins(let n), .checkins(let n), .rank(_, let n): return n
         }
     }
+
 
     /// z.B. "3 Siege", "5 Check-ins" – für gesperrte Figuren im Editor.
     func text(progress: Int? = nil) -> String {
@@ -128,7 +165,8 @@ enum UnlockRequirement: Equatable {
         case .wins(let n):          return "\(p)\(n) \(n == 1 && progress == nil ? "Sieg" : "Siege")"
         case .knowledgeWins(let n): return "\(p)\(n) Quiz-Siege"
         case .checkins(let n):      return "\(p)\(n) Check-ins"
-        case .trophies(let n):      return "\(p)\(n) Trophäen"
+        case .rank(let name, let n): return progress == nil ? "Rang \(name)" : "Rang \(name) · \(p)\(n)"
+        case .event(let name):      return name
         }
     }
 }

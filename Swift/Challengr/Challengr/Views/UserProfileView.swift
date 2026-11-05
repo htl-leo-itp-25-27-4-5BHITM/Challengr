@@ -40,16 +40,20 @@ private extension String {
 struct UserProfileView: View {
     var playerId: String = ""
     let data: UserProfileData
-    let pointsHistory: [PlayerPointsHistoryDTO]
     let battleHistory: [BattleHistoryDTO]
     let profileStatusText: String?
     let profileBadges: [String]
     var rankColor: Color = .gray
+    /// Stift neben dem Namen (öffnet "Name ändern"); nil = keiner
+    var onEditName: (() -> Void)? = nil
 
     @State private var selectedDate: String? = nil
-    @State private var selectedPoints: Int? = nil
+    @State private var selectedTrophies: Int? = nil
     @State private var isChartExpanded: Bool = true
     @State private var showCharacterEditor: Bool = false
+    /// Verlauf eingeklappt: nur die letzten Battles, sonst wird das Profil endlos lang
+    @State private var showAllBattles = false
+    private static let collapsedBattleCount = 5
 
     @StateObject private var avatarStore = AvatarCustomizationStore()
 
@@ -69,7 +73,7 @@ struct UserProfileView: View {
 
                 leagueSection
 
-                pointsChart
+                trophyChart
 
                 badgesSection
 
@@ -140,12 +144,25 @@ struct UserProfileView: View {
                     .accessibilityLabel("Deine Figur")
                     .accessibilityHint("Zum Drehen wischen")
 
-                Text(data.name.uppercased())
-                    .font(.system(size: 26, weight: .black, design: .rounded))
-                    .tracking(1)
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
+                HStack(spacing: 8) {
+                    Text(data.name.uppercased())
+                        .font(.system(size: 26, weight: .black, design: .rounded))
+                        .tracking(1)
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    if let onEditName {
+                        Button(action: onEditName) {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 14, weight: .black))
+                                .foregroundColor(.challengrDark)
+                                .frame(width: 30, height: 30)
+                                .background(Circle().fill(Color.challengrYellow))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Name ändern")
+                    }
+                }
 
                 HStack(spacing: 8) {
                     Text(data.rankName.uppercased())
@@ -154,8 +171,8 @@ struct UserProfileView: View {
                         .foregroundColor(.challengrDark)
                         .padding(.horizontal, 10).padding(.vertical, 5)
                         .background(Capsule().fill(rankColor))
-                    Label("\(data.points)", systemImage: "star.circle.fill")
-                        .accessibilityLabel("\(data.points) Punkte")
+                    Label("\(data.trophies ?? 0)", systemImage: "trophy.fill")
+                        .accessibilityLabel("\(data.trophies ?? 0) Trophäen")
                         .font(.system(size: 14, weight: .black, design: .rounded))
                         .foregroundColor(.challengrYellow)
                     statusChip
@@ -173,15 +190,14 @@ struct UserProfileView: View {
         }
     }
 
-    // MARK: - Points chart (Punkte-Chart)
+    // MARK: - Trophy chart (Trophäenverlauf)
 
-    private var pointsChart: some View {
-        let aggregatedHistory = startOfDayHistory(pointsHistory, battleHistory: battleHistory)
-        let sortedHistory = aggregatedHistory.sorted { $0.date < $1.date }
+    private var trophyChart: some View {
+        let sortedHistory = TrophyHistory.daily(battles: battleHistory, current: data.trophies ?? 0)
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("PUNKTEVERLAUF")
+                Text("TROPHÄENVERLAUF")
                     .font(.system(size: 12, weight: .black, design: .rounded))
                     .tracking(1.2)
                     .foregroundColor(.secondary)
@@ -198,14 +214,14 @@ struct UserProfileView: View {
             }
 
             if sortedHistory.isEmpty {
-                Text("Noch keine Daten")
+                Text("Noch keine Liga-Battles")
                     .font(.footnote)
                     .foregroundColor(.secondary)
             } else if isChartExpanded {
                 Chart(sortedHistory) { entry in
                     LineMark(
                         x: .value("Datum", entry.date),
-                        y: .value("Punkte", entry.points)
+                        y: .value("Trophäen", entry.trophies)
                     )
                     .foregroundStyle(
                         LinearGradient(
@@ -218,7 +234,7 @@ struct UserProfileView: View {
 
                     PointMark(
                         x: .value("Datum", entry.date),
-                        y: .value("Punkte", entry.points)
+                        y: .value("Trophäen", entry.trophies)
                     )
                     .foregroundStyle(entry.date == selectedDate ? Color.challengrYellow : Color.accentColor)
                     .symbolSize(entry.date == selectedDate ? 90 : 40)
@@ -236,7 +252,7 @@ struct UserProfileView: View {
                                         let relativeX = value.location.x - plotFrame.minX
                                         if let date: String = proxy.value(atX: relativeX) {
                                             selectedDate = date
-                                            selectedPoints = sortedHistory.first { $0.date == date }?.points
+                                            selectedTrophies = sortedHistory.first { $0.date == date }?.trophies
                                         }
                                     }
                             )
@@ -245,9 +261,9 @@ struct UserProfileView: View {
                 .chartOverlay { proxy in
                     GeometryReader { geometry in
                         if let selectedDate,
-                           let selectedPoints,
+                           let selectedTrophies,
                            let xPosition = proxy.position(forX: selectedDate),
-                           let yPosition = proxy.position(forY: selectedPoints) {
+                           let yPosition = proxy.position(forY: selectedTrophies) {
                             let plotFrame = geometry[proxy.plotAreaFrame]
                             let point = CGPoint(x: xPosition + plotFrame.minX, y: yPosition + plotFrame.minY)
 
@@ -259,7 +275,7 @@ struct UserProfileView: View {
                             VStack(spacing: 2) {
                                 Text(selectedDate)
                                     .font(.caption2.weight(.semibold))
-                                Text("\(selectedPoints) Punkte")
+                                Text("\(selectedTrophies) Trophäen")
                                     .font(.caption2)
                             }
                             .padding(.horizontal, 8)
@@ -392,7 +408,7 @@ struct UserProfileView: View {
                     Button("Alles anzeigen") {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             selectedDate = nil
-                            selectedPoints = nil
+                            selectedTrophies = nil
                         }
                     }
                     .font(.caption.weight(.semibold))
@@ -407,7 +423,9 @@ struct UserProfileView: View {
                     .font(.footnote)
                     .foregroundColor(.secondary)
             } else {
-                ForEach(filtered) { battle in
+                // Ein Tag gewählt: alle Battles des Tages; sonst eingeklappt auf die letzten paar
+                let shown = date != nil || showAllBattles ? filtered : Array(filtered.prefix(Self.collapsedBattleCount))
+                ForEach(shown) { battle in
                     let deltaColor: Color = battle.pointsDelta >= 0 ? .challengrGreen : .challengrRed
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(alignment: .top, spacing: 10) {
@@ -439,9 +457,15 @@ struct UserProfileView: View {
                                 .font(.caption)
                                 .foregroundColor(battle.won ? .challengrGreen : battle.isDraw ? .secondary : .challengrRed)
 
-                            Text("Δ \(battle.pointsDelta)")
-                                .font(.caption)
-                                .foregroundColor(deltaColor)
+                            if battle.mode == "FRIENDLY" {
+                                Text("Friendly")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Label("\(battle.pointsDelta > 0 ? "+" : "")\(battle.pointsDelta)", systemImage: "trophy.fill")
+                                    .font(.caption)
+                                    .foregroundColor(deltaColor)
+                            }
                         }
                     }
                     .padding(10)
@@ -451,6 +475,20 @@ struct UserProfileView: View {
                             .fill(GameStyle.panelFill)
                             .shadow(color: .black.opacity(0.06), radius: 6, x: 0, y: 3)
                     )
+                }
+                if date == nil && filtered.count > Self.collapsedBattleCount {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) { showAllBattles.toggle() }
+                    } label: {
+                        Label(showAllBattles ? "Weniger anzeigen" : "Alle \(filtered.count) Battles anzeigen",
+                              systemImage: showAllBattles ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundColor(.challengrYellow)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(Capsule().fill(GameStyle.panelFill))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -619,31 +657,6 @@ struct UserProfileView: View {
             Image(systemName: icon)
                 .foregroundColor(color)
             Text(title)
-        }
-    }
-
-    private func startOfDayHistory(
-        _ history: [PlayerPointsHistoryDTO],
-        battleHistory: [BattleHistoryDTO]
-    ) -> [PlayerPointsHistoryDTO] {
-        let ordered = history.sorted { $0.date < $1.date }
-        var endOfDayPoints: [String: Int] = [:]
-        ordered.forEach { entry in
-            endOfDayPoints[entry.date] = entry.points
-        }
-
-        let dailyDelta = Dictionary(grouping: battleHistory) { battle in
-            String(battle.createdAt.prefix(10))
-        }.mapValues { battles in
-            battles.reduce(0) { $0 + $1.pointsDelta }
-        }
-
-        let dates = endOfDayPoints.keys.sorted()
-        return dates.map { date in
-            let endPoints = endOfDayPoints[date] ?? 0
-            let delta = dailyDelta[date] ?? 0
-            let startPoints = endPoints - delta
-            return PlayerPointsHistoryDTO(date: date, points: startPoints)
         }
     }
 }

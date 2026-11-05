@@ -33,6 +33,14 @@ public class Challenges {
     @Column(name = "correct_index")
     private Integer correctIndex; // 0–3 für Wissen
 
+    /** Im Dashboard deaktiviert: taucht nirgends mehr auf (gelöscht wird nie – alte Battles verweisen darauf). */
+    @Column(columnDefinition = "boolean default true not null")
+    private boolean active = true;
+
+    /** Ursprünglicher Text aus quiz-questions.txt, falls im Dashboard umformuliert (sonst legt der Abgleich sie neu an). */
+    @Column(name = "original_text", length = 500)
+    private String originalText;
+
     public Challenges() {}
 
     public Challenges(String text, ChallengeCategory challengeCategory) {
@@ -62,6 +70,12 @@ public class Challenges {
 
     public String getOptionD() { return optionD; }
     public void setOptionD(String optionD) { this.optionD = optionD; }
+
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
+
+    public String getOriginalText() { return originalText; }
+    public void setOriginalText(String originalText) { this.originalText = originalText; }
 
     public Integer getCorrectIndex() { return correctIndex; }
     public void setCorrectIndex(Integer correctIndex) { this.correctIndex = correctIndex; }

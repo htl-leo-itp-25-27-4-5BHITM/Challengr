@@ -1,0 +1,90 @@
+<div class="hero">
+  <div class="hero-inner">
+    <div class="crumbs">Admin <span>/</span> Events</div>
+    <h1>Events</h1>
+    <div class="subtitle">Zeitlich begrenzte Challenges mit Belohnung. Erscheinen in der App unter Aufgaben → Events, ohne neuen Build.</div>
+  </div>
+</div>
+
+@if (error) { <div class="error">{{ error }}</div> }
+
+<div class="card pad section">
+  <div class="card-head">
+    <div class="card-sub">Neue Figuren als Belohnung brauchen weiterhin einen App-Build – Coins gehen immer.</div>
+    <button class="btn btn--primary" (click)="newEvent()">Neues Event</button>
+  </div>
+  @if (msg && editing === null) { <div class="msg">{{ msg }}</div> }
+</div>
+
+@if (editing !== null) {
+  <div class="card pad section">
+    <h2>{{ editing === 'new' ? 'Neues Event' : 'Event bearbeiten' }}</h2>
+    <div class="form" style="margin-top:10px">
+      <div class="row">
+        <label>ID (a–z, 0–9, -)<input type="text" [(ngModel)]="form.id" [disabled]="editing !== 'new'" placeholder="halloween-2026" /></label>
+        <label>Titel<input type="text" maxlength="80" [(ngModel)]="form.title" placeholder="Halloween-Event" /></label>
+      </div>
+      <label>Untertitel<input type="text" maxlength="160" [(ngModel)]="form.subtitle" placeholder="Nur bis 2. November!" /></label>
+      <div class="row">
+        <label>Start<input type="date" [(ngModel)]="form.start" /></label>
+        <label>Ende (letzter Tag)<input type="date" [(ngModel)]="form.end" /></label>
+        <label>Belohnung: Figur
+          <select [(ngModel)]="form.rewardCharacter">
+            <option value="">keine Figur</option>
+            @for (c of meta.rewardCharacters; track c.id) { <option [value]="c.id">{{ c.name }}</option> }
+          </select>
+        </label>
+        <label>+ Coins<input type="number" min="0" max="1000" [(ngModel)]="form.rewardCoins" /></label>
+      </div>
+      <h2 style="margin-top:8px">Challenges</h2>
+      @for (t of form.tasks; track $index; let i = $index) {
+        <div class="row" style="align-items:end">
+          <label>Messgröße
+            <select [(ngModel)]="t.metric">@for (m of meta.metrics; track m.id) { <option [value]="m.id">{{ m.label }}</option> }</select>
+          </label>
+          <label style="max-width:110px">Ziel<input type="number" min="1" max="1000" [(ngModel)]="t.target" /></label>
+          <label>Text in der App (leer = automatisch)<input type="text" maxlength="80" [(ngModel)]="t.title" [placeholder]="t.target + '× ' + metricLabel(t.metric)" /></label>
+          <button class="btn btn--danger" (click)="removeTask(i)" [disabled]="form.tasks.length < 2">Entfernen</button>
+        </div>
+      }
+      <div class="actions">
+        <button class="btn" (click)="addTask()" [disabled]="form.tasks.length >= 10">+ Challenge</button>
+        <button class="btn btn--primary" (click)="save()" [disabled]="busy">Speichern</button>
+        <button class="btn" (click)="editing = null">Abbrechen</button>
+      </div>
+      <div class="card-sub">Gezählt wird nur, was im Zeitraum passiert. Spieltage, Battles und Check-ins werden aus den vorhandenen Daten berechnet.</div>
+      @if (msg) { <div class="msg err">{{ msg }}</div> }
+    </div>
+  </div>
+}
+
+<div class="rows section">
+  @for (r of rows; track r.event.id) {
+    <div class="card pad">
+      <div class="card-head" style="align-items:flex-start">
+        <div>
+          <h2>{{ r.event.title }} <span class="pill" [class.pill--ok]="r.state === 'läuft'">{{ r.state }}</span></h2>
+          <div class="card-sub">{{ r.event.start | date: 'dd.MM.yyyy' }} – {{ r.event.end | date: 'dd.MM.yyyy' }} · Belohnung: {{ charName(r.event.rewardCharacter) }}@if (r.event.rewardCoins) { + {{ r.event.rewardCoins }} Coins } · {{ r.claimed }}× abgeholt</div>
+        </div>
+        <div class="actions" style="margin:0">
+          <button class="btn" (click)="edit(r.event)">Bearbeiten</button>
+          @if (r.claimed === 0) { <button class="btn btn--danger" (click)="remove(r)">Löschen</button> }
+        </div>
+      </div>
+      @if (progress[r.event.id]; as p) {
+        <div class="card-sub" style="margin-bottom:8px">{{ p.participants }} Spieler waren im Zeitraum aktiv · {{ p.completed }} haben alles geschafft · {{ p.claimed }} abgeholt
+          · <a href="" (click)="$event.preventDefault(); loadProgress(r.event.id, true)">neu berechnen</a></div>
+        <div class="rows">
+          @for (t of p.tasks; track t.id) {
+            <div class="row-item">
+              <div class="grow"><div>{{ t.title }}</div><div class="bar" style="margin-top:6px"><div [style.width.%]="pct(t.done, p.participants)"></div></div></div>
+              <span class="muted" style="width:110px;text-align:right">{{ t.done }} / {{ p.participants }} ({{ pct(t.done, p.participants) }} %)</span>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="rows">@for (t of r.event.tasks; track t.id) { <div class="row-item">{{ t.title }}</div> }</div>
+      }
+    </div>
+  }
+</div>

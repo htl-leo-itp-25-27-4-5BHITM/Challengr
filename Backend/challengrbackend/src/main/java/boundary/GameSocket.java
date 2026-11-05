@@ -88,6 +88,12 @@ public class GameSocket {
     @Inject
     control.BlockRepository blockRepository;
 
+    @Inject
+    control.StickerRepository stickerRepository;
+
+    @Inject
+    control.QuizStatsService quizStats;
+
     // ---------------------------------------------------------
     // Lifecycle
     // ---------------------------------------------------------
@@ -151,6 +157,11 @@ public class GameSocket {
         }
     }
 
+    /** Wie viele Spieler gerade verbunden sind (Dashboard → System). */
+    public static int onlineCount() {
+        return (int) SESSIONS.values().stream().filter(Session::isOpen).count();
+    }
+
     /** Hat der Spieler gerade eine offene Verbindung? (zählt für "nearby" als aktiv) */
     public static boolean isOnline(String playerId) {
         Session s = playerId == null ? null : SESSIONS.get(playerId);
@@ -206,6 +217,9 @@ public class GameSocket {
                 case "camera-result"        -> handleMetricResult(msg, playerId, MetricResults.Kind.CAMERA, "score");
                 case "shake-result"         -> handleMetricResult(msg, playerId, MetricResults.Kind.SHAKE, "shakes");
                 case "pushup-result"        -> handleMetricResult(msg, playerId, MetricResults.Kind.PUSHUP, "reps");
+                case "country-result"       -> handleMetricResult(msg, playerId, MetricResults.Kind.COUNTRY, "deviation");
+                case "reaction-result"      -> handleMetricResult(msg, playerId, MetricResults.Kind.REACTION, "ms");
+                case "timing-result"        -> handleMetricResult(msg, playerId, MetricResults.Kind.TIMING, "ms");
                 case "send-emote"           -> handleEmote(msg, playerId);
                 case "quiz-answer"          -> handleQuizAnswer(msg, playerId);
                 case "friendly-finished"    -> handleFriendlyFinished(msg, playerId);
@@ -221,7 +235,10 @@ public class GameSocket {
     // -------------------- Emotes ----------------------------
 
     /** Erlaubte Emotes – nur diese werden weitergeleitet (kein Freitext, keine Beleidigungen). */
-    static final List<String> EMOTES = List.of("🔥", "😤", "💪", "👀", "🏆", "😂", "👋", "🥊");
+    // gleiche Liste wie in der App (Emotes.all) – nur harmlose Emojis, kein freier Text
+    /** Feste Auswahl (nicht alle Emojis – manche sind beleidigend, viele Spieler minderjährig); gleich wie Emotes.all in der App. */
+    static final List<String> EMOTES = List.of("🔥", "😤", "💪", "👀", "🏆", "😂", "👋", "🥊", "😎", "🤝", "👏", "🙌", "😅", "🤔", "😱", "🥳", "🎉", "⚡", "🧠", "🏃", "👑", "🤯", "😴", "🙏",
+            "😁", "😆", "🤩", "😏", "🙄", "😬", "🥲", "😭", "😡", "🤫", "🫡", "🤠", "👍", "👎", "🤙", "💯", "🎯", "🚀", "💥", "⚽", "🏀", "🎮", "🐐", "🍕");
 
     /** Mindestabstand zwischen zwei Emotes eines Spielers (gegen Spam). */
     static final Duration EMOTE_COOLDOWN = Duration.ofMillis(1500);
@@ -229,14 +246,20 @@ public class GameSocket {
     private static final Map<String, Long> LAST_EMOTE_AT = new ConcurrentHashMap<>();
 
     /**
-     * Emote an einen Spieler schicken: {"type":"send-emote","toId":"…","emoji":"🔥","battleId":12?}
+     * Emote an einen Spieler schicken: {"type":"send-emote","toId":"…","emoji":"🔥","sticker":"aura"?,"battleId":12?}
      * Mit battleId nur an den Gegner im laufenden Battle, sonst an den angetippten Spieler auf der Karte.
+     * Bei einem Sticker setzt der Server das Ersatz-Emoji selbst – alte Apps zeigen dann einfach das Emoji.
+     * Sticker sind gesammelt (StickerRepository): jeder Versand verbraucht einen, der Absender bekommt den neuen Stand.
      */
     private void handleEmote(JsonNode msg, String senderId) {
         String toId  = msg.path("toId").asText(null);
         String emoji = msg.path("emoji").asText(null);
+        String sticker = msg.hasNonNull("sticker") ? msg.get("sticker").asText() : null;
+        if (sticker != null) {
+            emoji = control.StickerCatalog.FALLBACK.get(sticker); // unbekannter Sticker → null → ignoriert
+        }
         Long battleId = msg.hasNonNull("battleId") ? msg.get("battleId").asLong() : null;
-        if (senderId == null || toId == null || toId.equals(senderId) || !EMOTES.contains(emoji)) {
+        if (senderId == null || toId == null || toId.equals(senderId) || emoji == null || !EMOTES.contains(emoji)) {
             System.out.println("send-emote ignoriert (ungültig)");
             return;
         }
@@ -255,6 +278,17 @@ public class GameSocket {
         if (last != null && now - last < EMOTE_COOLDOWN.toMillis()) {
             return; // zu schnell hintereinander
         }
+        if (sticker != null) {
+            if (!isOnline(toId)) return; // sonst wäre der Sticker weg, ohne dass ihn jemand sieht
+            int left = stickerRepository.consume(senderId, sticker);
+            if (left < 0) {
+                System.out.println("send-emote ignoriert: Sticker nicht in der Sammlung");
+                return;
+            }
+            sendToPlayer(senderId, """
+            {"type": "sticker-stock", "sticker": "%s", "count": %d}
+            """.formatted(escapeJson(sticker), left));
+        }
         LAST_EMOTE_AT.put(senderId, now);
 
         sendToPlayer(toId, """
@@ -262,9 +296,11 @@ public class GameSocket {
           "type": "emote",
           "fromId": "%s",
           "emoji": "%s",
+          "sticker": %s,
           "battleId": %s
         }
-        """.formatted(escapeJson(senderId), escapeJson(emoji), battleId == null ? "null" : battleId.toString()));
+        """.formatted(escapeJson(senderId), escapeJson(emoji), sticker == null ? "null" : "\"" + escapeJson(sticker) + "\"",
+                battleId == null ? "null" : battleId.toString()));
     }
 
     /** Nur für Tests: Cooldown zurücksetzen. */
@@ -647,6 +683,7 @@ public class GameSocket {
         String loserName  = "Niemand";
         int winnerDelta = 0;
         int loserDelta  = 0;
+        String winnerSticker = null;
         String trashTalk;
 
         if (!isConflict && winnerId != null) {
@@ -658,6 +695,10 @@ public class GameSocket {
                 Battle updated = battleService.findById(battleId);
                 winnerDelta = Optional.ofNullable(updated.getWinnerPointsDelta()).orElse(0);
                 loserDelta  = Optional.ofNullable(updated.getLoserPointsDelta()).orElse(0);
+                // Liga-Sieg: mit etwas Glück ein Sticker
+                if (control.BattleMode.from(battle.getType()).isRanked()) {
+                    winnerSticker = stickerRepository.maybeWinDrop(winnerId, battleId);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("Fehler beim finalisieren von Battle " + battleId + ": " + e.getMessage());
@@ -697,6 +738,7 @@ public class GameSocket {
             "loserName": "%s",
             "loserAvatar": "ownAvatar",
             "loserPointsDelta": %d,
+            "winnerSticker": %s,
             "trashTalk": "%s",
             "fromId": "%s",
             "fromName": "%s",
@@ -715,6 +757,7 @@ public class GameSocket {
                 jsonStringOrNull(loserId),
                 escapeJson(loserName),
                 loserDelta,
+                jsonStringOrNull(winnerSticker),
                 escapeJson(trashTalk),
                 escapeJson(fromId),
                 escapeJson(battle.getFromPlayer().getName()),
@@ -872,6 +915,13 @@ public class GameSocket {
             """.formatted(requestId, escapeJsonStatic(fromPlayerId), escapeJsonStatic(toPlayerId));
         sendToPlayerStatic(fromPlayerId, payload);
         sendToPlayerStatic(toPlayerId, payload);
+    }
+
+    /** Freund hat ein Geschenk geschickt (Banner auf der Karte). */
+    public static void emitGiftReceived(String fromPlayerId, String toPlayerId) {
+        sendToPlayerStatic(toPlayerId, """
+            {"type": "gift-received", "fromPlayerId": "%s"}
+            """.formatted(escapeJsonStatic(fromPlayerId)));
     }
 
     public static void emitFriendRequestUpdated(Long requestId, String fromPlayerId, String toPlayerId, String status) {
@@ -1365,6 +1415,7 @@ public class GameSocket {
             ObjectNode scores = root.putObject("scores");
             q.scores.forEach(scores::put);
             payload = root.toString();
+            recordQuizStat(c, q.answers.get(q.fromId), q.answers.get(q.toId));
         }
         sendToPlayer(q.fromId, payload);
         sendToPlayer(q.toId, payload);
@@ -1373,6 +1424,20 @@ public class GameSocket {
         } else {
             schedule(() -> startQuizRound(battleId, round + 1), quizRevealPause);
         }
+    }
+
+    /** Statistik fürs Dashboard: welche Fragen fast alle falsch beantworten (oft ein Fehler in der Frage). */
+    private void recordQuizStat(Challenges c, Integer a, Integer b) {
+        if (quizStats == null || c.getCorrectIndex() == null) return;
+        int correct = 0, wrong = 0, none = 0;
+        for (Integer answer : new Integer[]{a, b}) {
+            if (answer == null || answer < 0) none++;
+            else if (answer.equals(c.getCorrectIndex())) correct++;
+            else wrong++;
+        }
+        long id = c.getId();
+        int fc = correct, fw = wrong, fn = none;
+        RESULT_TIMEOUTS.execute(() -> quizStats.record(id, fc, fw, fn));
     }
 
     private void finishQuiz(Long battleId) {

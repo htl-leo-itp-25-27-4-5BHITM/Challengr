@@ -1,50 +1,175 @@
+/* ==========================================================================
+   Challengr Admin – Design-Basis (gleicher Spiel-Look wie die App)
+   Alle Seiten nutzen diese Farben und Bausteine; Komponenten-CSS nur für Besonderes.
+   ========================================================================== */
+
 :root {
-  --yellow: #fdd006;
-  --yellow-deep: #e0ad00;
-  --black: #1e000e;
-  --white: #ffffff;
-  --bg: #f6f5fa;
-  --red: #ba1f33;
-  --green: #1fa85a;
-  --blue: #3b82f6;
-  --gray: #eaeaea;
-  --text-light: #6b6b6b;
-  --font-display: 'Poppins', 'Inter', sans-serif;
-  --font-body: 'Inter', Arial, sans-serif;
+  color-scheme: dark;
+
+  /* Flächen: warmes Fast-Schwarz aus dem App-Bordeaux, flach (keine Verläufe, kein Leuchten) */
+  --bg: #120c0f;
+  --surface-1: #1a1317;          /* Karten */
+  --surface-2: #221a1f;          /* Felder, Zeilen */
+  --surface-3: #2c2228;          /* Hover */
+  --border: #2e252a;
+  --border-strong: #3d3238;
+
+  /* Text */
+  --text-1: #eee7ea;
+  --text-2: #b3a6ad;
+  --text-3: #85777f;
+
+  /* Marke: Rot für Aktionen, Gelb nur für Trophäen und die wichtigste Zahl */
+  --accent: #d23a4f;             /* App-Rot, auf dunklem Grund lesbar */
+  --accent-hover: #e04a5f;
+  --accent-soft: rgba(210, 58, 79, 0.14);
+  --yellow: #e9b949;
+  --red: #e0566a;
+  --green: #4fb985;
+  --orange: #e0874a;
+
+  /* Diagramme: Kategorien (validiert für dunklen Grund), eine Reihe = Gelb */
+  --series-1: #3987e5;           /* Quiz-Show */
+  --series-2: #d95926;           /* Real-Life */
+  --series-3: #199e70;           /* Friendly */
+  --series-single: #e9b949;
+  --grid: #2a2126;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-}
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { height: 100%; }
 
 body {
   margin: 0;
   font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-1);
   background: var(--bg);
-  color: var(--black);
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv11', 'ss01';
 }
 
-h1, h2, h3 {
-  font-family: var(--font-display);
-  line-height: 1.3;
-}
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.25; margin: 0; }
+a { color: var(--accent-hover); }
+::selection { background: rgba(210, 58, 79, 0.35); }
 
-/* Standard Card Style */
+/* ---------- Seitenkopf ---------- */
+.hero { position: relative; padding: 28px 0 20px; }
+.hero-glow { display: none; }
+.hero-inner { position: relative; max-width: 900px; }
+.crumbs { font-size: 12px; font-weight: 500; color: var(--text-3); margin-bottom: 6px; }
+.crumbs span { margin: 0 6px; }
+.hero h1 { font-size: 24px; font-weight: 650; letter-spacing: -0.015em; }
+.subtitle { margin-top: 6px; color: var(--text-2); font-size: 14px; max-width: 640px; }
+
+/* ---------- Karten ---------- */
 .card {
-  background: var(--white);
-  border-radius: 18px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 20px;
-  border: 1px solid rgba(30, 0, 14, 0.06);
-  box-shadow: 0 6px 20px rgba(30, 0, 14, 0.05);
-  transition: all 0.2s ease;
+}
+.card h2, .card-title { font-size: 14px; font-weight: 600; color: var(--text-1); font-family: var(--font-body); letter-spacing: 0; }
+.card-sub { color: var(--text-3); font-size: 12px; margin-top: 3px; }
+.section { margin-bottom: 20px; }
+
+/* ---------- Knöpfe & Eingaben ---------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: transparent; color: var(--text-1);
+  font: 500 13px var(--font-body); cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.btn:hover:not(:disabled) { background: var(--surface-2); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn--primary, .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn--primary:hover:not(:disabled), .btn.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn--danger, .btn.danger { color: var(--red); border-color: rgba(224, 86, 106, 0.45); }
+.btn--danger:hover:not(:disabled), .btn.danger:hover:not(:disabled) { background: rgba(224, 86, 106, 0.1); }
+
+input, select, textarea {
+  font: 400 14px var(--font-body);
+  color: var(--text-1);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+  outline: none;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+input::placeholder, textarea::placeholder { color: var(--text-3); }
+
+/* ---------- Kleine Bausteine ---------- */
+.pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 6px;
+  font-size: 12px; font-weight: 500;
+  background: var(--surface-3); color: var(--text-2);
+}
+.pill--ok { background: rgba(79, 185, 133, 0.12); color: var(--green); }
+.pill--danger { background: rgba(224, 86, 106, 0.12); color: var(--red); }
+.pill--warn { background: rgba(233, 185, 73, 0.12); color: var(--yellow); }
+
+/* Trophäen-Zahlen: Gelb ist für Trophäen reserviert */
+.trophies { color: var(--yellow); font-variant-numeric: tabular-nums; }
+
+.empty-state, .empty { text-align: center; padding: 36px 16px; color: var(--text-2); }
+.empty-icon { display: none; }
+.empty-state h2, .empty-title { color: var(--text-1); font-size: 15px; font-weight: 600; }
+.empty-state p { margin: 6px 0 0; color: var(--text-3); }
+
+.muted { color: var(--text-3); }
+.error, .report-error {
+  background: rgba(224, 86, 106, 0.08); border: 1px solid rgba(224, 86, 106, 0.35);
+  color: #f0a3ae; border-radius: var(--radius-sm); padding: 11px 14px; margin-bottom: 16px;
 }
 
-.card:hover {
-  transform: translateY(-2px);
+/* ---------- Tabellen ---------- */
+.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table th {
+  text-align: left; font-size: 12px; font-weight: 500;
+  color: var(--text-3); padding: 0 10px 10px; border-bottom: 1px solid var(--border);
+}
+.table td { padding: 11px 10px; border-bottom: 1px solid var(--border); color: var(--text-1); }
+.table tr:last-child td { border-bottom: none; }
+.table .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Nur für Screenreader (Tabellen hinter Diagrammen) */
+.visually-hidden {
+  position: absolute !important; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
 }
 
-/* Section spacing */
-.section {
-  margin-bottom: 32px;
+/* Scrollbar dunkel */
+* { scrollbar-color: var(--border-strong) transparent; }
+
+@media (max-width: 860px) { body { overflow: auto; } }
+
+/* ---------- Drucken / "Als PDF sichern" (Feedback-Seite) ---------- */
+@media print {
+  @page { margin: 14mm; }
+  :root {
+    --bg: #fff; --surface-1: #fff; --surface-2: #f4f1f2; --surface-3: #eee;
+    --border: #ddd; --border-strong: #ccc; --text-1: #111; --text-2: #444; --text-3: #777;
+  }
+  html, body { height: auto; overflow: visible !important; background: #fff; color: #111; }
+  app-header, .sidebar, .no-print, .hero, .lightbox { display: none !important; }
+  .shell { padding: 0 !important; height: auto !important; }
+  .content { margin: 0 !important; height: auto !important; overflow: visible !important; }
+  .page { padding: 0 !important; max-width: none !important; }
+  .print-only { display: block !important; }
+  .print-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+  .card { break-inside: avoid; border: 1px solid #ddd; margin-bottom: 10px; }
+  .list { opacity: 1 !important; }
+  .item.done { opacity: 1; }
 }

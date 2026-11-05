@@ -33,6 +33,9 @@ public class PlayerRessources {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     @Inject
+    control.ActivityTracker activity;
+
+    @Inject
     PlayerRepository playerRepository;
 
     @Inject
@@ -52,6 +55,9 @@ public class PlayerRessources {
 
     @Inject
     control.BlockRepository blockRepository;
+
+    @Inject
+    control.QuestService questService;
 
     /** Alle Spieler inkl. Standort – nur für Admins (Dashboard). */
     @GET
@@ -80,6 +86,7 @@ public class PlayerRessources {
         }
         clean.setLastSeenAt(java.time.Instant.now());
         Player saved = playerRepository.createPlayer(clean);
+        activity.seen(saved.getId());
         return toOwnDTO(saved);
     }
 
@@ -100,13 +107,8 @@ public class PlayerRessources {
             throw new WebApplicationException("Player not found", 404);
         }
 
-        // Name optional mit updaten, falls gewünscht:
-        if (dto.name() != null && !dto.name().equals(player.getName())) {
-            if (control.NameFilter.isOffensive(dto.name())) {
-                throw new WebApplicationException("Dieser Name ist nicht erlaubt", 400);
-            }
-            player.setName(dto.name());
-        }
+        // Der Name wird hier bewusst ignoriert: die App schickt bei jedem Standort-Update den
+        // Keycloak-Benutzernamen mit. Umbenennen geht nur über PUT /{id}/name.
 
         double oldLat = player.getLatitude();
         double oldLon = player.getLongitude();
@@ -116,6 +118,7 @@ public class PlayerRessources {
             player.setLongitude(dto.longitude());
         }
         player.setLastSeenAt(java.time.Instant.now());
+        activity.seen(player.getId());
         // Punkte kommen aus Battles → hier NICHT setzen
 
         // Realtime: nur Spieler in der Nähe (alte + neue Position) informieren, damit sie den
@@ -127,6 +130,29 @@ public class PlayerRessources {
                     positionEventRecipients(player.getId(), oldLat, oldLon, player.getLatitude(), player.getLongitude()));
         }
 
+        return toOwnDTO(player);
+    }
+
+    /** Eigenen Spielernamen ändern. Body: {"name": "Neuer Name"} */
+    @PUT
+    @Path("/{id}/name")
+    @Transactional
+    public PlayerDTO rename(@PathParam("id") String id, Map<String, String> body) {
+        me.requireSelf(id);
+        Player player = playerRepository.findById(id);
+        if (player == null) {
+            throw new WebApplicationException("Player not found", 404);
+        }
+        String name = body == null || body.get("name") == null ? "" : body.get("name").trim().replaceAll("\\s+", " ");
+        String problem = control.NameFilter.problemWith(name);
+        if (problem != null) {
+            throw new WebApplicationException(jakarta.ws.rs.core.Response.status(400).entity(problem).type("text/plain;charset=UTF-8").build());
+        }
+        if (playerRepository.nameTaken(name, id)) {
+            throw new WebApplicationException(jakarta.ws.rs.core.Response.status(409)
+                    .entity("Den Namen gibt es schon – such dir einen anderen aus").type("text/plain;charset=UTF-8").build());
+        }
+        player.setName(name);
         return toOwnDTO(player);
     }
 
@@ -159,6 +185,33 @@ public class PlayerRessources {
                     player.getLatitude(), player.getLongitude(), player.getLatitude(), player.getLongitude()));
         }
         return toOwnDTO(player);
+    }
+
+    /** Spieler per Namen finden (Freunde hinzufügen ohne QR-Code): ab 2 Zeichen, höchstens 15, ohne Standort. */
+    @GET
+    @Path("/search")
+    public List<PlayerDTO> search(@QueryParam("q") String query) {
+        String q = query == null ? "" : query.trim().toLowerCase();
+        if (q.length() < 2) return List.of();
+        java.util.Set<String> blocked = blockRepository.blockedWith(me.id());
+        java.time.Instant now = java.time.Instant.now();
+        String like = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+        return em.createQuery("""
+                        SELECT p FROM Player p WHERE LOWER(p.name) LIKE :q ESCAPE '\\'
+                        AND p.id <> :me AND p.id <> :deleted
+                        ORDER BY CASE WHEN LOWER(p.name) LIKE :prefix ESCAPE '\\' THEN 0 ELSE 1 END, p.trophies DESC
+                        """, Player.class)
+                .setParameter("q", like)
+                .setParameter("prefix", like.substring(1))
+                .setParameter("me", me.id())
+                .setParameter("deleted", control.AccountDeletionService.DELETED_PLAYER_ID)
+                .setMaxResults(40)
+                .getResultStream()
+                .filter(p -> !blocked.contains(p.getId()))
+                .filter(p -> p.getBanUntil() == null || !p.getBanUntil().isAfter(now))
+                .limit(15)
+                .map(this::toPublicDTO)
+                .toList();
     }
 
     @GET
@@ -393,19 +446,22 @@ public class PlayerRessources {
     /** Eigenes Konto: genaue Position und Sichtbarkeit. */
     private PlayerDTO toOwnDTO(Player p) {
         return new PlayerDTO(p.getId(), p.getName(), p.getLatitude(), p.getLongitude(), p.getPoints(),
-                battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), p.isInvisible());
+                battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), p.isInvisible(),
+                Math.max(p.getHighestTrophies(), p.getTrophies()), p.hasGoldFrame());
     }
 
     /** Fremdes Profil: ohne Standort. */
     private PlayerDTO toPublicDTO(Player p) {
         return new PlayerDTO(p.getId(), p.getName(), null, null, p.getPoints(),
-                battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), null);
+                battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), null,
+                Math.max(p.getHighestTrophies(), p.getTrophies()), p.hasGoldFrame());
     }
 
     /** Spieler in der Nähe: nur gerundete Position. */
     private PlayerDTO toNearbyDTO(Player p) {
         return new PlayerDTO(p.getId(), p.getName(), LocationPrivacy.coarse(p.getLatitude()), LocationPrivacy.coarse(p.getLongitude()),
-                p.getPoints(), battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), null);
+                p.getPoints(), battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), null,
+                Math.max(p.getHighestTrophies(), p.getTrophies()), p.hasGoldFrame());
     }
 
     /** Fortschritt für die Freischalt-Regeln: Siege, Wissens-Siege, Hotspot-Check-ins, Punkte. */
@@ -419,8 +475,13 @@ public class PlayerRessources {
                 .filter(b -> control.BattleMode.from(b.getType()) == control.BattleMode.RANKED_KNOWLEDGE)
                 .count();
         int checkins = (int) hotspotRepository.countForPlayer(player.getId());
-        int bestTrophies = player.getTrophies();
-        return new CharacterCatalog.Progress(won.size(), knowledgeWins, checkins, bestTrophies);
+        return new CharacterCatalog.Progress(won.size(), knowledgeWins, checkins, player.getHighestTrophies(),
+                questService.claimedRewardCharacters(player.getId()));
+    }
+
+    /** Frei nach den Regeln – oder schon gewählt (z.B. vor einer Regeländerung freigeschaltet), die bleibt dem Spieler. */
+    private static boolean isUnlockedFor(Player player, CharacterCatalog.Entry entry, CharacterCatalog.Progress progress) {
+        return CharacterCatalog.isUnlocked(entry, progress) || entry.id().equals(player.getCharacter());
     }
 
     /** Eine Figur mit Freischalt-Stand für diesen Spieler. */
@@ -437,8 +498,8 @@ public class PlayerRessources {
         var progress = progressOf(player);
         return CharacterCatalog.ALL.stream()
                 .map(e -> new CharacterUnlockDTO(e.id(), e.name(), e.requirement().name(), e.required(),
-                        Math.min(progress.of(e.requirement()), Math.max(e.required(), 0)),
-                        CharacterCatalog.isUnlocked(e, progress), e.id().equals(player.getCharacter())))
+                        Math.min(progress.of(e), Math.max(e.required(), 0)),
+                        isUnlockedFor(player, e, progress), e.id().equals(player.getCharacter())))
                 .toList();
     }
 
@@ -455,7 +516,7 @@ public class PlayerRessources {
         String character = body == null ? null : body.get("character");
         var entry = CharacterCatalog.find(character)
                 .orElseThrow(() -> new WebApplicationException("Unbekannte Figur: " + character, 400));
-        if (!CharacterCatalog.isUnlocked(entry, progressOf(player))) {
+        if (!isUnlockedFor(player, entry, progressOf(player))) {
             throw new WebApplicationException(entry.name() + " ist noch gesperrt", 403);
         }
         player.setCharacter(entry.id());

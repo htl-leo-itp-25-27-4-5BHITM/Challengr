@@ -3,6 +3,8 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     let auth: KeycloakAuthService
+    /// Über den Stift am Namen im Profil geöffnet → gleich "Name ändern"
+    var startWithRename = false
     
     @AppStorage("isSoundEnabled") private var isSoundEnabled = true
     @AppStorage("isMusicEnabled") private var isMusicEnabled = true
@@ -13,6 +15,12 @@ struct SettingsView: View {
     @State private var confirmDelete = false
     @State private var isDeleting = false
     @State private var deleteError: String? = nil
+    /// Spielname vom Server (kann vom Keycloak-Benutzernamen abweichen)
+    @State private var ownName: String? = nil
+    @State private var showRename = false
+    @State private var newName = ""
+    @State private var renameMessage: String? = nil
+    @AppStorage(ToonMapSettings.key) private var useToonMap = ToonMapSettings.defaultOn
     private let playerService = PlayerLocationService()
 
     var body: some View {
@@ -26,6 +34,8 @@ struct SettingsView: View {
                             Text("Soundeffekte")
                         }
                     }
+                    // beim Einschalten hört man gleich, dass es wieder Töne gibt
+                    .onChange(of: isSoundEnabled) { _, _ in SoundManager.shared.play(.click) }
                     
                     Toggle(isOn: $isMusicEnabled) {
                         HStack {
@@ -35,10 +45,23 @@ struct SettingsView: View {
                         }
                     }
                     .onChange(of: isMusicEnabled) { _, _ in
+                        SoundManager.shared.play(.click)
                         SoundManager.shared.updateMusic()
                     }
                 }
                 
+                Section(header: Text("Karte"),
+                        footer: Text("Die Cartoon-Karte nutzt Kartendaten von OpenStreetMap. Lädt sie nicht, zeigt die App automatisch die Apple-Karte.")) {
+                    Toggle(isOn: $useToonMap) {
+                        HStack {
+                            Image(systemName: "map.fill")
+                                .foregroundColor(.green)
+                            Text("Cartoon-Karte")
+                        }
+                    }
+                    .onChange(of: useToonMap) { _, _ in SoundManager.shared.play(.click) }
+                }
+
                 Section(header: Text("Benachrichtigungen")) {
                     Toggle(isOn: $notificationsEnabled) {
                         HStack {
@@ -48,6 +71,7 @@ struct SettingsView: View {
                         }
                     }
                     .onChange(of: notificationsEnabled) { _, enabled in
+                        SoundManager.shared.play(.click)
                         if enabled {
                             NotificationManager.shared.requestAuthorizationIfNeeded()
                         }
@@ -56,7 +80,7 @@ struct SettingsView: View {
                 
                 Section(header: Text("Privatsphäre"),
                         footer: Text("Andere sehen dich nur in der Nähe (bis 300 m) und nur ungefähr (ca. 50 m genau). Unsichtbar tauchst du bei niemandem auf der Karte auf.")) {
-                    Toggle(isOn: Binding(get: { isInvisible ?? false }, set: { setInvisible($0) })) {
+                    Toggle(isOn: Binding(get: { isInvisible ?? false }, set: { SoundManager.shared.play(.click); setInvisible($0) })) {
                         HStack {
                             Image(systemName: "eye.slash.fill")
                                 .foregroundColor(.purple)
@@ -73,6 +97,7 @@ struct SettingsView: View {
                     }
                     NavigationLink {
                         BlockedPlayersView()
+                            .onAppear { SoundManager.shared.play(.click) }
                     } label: {
                         HStack {
                             Image(systemName: "hand.raised.fill")
@@ -86,12 +111,21 @@ struct SettingsView: View {
                 }
 
                 Section(header: Text("Account")) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("Angemeldet als:")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                        Text(auth.playerName)
-                            .font(.headline)
+                    HStack {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Dein Name im Spiel")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                            Text(ownName ?? auth.playerName)
+                                .font(.headline)
+                        }
+                        Spacer()
+                        Button("Ändern") {
+                            SoundManager.shared.play(.click)
+                            newName = ownName ?? auth.playerName
+                            showRename = true
+                        }
+                        .disabled(ownName == nil)
                     }
                     
                     Button(role: .destructive) {
@@ -141,11 +175,30 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Einstellungen")
+            // Spiel-Look wie Profil und Freunde: dunkel, Gelb als Akzent
+            .scrollContentBackground(.hidden)
+            .background(GameStyle.background.ignoresSafeArea())
+            .tint(.challengrYellow)
             .task { await loadVisibility() }
+            .alert("Name ändern", isPresented: $showRename) {
+                TextField("Neuer Name", text: $newName)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                Button("Speichern") { rename() }
+                Button("Abbrechen", role: .cancel) {}
+            } message: {
+                Text("3–20 Zeichen: Buchstaben, Zahlen, Leerzeichen, _ . und -")
+            }
+            .alert(renameMessage ?? "", isPresented: Binding(get: { renameMessage != nil },
+                                                             set: { if !$0 { renameMessage = nil } })) {
+                Button("OK", role: .cancel) {}
+            }
             .navigationBarItems(trailing: Button("Fertig") {
+                SoundManager.shared.play(.click)
                 dismiss()
             })
         }
+        .environment(\.colorScheme, .dark)
     }
 
     private func deleteAccount() {
@@ -166,6 +219,25 @@ struct SettingsView: View {
     private func loadVisibility() async {
         guard let id = auth.playerId, let me = try? await playerService.loadPlayerById(id: id) else { return }
         isInvisible = me.invisible ?? false
+        ownName = me.name
+        if startWithRename && !showRename {
+            newName = me.name
+            showRename = true
+        }
+    }
+
+    private func rename() {
+        let wanted = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let id = auth.playerId, !wanted.isEmpty, wanted != ownName else { return }
+        Task {
+            do {
+                let me = try await playerService.rename(id: id, to: wanted)
+                ownName = me.name
+                renameMessage = "Du heißt jetzt „\(me.name)“."
+            } catch {
+                renameMessage = error.localizedDescription
+            }
+        }
     }
 
     private func setInvisible(_ invisible: Bool) {

@@ -62,8 +62,12 @@ final class GameSocketService: ObservableObject {
     }
     
     var onBattleResult: ((BattleResultData) -> Void)?
-    /// Emote von einem anderen Spieler: fromId, emoji, battleId (nil = auf der Karte)
-    var onEmote: ((String, String, Int64?) -> Void)?
+    /// Emote von einem anderen Spieler: fromId, Emoji/Sticker, battleId (nil = auf der Karte)
+    var onEmote: ((String, EmoteEvent, Int64?) -> Void)?
+    /// Neuer Stand eines Stickers nach dem Verschicken: stickerId, wie viele noch übrig sind
+    var onStickerStock: ((String, Int) -> Void)?
+    /// Ein Freund hat ein Geschenk geschickt: fromId
+    var onGiftReceived: ((String) -> Void)?
     /// Quiz-Show (Liga Wissen)
     var onQuizQuestion: ((QuizQuestion) -> Void)?
     var onQuizRoundResult: ((QuizRoundResult) -> Void)?
@@ -336,8 +340,10 @@ final class GameSocketService: ObservableObject {
     }
     
     /// Emote an einen Spieler: im Battle (battleId) an den Gegner, sonst an den angetippten Spieler auf der Karte.
-    func sendEmote(toId: String, emoji: String, battleId: Int64? = nil) {
+    /// Bei einem Sticker bleibt `emoji` als Ersatz für alte App-Versionen drin.
+    func sendEmote(toId: String, emoji: String, sticker: String? = nil, battleId: Int64? = nil) {
         var payload: [String: Any] = ["type": "send-emote", "toId": toId, "emoji": emoji]
+        if let sticker { payload["sticker"] = sticker }
         if let battleId { payload["battleId"] = battleId }
         send(json: payload)
     }
@@ -389,6 +395,11 @@ final class GameSocketService: ObservableObject {
         ]
         print("📤 sendPushupResult:", payload)
         send(json: payload)
+    }
+
+    /// Neue Real-Life-Challenges: "country-result" (deviation), "reaction-result" (ms), "timing-result" (ms)
+    func sendMetricResult(type: String, battleId: Int64, field: String, value: Double) {
+        send(json: ["type": type, "battleId": battleId, field: value])
     }
 
     func sendCompassResult(battleId: Int64, distance: Double) {
@@ -589,6 +600,7 @@ final class GameSocketService: ObservableObject {
                 result.outcome  = json["outcome"] as? String
                 result.participants = BattleParticipants.parse(json, fromKey: "fromId", toKey: "toId")
                 result.mode = BattleMode(serverValue: json["mode"] as? String)
+                result.winnerSticker = Stickers.byId(json["winnerSticker"] as? String)
                 if let quiz = json["quiz"] as? [String: Any] {
                     result.quizFromScore = quiz["fromScore"] as? Int
                     result.quizToScore = quiz["toScore"] as? Int
@@ -623,9 +635,21 @@ final class GameSocketService: ObservableObject {
                 let emoji = json["emoji"] as? String ?? ""
                 let battleId = (json["battleId"] as? NSNumber)?.int64Value
                 guard !emoji.isEmpty else { return }
+                // Sticker, den diese App-Version nicht kennt → einfach das Ersatz-Emoji zeigen
+                let event = EmoteEvent(emoji: emoji, sticker: Stickers.byId(json["sticker"] as? String))
                 DispatchQueue.main.async {
-                    self.onEmote?(fromId, emoji, battleId)
+                    self.onEmote?(fromId, event, battleId)
                 }
+            }
+
+            if type == "sticker-stock", let sticker = json["sticker"] as? String {
+                let count = (json["count"] as? NSNumber)?.intValue ?? 0
+                DispatchQueue.main.async { self.onStickerStock?(sticker, count) }
+            }
+
+            if type == "gift-received" {
+                let fromId = parsePlayerId(json["fromPlayerId"])
+                DispatchQueue.main.async { self.onGiftReceived?(fromId) }
             }
 
             if type == "battle-rejected" {
@@ -692,8 +716,12 @@ final class GameSocketService: ObservableObject {
         let compass = parseDoubleMetric(metricsJson["compass"])
         let shake = parseIntMetric(metricsJson["shake"])
         let pushup = parseIntMetric(metricsJson["pushup"])
+        let country = parseDoubleMetric(metricsJson["country"])
+        let reaction = parseIntMetric(metricsJson["reaction"])
+        let timing = parseIntMetric(metricsJson["timing"])
 
-        if sprint == nil, loudness == nil, compass == nil, shake == nil, pushup == nil {
+        if sprint == nil, loudness == nil, compass == nil, shake == nil, pushup == nil,
+           country == nil, reaction == nil, timing == nil {
             return nil
         }
 
@@ -702,7 +730,10 @@ final class GameSocketService: ObservableObject {
             loudness: loudness,
             compass: compass,
             shake: shake,
-            pushup: pushup
+            pushup: pushup,
+            country: country,
+            reaction: reaction,
+            timing: timing
         )
     }
 

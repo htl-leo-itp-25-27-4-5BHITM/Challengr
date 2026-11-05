@@ -1,0 +1,4 @@
+.map { height: 460px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); }
+.list-scroll { max-height: 420px; overflow-y: auto; }
+.link { cursor: pointer; }
+.link:hover { background: var(--surface-3); }

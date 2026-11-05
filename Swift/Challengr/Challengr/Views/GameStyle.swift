@@ -32,6 +32,31 @@ extension View {
     func gamePanel(padding: CGFloat = 14, cornerRadius: CGFloat = 20, highlight: Color? = nil) -> some View {
         modifier(GamePanel(padding: padding, cornerRadius: cornerRadius, highlight: highlight))
     }
+
+    /// Dunkle Spielkarte für Fenster über der Karte (Spieler-Popup, Herausfordern) – wie Battle- und Sticker-Screens.
+    func gameOverlayCard(cornerRadius: CGFloat = 24) -> some View {
+        modifier(GameOverlayCard(cornerRadius: cornerRadius))
+    }
+}
+
+/// Feedback 04.11. ("Overlay passender zu Challengr"): statt heller Glas-Karte dunkel mit Marken-Rot.
+struct GameOverlayCard: ViewModifier {
+    var cornerRadius: CGFloat = 24
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(LinearGradient(colors: [Color(red: 0.24, green: 0.04, blue: 0.11), Color.challengrDark],
+                                         startPoint: .top, endPoint: .bottom))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
+            .environment(\.colorScheme, .dark)
+    }
 }
 
 /// Abschnitts-Überschrift: "DEINE FREUNDE  3"
@@ -98,11 +123,21 @@ struct CharacterBadge: View {
             .resizable()
             .scaledToFill()
             .frame(width: size, height: size)
-            .background(Circle().fill(Color.white.opacity(0.9)))
+            .background(CharacterBackdrop(character: character))
             .clipShape(Circle())
             .overlay(Circle().stroke(ringColor, lineWidth: 3))
             .shadow(color: .black.opacity(0.35), radius: 4, y: 2)
             .accessibilityHidden(true)
+    }
+}
+
+/// Runder Hintergrund in der Farbe der Figur (hell in der Mitte, dunkler am Rand).
+struct CharacterBackdrop: View {
+    let character: GameCharacter
+
+    var body: some View {
+        Circle().fill(RadialGradient(colors: [character.themeColor.opacity(0.55), character.themeColor],
+                                     center: .center, startRadius: 2, endRadius: 40))
     }
 }
 

@@ -33,6 +33,9 @@ public class BattleService {
     @Inject
     RankRepository rankRepository;
 
+    @Inject
+    QuizHistory quizHistory;
+
     @Transactional
     public Battle findById(Long battleId) {
         return battleRepository.findById(battleId);
@@ -65,7 +68,7 @@ public class BattleService {
         player.setConsecutiveConflicts(current);
         int penalty = current >= 3 ? (current - 2) * 10 : 0;
         if (penalty > 0) {
-            player.setPoints(player.getPoints() - penalty);
+            player.setPoints(Math.max(0, player.getPoints() - penalty));
         }
         System.out.printf("Konflikt für %s: %d in Folge, Abzug %d%n", player.getName(), current, penalty);
         return penalty;
@@ -122,7 +125,7 @@ public class BattleService {
             throw new IllegalArgumentException("toPlayer not found");
         }
 
-        Challenges challenge = pickChallenge(mode, challengeId);
+        Challenges challenge = pickChallenge(mode, challengeId, fromPlayerId, toPlayerId);
 
         ChallengeCategory category = challenge.getChallengeCategory();
 
@@ -346,7 +349,7 @@ public class BattleService {
 
     private static final java.util.Random RANDOM = new java.util.Random();
 
-    private Challenges pickChallenge(BattleMode mode, Long challengeId) {
+    private Challenges pickChallenge(BattleMode mode, Long challengeId, String fromPlayerId, String toPlayerId) {
         if (mode == BattleMode.FRIENDLY) {
             if (challengeId == null) {
                 throw new BattleRejectedException("Bitte eine Challenge wählen");
@@ -354,6 +357,9 @@ public class BattleService {
             Challenges challenge = challengeRepository.findById(challengeId);
             if (challenge == null) {
                 throw new IllegalArgumentException("challenge not found");
+            }
+            if (ChallengeRepository.isDisabled(challenge) || !challenge.isActive()) {
+                throw new BattleRejectedException("Diese Challenge ist gerade nicht verfügbar");
             }
             return challenge;
         }
@@ -365,6 +371,10 @@ public class BattleService {
         if (pool.isEmpty()) {
             throw new BattleRejectedException("Für diese Liga gibt es noch keine Challenges");
         }
+        if (mode == BattleMode.RANKED_KNOWLEDGE) {
+            // erste Quiz-Frage: eine, die beide zuletzt nicht hatten
+            return quizHistory.freshFirst(pool, RANDOM, fromPlayerId, toPlayerId).get(0);
+        }
         return pool.get(RANDOM.nextInt(pool.size()));
     }
 
@@ -372,9 +382,10 @@ public class BattleService {
     @Transactional
     public List<Challenges> quizQuestions(Long battleId, int count) {
         Battle battle = battleRepository.findById(battleId);
-        List<Challenges> pool = new java.util.ArrayList<>(challengeRepository.findChallengesByKat(BattleMode.KNOWLEDGE_CATEGORY)
-                .stream().filter(c -> c.getCorrectIndex() != null).toList());
-        java.util.Collections.shuffle(pool, RANDOM);
+        String[] players = battle == null ? new String[0]
+                : new String[]{battle.getFromPlayer().getId(), battle.getToPlayer().getId()};
+        List<Challenges> pool = quizHistory.freshFirst(challengeRepository.findChallengesByKat(BattleMode.KNOWLEDGE_CATEGORY)
+                .stream().filter(c -> c.getCorrectIndex() != null).toList(), RANDOM, players);
         List<Challenges> result = new java.util.ArrayList<>();
         if (battle != null && battle.getChallenge() != null && battle.getChallenge().getCorrectIndex() != null) {
             result.add(battle.getChallenge());
@@ -384,6 +395,7 @@ public class BattleService {
             if (result.stream().noneMatch(r -> r.getId() == c.getId())) result.add(c);
         }
         result.forEach(c -> { c.getText(); c.getOptionA(); c.getOptionB(); c.getOptionC(); c.getOptionD(); });
+        quizHistory.remember(result, players);
         return result;
     }
 
@@ -424,56 +436,10 @@ public class BattleService {
             return;
         }
 
-        // alle Ranks laden und nach min sortieren
-        List<Rank> ranks = rankRepository.getAllRanks()
-                .stream()
-                .sorted(Comparator.comparingInt(Rank::getMin))
-                .toList();
-
-        Rank winnerRank = rankRepository.rankForPoints(winner.trophiesFor(mode), ranks);
-        Rank loserRank  = rankRepository.rankForPoints(loser.trophiesFor(mode), ranks);
-
-        int rankDiff = 0;
-        int absDiff  = 0;
-        if (winnerRank != null && loserRank != null) {
-            int winnerIndex = ranks.indexOf(winnerRank);
-            int loserIndex  = ranks.indexOf(loserRank);
-            rankDiff = winnerIndex - loserIndex;   // 0 = gleich, <0 = Gewinner war tiefer, >0 = höher
-            absDiff  = Math.abs(rankDiff);
-        }
-
-        int baseWin  = 30;    // Standard +30
-        int baseLoss = -20;   // Standard -20
-        double factor = 0.05; // 5 % pro Rangunterschied
-
-        int winnerDelta;
-        int loserDelta;
-
-        if (rankDiff == 0) {
-            // gleicher Rank
-            winnerDelta = baseWin;
-            loserDelta  = baseLoss;
-
-        } else if (rankDiff < 0) {
-            // Gewinner war UNTERLEGEN (tieferer Rank)
-            double bonusWin  = baseWin  * factor * absDiff;
-            double bonusLoss = baseLoss * factor * absDiff; // baseLoss ist negativ → stärker ins Minus
-
-            winnerDelta = (int) Math.round(baseWin  + bonusWin);
-            loserDelta  = (int) Math.round(baseLoss + bonusLoss);
-
-        } else {
-            // Gewinner war FAVORIT (höherer Rank)
-            double penaltyWin  = baseWin  * factor * absDiff;
-            double penaltyLoss = baseLoss * factor * absDiff; // baseLoss ist negativ → Verlust wird kleiner (Richtung 0)
-
-            winnerDelta = (int) Math.round(baseWin  - penaltyWin);
-            loserDelta  = (int) Math.round(baseLoss - penaltyLoss);
-        }
-
-        // Trophäen nie unter 0
         int loserBefore = loser.trophiesFor(mode);
-        loserDelta = Math.max(loserDelta, -loserBefore);
+        var trophyDelta = control.TrophyMath.delta(winner.trophiesFor(mode), loserBefore);
+        int winnerDelta = trophyDelta.winnerDelta();
+        int loserDelta = trophyDelta.loserDelta();
         winner.setTrophiesFor(mode, winner.trophiesFor(mode) + winnerDelta);
         loser.setTrophiesFor(mode, loserBefore + loserDelta);
         // Sieger verdient seinen Trophäen-Gewinn auch als Punkte (Währung)

@@ -1,6 +1,6 @@
 # Challengr – Projektstand und Übergabe
 
-Stand: **13. Oktober 2026** · Branch `feature/liga-modus` · letzter Commit `783988a`
+Stand: **5. November 2026** · Branch `feature/liga-modus` (auf GitHub) · `main` steht noch auf `7e39882`
 
 Diese Datei fasst zusammen, worum es geht, was gebaut wurde, wie alles läuft und was offen ist.
 Sie ist zum Weitermachen gedacht – für das Team und für eine neue Claude-Sitzung
@@ -17,7 +17,8 @@ auf einer 3D-Karte und fordern sie heraus.
   - **Quiz-Show**: 4 Wissensfragen à 15 s im animierten 3D-Fernsehstudio, Punkte für richtig + Tempo.
   - **Real-Life-Challenge**: der Server lost eine Challenge aus, die das iPhone misst (Sprint, Lautstärke, Kompass, Schütteln, Liegestütze, Kamera, Check-in-Spot).
 - **Friendly**: Kategorie und Challenge frei wählbar, es geht um nichts; „Geschafft“/„Aufgeben“, kein Voting mehr.
-- Dazu: 10 freischaltbare 3D-Figuren, Freunde, Geschenke, Shop (Punkte als Währung), Hotspot an der Schule mit täglichem Check-in, Emotes, Trophy Road, Profil.
+- Dazu: 10 freischaltbare 3D-Figuren (4 davon nur über Ränge der Trophy Road), Freunde, Geschenke, Shop (zurzeit geschlossen),
+  Hotspot an der Schule mit täglichem Check-in, Emotes, animierte Trophy Road, Profil, Tag/Nacht-Zyklus auf der Karte.
 
 **Aktuelles Ziel:** Öffentlicher **TestFlight-Test an der eigenen Schule** (viele Tester, viele minderjährig).
 Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cloud geplant.
@@ -45,7 +46,7 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 **Auth:** Keycloak-Realm `challengr`. Spieler-ID = Token-Claim `sub`. Clients: `challengr-ios` (App, PKCE),
 `challengr-dashboard` (Dashboard, PKCE), `challengr-backend` (Token-Prüfung), `challengr-admin-api`
 (Service-Account mit `manage-users`/`view-users` für Sperren und Konto-Löschen). Realm-Rolle `admin` = Dashboard-Zugriff
-(aktuell Benutzer `test`).
+(aktuell Benutzer `test`; besser: eigene Konten mit Rolle `admin`).
 
 ---
 
@@ -61,8 +62,35 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 | `96df336` | Quiz-Show als **3D-Fernsehstudio** (`QuizStageView`): beide Spieler hinter Pulten, Merlo als Quizmaster, Kamerafahrten, Reaktionen; nur ein SceneKit-Fenster, keine eigenen Shader, 2D-Fallback bei Magenta |
 | `360e1da` | Kartenfilter entfernt (zeigte nur „test“/„cookieclicker“) – TestFlight-Tester sahen sich sonst nicht |
 | `783988a` | **Viele Spieler auf einem Fleck:** nearby nur Kartenausschnitt aus der DB, max. 30 nächste + Gesamtzahl im Header `X-Nearby-Total`; Positions-Events max. alle 5 s pro Spieler; App spart Animationen (getestet mit 200 Spielern: 21 ms) |
+| `04278ed`, `8bc1912` | **Trophy Road neu:** durchgehender Weg im Spiel-Look, Figur läuft vom zuletzt gesehenen Stand zum aktuellen, Rang-Aufstieg mit Konfetti, Regeln hinter „i“. **Trophäen nach Trophäen-Abstand** (`TrophyMath`: +30/−20, ±1 pro 25 Abstand, Sieg 10–50, Verlust max. 40). **Rang-Figuren:** Käpt'n Rex (Contender), Hayato (Tryhard), Kai (Brawler), Kage (Dueler) nach höchstem je erreichtem Stand (`Player.highestTrophies`); bereits gewählte Figur bleibt. Höchster Rang nach oben offen |
+| `887668e`, `930713b`, `19237c7` | **Feinschliff Testphase:** Karte drehbar und zoombar (200 m–2,5 km), aber nicht verschiebbar oder kippbar – nach jeder Geste springt sie zurück auf den Spieler; Tipp-Welle als Rückmeldung; Shop geschlossen (`ShopView.isOpen = false`); Foto-Challenge abgeschaltet (`ChallengeRepository.DISABLED_PREFIXES`); Trophäen/Punkte nie unter 0; **Punkte in der App ausgeblendet** – überall nur Trophäen (Karten-Chip → Trophy Road, Profil, Freunde, Trophäenverlauf statt Punkteverlauf) |
+| `573fbab`, `be10828` | **235 Wissensfragen:** Fragenkatalog `Backend/…/resources/quiz-questions.txt` (eine Zeile pro Frage: `Frage \| richtig \| falsch \| falsch \| falsch`), `QuizQuestionSync` legt beim Start fehlende Fragen an – neue Fragen = Zeile anhängen + `deploy-cloud.sh backend`. `QuizHistory` bevorzugt Fragen, die beide Spieler zuletzt nicht hatten (letzte 100 pro Spieler, nur im Speicher). Herausfordern aus dem Freundes-Menü schließt das Menü |
+| `90d7ecd`, `56e5eb6`, `29505ab` | **Namen ändern** (`PUT /api/players/{id}/name`, 3–20 Zeichen, Filter, eindeutig); Login/Standort überschreiben den Namen nicht mehr. **Freundesprofil** im Spiel-Look. **Tag/Nacht** (`SkyCycle`, `SkyOverlay`): Karte nach echtem Sonnenstand hell/dunkel, Dämmerung, Sterne – nur Optik |
 
-**Punkte vs. Trophäen:** Trophäen = Liga-Rang. Punkte = Währung (Shop, Hotspot). Wer in der Liga gewinnt, bekommt seinen Trophäen-Gewinn zusätzlich als Punkte.
+| `0337ac9` | **Feinschliff 16.10.:** Einstellungen dunkel; Battle-Verlauf eingeklappt (letzte 5); Geschenke aus (`FriendGifts.isEnabled`); Karte mit einem Finger drehen (`MapRotation`); Freundesprofil mit runden Spiel-Knöpfen; Neuausrichten-Knopf entfernt; runde Avatare mit Farbe der Figur (`GameCharacter.themeColor`, `CharacterBackdrop`); Trophy Road startet bei der Figur |
+| `7a2563e` | **Karte drehen repariert:** Standort-Updates nehmen die sichtbare Kamera (sprang sonst nach Norden zurück); Ein-Finger-Drehen um die Kartenmitte; zwei Finger gehören MapKit |
+| `a8f3abd`, `d310537` | **Dashboard neu:** Spiel-Look, Übersicht mit echten Analysen (`GET /api/admin/stats`, Tabelle `player_activity`, `Player.createdAt`), Spieler-Seite auf Deutsch mit Trophäen/Rang/Sperren, keine Beispieldaten mehr. Diagramme selbst gebaut (`features/dashboard/charts.ts`) |
+| `1e747f0` | **Dashboard ruhiger** (flache Dunkeltöne, Rot als Akzent, Gelb nur Trophäen, Linien-Symbole `app-icon` statt Emojis) und **Feedback-Export**: „Als PDF“ (Druckansicht) und „Markdown (ZIP)“ (`GET /api/admin/feedback/export`, Bilder fest eingepackt) |
+| `c749200`, `b8ddeda` | **TestFlight-Feedback im Dashboard** (Seite „Feedback“): Screenshots/Abstürze aus der App Store Connect API (`AppStoreConnectClient`, `TestFlightFeedbackService`), Erledigt-Haken in `feedback_status`. Braucht einen API-Schlüssel im Secret `challengr-asc` (`scripts/setup-appstore-api.sh`), ohne ist die Seite eine Anleitung |
+| `fdc1b64` | **Neues Logo:** App-Icon (hell/dunkel/getönt, Quelle 1024 px) und Login-Bildschirm (`AppLogo`) |
+| `0d99fa0` | **Ranglisten + Feedback 13.–19.10.:** Münz-Menü „Rangliste“ (Krone) statt „Freunde“ – Top 10 aller Spieler, Freunde, eigener Platz (`GET /api/leaderboard`, ohne Standort, Blockierte/Gesperrte ausgeblendet). Freunde per Namen suchen (`GET /api/players/search?q=`) und direkt im Spieler-Popup auf der Karte hinzufügen; keine zweite Anfrage unter Freunden (409). Profilbild öffnet bei offenen Anfragen gleich die Freunde. Karte bleibt immer schräg (Neigung fest 55°, MapKit meldete manchmal 0°). Trophy Road zeigt den Rekord (`PlayerDTO.highestTrophies`). Figur-Symbol Kleiderbügel. Check-in-Spot schwebt über einem Lichtstrahl (höher als jede Figur). Bodenringe passend zur Neigung, Merlo-Sprites neu gerendert (Hut war ~40 px abgeschnitten; Pins skalieren nach Sheet-Höhe). 24 Emotes, eigene Kurzwahl über „+“ im Spieler-Popup. Pop-up „Figur freigeschaltet“ antippbar → Figurenwahl. Freundschaftsanfrage: Annehmen grün |
+| `0de400f` | **Aufgaben + Events:** Münz-Menü „Aufgaben“ (roter Punkt an der Münze, wenn etwas abholbereit ist). *Täglich:* 3 Aufgaben pro Tag (Wechsel 0 Uhr Wien, für alle gleich: „Vorbeischauen“ + 2 gelost aus `QuestCatalog.DAILY_POOL`), bringen **Challengr Coins** (= `Player.points`, Shop-Währung). *Events:* zeitlich begrenzte Challenges mit Figur als Belohnung – **Beta-Event „Crash-Test“ 13.10.–30.11.2026** (5 Spieltage, 10 Battles, 3 Quiz-Shows, 2 Check-ins, 1 Freund, 6 Tagesaufgaben) → **Crash-Test-Dummy** (`crash-dummy`, `CharacterCatalog.Requirement.EVENT`) + 100 Coins. Fortschritt wird aus vorhandenen Daten berechnet (Battles, `hotspot_checkin`, `player_activity`, Freunde), gespeichert wird nur das Abholen (`quest_claim`). Neues Event (z. B. Halloween) = Eintrag in `QuestCatalog.EVENTS` + Backend-Deploy, die App zeigt es ohne Update an (nur eine neue Belohnungs-Figur braucht einen Build). Dummy-Modell: `Character3D/pipeline/char/preview/beta.js` (Export über `char/export_dummy.mjs`) |
+| `34bcc79`, `cdaa37d`, `9759dd0`, `f907f44` | **Feedback 20./21.10. + Orte:** Kompass als gelbe Münze, Lade-Screen (`LoadingScreen`) beim stillen Login, Münz-Menü nur noch Shop/Figur/Aufgaben/Einstellungen – Trophy Road über den Trophäen-Chip (roter Punkt bei neuem Rang, `TrophyRoadMath.hasNewRank`), Rangliste als Zeile in der Trophy Road. **Karte im Challengr-Look** (`ChallengrMapGrade`: MapKit `emphasis: .muted` + Rosé-Multiply + roter Rand, nachts schwächer; Reichweite rot gestrichelt). **Check-in-Punkte aus OpenStreetMap** (`LandmarkService`, `LandmarkRules`): Overpass-Abfrage pro Kachel (~2 × 2 km) im Hintergrund-Thread (Overpass braucht oft 30–40 s, verlangt User-Agent), gespeichert in `landmark`/`landmark_tile` (30 Tage gültig); nur öffentliche Orte (Museum, Sehenswürdigkeit, Burg, Denkmal-Bauwerk, Theater, Aussicht, Platz, Brunnen, Bibliothek, Stadion, Park), keine Gedenkstätten/Friedhöfe/privaten Orte (Namensfilter); max. 12 pro Kachel, 250 m Abstand; Spieler sieht 25 im Umkreis von 1,5 km um seine Server-Position; 5 + 5 Bonus Coins, **max. 5 Orte pro Tag** (429). Quellenangabe „© OpenStreetMap-Mitwirkende“ im Popup (Pflicht der ODbL). Unpassende Orte: Namensmuster in `LandmarkRules.SOMBRE` ergänzen |
+| `acb2507`, `a66b37b` | **Cartoon-Karte (MapLibre 6.31.0, SPM, fest gepinnt):** `Map/ToonMap.swift` + Stil `Map/ToonMapStyle.json` (Kacheln/Schriften von OpenFreeMap, OSM-Daten, kein Konto). Liegt *neben* der Apple-Karte: Kamera bleibt `position` in MapView (MapKit-Werte, Abstand → Zoom über `ToonCamera.zoom`, 700 m ≈ Zoom 16,4), Gesten macht MapView selbst (MLN nimmt keine Berührungen an; Zoomen/Drehen mit zwei Fingern über `toonPinch`/`toonTwist`), Figuren/Hotspots sind dieselben SwiftUI-Pins (auf Bildschirm umgerechnet, überdeckte Namen ausgeblendet), Kreise zeichnet MapLibre unter den Gebäuden. **Sicherheitsnetz:** Einstellungen → Karte → „Cartoon-Karte“ (Standard an); Wächter `ToonMapHealth` prüft nach 8 + 12 s, ob Kartendaten sichtbar sind – sonst für die Sitzung zurück auf die Apple-Karte (MapLibre selbst meldet bei nicht erreichbarem Server *keinen* Fehler). Nachts dunkelblaue Abdeckung. Messung im Simulator: ruhig ~8 % CPU, Dauerdrehen ~30 %. Entwickler-Vorschau ohne Login: Debug-Build mit `AUDIT_TOON_DEMO=1` (`AUDIT_TOON_SPIN=1` dreht, `AUDIT_TOON_BADSERVER=1` testet den Rückfall). Gesten-UI-Test: `TestHarness/ChallengrUITests/ToonMapGestureTests.swift`. Vorher (`f907f44`) Farbschicht über MapKit → auf dem iPhone „Nebel“, wieder entfernt (`3674045`) |
+| `aacb627` | **Sieg-/Niederlage-Screen neu (`BattleResultView` + `ResultStageView`):** 3D-Siegerehrung in *einem* SceneKit-Fenster (wie Quiz-Studio, 2D-Ersatz bei Magenta): Sieger fällt aufs Podest „1“ (Stauchen, Druckwelle, Vibration), Jubelsprung, goldener 3D-Pokal aus Grundkörpern, 3D-Konfetti; Verlierer geht K.O. mit Sternen (eigener Sieg) bzw. steht unter einer Regenwolke (eigene Niederlage); Unentschieden: gleich hohe Podeste, Pokal in der Mitte. Titel knallt als Stempel ins Bild, Trophäen-Zähler läuft hoch/runter, darunter Challenge-Werte und Trash Talk, Knopf „Weiter“. Ersetzt `BattleWinView`/`BattleLoseView`. Entwickler-Demo: `AUDIT_RESULT_DEMO=win\|lose\|draw\|friendly` |
+| `7a1f65d`, `dae1538`, `9662b35` | **Sticker als Emotes** (Auftrag `docs/STICKER_EMOTES.md`): 20 Sticker aus dem Fight-Video (`Stickers.all` in `MapLiveEffects.swift`, Bilder 256 px in `Assets.xcassets/Sticker/`) – auf der Karte übers Spieler-Popup (Umschalter „Emojis \| Sticker“, Kurzwahl kann Sticker, gespeichert als `stk:<id>`) und im Battle (weißer Sticker-Knopf neben dem Smiley, klappt ein Raster auf). Blase ohne Kreis (104 pt Battle, 84 pt Karte), 3 s sichtbar. **Protokoll rückwärtskompatibel:** `send-emote` hat zusätzlich `sticker`; der Server prüft gegen `GameSocket.STICKERS` und setzt das Ersatz-Emoji selbst – alte Apps zeigen nur das Emoji, unbekannte Sticker werden ignoriert, Cooldown/Blockieren wie bei Emojis. **6 animiert** (Aura, ゴゴゴ, 1 Hit, Oida, Das crazy, Aura Farming): WebP 256 px als Data-Asset `StickerAnim_<id>`, abgespielt mit ImageIO (`CGAnimateImageDataWithBlock`), nur in der Blase; „Bewegung reduzieren“ → Standbild. Bro dachte, Big Brain und Zauber ohne Apple-Emoji neu gerendert (`Werbevideo/sticker/app_ohne_emoji/`) |
+| `56ae546`, `87b02d1` | **Sticker sammeln + Geschenke wieder an:** Sticker sind jetzt Sammelobjekte – jeder Versand verbraucht einen (Server prüft, Tabelle `sticker_stock`: `amount` = noch verschickbar, `received_total` = fürs Album). Neue Spieler bekommen einmal 3 zufällige (`StickerCatalog.STARTER_PACK`). **Geschenke an Freunde** (`FriendGifts.isEnabled = true`): eins pro Freund und Tag (sonst 429), beim Öffnen wird ein Sticker ausgelost (bewegte 1 : 3 seltener, ~12,5 %), `friend_gift.sticker_id`; der Empfänger bekommt live `gift-received` (Banner auf der Karte). Sticker schicken nur, wenn der Empfänger online ist (sonst wäre er weg); der Absender bekommt `sticker-stock` mit dem neuen Stand. App: `StickerCollection` (GET `/api/stickers`), Auswahl/Battle zeigen nur eigene Sticker mit „×N“, **Sticker-Album** (`StickerAlbumView`, x/20, fehlende als Umriss) über „ALBUM“ im Sticker-Tab. Konto löschen entfernt die Sammlung |
+| `c639315`, `d332b49`, `e03ddae` | **Sticker-System (05.11., noch nicht live):** Menü → **Sticker** (`StickerHubView`, Aura-Sticker als Menü-Bild, Zahl = ungeöffnete Geschenke + abholbare Stufen): Geschenke öffnen, Album, „So bekommst du Sticker“, Sticker-Paket. Sticker antippen → groß, „In Kurzwahl“, **„Freund schenken“** (eigener Sticker, ohne Tages-Grenze, `friend_gift.from_collection`; Liste zeigt, wem er noch fehlt: `GET /api/stickers/{id}/friends-missing`; Inhalt bleibt bis zum Öffnen geheim). **Nachschub:** Liga-Sieg 25 % Chance, max. 3/Tag (`winnerSticker` in `battle-result`, gemerkt als `QuestClaim` `sticker-win:<battleId>`), Tagesaufgabe „Schau vorbei“ +1 Sticker (`claimedSticker` im Board), **Sticker-Paket** 3 für 100 Coins (`POST /api/stickers/pack`, auch im Shop – Rest bleibt „bald“). **Album-Stufen** 5/10/15 → 50/100/150 Coins, 20/20 → **goldener Rahmen** (`QuestClaim` `album:<n>`, `player.gold_frame`, `goldFrame` im PlayerDTO → goldener Ring auf der Karte, am Profil-Knopf, „★ Sticker-Album komplett“ im Popup). Karte: eigener **STICKER-Knopf** mit Anzahl im Spieler-Popup (Auswahl startet bei Stickern), leere Sticker bleiben grau, einmaliger Hinweis „Du hast Sticker!“, Geschenk-Banner öffnet den Sticker-Bereich. Start-Paket kommt immer vor dem ersten anderen Sticker |
+| (05.11.) | **Einstellungen im Profil + Gedränge auf der Karte (noch nicht live):** Zahnrad oben rechts neben „DU | FREUNDE“ (`ProfileContainerView`), Münz-Menü nur noch Shop, Figur, Aufgaben, Sticker. **Gedränge** (`Map/MapSpots.swift`): Spieler innerhalb 25 m = ein Fleck; bis 5 werden im Kreis aufgefächert (auch um die eigene Figur, Abstand bleibt beim Zoomen auf dem Bildschirm gleich), ab 6 eine Figur mit Zahl → Liste „Spieler hier“ (`MapCrowdSheet`, Freunde zuerst) → Popup. Beide Karten (Cartoon und Apple) |
+| (05.11.) | **Feedback eingearbeitet (noch nicht live):** Spieler-Popup und Herausfordern-Fenster im dunklen Spiel-Look (`gameOverlayCard()` in `GameStyle.swift`) statt heller Glas-Karte; Quiz-Show zeigt bei der Auflösung „DU“ und den Namen des Gegners an der gewählten Antwort; Zahl am Menü „Aufgaben“ wird nach jedem Battle, Check-in und beim Zurückkehren in die App neu geladen; Stift neben dem Namen im Profil öffnet direkt „Name ändern“; **48 statt 24 Emojis** (feste Auswahl in `Emotes.all` und `GameSocket.EMOTES`, nicht alle Apple-Emojis – manche sind beleidigend, viele Tester minderjährig; neue Emojis brauchen zuerst das neue Backend) |
+| `62916fe` | **Angemeldet bleiben:** Refresh-Token (Scope `offline_access`) im iOS-Schlüsselbund (`TokenStore`), beim Start stille Anmeldung ohne Browser; ~30 Tage ohne Nutzung gültig (Keycloak „Offline Session Idle“), jede Nutzung verlängert |
+
+**Trophäen-Regel (`control/TrophyMath`):** Sieg +30 / Niederlage −20 bei gleich vielen Trophäen; pro 25 Trophäen, die der Verlierer
+mehr hat, +1 für beide Seiten (Außenseiter-Sieg bringt mehr, Favorit verliert mehr). Sieg 10–50, Verlust 5–40, nie unter 0.
+Unentschieden/Friendly: nichts. Ränge (`reference-data.sql`): Quitter 0, Punchbag 100, Scrapper 200 (Start), Contender 350,
+Tryhard 600, Brawler 950, Dueler 1400, Challengr 2000+ (nach oben offen).
+
+**Punkte vs. Trophäen:** Trophäen = Liga-Rang – das Einzige, was die App zurzeit zeigt. Punkte (Währung für den späteren Shop) sammelt der Server weiter im Hintergrund (Liga-Sieg = Trophäen-Gewinn, Hotspot-Check-in), angezeigt werden sie erst wieder, wenn der Shop öffnet.
 
 ### TestFlight-Sicherheits-Checkliste (`docs/audit/TESTFLIGHT_SECURITY_CHECKLIST.md`)
 | Punkt | Commit | Umsetzung |
@@ -89,19 +117,25 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 
 ## 4. Aktueller Stand (live)
 
-**Leo Cloud** – alles läuft mit dem Stand `783988a`:
-- Backend, Dashboard, Keycloak, Postgres laufen; WebApp aus.
+**Leo Cloud** – Backend seit 05.11. (14:59) mit Stand `402aa62` (Sticker-System, Gedränge, 48 Emojis; Backup vorher); davor seit 04.11. (15:17) `9662b35` (Sticker-Emotes); Dashboard seit 24.10. (10:20) und Backend davor mit Stand `6f0154c` (inkl. Dashboard-Ausbau, nächtliche Backups im Volume `challengr-backup-pvc`); davor Backend `eb9c966` (Rangliste, Namenssuche, 24 Emotes, Aufgaben + Beta-Event, Orte aus OpenStreetMap), Dashboard mit `dd519ce`, 235 Wissensfragen:
+- Backend, Dashboard (ruhiges Design, Analysen unter `/`, Feedback unter `/feedback` mit PDF-/ZIP-Export), Keycloak, Postgres laufen; WebApp aus.
+- **TestFlight-Feedback ist eingerichtet und funktioniert** (19.10.): API-Schlüssel „Challengr Dashboard“, Rolle Developer, Key-ID `5837P8K647`, Issuer-ID `e9807cf3-c20e-4a1d-b21e-036f205c8e5d` (beide nicht geheim; geheim ist nur die .p8-Datei). Liegt im Secret `challengr-asc`.
+- Tagesaktivität (`player_activity`) wird erst seit 16.10. erfasst – Verläufe davor sind aus Battles/Check-ins nachgerechnet.
 - Postgres- und Keycloak-Admin-Passwort am 12.10. neu gesetzt (`rotate-secrets.sh`).
-- Keycloak: Selbst-Registrierung **an**, „Verify email“ **aus** (es ist kein Mailserver eingetragen). Admin mit 2FA, Benutzer `test` (Admin-Rolle) mit neuem Passwort.
-- Backup vom 12.10. in `~/Developer/ChallengrProjekt/Backups/` (lokal, nicht im Repo).
+- Keycloak 24 (läuft mit `start-dev`, Daten in Postgres): Selbst-Registrierung **an**, „Verify email“ **aus** (kein Mailserver eingetragen).
+  Admin mit 2FA (Authenticator-App). Benutzer `test` (Admin-Rolle): am 15.10. sollte 2FA entfernt und ein neues Passwort gesetzt werden –
+  falls erledigt, liegt es im Schlüsselbund „Challengr Dashboard test“.
+- Spieler (Stand 14.10.): 8 Konten. `bin_der_dominik` wurde zum Testen per Hand auf 1342 Trophäen gesetzt → daraufhin
+  **offene Meldung** von `mskes07` („zu viele Trophäen“) im Dashboard – einfach „Erledigt“, nicht sperren.
+- Backups vom 12.10., 14.10., 16.10., 19.10., 20.10., 21.10., 24.10., 04.11. und 05.11. (vor jedem Deploy) in `~/Developer/ChallengrProjekt/Backups/` (lokal, nicht im Repo).
 
 **Apple:**
 - Apple Developer Program (Individual, Sebastian Lehner), **Team-ID `9CK2N38H9M`**, Verlängerung 13.10.2027 (Auto-Renew an).
 - App Store Connect: App „Challengr“, SKU `challengr-ios`.
 - TestFlight-Gruppen: intern **„Team“**, extern **„Schule“** (2 Tester). Testinformationen inkl. `applereview`-Login ausgefüllt.
-- Builds: `2610121422` (Im Test, alt – Kartenfilter-Bug), `2610130934` (Kartenfix), **`2610131028`** (Kartenfix + viele Spieler) – **dieser muss noch der Gruppe „Schule“ zugewiesen werden**.
+- Builds: `2610121422` (Im Test, alt – Kartenfilter-Bug), `2610130934` (Kartenfix), **`2610131028`** (Kartenfix + viele Spieler), `2610141130` (Trophy Road neu, Rang-Figuren, Karte nur drehbar, Shop zu, nur Trophäen), **`2610141213`** (+ Karte zoombar mit Spieler in der Mitte, Freundes-Menü schließt nach Herausfordern, angemeldet bleiben über Offline-Token im Schlüsselbund), `2610141631` (+ Freundesprofil im Spiel-Look, Namen ändern, Tag/Nacht), `2610161251` (+ Feinschliff 16.10., neues Logo), **`2610161702`** (+ Karten-Drehen repariert), `2610201041` (+ Rangliste, Freunde per Namen/auf der Karte, Feedback 13.–19.10.), `2610201127` (+ Aufgaben, Coins, Beta-Event mit Crash-Test-Dummy), `2610210821` (+ Sounds), `2610211050` (+ Orte aus OpenStreetMap, Kompass, Lade-Screen, Menü kleiner – mit „Nebel“-Fehler auf der Karte), `2610211130` (+ Cartoon-Karte, Nebel weg), `2610241022` (+ Frage melden, Ankündigungs-Banner), `2610241107` (+ Länder-Kompass, Reaktions-Test, Zeitgefühl, Erklär-Bildschirm – **Fehler: hängt bei „Bereit machen“**), `2610241214` (Fix dafür), `2610251425` (+ neuer Sieg-/Niederlage-Screen mit 3D-Siegerehrung), **`2611041538`** (+ Sticker-Emotes, Geschenke mit Stickern, Sticker-Album) – **`2611041538` selbst testen, dann der Gruppe „Schule“ zuweisen** (Backend ist schon live). Text für „Was soll getestet werden?“: `docs/TESTFLIGHT_TESTER_TEXT.md`., `2611051500` (05.11.: Sticker-System, Gedränge, Einstellungen im Profil, dunkle Popups, 48 Emojis)
 
-**Git:** `feature/liga-modus` und `main` auf GitHub sind auf dem aktuellen Stand (alles gepusht).
+**Git:** `feature/liga-modus` ist auf GitHub aktuell. `main` hängt hinterher (Stand `7e39882`, 13.10.) – bei Bedarf mergen.
 
 **Wo die Passwörter liegen** (nie im Repo):
 | Schlüsselbund-Eintrag (macOS) | Wofür |
@@ -109,6 +143,10 @@ Danach irgendwann App Store – dafür ist ein eigener Server statt der Schul-Cl
 | Challengr Leo Cloud Postgres | Datenbank |
 | Challengr Leo Cloud Keycloak-Admin | Keycloak-Admin-Konsole (`…/auth/admin`, Benutzer `admin`) |
 | Challengr Apple-Prüfer-Account | App-Login `applereview` |
+| Challengr Dashboard test | Dashboard-Login `test` (nur, wenn am 15.10. so gespeichert) |
+
+Der **App-Store-Connect-API-Schlüssel** (.p8) liegt nur im Kubernetes-Secret `challengr-asc` (Issuer-ID, Key-ID, Schlüssel) –
+die .p8-Datei selbst sicher aufheben, Apple lässt sie nur einmal herunterladen.
 
 Anzeigen: `security find-generic-password -s "<Eintrag>" -w`. Postgres/Keycloak-Admin stehen zusätzlich im
 Kubernetes-Secret `challengr-secrets`. Verloren? `./scripts/rotate-secrets.sh` setzt neue.
@@ -120,18 +158,49 @@ Kubernetes-Secret `challengr-secrets`. Verloren? `./scripts/rotate-secrets.sh` s
 **Der öffentliche TestFlight-Test läuft:** Neuester Build ist der externen Gruppe „Schule“ zugewiesen, der
 öffentliche Link ist aktiv, Schüler spielen bereits.
 
+**Sticker-Update (04.11.):** Sticker-Emotes + Sammeln/Geschenke – Backend live (Backups `Backups/backup-2026-11-04-sticker.sql` und `…-sticker-sammeln.sql`), gepusht, Build **`2611041538`** hochgeladen (15:47; erst nach Bestätigen des neuen Apple-Lizenzabkommens – bei „PLA Update available“ muss der Kontoinhaber unter developer.apple.com/account zustimmen). Tester-Text in `docs/TESTFLIGHT_TESTER_TEXT.md` ist aktualisiert.
+**Offen:** Build in TestFlight erst selbst testen (Geschenk an einen Freund, öffnen, Sticker schicken, Album), dann der Gruppe „Schule“ zuweisen.
+**Sticker-System + Feedback (05.11.):** Menü → Sticker, STICKER-Knopf, Sieg-/Aufgaben-Sticker, Paket, Album-Stufen, goldener Rahmen, Verschenken, Einstellungen im Profil, Gedränge, dunkle Popups, 48 Emojis – Backend live (14:59, Backup `Backups/backup-2026-11-05-sticker-system.sql`), gepusht, Build **`2611051500`** hochgeladen (15:02), Tester-Text aktualisiert. Neue Spalten `player.gold_frame`, `friend_gift.from_collection` sind live angelegt. **Offen:** Build selbst testen, dann der Gruppe „Schule“ zuweisen und Tester-Text einfügen; erledigtes Feedback im Dashboard abhaken.
+**Feedback (Dashboard, Stand 05.11.):** erledigt bzw. mit dem nächsten Build erledigt und danach im Dashboard abhaken: „Overlay verbessern/schöner“ (2×), „Alle Emojis“ (→ 48), „Länderkompass hängt bei 3“ (Fix `0f8dc3e`, 24.10.), „Name schwer zu finden“ (Stift + Zahnrad), „Gegner-Antwort sehen“ (deutlicher), „Spieler ineinander“ (Gedränge), „keine Markierung bei Dailys“, „Beta-Skin“ (Crash-Test-Dummy). Offen/Entscheidung: Trophäen für Events (Vorschlag: nein, verzerrt die Liga), mehr weibliche Figuren (Entwürfe Frost/Kira/Riot/Valka vom 05.11. in `Character3D/entwuerfe_spielerinnen/`, Code `Character3D/pipeline/char/preview/entwuerfe.js`, Rendern aus `char/`: `node preview/entwuerfe.mjs <ordner>`; ältere Vorlagen Vex/Blaze/Nova/Raven in `maedels.js`), Musik pro Challenge, eigenes Quiz, eigene Hotspots, Sounds für alle Knöpfe, Trophy Road (Belohnungen antippen, „Spiele anklicken“ unklar).
+Alte App-Versionen sehen keine Sticker; kommt einer bei ihnen an, zeigen sie das Ersatz-Emoji. Pull Request `feature/liga-modus` → `main` ist offen (nicht gemergt).
+
 Erledigt am 13.10.: hängende Keycloak-Konten freigeschaltet, Passwort von `test` geändert, 2FA für den
 Keycloak-Admin eingerichtet, Kontakt-Mail bestätigt (`challengrapp.official@gmail.com`), alles gepusht,
 Zustimmung der Schule liegt vor, Test mit zwei iPhones durchgeführt (Checkliste Teil C/D).
 
+0. **Neue Real-Life-Challenges (live seit 24.10. 11:15, Build `2610241107`):** Länder-Kompass (`CountryCompassView`, Abweichung zur Hauptstadt-Richtung), Reaktions-Test (`ReactionChallengeView`, 3 Runden, zu früh = 1000 ms), Zeitgefühl (`TimingChallengeView`, Zielzeit 5–10 s ohne Uhr) – alle „weniger gewinnt“, Server `MetricResults.Kind.COUNTRY/REACTION/TIMING` mit Wertgrenzen, `RealLifeChallengeSync` legt sie in bestehenden DBs an (Text nicht ändern – App erkennt sie am Textanfang). Land, Zielwinkel, Zielzeit und Wartezeiten kommen aus der Battle-Nummer (`ChallengeSeed`) → beide Spieler gleich (der alte Kompass hatte pro Handy einen eigenen Zufallswinkel – behoben). **Erklär-Bildschirm** (`ChallengeIntroGate`) vor jeder gemessenen Challenge: Schritte + wer gewinnt, „Los geht's“ oder automatisch nach 20 s, dann 3 s (Liegestütze 5 s) Bereit-Countdown.
+   **Achtung Reihenfolge:** Erst Build hochladen und der Gruppe zuweisen, Backend erst deployen, wenn die meisten Tester aktualisiert haben – alte App-Versionen kennen die neuen Challenges nicht (Länder-Kompass öffnet dort den alten Kompass, Reaktion/Zeitgefühl das Friendly-Fenster).
+   **Dashboard-Ausbau (live seit 24.10., Build `2610241022` hochgeladen → der Gruppe „Schule“ zuweisen):** Server `09acf2d` … `1fa97ea`, Dashboard `9cd7fc1`, App `511e84b`.
+   Neue Dashboard-Seiten: **Quiz** (Fragen anlegen/bearbeiten/abschalten, gemeldete und „fast alle falsch“ zuerst), **Events** (anlegen/bearbeiten, Fortschritt pro Challenge), **Orte** (Heatmap ~250-m-Felder ab 3 Spielern, beliebteste Orte, eigene Orte für alle sichtbar, OSM-Orte ausblenden), **System** (Status, Backups, Ankündigung, Protokoll); Spieler-Seite: Trophäen/Coins korrigieren (Grund Pflicht, Rekord optional zurücksetzen) + Verlauf.
+   App: Fahne „Frage melden“ in der Quiz-Show, Ankündigungs-Banner beim Öffnen.
+   **Deploy-Reihenfolge:** Backup per Hand → `kubectl apply -f k8s/backend.yaml` (neue PVC `challengr-backup-pvc` + Volume) → `./scripts/deploy-cloud.sh backend` (Image mit pg_dump 17) → `./scripts/deploy-cloud.sh dashboard` → im Dashboard unter System „Backup jetzt“ testen → `upload-testflight.sh`.
+   Wiederherstellen eines Backups (nur per Hand): `gunzip -c challengr-….sql.gz | kubectl -n student-it220257 exec -i deploy/challengr-postgres -- psql -U postgres postgres` (vorher Backend stoppen).
+   Offen: Sicherheit (eigene Admin-Konten, pflegbarer Namensfilter) – Nutzer hat noch nicht entschieden.
+   **Aufgaben-Update:** Backend live (20.10., 11:30, Backup vorher), gepusht, Build `2610201127` hochgeladen, am 21.10. ersetzt durch `2610210821` (nur Sounds) → **`2610210821`** der Gruppe „Schule“ zuweisen, Tester-Text aus `docs/TESTFLIGHT_TESTER_TEXT.md` einfügen. Beta-Event endet am 30.11. – danach Event-Tab leer bis zum nächsten Event (z. B. Halloween in `QuestCatalog.EVENTS`).
+   **Ranglisten-Update:** Backend ist live (20.10., 10:40), gepusht, Build `2610201041` hochgeladen → in App Store Connect der Gruppe „Schule“ zuweisen. Die 9 Feedback-Einträge vom 13.–19.10. im Dashboard abhaken. Vor dem Deploy konnte Claude kein Backup ziehen (gesperrt) – nachholen.
+   Merlo-Sprites wurden mit einer Kopie von `Character3D/pipeline/render_map.swift` (H = 400, Sichtfeld mitskaliert) neu gerendert und oben auf 4 px zugeschnitten – die Pipeline-Datei selbst ist unverändert.
+   **Feedback abarbeiten:** Im Dashboard → Feedback → „Markdown (ZIP)“ herunterladen und Claude den Pfad geben – Claude kann die ZIP lesen (Text, Screenshots, Absturzberichte) und das Feedback einarbeiten; danach im Dashboard abhaken. (Claude sieht das Feedback sonst nicht – es braucht Admin-Login bzw. den Apple-Schlüssel.)
+   .p8-Datei `AuthKey_5837P8K647.p8` aus *Downloads* in den Passwort-Manager verschieben, falls noch nicht geschehen.
+   **Kurzfristig:** Build `2610161702` der Gruppe „Schule“ zuweisen; dunkle Einstellungen und Drehen mit einem Finger am iPhone prüfen; neues Dashboard einmal mit echtem Admin-Login ansehen; Meldung zu `bin_der_dominik` im Dashboard auf „Erledigt“;
+   Dashboard-Zugang klären (2FA bei `test` löschen oder eigenes Konto mit Rolle `admin`); **Instagram-Konto `challengr.game`
+   prüfen** – im Gmail-Postfach lagen am 14.10. Mails „New login … Samsung SM-A556B/SM-A566B“ und „password has been changed“.
+   Falls das nicht das Team war: Konto sichern, Passwort ändern, 2FA an.
+   **Testplan:** erst die 5. Klassen (1–2 Wochen, Link nur in deren Klassen-Chats, Tester-Limit z. B. 150), parallel Backup/Mailserver/Moderation klären, dann die ganze Schule (Plakat, Mail an den Professor).
 1. **Tägliches DB-Backup – dringend**, weil jetzt echte Spielerdaten anfallen (kein CronJob im Namespace).
    Z. B. Kubernetes-CronJob mit `pg_dump`, 7 Tage aufbewahren. Bis dahin regelmäßig manuell sichern (siehe Befehle).
 2. **Mailserver in Keycloak** (Realm **challengr** → Realm settings → Email; z. B. Gmail mit App-Passwort,
    `smtp.gmail.com:587`, StartTLS; *Save*, dann *Test connection*). Danach „Verify email“ wieder an.
    Ohne Mailserver geht „Passwort vergessen“ nicht – solche Fälle im Keycloak-Admin manuell zurücksetzen.
+   Keycloak 24 kann keine Login-Codes per Mail – wer „einen Code“ verlangt bekommt, hat 2FA (Authenticator) am Konto.
+   Danach möglich: Mail ans Team bei neuer Meldung (Backend bräuchte dasselbe Gmail-App-Passwort als Secret).
 3. **Laufender Betrieb:** Meldungen im Dashboard („Meldungen“) regelmäßig ansehen; TestFlight-Feedback/Crashs in
    App Store Connect prüfen; Build läuft nach 90 Tagen ab → vorher neu hochladen und der Gruppe „Schule“ zuweisen.
-4. Später (App Store): B5 Prüfer-Zugang ohne zweiten Spieler (Bot/Übungsmodus), eigener Server + Domain,
+4. **Keycloak auf `start` statt `start-dev` umstellen** (`k8s/` Keycloak-Deployment; braucht Hostname-/Proxy-Einstellungen, vorher Backup).
+5. **Nächste Spielideen** (Vorschlag, Reihenfolge): Ranglisten (Schule/Freunde) → Übungsmodus gegen Bot (zugleich B5) →
+   tägliche Aufgaben + Shop-Items mit Wirkung (50:50-Joker, Revanche-Ticket, Trophäen-Schild, Tarnumhang), dann Shop öffnen →
+   Push-Benachrichtigungen bei Herausforderungen → Hotspot-König, mehr Hotspots, Saisons, Fragen melden in der Quiz-Show,
+   Dashboard: Trophäen setzen, Fragen verwalten. Grundsatz: Tageszeit/Nacht nie mit Spielvorteilen verknüpfen (Minderjährige).
+6. Später (App Store): B5 Prüfer-Zugang ohne zweiten Spieler (Bot/Übungsmodus), eigener Server + Domain,
    EU-Händlerstatus in App Store Connect, WebApp mit Login.
 
 **Ablauf:** TestFlight-Builds laufen nach 90 Tagen ab → vorher neu hochladen.
@@ -152,7 +221,16 @@ cd ~/Developer/ChallengrProjekt/Challengr
 kubectl -n student-it220257 get pods            # Status
 kubectl -n student-it220257 logs deploy/challengr-backend --tail=100
 kubectl -n student-it220257 exec deploy/challengr-postgres -- pg_dump -U postgres postgres > backup.sql
+
+# Spieler per Hand ändern (Claude darf nicht in die Live-DB schreiben → selbst ausführen). Spalten ohne Unterstrich!
+kubectl -n student-it220257 exec deploy/challengr-postgres -- psql -U postgres -c \
+  "update player set trophies=1342, highesttrophies=greatest(highesttrophies,1342) where name='…';"
 ```
+
+**Neue Quizfragen:** Zeile in `Backend/challengrbackend/src/main/resources/quiz-questions.txt` anhängen
+(`Frage | richtig | falsch | falsch | falsch`), dann `deploy-cloud.sh backend`. Bestehende Fragen nicht umformulieren (sonst doppelt).
+**Dashboard lokal ansehen:** Test-Backend (TestHarness, Port 8080) + `npx ng serve --proxy-config <datei>` mit Proxy auf `localhost:8080` und Headern `X-Player-Id`/`X-Player-Roles: admin`; Login-Token vorher in `sessionStorage['challengr.dashboard.auth']` legen. Achtung: Tabellen in Angular-Templates immer mit `<thead>/<tbody>`, sonst bricht die Hydrierung (NG0500) und auf der Seite läuft kein Code.
+**Dashboard-Meldungen:** `https://it220257.cloud.htl-leonding.ac.at/reports` (Login mit Admin-Rolle).
 
 App-Unit-Tests: `xcodebuild -project Swift/Challengr/Challengr.xcodeproj -scheme Challengr -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test -only-testing:ChallengrTests`
 
@@ -163,6 +241,12 @@ App-Änderungen → `upload-testflight.sh`; intern sofort verfügbar, extern Bui
 ---
 
 ## 7. Stolperfallen
+
+- **Pfad-Konflikte im Backend:** Eine Klasse mit `@Path("/api/admin/players")` (Sperren) „schluckt“ alle Pfade darunter – neue Admin-Endpunkte deshalb unter eigenem Pfad (z. B. `/api/admin/corrections/{id}`); Klassen mit `@Path("/api")` nicht mit `/api/admin/...` mischen (→ 404).
+- **Konfig-Defaults:** `${ENV:...}` in `@ConfigProperty(defaultValue=…)` wird **nicht** aufgelöst – solche Werte in `application.properties` setzen.
+- **Dashboard:** CSS-Klasse `error` ist global (roter Kasten) – nicht für Status-Punkte verwenden; bei mehreren gleichzeitigen HTTP-Antworten `markForCheck()` statt `detectChanges()` (sonst NG0100). `package-lock.json` muss zu npm im Build-Container (node:20) passen – nach `npm install` ggf. per `docker run … node:20-alpine npm install --package-lock-only` neu erzeugen.
+- **Challenge-Erklärung (`ChallengeIntroGate`):** zwei getrennte Timer (Auto-Start / Bereit-Countdown) – ein gemeinsamer Timer ließ „Bereit machen“ hängen (Build `2610241107`).
+- **Entwickler-Demos ohne Login (nur Debug):** `AUDIT_TOON_DEMO=1` (Cartoon-Karte), `AUDIT_CHALLENGE_DEMO=reaction|timing|country|compass|shake` (Challenge mit Erklärung), `AUDIT_RESULT_DEMO=win|lose|draw|friendly` (Ergebnis-Screen, „Weiter“ spielt ihn erneut ab). Lokales Test-Backend auf Port **8081** (8080 belegt ein anderes Projekt).
 
 - **„Swift Kopie“ gibt es nicht mehr** (gelöscht am 13.10., in der Git-Historie bis `8ea2877`). Zum Testen mit
   zwei Geräten: TestFlight oder zwei Simulatoren mit verschiedenen Konten.
@@ -176,8 +260,24 @@ App-Änderungen → `upload-testflight.sh`; intern sofort verfügbar, extern Bui
 - **3D:** keine eigenen SceneKit-Shader (Magenta auf echten Geräten); nur ein 3D-Fenster gleichzeitig (`CharacterRenderGate`).
 - **Projektordner nicht in iCloud:** Er lag früher auf dem iCloud-Desktop; bei vollem Speicher hat macOS Dateien
   ausgelagert und `.git/index` verloren. Jetzt unter `~/Developer/ChallengrProjekt`. Speicher frei halten.
+- **Name des Spielers:** nur über `PUT /api/players/{id}/name` änderbar. Die App schickt bei Standort-Updates und beim Login
+  den Keycloak-Benutzernamen mit – der Server ignoriert ihn dort absichtlich (sonst würde jede Umbenennung überschrieben).
+- **Postgres-Spaltennamen** in Prod ohne Unterstrich (`highesttrophies`, `winnerpointsdelta`, `reporterid` …).
+- **Karte:** `interactionModes [.rotate, .zoom]` + Zurückspringen auf den Spieler (`recenter`). `MapCameraBounds` nicht mit
+  gleichem Min/Max setzen – dann landet der Spieler am Bildschirmrand.
+- **Test-Hilfen fürs Dashboard** (nur TestHarness): `TestHarness/harness-extras/` enthält erfundene Spieldaten und einen vorgetäuschten App-Store-Connect-Zugang – nach `sync_backend.sh` nach `backend/src/main/java/control/` kopieren.
+- **Port 8080 lokal:** Manchmal läuft dort eine andere Anwendung (anderes Projekt). Das Test-Backend dann mit `-Dquarkus.http.port=8081` starten und die Proxy-Datei anpassen; die fremde Anwendung nicht beenden.
+- **Sticker:** Neuer Sticker = Eintrag in `Stickers.all` (App) **und** `control.StickerCatalog.FALLBACK` (Backend, Ersatz-Emoji muss in `GameSocket.EMOTES` stehen; bewegte zusätzlich in `ANIMATED` bzw. `Stickers.animatedIds`) + Imageset `Sticker_<id>` (256 px, `sips -Z 256` + `pngquant`); die Tests vergleichen beide Listen. Bei einem neuen Sticker auch die letzte Album-Stufe in `StickerCatalog.STAGES` (= volles Album, goldener Rahmen) auf die neue Anzahl setzen – ein Test prüft das; wer den Rahmen schon hat, behält ihn. Erst Backend deployen, dann App. Im Test-Harness ist `WIN_DROP_PERCENT` nach `sync_backend.sh` per Hand auf 100 gesetzt (jeder Liga-Sieg bringt einen Sticker), live bleibt es bei 25. `Werbevideo/fightvideo/sticker.mjs <ids>` nummeriert die Ausgabe neu ab `01_` (überschreibt also nicht, erzeugt aber falsch benannte Dateien) – WhatsApp-Originale gesichert in `Werbevideo/sticker/_sicherung_whatsapp_2026-11-04/`. Animierte für die App: Einzelbilder per ImageIO aus `animiert/*.webp` holen, auf 256 px, `img2webp -lossy -q 65 -d 100`.
+- **Zwei Simulatoren zum Selbsttesten** (Harness-App, lokales Backend): `xcrun simctl install <UDID> TestHarness/dd/Build/Products/Debug-iphonesimulator/Challengr.app`, dann `SIMCTL_CHILD_AUDIT_BACKEND_URL=http://localhost:8080 SIMCTL_CHILD_AUDIT_PLAYER_ID=audit-1 SIMCTL_CHILD_AUDIT_PLAYER_NAME=Basti xcrun simctl launch <UDID> at.htl.leonding.challengr.binder -hasSeenOnboarding YES` (zweiter mit `audit-2`/Mia). Spieler vorher per `POST /api/players` mit Header `X-Player-Id` anlegen. Simulatoren „Challengr Tests“ (A) und „Challengr Demo B“ (B).
+- **Tag/Nacht testen:** Debug-Builds nehmen `AUDIT_FAKE_TIME` (ISO 8601) als Uhrzeit (`SkyCycle.now()`).
+- **UI-Tests im TestHarness:** Sheets aus dem Münz-Menü (Trophy Road, Shop, Einstellungen) öffnen sich in XCUITests oft nicht –
+  die Trophy Road lässt sich in der Harness-Kopie über `AUDIT_TROPHY_ROAD=<playerId>` direkt starten. NavigationLinks per Koordinate antippen.
+  Das Harness-Backend wird von `sync_backend.sh` überschrieben (eigene Test-Patches dann neu einspielen).
+- **Dashboard-Screenshot lokal:** `ng serve` mit einer Proxy-Datei auf `localhost:8080` (+ Header `X-Player-Id`/`X-Player-Roles: admin`)
+  und vorher ein Fake-Token in `sessionStorage['challengr.dashboard.auth']` legen; neue Dateien in `public/` sieht `ng serve` erst nach Neustart.
 - **Claude-Sicherheitsgrenzen:** Passwörter in Webformulare eintippen, Secrets/Schlüsselbund schreiben und
-  Keycloak-Konto-Einstellungen ändern blockiert das Sicherheitssystem → dafür Skripte vorbereiten, die der Nutzer selbst ausführt.
+  Keycloak-Konto-Einstellungen ändern und **Schreiben in die Live-Datenbank** blockiert das Sicherheitssystem → dafür Befehle/Skripte
+  vorbereiten, die der Nutzer selbst ausführt. Lesen (psql select, kubectl logs) geht.
 
 **Lokales Test-Setup (nicht im Repo):** `~/Developer/ChallengrProjekt/TestHarness/` – Kopie der App mit UI-Test-Target,
 lokales Backend (Test-Profil, Port 8080), scriptbarer Gegner `opponent.mjs` (Port 9099), UI-Tests
@@ -198,6 +298,32 @@ Demo-Videos: `~/Developer/ChallengrProjekt/Challengr_Demo_1_Liga_und_Friendly.mp
 6. „Eigenes Projekt, nicht die Schule erwähnen“ → Bundle-ID `com.challengrapp.challengr`, Datenschutzerklärung ohne Schule.
 7. „Tester bekommen keine Mail“ → Keycloak ohne Mailserver; „Tester sehen sich nicht“ → Demo-Kartenfilter entfernt.
 8. „Was, wenn an der Schule 100–200 Leute auf einem Punkt sind?“ → nearby begrenzt, Events gedrosselt, Karte sparsamer.
+9. (14.10.) „Trophy Road logischer und mit Animationen; manche Figuren nur über Ränge“ → TrophyMath, neue Trophy Road, Rang-Figuren.
+10. „Zoom weg, nicht wegbewegen, nicht 2D; Tipp-Indikator; Shop aus; Foto-Challenge aus; keine Minus-Trophäen; Punkte verwirren“
+    → später: „Zoom wieder rein, aber Spieler immer in der Mitte“. Entscheidung: Punkte in der App ausblenden, nur Trophäen.
+11. „Freundes-Menü nach Herausfordern schließen“, „200 Wissensfragen – beste Möglichkeit für Abwechslung?“ → Fragenkatalog + Sync + QuizHistory.
+12. „Nach App-Beenden neu anmelden ist nervig“ → Offline-Token im Schlüsselbund.
+13. „Freundesprofil hässlich, Namen ändern, mskes07 hat komische Trophäen“ → Profil neu, Rename-Endpunkt; Trophäen nachgerechnet: korrekt.
+14. „Day-Night-Zyklus, aber rein dekorativ – keine Punkteunterschiede.“
+15. Organisatorisch: Mail an den Professor mit dem Plakat (TestFlight-QR-Code) – Vorlage im Chat formuliert.
+16. (16.10.) Acht Fixes: Einstellungen dunkel, Verlauf einklappbar, Geschenke aus, Drehen mit einem Finger, keine Standard-iOS-Knöpfe
+    im Freundesprofil, Neuausrichten-Knopf weg, Avatar-Hintergrund in Figurfarbe, Trophy Road startet bei der Figur. Neues Logo als App-Icon.
+17. Projektbeschreibung für die Präsentationsliste (Spalte D) formuliert; Empfehlung Testplan: erst 5. Klassen, dann ganze Schule.
+18. „Wischen mit einem Finger ist buggy und wird zurückgesetzt“ → Ursache Standort-Updates mit leerer Kamera; Drehen um die Mitte.
+19. „Dashboard komplett überarbeiten, vor allem Design – mit echten Spielern kann man jetzt Analysen machen“ → Statistik-Endpunkt,
+    Tagesaktivität, eigene Diagramme; danach „sieht noch nach KI aus“ → ruhigeres Farbbild ohne Neon/Emojis.
+20. „Kann ich TestFlight-Feedback abhaken?“ → geht bei Apple nicht → Feedback-Seite im Dashboard mit Erledigt-Haken (App Store Connect API),
+21. (20.–21.10.) Ranglisten (Top 10/Freunde/eigener Platz), Feedback-Paket (Freunde per Namen, Karte immer schräg, Rekord, Emotes …), tägliche Aufgaben mit Coins + Beta-Event mit Crash-Test-Dummy, Sounds, Check-in-Orte aus OpenStreetMap, Cartoon-Karte (MapLibre).
+22. (21.10.) Präsentation „Entwicklung seit September“; Beta-Skin-Konzepte (Dummy gewählt).
+23. (24.10.) Dashboard-Ausbau: Backups, Korrekturen mit Protokoll, Status, Quiz, Events, Orte/Heatmap, Ankündigungen; App: Frage melden, Ankündigungs-Banner.
+24. (24.10.) Neue Real-Life-Challenges Länder-Kompass, Reaktions-Test, Zeitgefühl + Erklär-Bildschirm vor jeder Challenge; Fix „Bereit machen hängt“ (Build `2610241214`). WhatsApp-Sticker.
+    plus Export als PDF / Markdown-ZIP mit Bildern.
+25. (25.10.) „Win- und Lose-Screen sieht langweilig aus – vielleicht mit 3D-Animation“ → 3D-Siegerehrung (`aacb627`); Demo-Video mit zwei Simulatoren (TestHarness `ResultDemoTests`, Harness-Backend lost dafür in der Liga Real-Life immer den Reaktions-Test).
+26. (04.11.) „Die WhatsApp-Sticker sollen im Spiel als Emotes verschickt werden können, erst statisch, dann animiert“ (`docs/STICKER_EMOTES.md`) → 20 Sticker, 6 animiert, rückwärtskompatibles Protokoll; vom Nutzer mit zwei Simulatoren getestet, Backend vor dem Deploy gesichert.
+27. (05.11.) „Mehr Wege an Sticker, Doppelte verschenken, Belohnung fürs volle Album (Rahmen), Sticker-Pakete im Shop – und es soll offensichtlicher sein, wie man Sticker sieht und schickt“ → Sticker-Bereich im Menü, STICKER-Knopf, Sieg-/Aufgaben-Sticker, Paket für 100 Coins, Album-Stufen mit goldenem Rahmen, gezieltes Verschenken.
+    Danach: „Geschenke wieder einschalten, drin ist ein zufälliger Sticker, den man einmal schicken kann – sammeln, auch 20× denselben, Sticker-Album“ → Sammlung am Server, Start-Paket, ein Geschenk pro Freund und Tag; PR nach `main` vorbereitet.
+
+**Material außerhalb des Repos:** Präsentation „Challengr – Entwicklung seit September“: https://claude.ai/artifact/38ZBn5HvMEeupkN5L6ZfDd (privat, über „Teilen“ freigeben). WhatsApp-Sticker (32, zwei Pakete als `.wastickers` + PNG-ZIP): `~/Developer/ChallengrProjekt/Sticker/pakete/` (Skripte zum Neu-Erzeugen lagen nur im Scratchpad – Sticker = Figuren-Renders aus `Character3D/app_modelle/*_full.png` + Arial Rounded Bold, Apple-Emojis nur für privaten Gebrauch). Karten-Konzept und Verlauf-Screenshots: `~/Developer/ChallengrProjekt/Karten_Konzept/`, Beta-Figur-Konzepte: `~/Developer/ChallengrProjekt/BetaSkin_Konzepte/`.
 
 Weitere Doku: `docs/audit/TESTFLIGHT_ANLEITUNG.md` (Handgriffe bis zum öffentlichen Link),
 `docs/audit/TESTFLIGHT_SECURITY_CHECKLIST.md` (Checkliste mit Umsetzungsstand), übrige Audit-Berichte in `docs/audit/`.

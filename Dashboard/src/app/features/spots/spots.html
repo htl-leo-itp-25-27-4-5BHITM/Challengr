@@ -1,0 +1,79 @@
+<div class="hero">
+  <div class="hero-inner">
+    <div class="crumbs">Admin <span>/</span> Orte</div>
+    <h1>Check-in-Orte</h1>
+    <div class="subtitle">Wo gespielt wird, welche Orte beliebt sind – und Orte ausblenden oder selbst anlegen.</div>
+  </div>
+</div>
+
+@if (error) { <div class="error">{{ error }}</div> }
+
+<div class="grid2 section">
+  <div class="card pad">
+    <div class="card-head"><h2>Wo gespielt wird</h2><button class="btn" (click)="loadHeat()"><app-icon name="refresh" /></button></div>
+    <div #map class="map"></div>
+    @if (heat; as h) {
+      <div class="card-sub" style="margin-top:8px">Spieler-Positionen der letzten {{ h.days }} Tage ({{ h.playersWithPosition }} Spieler), grob in ~250-m-Feldern.
+        Felder mit weniger als {{ h.minPlayersPerCell }} Spielern werden nicht gezeigt – so ist niemand einzeln erkennbar. Gelbe Punkte = Check-ins.</div>
+    }
+  </div>
+  <div class="card pad">
+    <h2>Beliebteste Orte (30 Tage)</h2>
+    <div class="rows list-scroll" style="margin-top:10px">
+      @for (s of heat?.spots ?? []; track s.id; let i = $index) {
+        <div class="row-item link" (click)="focus(s.latitude, s.longitude)">
+          <span class="muted" style="width:22px">{{ i + 1 }}.</span>
+          <div class="grow"><div>{{ s.name }}</div><div class="sub">{{ s.kind }}</div></div>
+          <span>{{ s.checkins }}× · {{ s.players }} Spieler</span>
+        </div>
+      } @empty { <div class="muted">Noch keine Check-ins.</div> }
+    </div>
+  </div>
+</div>
+
+<div class="grid2 section">
+  <div class="card pad">
+    <h2>{{ editSpotId ? 'Eigenen Ort bearbeiten' : 'Eigener Ort' }}</h2>
+    <div class="card-sub">Für alle sichtbar wie die HTL, z. B. weitere Schulen. Großer Marker, tägliche Coins.</div>
+    <div class="form" style="margin-top:10px">
+      <label>Name<input type="text" maxlength="80" [(ngModel)]="spotForm.name" placeholder="BRG Linz" /></label>
+      <label>Koordinaten (aus Google Maps kopieren)<input type="text" [(ngModel)]="spotForm.coords" placeholder="48.2683, 14.2514" /></label>
+      <div class="row">
+        <label>Radius (m)<input type="number" min="20" max="300" [(ngModel)]="spotForm.radiusMeters" /></label>
+        <label>Coins<input type="number" min="0" max="100" [(ngModel)]="spotForm.points" /></label>
+        <label>+ Erster des Tages<input type="number" min="0" max="100" [(ngModel)]="spotForm.bonus" /></label>
+      </div>
+      <div class="actions">
+        <button class="btn btn--primary" (click)="saveSpot()" [disabled]="spotForm.name.trim().length < 3">Speichern</button>
+        @if (editSpotId) { <button class="btn" (click)="editSpotId = null">Abbrechen</button> }
+      </div>
+      @if (msg) { <div class="msg">{{ msg }}</div> }
+    </div>
+    <div class="rows" style="margin-top:12px">
+      @for (s of custom; track s.id) {
+        <div class="row-item" [style.opacity]="s.active ? 1 : 0.5">
+          <div class="grow link" (click)="focus(s.latitude, s.longitude)"><div>{{ s.name }}</div><div class="sub">{{ s.radiusMeters }} m · {{ s.points }}+{{ s.bonus }} Coins · {{ s.checkins30d }} Check-ins (30 T.){{ s.active ? '' : ' · aus' }}</div></div>
+          <button class="btn" (click)="editSpot(s)">Bearbeiten</button>
+          @if (s.active) { <button class="btn btn--danger" (click)="deactivate(s)">Aus</button> }
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="card pad">
+    <h2>Orte aus OpenStreetMap</h2>
+    <div class="card-sub">Unpassendes ausblenden – es verschwindet sofort aus der App, ein anderer Ort rückt nach, wenn das Gebiet neu geladen wird.</div>
+    <div class="actions" style="margin:10px 0">
+      <input type="search" placeholder="Ort suchen …" [(ngModel)]="search" (keyup.enter)="loadLandmarks()" (search)="loadLandmarks()" style="flex:1" />
+      <button class="btn" [class.on]="showHidden" (click)="showHidden = !showHidden; loadLandmarks()">Nur ausgeblendete</button>
+    </div>
+    <div class="rows list-scroll">
+      @for (l of landmarks; track l.id) {
+        <div class="row-item" [style.opacity]="l.hidden ? 0.55 : 1">
+          <div class="grow link" (click)="focus(l.latitude, l.longitude)"><div>{{ l.name }}</div><div class="sub">{{ l.category ?? '–' }} · {{ l.checkins30d }} Check-ins (30 T.){{ l.hidden ? ' · ausgeblendet' : '' }}</div></div>
+          <button class="btn" [class.btn--danger]="!l.hidden" (click)="toggleHidden(l)">{{ l.hidden ? 'Einblenden' : 'Ausblenden' }}</button>
+        </div>
+      } @empty { <div class="muted">Keine Orte gefunden.</div> }
+    </div>
+  </div>
+</div>

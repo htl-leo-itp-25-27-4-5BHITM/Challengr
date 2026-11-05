@@ -45,20 +45,14 @@ struct LoginView: View {
                         .blur(radius: 12)
                         .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: pulsing)
 
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.challengrYellow, Color.challengrYellow.opacity(0.7)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 96, height: 96)
+                    // App-Logo (gleich wie das App-Icon)
+                    Image("AppLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 104, height: 104)
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .shadow(color: Color.challengrYellow.opacity(0.5), radius: 20)
-
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 40, weight: .black))
-                        .foregroundColor(.challengrDark)
+                        .accessibilityLabel("Challengr")
                 }
                 .padding(.bottom, 28)
                 .onAppear { pulsing = true }
@@ -82,7 +76,7 @@ struct LoginView: View {
                     // Features
                     VStack(spacing: 12) {
                         featureRow(icon: "mappin.and.ellipse", text: "Finde Spieler in deiner Nähe")
-                        featureRow(icon: "trophy.fill",        text: "Sammle Punkte & steig auf")
+                        featureRow(icon: "trophy.fill",        text: "Sammle Trophäen & steig auf")
                         featureRow(icon: "bolt.shield.fill",   text: "Kompetitiv & fair")
                     }
                     .padding(.bottom, 8)

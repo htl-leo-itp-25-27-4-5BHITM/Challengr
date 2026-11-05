@@ -19,6 +19,25 @@ struct ContentView: View {
     // MARK: - Body (UI-Aufbau)
     var body: some View {
         Group {
+            #if DEBUG
+            if ProcessInfo.processInfo.environment["AUDIT_TOON_DEMO"] != nil {
+                ToonMapDemo()
+            } else if let demo = ProcessInfo.processInfo.environment["AUDIT_CHALLENGE_DEMO"] {
+                ChallengeDemo(kind: demo)
+            } else if let demo = ProcessInfo.processInfo.environment["AUDIT_RESULT_DEMO"] {
+                ResultDemo(kind: demo)
+            } else {
+                content
+            }
+            #else
+            content
+            #endif
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        Group {
             if auth.isAuthenticated {
                 if let playerId = auth.playerId {
                     MapView(
@@ -32,19 +51,11 @@ struct ContentView: View {
                         }
                     }
                 } else {
-                    VStack(spacing: 12) {
-                        if let error = auth.errorMessage {
-                            Text("Fehler beim Laden:")
-                                .font(.headline)
-                                .foregroundColor(.red)
-                            Text(error)
-                                .foregroundColor(.secondary)
-                        } else {
-                            ProgressView("Lade Profil …")
-                        }
-                    }
-                    .padding()
+                    LoadingScreen(error: auth.errorMessage)
                 }
+            } else if auth.isRestoring {
+                // Gespeicherter Login: kurz der Lade-Screen, nicht die Login-Seite
+                LoadingScreen()
             } else {
                 LoginView(auth: auth)
             }

@@ -1,259 +1,102 @@
-# Challengr
+<p align="center">
+  <img src="Swift/Challengr/Challengr/Assets.xcassets/AppIcon.appiconset/AppIcon-light.png" width="120" alt="Challengr App-Icon">
+</p>
 
-Challengr ist eine Plattform für spontane Real-Life-Challenges.
-Nutzer können sich in ihrer Nähe treffen, kleine Aufgaben gegeneinander absolvieren, Punkte sammeln und in Ranglisten aufsteigen.
-Die App verbindet Real-Life-Interaktion, Gamification und Standortfunktionen.
+<h1 align="center">Challengr</h1>
 
-[Figma-Design für Challengr](https://www.figma.com/design/OQ6QYvTq1UIQZRkCFZPHSL/Challengr?t=awcb6RPzgswE0VKY-1)
+<p align="center">
+  Ortsbasiertes Multiplayer-Spiel fürs iPhone – Spieler in der Nähe finden, herausfordern, Trophäen sammeln.
+</p>
 
----
-
-## Projektübersicht
-
-- Zielgruppe: Jugendliche und junge Erwachsene, Gamer, Fitness- und Outdoor-affine Menschen, Gruppen von Freunden
-- Plattformen: iOS-App (Swift) und Webanwendung (HTML)
-- Backend: Quarkus (Java)
-- Funktionen (geplant):
-
-  - Nutzerregistrierung / Login (zukünftig)
-  - Standortbasierte Challenges im Umkreis von z.B. 50 m
-  - Erstellung und Annahme von Challenges
-  - Punktesystem mit Münzen, Trophäen und Ranglisten
-  - Shop-System für Items und Skins
-  - Push-Notifications für neue Challenge-Anfragen
+<p align="center">
+  <a href="https://github.com/htl-leo-itp-25-27-4-5BHITM/Challengr/actions/workflows/ci.yaml"><img src="https://github.com/htl-leo-itp-25-27-4-5BHITM/Challengr/actions/workflows/ci.yaml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/iOS-SwiftUI-orange?logo=swift" alt="SwiftUI">
+  <img src="https://img.shields.io/badge/Backend-Quarkus%20·%20Java%2025-4695EB?logo=quarkus" alt="Quarkus">
+  <img src="https://img.shields.io/badge/Dashboard-Angular%2021-DD0031?logo=angular" alt="Angular">
+  <img src="https://img.shields.io/badge/Status-TestFlight%20Beta-yellow" alt="Status">
+</p>
 
 ---
 
-## Sprint (Sprint 1 – Start: 15.10.2025)
-
-Ziele:
-
-- Kategorien und Challenges anzeigen
-- Gemeinsames Backend für Web und Swift
-- Markdown-Projektantrag auf GitHub
-
----
-
-## Sprint (Sprint 2 – Start: 5.11.2025)
-
-Ziele:
-
-- Kartensystem in Applikationen einbinden
-- Standortfindung
-
----
-
-## Sprint (Sprint 3 – Start: 19.11.2025)
-
-Ziele:
-
-* Zweiten Spieler auf der Karte anzeigen
-* Standortdaten über Datenbank austauschen (PostgreSQL)
-* WebSockets für Echtzeit-Positionsupdates nutzen (WebApp & Swift)
-* Docker-Setup vorbereiten (c.aberger-Webimage - Compose)
-* Datenbankschema + import.sql im Backend (Quarkus) aufsetzen
-* Vorbereitung & Evaluierung WebSockets unter Swift
-
----
-
-## Sprint (Sprint 4 – Start: 3.12.2025)
-
-Ziele:
-
-* Implementieren einer Funktion, mit der ein Spieler eine Challenge an einem fremden Spieler vorschlagen kann
-* Erstellen und verwalten eines Radius-Checks, um zu bestimmen, welche Spieler als mögliche Zielspieler verfügbar sind
-* Implementieren einer Meldung/Benachrichtigung, die dem herausfordernden Spieler die Device-ID des herausgefordertem Spieler anzeigt
-* Entwicklung eines Dialog-Fensters, das die Herausforderung klar visualisiert
-* Integrieren einer Vibrationsfunktion, wenn ein Spieler in den eigenen Radius gelangt
-
----
-
-## Sprint (Sprint 5 – Start: 17.12.2025)
-
-Ziele:
-
-* Anzeige der zugewiesenen Challenge für herausgeforderte Spieler:innen
-* Visualisierung des Radius in der Map-Ansicht
-* Einführung von WebSockets für Echtzeit-Updates
-
----
-
-## Sprint (Sprint 6 – Start: 14.01.2026)
-
-Ziele:
-
-* Verbesserung des Stylings
-* Entwicklung eines vollständigen Dialoges für eine Challenge
-* Evaluierung eines JS‑Bundlers (Vite mit Proxy‑Setup und fixem Entwicklungsport) - Alternativ Webpack
-
----
-
-## Sprint (Sprint 7 – Start: 28.01.2026)
-
-Ziele:
-
-* Einbindung eines Punktesystems
-* Speicherung der Punkte im Backend
-* Implementierung der Dialog Logik in der WebApp
-
----
-
-## Sprint (Sprint 8 – Start: 11.02.2026)
-
-Ziele:
-
-* Finale Entwicklung eines Punktesystems
-* Speicherung der Punkte im Backend
-* Dynamisches Laden des Trophy Pfads
-* Einheitliches Styling
-
----
-
-## Sprint (Sprint 9 – Start: 04.03.2026)
-
-Ziele:
-
-* Warnung für 3te Wiederholung einer Uneinigkeit
-* Dummy Profile implementieren
-* Triviale Statistiken einbauen/anzeigen
-* Challenge Überarbeitung
-* Streaksystem
-
----
-
-## Sprint (Sprint 10 – Start: 18.03.2026)
-
-Ziele:
-
-* Verbindung von Projekt mit LeoCloud
-
----
-
-## Sprint (Sprint 11 – Start: 08.04.2026)
-
-Ziele:
-
-* Teilweise Einbindung von Keycloack (Aufteilung auf 2 Sprints)
-* Präsentation über Keycloack inklusive Erklärung von Einbindung in Projekt
-
----
-
-## Sprint (Sprint 12 – Start: 29.04.2026)
-
-Ziele:
-
-* Einführung einer einheitlichen USER-ID für Keycloack und Datenbank
-* Verknüpfung jedes Keycloack-USERS mit genau einem Datenbank-USER
-* Vermeidung von Duplikaten zwischen Auth-System und DB
-* Fehler bei der Abmeldung (Logout) identifizieren und vollständig beheben
-* Test-User durch realistischere „Alibi-Spieler:innen“ ersetzen
-* Webapp ausschließlich für Testzwecke weiterführen
-* Einführung von Sub-Issues für User Stories in GitHub zur besseren Nachverfolgung
-* Grundlegende Implementierung einer Dashboard-Ansicht
-* Anzeige von User-Informationen und Challenges vorbereiten
-
----
-
-## Sprint (Sprint 13 – Start: 13.05.2026)
-
-Ziele:
-
-* Umstellung der Dialoge und UI-Texte von Englisch auf Deutsch (Eigennamen bleiben unverändert)
-* Synchronisierung des Usernamens durch Auslesen aus dem JSON Web Token (JWT)
-* Verbesserung und Vereinfachung des Login-Prozesses („Keycloak“ aus der Benutzeroberfläche entfernen)
-* Erweiterung des Dashboards um Such- und Filterfunktionen für User
-* Vorbereitung der Challenge-Verwaltung im Dashboard
-* Recherche und Dokumentation der Anforderungen für den App-Store-Release
-* Polishing der Anwendung (Styling, Schriften, allgemeine UI-Verbesserungen)
-* Einführung einer ersten Charakterauswahl mit Standardcharakter
-* Vorbereitung der späteren Bearbeitbarkeit des Charakters im Profil
-
-Project Backlog:
-
-* Keycloak hinter einem Reverse Proxy absichern
-* Rollenbasierte Identifizierung für Dashboard-Admins implementieren
-
----
-
-
-
-## Sprint (Sprint 14 – Start: 27.05.2026)
-
-Ziele:
-
-* Marketing-Konzept ausarbeiten
-* Schultests planen und vorbereiten
-* Präsentation für die 5. Klasse erstellen
-* Shop-System mit eigener Währung konzipieren
-* Erste Shop-Ansicht mit Items implementieren (ohne Kaufmöglichkeit)
-* Challenges finalisieren
-* Wissens-Backend überarbeiten
-
----
-
-
-
-## Lokaler Schnellstart (Dashboard + Cloud Backend)
-
-Im Projekt-Root reicht jetzt **ein Befehl**:
-
-```bash
-./scripts/dev-cloud.sh
+## Über das Spiel
+
+Spieler sehen andere Spieler in ihrer Umgebung auf einer 3D-Karte und fordern sie direkt heraus.
+
+- **Liga** – Kämpfe um Trophäen in zwei Spielarten:
+  - **Quiz-Show**: vier Wissensfragen à 15 Sekunden in einem animierten 3D-Fernsehstudio.
+  - **Real-Life-Challenge**: Aufgaben, die das iPhone misst – Sprint, Lautstärke, Kompass, Schütteln, Liegestütze, Check-in.
+- **Friendly** – Kategorie und Challenge frei wählbar, ohne Einsatz.
+- **Trophy Road** mit Rängen, freischaltbaren 3D-Figuren, Tagesaufgaben und zeitlich begrenzten Events.
+- **Freunde, Rangliste, Emotes** und Check-in-Orte aus OpenStreetMap (Parks, Museen, Brunnen, Plätze …).
+- **Sicherheit**: Login-Pflicht, gerundete Standorte, Unsichtbar-Modus, Melden & Blockieren, Konto löschen.
+
+## Architektur
+
+```text
+iOS-App (SwiftUI) ──REST / WebSocket──▶  Backend (Quarkus)  ──▶  PostgreSQL
+        │                                     │
+        └────────── OIDC (PKCE) ──────▶  Keycloak  ◀── Admin-Dashboard (Angular SSR)
 ```
 
-Der Befehl macht automatisch:
+| Bereich | Ordner | Technik |
+|---|---|---|
+| iOS-App | [`Swift/`](Swift/) | SwiftUI, MapKit, SceneKit (3D-Figuren), Core Motion |
+| Backend | [`Backend/challengrbackend/`](Backend/challengrbackend/) | Quarkus, Java 25, REST + WebSocket, Hibernate Panache, PostgreSQL, OIDC |
+| Admin-Dashboard | [`Dashboard/`](Dashboard/) | Angular 21 mit SSR, Keycloak-Login, Analysen, TestFlight-Feedback |
+| Web-Client (Test) | [`WebApp/`](WebApp/) | Vite – nur für Tests, im Betrieb abgeschaltet |
+| Deployment | [`k8s/`](k8s/), [`scripts/`](scripts/) | Kubernetes, Container-Images auf GHCR |
+| Design & Sounds | [`Design/`](Design/) | Konzepte, Assets, Sound-Effekte |
+| Dokumentation | [`docs/`](docs/) | Projektstand, Audits, Sprints, Spezifikationen |
 
-- lokales Dashboard auf `http://localhost:4200` starten
-- Proxy auf Cloud-Backend (`https://it220257.cloud.htl-leonding.ac.at`) setzen
-- DB-Tunnel für IntelliJ auf `localhost:15432` starten
+## Schnellstart
 
-IntelliJ-DB-Verbindung:
-
-- Host: `localhost`
-- Port: `15432`
-- Database/User/Passwort: `postgres/postgres/postgres`
-
-DB-Tunnel stoppen:
-
-```bash
-./scripts/db-tunnel-stop.sh
-```
-
-Optional: kompletten lokalen Stack (Postgres + Backend + Dashboard) starten:
+**Voraussetzungen:** Xcode 26, JDK 25, Node 22, Docker
 
 ```bash
+# Kompletter lokaler Stack (Postgres + Backend + Dashboard)
 docker compose --profile local-stack up --build
+
+# Lokales Dashboard gegen das Cloud-Backend (inkl. DB-Tunnel auf localhost:15432)
+./scripts/dev-cloud.sh
+
+# Backend im Dev-Modus mit Live-Reload
+cd Backend/challengrbackend && ./mvnw quarkus:dev
 ```
 
----
+Die iOS-App wird über `Swift/Challengr/Challengr.xcodeproj` in Xcode gestartet.
+Umgebungsvariablen: Vorlage in [`.env.example`](.env.example).
 
-## LeoCloud Deployment
-
-Für LeoCloud gibt es ein separates Setup im Ordner `k8s/`.
-
-Die genaue Anleitung findest du in:
-
-- `k8s/README.md`
-
-Kurz gesagt:
-
-1. Backend-Image bauen und pushen
-2. Dashboard-Image bauen und pushen
-3. Secret anlegen
-4. Kubernetes-Manifeste aus `k8s/` deployen
-
-Ziel-URL:
-
-- `https://it220257.cloud.htl-leonding.ac.at`
-
-### Einfacher Deploy-Befehl (für alle im Team)
-
-Im Projekt-Root:
+## Tests
 
 ```bash
-./scripts/deploy-cloud.sh backend
-./scripts/deploy-cloud.sh dashboard
-./scripts/deploy-cloud.sh both
+./scripts/test-all.sh            # Backend + iOS
+./scripts/test-all.sh backend    # nur Backend
+./scripts/test-all.sh ios        # nur iOS (Simulator)
 ```
 
-Damit werden Images gebaut/zu GHCR gepusht und die passenden Kubernetes Deployments automatisch neu gestartet.
+Backend-Tests und Dashboard-Build laufen bei jedem Push automatisch über [GitHub Actions](.github/workflows/ci.yaml).
+
+## Deployment
+
+```bash
+./scripts/deploy-cloud.sh backend     # oder: dashboard | both
+./scripts/upload-testflight.sh        # iOS-Build zu TestFlight
+```
+
+Die Skripte bauen die Images, pushen sie zu GHCR und starten die Kubernetes-Deployments neu.
+Details zu Manifesten und Secrets: [`k8s/README.md`](k8s/README.md).
+
+## Dokumentation
+
+- [Projektstand & offene Punkte](docs/PROJEKT_STAND.md)
+- [Audit-Berichte (Sicherheit, Performance, UX)](docs/audit/README.md)
+- [Sprint-Übersicht](docs/projekt/Sprints/README.md)
+- [Projektantrag](docs/projekt/ProjectProposal.md) · [Fachspezifikation](docs/projekt/FSD.md) · [Ranglistensystem](docs/projekt/RankingSystem.md)
+- [Docker-Setup](docs/DOCKER_SETUP.md)
+- [Figma-Design](https://www.figma.com/design/OQ6QYvTq1UIQZRkCFZPHSL/Challengr?t=awcb6RPzgswE0VKY-1)
+
+## Team
+
+- Sebastian Lehner
+- Dominik Binder
+- Julian Richter

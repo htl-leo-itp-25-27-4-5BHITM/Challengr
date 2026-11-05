@@ -40,6 +40,8 @@ struct PlayerAnnotation: Identifiable {
     let rankName: String
     /// Gewählte Figur des Spielers (nil = unbekannt, z.B. alte App-Version).
     var character: GameCharacter? = nil
+    /// Volles Sticker-Album → goldener Ring
+    var goldFrame = false
 }
 
 enum ActiveFullScreen {
@@ -90,8 +92,8 @@ struct MapView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     // Lebendige Karte: Emoji-Blasen über Spielern und "neu in der Nähe"-Hinweise
-    /// Echte Emotes anderer Spieler auf der Karte (playerId → Emoji)
-    @State private var pinBubbles: [String: String] = [:]
+    /// Echte Emotes anderer Spieler auf der Karte (playerId → Emoji/Sticker)
+    @State private var pinBubbles: [String: EmoteEvent] = [:]
     /// Eigenes zuletzt gesendetes Emote (Karte)
     @State private var ownMapEmote: EmoteEvent? = nil
     /// Emotes im laufenden Battle
@@ -104,6 +106,7 @@ struct MapView: View {
     @State private var isCheckingIn = false
     @State private var announcedHotspotIds: Set<String> = []
     @State private var lastHotspotLoad: Date? = nil
+    @State private var lastHotspotLoadAt: CLLocationCoordinate2D? = nil
     @State private var knownNearbyIds: [String]? = nil
     /// Figur des Gegners im laufenden Battle
     @State private var battleOpponentCharacter: GameCharacter? = nil
@@ -116,7 +119,8 @@ struct MapView: View {
     @StateObject private var quizModel: QuizShowModel
 
     /// Short info banner at the top of the map (z.B. "Anfrage abgelaufen").
-    @State private var mapBanner: (icon: String, text: String)? = nil
+    /// Hinweis oben auf der Karte; mit `action` lässt er sich antippen (z. B. neue Figur → Figurenwahl)
+    @State private var mapBanner: (icon: String, text: String, action: (() -> Void)?)? = nil
     @State private var mapBannerHideTask: Task<Void, Never>? = nil
     
     /// Information about an incoming challenge from another player.
@@ -157,13 +161,11 @@ struct MapView: View {
     @State private var ownPoints: Int = 0
     /// Liga-Trophäen (Quiz-Show und Real-Life gemeinsam)
     @State private var ownTrophies: Int? = nil
-    @State private var pointsHistory: [PlayerPointsHistoryDTO] = []
     @State private var battleHistory: [BattleHistoryDTO] = []
     @State private var profileStatusText: String? = nil
     @State private var profileBadges: [String] = []
     
     @State private var showProfile = false
-    @State private var showSettings = false
     @State private var showShop = false
     @State private var currentTargetCoordinate: CLLocationCoordinate2D? = nil
 
@@ -227,7 +229,25 @@ struct MapView: View {
     @State private var hasCapturedInitialZoom = false
 
     let minDistance: CLLocationDistance = 200
-    let maxDistance: CLLocationDistance = 5000
+    let maxDistance: CLLocationDistance = 2500
+
+    /// Uhrzeit für den Himmel (jede Minute neu)
+    @State private var skyClock = SkyCycle.now()
+    private var sky: SkyState {
+        SkyCycle.sky(at: skyClock, coordinate: ownCoordinate ?? CLLocationCoordinate2D(latitude: 48.268, longitude: 14.251))
+    }
+
+    /// Drehen mit einem Finger (wie Pokémon GO): Kamera beim Start, zuletzt gesehener Winkel des Fingers
+    /// um die Kartenmitte und wie weit seitdem gedreht wurde
+    @State private var dragStartCamera: MapCamera?
+    @State private var dragLastAngle: Double?
+    @State private var dragTurned: Double = 0
+    /// Zwei Finger (Zoomen/Drehen von MapKit) – dann dreht das Wischen nicht mit
+    @State private var twoFingerGesture = false
+    @State private var mapSize: CGSize = .zero
+
+    /// Wo zuletzt auf die Karte getippt wurde – kurze Welle als Rückmeldung.
+    @State private var mapTaps: [MapTapMark] = []
 
     
     /// All players that should be displayed
@@ -244,6 +264,18 @@ struct MapView: View {
     @State private var showTrophyRoad = false
     @State private var showMainMenu = false
     @State private var showCharacterEditor = false
+    @State private var showQuests = false
+    /// Cartoon-Karte (Einstellungen → Karte); fällt bei Ladefehlern für diese Sitzung auf die Apple-Karte zurück
+    @AppStorage(ToonMapSettings.key) private var useToonMap = ToonMapSettings.defaultOn
+    @State private var toonMapFailed = false
+    /// Kamera beim Start einer Zwei-Finger-Geste auf der Cartoon-Karte
+    @State private var toonGestureStart: MapCamera? = nil
+    /// Ränge (für den roten Punkt am Trophäen-Chip) und zuletzt in der Trophy Road gesehener Stand
+    @State private var allRanks: [TrophyRank] = []
+    @State private var trophyRoadLastSeen: Int? = nil
+    /// Abholbereite Belohnungen (Zahl am Aufgaben-Knopf)
+    @State private var questClaimable = 0
+    @State private var characterEditorHighlight: GameCharacter? = nil
     @State private var profileStartTab = 0
     @StateObject private var menuAvatarStore = AvatarCustomizationStore()
 
@@ -251,6 +283,22 @@ struct MapView: View {
     @State private var selectedPlayer: PlayerAnnotation? = nil
     @State private var showPlayerPopup = false
     @State private var showPlayerChallengeDialog = false
+    /// Freunde und gerade angefragte Spieler – für den Freund-Knopf im Spieler-Popup
+    @State private var mapFriendIds: Set<String> = []
+    @State private var requestedFriendIds: Set<String> = []
+    /// Eigene Emote-Kurzwahl und für wen das Emote-Fenster offen ist
+    @State private var emoteFavorites = EmoteFavorites.load()
+    /// Gesammelte Sticker (jeder Versand verbraucht einen)
+    @ObservedObject private var stickers = StickerCollection.shared
+    @State private var emotePickerTarget: PlayerAnnotation? = nil
+    /// Über den STICKER-Knopf geöffnet → die Auswahl startet bei den Stickern
+    @State private var emotePickerStickers = false
+    /// Sticker-Bereich (Menü → Sticker)
+    @State private var showStickerHub = false
+    /// Volle Flecken auf der Karte: Liste "Spieler hier"
+    @State private var crowdChooser: MapSpots.Crowd? = nil
+    /// Einmaliger Hinweis "Du hast Sticker!"
+    @AppStorage("stickerHintShown") private var stickerHintShown = false
 
     @State private var showNearbyText = true
 
@@ -301,27 +349,24 @@ struct MapView: View {
             mapLayer
                 // Voller Schulhof: Figuren-Animationen sparsamer, damit die Karte flüssig bleibt
                 .environment(\.mapCrowded, annotations.count > MapCrowd.threshold)
+                // Tag/Nacht nach echtem Sonnenstand (nur Optik)
+                .environment(\.colorScheme, sky.isDark ? .dark : .light)
+                .environment(\.mapNight, sky.night > 0.3)
+
+            SkyOverlay(sky: sky)
+                .environment(\.mapCrowded, annotations.count > MapCrowd.threshold)
+                .ignoresSafeArea()
 
             VStack {
                 HStack {
                     // LINKS: Capsule "Spieler in meiner Nähe" (ausklappbar)
                     HStack(spacing: 8) {
+                        // Neu ausrichten braucht es nicht mehr (die Karte bleibt immer auf dem Spieler) –
+                        // das Symbol klappt nur den Text auf/zu
                         Button {
-                            hasCenteredOnUser = true
-                            isFollowingUser = true
-                            position = .userLocation(
-                                followsHeading: false,
-                                fallback: .camera(
-                                    MapCamera(
-                                        centerCoordinate: startCoordinate,
-                                        distance: 1000,
-                                        heading: 0,
-                                        pitch: MapView.mapPitch
-                                    )
-                                )
-                            )
+                            withAnimation(.easeOut(duration: 0.2)) { showNearbyText.toggle() }
                         } label: {
-                            Image(systemName: "location.fill")
+                            Image(systemName: "person.2.fill")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundColor(.challengrDark)
                                 .padding(7)
@@ -374,7 +419,7 @@ struct MapView: View {
                                     centerCoordinate: cam.centerCoordinate,
                                     distance: cam.distance,
                                     heading: 0,
-                                    pitch: cam.pitch
+                                    pitch: MapView.mapPitch
                                 ))
                             }
                         }
@@ -384,7 +429,7 @@ struct MapView: View {
                 .padding(.horizontal, 18)
 
                 HStack {
-                    pointsChip
+                    trophiesChip
                     Spacer()
                 }
                 .padding(.top, 10)
@@ -400,6 +445,25 @@ struct MapView: View {
                     mainMenu
                 }
         .overlay(playerPopupOverlay)
+        .sheet(item: $emotePickerTarget) { player in
+            EmotePickerSheet(favorites: $emoteFavorites, ownPlayerId: ownPlayerId,
+                             startWithStickers: emotePickerStickers) { token in
+                sendMapEmote(token, to: player)
+            }
+        }
+        .sheet(item: $crowdChooser) { crowd in
+            MapCrowdSheet(entries: crowdEntries(crowd)) { id in
+                // erst das Blatt zu, dann das Popup des Spielers
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    guard let player = annotations.first(where: { $0.playerId == id }) else { return }
+                    selectedPlayer = player
+                    showPlayerPopup = true
+                }
+            }
+        }
+        .onChange(of: showPlayerPopup) { _, shown in
+            if shown { Task { await loadMapFriends() } }
+        }
         .overlay(hotspotPopupOverlay)
         .overlay(challengeDialogOverlay)
         .overlay(incomingChallengeOverlay)
@@ -408,15 +472,6 @@ struct MapView: View {
         .overlay(alignment: .top) { mapBannerOverlay }
         .sheet(isPresented: $showChallengeView) {
             challengeSheet
-        }
-        .sheet(isPresented: $showSettings) {
-            if let auth {
-                SettingsView(auth: auth)
-            } else {
-                // Fallback for previews / default init
-                Text("Einstellungen sind erst nach dem Login verfügbar")
-                    .padding()
-            }
         }
         .sheet(isPresented: $showShop) {
             ShopView(
@@ -446,14 +501,16 @@ struct MapView: View {
                     points: ownPoints,
                     trophies: ownTrophies
                 ),
-                pointsHistory: pointsHistory,
                 battleHistory: battleHistory,
                 profileStatusText: profileStatusText,
                 profileBadges: profileBadges,
                 rankColor: rankColor(for: ownRankName),
                 allChallenges: allChallenges,
                 socket: socket,
-                currentCoordinate: ownCoordinate
+                currentCoordinate: ownCoordinate,
+                auth: auth,
+                // z.B. neuer Name aus den Einstellungen
+                onSettingsClosed: { reloadOwnPlayerData() }
             )
         }
         .onChange(of: currentBattleId) { _, battleId in
@@ -505,7 +562,10 @@ struct MapView: View {
                             onSurrendered: { activeFullScreen = .none; activeOverlay = .resultPending }
                         )
                     } else {
-                    switch BattleScreen.forChallenge(category: info.category, name: info.challengeName) {
+                    let screen = BattleScreen.forChallenge(category: info.category, name: info.challengeName)
+                    // Erst erklären, was zu tun ist – dann die Challenge (startet sonst sofort)
+                    ChallengeIntroGate(intro: ChallengeIntro.for(screen)) {
+                    switch screen {
                     case .knowledge:
                         KnowledgeBattleView(
                             battleId: battleId,
@@ -592,9 +652,21 @@ struct MapView: View {
                             onClose: { activeFullScreen = .none }
                         )
 
+                    case .country:
+                        CountryCompassView(battleId: battleId, socket: socket, position: ownCoordinate,
+                                           onClose: { activeFullScreen = .none })
+
+                    case .reaction:
+                        ReactionChallengeView(battleId: battleId, socket: socket, onClose: { activeFullScreen = .none })
+
+                    case .timing:
+                        TimingChallengeView(battleId: battleId, socket: socket, onClose: { activeFullScreen = .none })
+
                     case .generic:
                         genericBattleView(info: info)
                     }
+                    }
+                    .id(battleId)   // neues Battle = Erklärung wieder von vorne
                     }
 
                 } else {
@@ -607,7 +679,7 @@ struct MapView: View {
 
             case .win:
                 if let data = resultData {
-                    BattleWinView(data: data, ownPlayerName: ownPlayerName) {
+                    BattleResultView(data: data, ownPlayerName: ownPlayerName, ownWins: true) {
                         activeFullScreen = .none   // zurück zur Map
                         Task { await syncCharacterAndUnlocks() }
                     }
@@ -618,7 +690,7 @@ struct MapView: View {
 
             case .lose:
                 if let data = resultData {
-                    BattleLoseView(data: data, ownPlayerName: ownPlayerName) {
+                    BattleResultView(data: data, ownPlayerName: ownPlayerName, ownWins: false) {
                         activeFullScreen = .none   // schließt das Fullscreen-Cover
                         Task { await syncCharacterAndUnlocks() }
                     }
@@ -666,29 +738,45 @@ struct MapView: View {
     
     // MARK: - Map & Controls
     
-    /// Main map layer with annotations, camera bounds and appearance.
+    /// Karte: Cartoon-Karte (MapLibre) oder Apple-Karte – Gesten, Kamera und Pins sind für beide gleich.
     private var mapLayer: some View {
+        applyShared(Group {
+            if showsToonMap {
+                ToonMapView(camera: position.camera ?? lastMapCamera, pins: toonPins, circles: toonCircles,
+                            night: sky.night) { reason in
+                    // Sicherheitsnetz: lädt die Cartoon-Karte nicht, sofort die Apple-Karte
+                    print("Cartoon-Karte nicht verfügbar:", reason)
+                    toonMapFailed = true
+                }
+            } else {
+                appleMap
+            }
+        })
+    }
+
+    /// Cartoon-Karte an? (Einstellung, und nur solange sie lädt)
+    private var showsToonMap: Bool { useToonMap && !toonMapFailed }
+
+    /// Apple-Karte (MapKit) – Rückfall und Einstellung „Apple-Karte“.
+    private var appleMap: some View {
         Map(
             position: $position,
             bounds: MapCameraBounds(
                 minimumDistance: minDistance,
                 maximumDistance: maxDistance
-            )
+            ),
+            // Drehen und Zoomen, aber kein Verschieben oder Kippen (bleibt immer 3D, nie Draufsicht)
+            interactionModes: [.rotate, .zoom]
         ) {
             /// 200m radius around ownplayer
             if let ownCoordinate {
+                // Reichweite im Challengr-Rot statt Apple-Blau
                 MapCircle(center: ownCoordinate, radius: 200)
-                    .foregroundStyle(Color.blue.opacity(0.2))
-                    .stroke(Color.blue.opacity(0.6), lineWidth: 2)
+                    .foregroundStyle(Color.challengrRed.opacity(0.12))
+                    .stroke(Color.challengrRed.opacity(0.75), style: StrokeStyle(lineWidth: 2.5, dash: [10, 6]))
 
                 Annotation("Du", coordinate: ownCoordinate, anchor: .bottom) {
-                    MapCharacterPin(
-                        character: AvatarPresets.persistedPreset().character ?? .own,
-                        ringColor: .challengrYellow,
-                        sonar: true,
-                        seed: ownPlayerId
-                    )
-                    .overlay(alignment: .top) { EmoteBubble(event: ownMapEmote).scaleEffect(0.7).offset(y: -30) }
+                    ownPin
                 }
             }
 
@@ -698,37 +786,21 @@ struct MapView: View {
                     .foregroundStyle(Color.challengrYellow.opacity(0.18))
                     .stroke(Color.challengrYellow.opacity(0.8), lineWidth: 2)
                 Annotation(hotspot.name, coordinate: hotspot.coordinate, anchor: .bottom) {
-                    Button {
-                        closePlayerPopup()
-                        withAnimation { selectedHotspotId = hotspot.id }
-                    } label: {
-                        HotspotMarker(name: hotspot.name, checkedIn: hotspot.checkedInToday)
-                    }
-                    .buttonStyle(.plain)
+                    hotspotPin(hotspot)
                 }
             }
 
-            // Annotations for all nearby players.
-            ForEach(annotations) { annotation in
-                Annotation(annotation.title, coordinate: annotation.coordinate, anchor: .bottom) {
-                    LivelyPin(seed: annotation.playerId, bubble: pinBubbles[annotation.playerId], bobs: false) {
-                        Button {
-                            if selectedPlayer?.id == annotation.id {
-                                showPlayerPopup.toggle()
-                            } else {
-                                selectedPlayer = annotation
-                                showPlayerPopup = true
-                            }
-                        } label: {
-                            MapCharacterPin(
-                                character: annotation.character ?? .opponent,
-                                ringColor: rankColor(for: annotation.rankName),
-                                seed: annotation.playerId
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(annotation.title)
-                    }
+            // Spieler – auf vollen Flecken aufgefächert bzw. als Figur mit Zahl (MapSpots)
+            let spots = spotLayout
+            ForEach(annotations.filter { !spots.hidden.contains($0.playerId) }) { annotation in
+                Annotation(annotation.title, coordinate: spots.positions[annotation.playerId] ?? annotation.coordinate,
+                           anchor: .bottom) {
+                    playerPin(annotation)
+                }
+            }
+            ForEach(spots.crowds) { crowd in
+                Annotation("\(crowd.playerIds.count) Spieler", coordinate: crowd.coordinate, anchor: .bottom) {
+                    crowdPin(crowd)
                 }
             }
         }
@@ -741,13 +813,85 @@ struct MapView: View {
                 showsTraffic: false
             )
         )
+        // Kompass während des Drehens laufend nachführen (nicht erst am Ende der Geste)
+        .onMapCameraChange(frequency: .continuous) { ctx in
+            compassAngle = .degrees(ctx.camera.heading)    // 0 = Norden
+            lastMapCamera = ctx.camera
+        }
+        .onMapCameraChange { ctx in
+                if !isProgrammaticCameraUpdate {
+                    currentZoomDistance = ctx.camera.distance
+                    if !hasCapturedInitialZoom {
+                        hasCapturedInitialZoom = true
+                    }
+                    if let ownCoordinate {
+                        let center = ctx.camera.centerCoordinate
+                        let deltaLat = abs(center.latitude - ownCoordinate.latitude)
+                        let deltaLon = abs(center.longitude - ownCoordinate.longitude)
+                        // Zoomen verschiebt die Mitte (zum Finger hin) – zurück zum Spieler
+                        if deltaLat > 0.00025 || deltaLon > 0.00025 {
+                            recenter(on: ownCoordinate, keeping: ctx.camera)
+                        }
+                    }
+                }
+            }
+    }
+
+    /// Gesten, Lebenszyklus und Ereignisse – für beide Karten gleich.
+    private func applyShared<Content: View>(_ content: Content) -> some View {
+        content
+        .simultaneousGesture(SpatialTapGesture().onEnded { showTapMark(at: $0.location) })
+        // Ein Finger: Karte "greifen" und um die Mitte drehen (Verschieben ist ohnehin aus)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 12)
+                .onChanged { value in handleOneFingerRotation(value) }
+                .onEnded { _ in endOneFingerRotation() }
+        )
+        // Zwei Finger gehören MapKit (Zoomen und Drehen) – solange ruht das Wischen
+        .simultaneousGesture(
+            MagnifyGesture()
+                .onChanged { value in
+                    startTwoFingerGesture()
+                    if showsToonMap { toonPinch(value.magnification) }
+                }
+                .onEnded { _ in twoFingerGesture = false; toonGestureStart = nil }
+        )
+        .simultaneousGesture(
+            RotateGesture()
+                .onChanged { value in
+                    startTwoFingerGesture()
+                    if showsToonMap { toonTwist(value.rotation) }
+                }
+                .onEnded { _ in twoFingerGesture = false; toonGestureStart = nil }
+        )
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { mapSize = $0 }
+        .overlay {
+            ForEach(mapTaps) { MapTapRipple().position($0.location) }
+                .allowsHitTesting(false)
+        }
+        .sensoryFeedback(.selection, trigger: mapTaps.count) { old, new in new > old }
         .tint(.challengrGreen)
         .accentColor(.challengrYellow)
         .ignoresSafeArea()
+        .task {
+            // Himmel jede Minute an den Sonnenstand anpassen
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(60))
+                skyClock = SkyCycle.now()
+            }
+        }
         .onAppear {
             setupSocket()
             Task { await syncCharacterAndUnlocks() }
             Task { await loadHotspots() }
+            Task { await refreshQuestBadge() }
+            Task { await showAnnouncementIfNew() }
+            Task {
+                await StickerCollection.shared.load()
+                await StickerCollection.shared.refreshGifts(playerId: ownPlayerId)
+                await showStickerHintIfNew()
+            }
+            trophyRoadLastSeen = TrophyRoadMemory.lastSeen(playerId: ownPlayerId)
             seedInitialZoom()
             friendsInbox.start(playerId: ownPlayerId)
             NotificationManager.shared.requestAuthorizationIfNeeded()
@@ -772,6 +916,8 @@ struct MapView: View {
             case .active:
                 NotificationManager.shared.endBackgroundWindow()
                 Task { await friendsInbox.refreshCount() }
+                Task { await refreshQuestBadge() }
+                Task { await StickerCollection.shared.refreshGifts(playerId: ownPlayerId) }
             default:
                 break
             }
@@ -788,39 +934,28 @@ struct MapView: View {
         }
         /// React to location updates
         .onReceive(locationHelper.$userLocation, perform: handleLocation)
-        // Kompass während des Drehens laufend nachführen (nicht erst am Ende der Geste)
-        .onMapCameraChange(frequency: .continuous) { ctx in
-            compassAngle = .degrees(ctx.camera.heading)    // 0 = Norden
-            lastMapCamera = ctx.camera
-        }
-        .onMapCameraChange { ctx in
-                if !isProgrammaticCameraUpdate {
-                    currentZoomDistance = ctx.camera.distance
-                    if !hasCapturedInitialZoom {
-                        hasCapturedInitialZoom = true
-                    }
-                    if let ownCoordinate {
-                        let center = ctx.camera.centerCoordinate
-                        let deltaLat = abs(center.latitude - ownCoordinate.latitude)
-                        let deltaLon = abs(center.longitude - ownCoordinate.longitude)
-                        if deltaLat > 0.00025 || deltaLon > 0.00025 {
-                            isFollowingUser = false
-                        }
-                    }
-                }
+        // Cartoon-Karte: die Kamera setzt nur die App selbst – Kompass und letzte Kamera hier nachführen
+        .onChange(of: position) { _, newPosition in
+            guard showsToonMap, let camera = newPosition.camera else { return }
+            compassAngle = .degrees(camera.heading)
+            lastMapCamera = camera
+            if !hasCapturedInitialZoom {
+                currentZoomDistance = camera.distance
+                hasCapturedInitialZoom = true
             }
+        }
     }
 
-    /// Always-visible points/currency chip, tappable to jump straight into the shop.
-    private var pointsChip: some View {
+    /// Immer sichtbarer Trophäen-Stand, öffnet die Trophy Road.
+    private var trophiesChip: some View {
         Button {
-            showShop = true
+            showTrophyRoad = true
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "trophy.fill")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.challengrYellow)
-                Text("\(ownPoints)")
+                Text("\(ownTrophies ?? 0)")
                     .font(.system(size: 13, weight: .black, design: .rounded))
                     .foregroundColor(.challengrDark)
             }
@@ -829,8 +964,144 @@ struct MapView: View {
             .background(Color.white.opacity(0.9))
             .clipShape(Capsule())
             .shadow(color: .black.opacity(0.18), radius: 5, x: 0, y: 3)
+            // Neuer Rang erreicht, Trophy Road noch nicht angesehen
+            .overlay(alignment: .topTrailing) {
+                if trophyRoadHasNews {
+                    Circle()
+                        .fill(Color.challengrRed)
+                        .frame(width: 14, height: 14)
+                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                        .offset(x: 4, y: -4)
+                        .transition(.scale)
+                }
+            }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Trophy Road und Rangliste, \(ownTrophies ?? 0) Trophäen\(trophyRoadHasNews ? ", neuer Rang" : "")")
+    }
+
+    // MARK: - Pins (für beide Karten gleich)
+
+    private var ownPin: some View {
+        MapCharacterPin(
+            character: AvatarPresets.persistedPreset().character ?? .own,
+            ringColor: .challengrYellow,
+            sonar: true,
+            seed: ownPlayerId,
+            goldFrame: stickers.hasGoldFrame
+        )
+        // Sticker × 0.7 ≈ 84 pt wie über fremden Pins
+        .overlay(alignment: .top) { EmoteBubble(event: ownMapEmote, stickerSize: 120).scaleEffect(0.7).offset(y: -30) }
+    }
+
+    private func hotspotPin(_ hotspot: HotspotDTO) -> some View {
+        Button {
+            closePlayerPopup()
+            withAnimation { selectedHotspotId = hotspot.id }
+        } label: {
+            HotspotMarker(name: hotspot.name, checkedIn: hotspot.checkedInToday,
+                          symbol: hotspot.isLandmark ? hotspot.symbol : nil)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func playerPin(_ annotation: PlayerAnnotation) -> some View {
+        LivelyPin(seed: annotation.playerId, bubble: pinBubbles[annotation.playerId], bobs: false) {
+            Button {
+                if selectedPlayer?.id == annotation.id {
+                    showPlayerPopup.toggle()
+                } else {
+                    selectedPlayer = annotation
+                    showPlayerPopup = true
+                }
+            } label: {
+                MapCharacterPin(
+                    character: annotation.character ?? .opponent,
+                    ringColor: rankColor(for: annotation.rankName),
+                    seed: annotation.playerId,
+                    goldFrame: annotation.goldFrame
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(annotation.title)
+        }
+    }
+
+    /// Gedränge: wer aufgefächert wird und wo eine Figur mit Zahl steht (Abstand bleibt beim Zoomen gleich)
+    private var spotLayout: MapSpots.Layout {
+        MapSpots.layout(players: annotations.map { (id: $0.playerId, coordinate: $0.coordinate) },
+                        own: ownCoordinate, cameraDistance: currentZoomDistance)
+    }
+
+    private func crowdPin(_ crowd: MapSpots.Crowd) -> some View {
+        let front = annotations.first { $0.playerId == crowd.playerIds.first }
+        return MapCrowdPin(front: front?.character ?? .opponent, count: crowd.playerIds.count) {
+            closePlayerPopup()
+            crowdChooser = crowd
+            Task { await loadMapFriends() }
+        }
+    }
+
+    /// Liste "Spieler hier": Freunde zuerst, dann nach Namen
+    private func crowdEntries(_ crowd: MapSpots.Crowd) -> [MapCrowdSheet.Entry] {
+        crowd.playerIds.compactMap { id in annotations.first { $0.playerId == id } }
+            .map {
+                MapCrowdSheet.Entry(id: $0.playerId, name: cleanPlayerName($0.title), rankName: $0.rankName,
+                                    character: $0.character ?? .opponent, ringColor: rankColor(for: $0.rankName),
+                                    isFriend: mapFriendIds.contains($0.playerId))
+            }
+            .sorted { ($0.isFriend ? 0 : 1, $0.name.lowercased()) < ($1.isFriend ? 0 : 1, $1.name.lowercased()) }
+    }
+
+    private var toonPins: [ToonPin] {
+        var pins: [ToonPin] = hotspots.map {
+            ToonPin(id: "h-" + $0.id, coordinate: $0.coordinate, label: $0.name, content: AnyView(hotspotPin($0)))
+        }
+        let spots = spotLayout
+        pins += annotations.filter { !spots.hidden.contains($0.playerId) }.map {
+            ToonPin(id: "p-" + $0.playerId, coordinate: spots.positions[$0.playerId] ?? $0.coordinate, label: $0.title,
+                    priority: 1, content: AnyView(playerPin($0)))
+        }
+        pins += spots.crowds.map {
+            ToonPin(id: "c-" + $0.id, coordinate: $0.coordinate, label: "\($0.playerIds.count) Spieler", priority: 1,
+                    content: AnyView(crowdPin($0)))
+        }
+        if let ownCoordinate {
+            pins.append(ToonPin(id: "me", coordinate: ownCoordinate, label: "Du", priority: 2, content: AnyView(ownPin)))
+        }
+        return pins
+    }
+
+    private var toonCircles: [ToonCircle] {
+        var circles = hotspots.map { ToonCircle(id: $0.id, center: $0.coordinate, radius: $0.radiusMeters, kind: .hotspot) }
+        if let ownCoordinate {
+            circles.append(ToonCircle(id: "range", center: ownCoordinate, radius: 200, kind: .range))
+        }
+        return circles
+    }
+
+    /// Cartoon-Karte: mit zwei Fingern zoomen (wie MapKit, Spieler bleibt in der Mitte).
+    private func toonPinch(_ magnification: CGFloat) {
+        guard let ownCoordinate, let start = toonGestureStart ?? lastMapCamera ?? position.camera else { return }
+        if toonGestureStart == nil { toonGestureStart = start }
+        let distance = min(maxDistance, max(minDistance, start.distance / Double(max(magnification, 0.1))))
+        currentZoomDistance = distance
+        position = .camera(MapCamera(centerCoordinate: ownCoordinate, distance: distance,
+                                     heading: (lastMapCamera ?? start).heading, pitch: MapView.mapPitch))
+    }
+
+    /// Cartoon-Karte: mit zwei Fingern drehen.
+    private func toonTwist(_ rotation: Angle) {
+        guard let ownCoordinate, let start = toonGestureStart ?? lastMapCamera ?? position.camera else { return }
+        if toonGestureStart == nil { toonGestureStart = start }
+        position = .camera(MapCamera(centerCoordinate: ownCoordinate, distance: (lastMapCamera ?? start).distance,
+                                     heading: start.heading - rotation.degrees, pitch: MapView.mapPitch))
+    }
+
+    /// Roter Punkt am Trophäen-Chip: seit dem letzten Öffnen der Trophy Road einen Rang aufgestiegen.
+    private var trophyRoadHasNews: Bool {
+        guard let ownTrophies else { return false }
+        return TrophyRoadMath(ranks: allRanks).hasNewRank(lastSeen: trophyRoadLastSeen, trophies: ownTrophies)
     }
 
     /// Floating button that centers the map on the current user location.
@@ -855,34 +1126,56 @@ struct MapView: View {
         .padding()
     }
 
-    /// Haupt-Menü: 3D-Münze unten in der Mitte, öffnet Trophy Road, Shop, Figur, Freunde, Einstellungen.
+    /// Haupt-Menü: 3D-Münze unten in der Mitte, öffnet Shop, Figur, Aufgaben, Sticker (Einstellungen: im Profil).
     private var mainMenu: some View {
         MapMainMenu(isOpen: $showMainMenu, items: [
-            MapMenuItem(id: "trophy", title: "Trophy Road", systemImage: "trophy.fill", color: .challengrYellow) {
-                showTrophyRoad = true
-            },
             MapMenuItem(id: "shop", title: "Shop", systemImage: "bag.fill", color: .challengrGreen) {
                 showShop = true
             },
-            MapMenuItem(id: "character", title: "Figur", systemImage: "figure.fencing", color: .challengrRed) {
+            // Figur: Kleiderbügel statt Fechter (Feedback: Symbol passte nicht zur Figurenwahl)
+            MapMenuItem(id: "character", title: "Figur", systemImage: "hanger", color: .challengrRed) {
                 menuAvatarStore.load()
                 showCharacterEditor = true
             },
-            MapMenuItem(id: "friends", title: "Freunde", systemImage: "person.2.fill", color: .blue,
-                        badge: friendsInbox.pendingIncomingCount) {
-                reloadOwnPlayerData()
-                profileStartTab = 1
-                showProfile = true
+            // Tagesaufgaben (Coins) und Events (z. B. Beta-Event → Crash-Test-Dummy)
+            MapMenuItem(id: "quests", title: "Aufgaben", systemImage: "checklist", color: .purple,
+                        badge: questClaimable) {
+                showQuests = true
             },
-            MapMenuItem(id: "settings", title: "Einstellungen", systemImage: "gearshape.fill", color: .gray) {
-                showSettings = true
+            // Sticker: Album, Geschenke öffnen, Paket kaufen (Zahl = ungeöffnete Geschenke + Belohnungen)
+            MapMenuItem(id: "stickers", title: "Sticker", systemImage: "book.closed.fill", color: .orange,
+                        badge: stickers.badge, assetImage: Stickers.all[0].assetName) {
+                showStickerHub = true
             }
         ])
-        .sheet(isPresented: $showTrophyRoad) {
+        .sheet(isPresented: $showStickerHub, onDismiss: {
+            emoteFavorites = EmoteFavorites.load()
+            reloadOwnPlayerData()
+            Task { await StickerCollection.shared.refreshGifts(playerId: ownPlayerId) }
+        }) {
+            StickerHubView(ownPlayerId: ownPlayerId, favorites: $emoteFavorites)
+        }
+        .sheet(isPresented: $showTrophyRoad, onDismiss: {
+            trophyRoadLastSeen = TrophyRoadMemory.lastSeen(playerId: ownPlayerId)
+        }) {
             TrophyRoadView(playerId: ownPlayerId)
         }
         .sheet(isPresented: $showCharacterEditor) {
-            CharacterEditorSheet(store: menuAvatarStore, playerId: ownPlayerId)
+            CharacterEditorSheet(store: menuAvatarStore, playerId: ownPlayerId, highlight: characterEditorHighlight)
+                .onDisappear { characterEditorHighlight = nil }
+        }
+        .sheet(isPresented: $showQuests) {
+            QuestsView(onOpenCharacter: { character in
+                // nach dem Schließen der Aufgaben die Figurenwahl mit der neuen Figur öffnen
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                    menuAvatarStore.load()
+                    characterEditorHighlight = character
+                    showCharacterEditor = true
+                }
+            }, onBoardChanged: { questClaimable = $0.claimable })
+        }
+        .onChange(of: showMainMenu) { _, open in
+            if open { Task { await refreshQuestBadge() } }
         }
     }
 
@@ -894,7 +1187,8 @@ struct MapView: View {
                 Spacer()
                 Button {
                     reloadOwnPlayerData()
-                    profileStartTab = 0
+                    // Offene Freundschaftsanfragen → gleich bei den Freunden aufgehen
+                    profileStartTab = friendsInbox.pendingIncomingCount > 0 ? 1 : 0
                     showProfile = true
                 } label: {
                     ZStack(alignment: .topTrailing) {
@@ -902,9 +1196,13 @@ struct MapView: View {
                             .resizable()
                             .scaledToFill()
                             .frame(width: 64, height: 64)
+                            // Hintergrund in der Farbe der Figur statt durchsichtig über der Karte
+                            .background(CharacterBackdrop(character: AvatarPresets.persistedPreset().character ?? .own))
                             .clipShape(Circle())
                             .overlay(
-                                Circle().stroke(Color.white, lineWidth: 3)
+                                // volles Sticker-Album: goldener Rahmen
+                                Circle().stroke(stickers.hasGoldFrame ? AnyShapeStyle(GoldFrame.gradient) : AnyShapeStyle(Color.white),
+                                                lineWidth: stickers.hasGoldFrame ? 4 : 3)
                             )
                             .shadow(color: .black.opacity(0.25), radius: 6, x: 0, y: 3)
 
@@ -956,60 +1254,87 @@ struct MapView: View {
                         Text(cleanPlayerName(player.title).uppercased())
                             .font(.system(size: 14, weight: .black, design: .rounded))
                             .tracking(1)
-                            .foregroundStyle(.challengrBlack)
+                            .foregroundStyle(.white)
 
                         Text(player.rankName.uppercased())
                             .font(.system(size: 10, weight: .bold, design: .rounded))
                             .tracking(1)
                             .foregroundStyle(rankColor(for: player.rankName))
+                        if player.goldFrame {
+                            Text("★ STICKER-ALBUM KOMPLETT")
+                                .font(.system(size: 9, weight: .black, design: .rounded))
+                                .tracking(0.8)
+                                .foregroundStyle(GoldFrame.gradient)
+                        }
                     }
 
                     // Emote schicken statt gleich herausfordern
                     HStack(spacing: 6) {
-                        ForEach(Emotes.map, id: \.self) { emoji in
-                            Button { sendMapEmote(emoji, to: player) } label: {
-                                Text(emoji)
-                                    .font(.system(size: 22))
+                        ForEach(emoteFavorites, id: \.self) { token in
+                            let sticker = Stickers.from(token: token)
+                            let usable = sticker.map { stickers.count(of: $0.id) > 0 } ?? true
+                            Button { sendMapEmote(token, to: player) } label: {
+                                EmoteGlyph(token: token, emojiSize: 22, stickerSize: 44)
+                                    .opacity(usable ? 1 : 0.35)
                                     .frame(width: 40, height: 40)
-                                    .background(Circle().fill(Color.white.opacity(0.85)))
+                                    .background(Circle().fill(Color.white.opacity(0.12)))
+                                    .overlay(alignment: .topTrailing) {
+                                        if let sticker { StickerCountBadge(count: stickers.count(of: sticker.id)) }
+                                    }
                             }
-                            .accessibilityLabel("Emote \(emoji) an \(cleanPlayerName(player.title)) senden")
+                            .disabled(!usable)
+                            .accessibilityLabel("\(Emotes.spokenName(token)) an \(cleanPlayerName(player.title)) senden")
                         }
+                        // Alle Emojis + eigene Kurzwahl
+                        Button {
+                            emotePickerStickers = false
+                            emotePickerTarget = player
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 16, weight: .black))
+                                .foregroundStyle(Color.white)
+                                .frame(width: 40, height: 40)
+                                .background(Circle().fill(Color.white.opacity(0.12)))
+                        }
+                        .accessibilityLabel("Mehr Emojis")
                     }
 
-                    Button {
-                        showPlayerChallengeDialog = true
-                    } label: {
-                        Text("HERAUSFORDERN")
-                            .font(.system(size: 13, weight: .black))
-                            .tracking(1)
-                            .foregroundStyle(.challengrBlack)
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 18)
-                            .background(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .fill(.challengrYellow)
-                            )
+                    // Sticker: immer derselbe Knopf, mit Anzahl (wie im Battle)
+                    StickerSendButton(count: stickers.sendableCount) {
+                        emotePickerStickers = true
+                        emotePickerTarget = player
+                    }
+
+                    HStack(spacing: 8) {
+                        friendButton(for: player)
+
+                        Button {
+                            showPlayerChallengeDialog = true
+                        } label: {
+                            Text("HERAUSFORDERN")
+                                .font(.system(size: 13, weight: .black))
+                                .tracking(1)
+                                .foregroundStyle(.challengrBlack)
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 18)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(.challengrYellow)
+                                )
+                        }
                     }
                 }
-                .padding(14)
-                .background(
-                    RoundedRectangle(cornerRadius: 18)
-                        .fill(.ultraThinMaterial)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(.white.opacity(0.15), lineWidth: 1)
-                )
+                .padding(16)
+                .gameOverlayCard()
                 // Melden / Blockieren (Apple-Regel 1.2)
                 .overlay(alignment: .topTrailing) {
-                    PlayerSafetyMenu(playerId: player.playerId, playerName: cleanPlayerName(player.title)) {
+                    PlayerSafetyMenu(playerId: player.playerId, playerName: cleanPlayerName(player.title), onBlocked: {
                         let blockedId = player.playerId
                         closePlayerPopup()
                         withAnimation { annotations.removeAll { $0.playerId == blockedId } }
                         showMapBanner(icon: "hand.raised.fill", text: "Blockiert – ihr seht euch nicht mehr")
-                    }
-                    .padding(4)
+                    }, gameStyle: true)
+                    .padding(8)
                 }
                 .shadow(radius: 15)
                 .padding(.top, 80)
@@ -1017,6 +1342,54 @@ struct MapView: View {
               }
             }
         }
+    }
+
+    /// Freund hinzufügen direkt auf der Karte (vorher ging das nur per QR-Code).
+    @ViewBuilder
+    private func friendButton(for player: PlayerAnnotation) -> some View {
+        let isFriend = mapFriendIds.contains(player.playerId)
+        let requested = requestedFriendIds.contains(player.playerId)
+        Button {
+            guard !isFriend, !requested else { return }
+            sendFriendRequest(to: player)
+        } label: {
+            Image(systemName: isFriend ? "person.2.fill" : requested ? "checkmark" : "person.badge.plus")
+                .font(.system(size: 15, weight: .black))
+                .foregroundStyle(Color.white)
+                .frame(width: 40, height: 38)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(isFriend || requested ? Color.challengrGreen : Color.white.opacity(0.12))
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isFriend ? "Schon befreundet" : requested ? "Anfrage gesendet"
+                                     : "\(cleanPlayerName(player.title)) als Freund hinzufügen")
+    }
+
+    private func sendFriendRequest(to player: PlayerAnnotation) {
+        let id = player.playerId
+        let name = cleanPlayerName(player.title)
+        requestedFriendIds.insert(id)
+        SoundManager.shared.play(.tap)
+        Task {
+            do {
+                try await FriendsService().sendFriendRequest(from: ownPlayerId, to: id)
+                showMapBanner(icon: "person.badge.plus", text: "Freundschaftsanfrage an \(name) gesendet")
+            } catch {
+                requestedFriendIds.remove(id)
+                await loadMapFriends()
+                showMapBanner(icon: "exclamationmark.triangle.fill",
+                              text: mapFriendIds.contains(id) ? "Ihr seid schon Freunde" : "Anfrage ging gerade nicht")
+            }
+        }
+    }
+
+    /// Freunde für das Spieler-Popup (Knopf "Freund hinzufügen" vs. "schon befreundet").
+    @MainActor
+    private func loadMapFriends() async {
+        guard let friends = try? await FriendsService().loadFriends(playerId: ownPlayerId) else { return }
+        mapFriendIds = Set(friends.map(\.playerId))
     }
 
     /// Name eines Gegners: Karte → Battle-Nachricht vom Server → neutral. Nie die rohe Id (BUG-15).
@@ -1040,6 +1413,21 @@ struct MapView: View {
         return annotations.first(where: { $0.playerId == playerId })?.character ?? .opponent
     }
 
+    /// Zahl am Aufgaben-Knopf aktualisieren (beim Start und wenn das Menü aufgeht).
+    @MainActor
+    private func showAnnouncementIfNew() async {
+        guard let a = try? await AppContentService().currentAnnouncement(), AnnouncementMemory.isNew(a) else { return }
+        AnnouncementMemory.markSeen(a)
+        try? await Task.sleep(for: .seconds(1.5))
+        SoundManager.shared.play(.friendAccepted)
+        showMapBanner(icon: "megaphone.fill", text: a.text, seconds: 7)
+    }
+
+    private func refreshQuestBadge() async {
+        guard let board = try? await QuestService().load() else { return }
+        questClaimable = board.claimable
+    }
+
     /// Gewählte Figur am Server spiegeln und neu freigeschaltete Figuren ankündigen.
     @MainActor
     private func syncCharacterAndUnlocks() async {
@@ -1058,7 +1446,11 @@ struct MapView: View {
         guard let unlocks = try? await service.loadCharacters(playerId: ownPlayerId),
               let first = CharacterUnlockTracker.newlyUnlocked(unlocks).first else { return }
         SoundManager.shared.play(.win)
-        showMapBanner(icon: "lock.open.fill", text: "\(first.displayName) freigeschaltet! Im Profil auswählen")
+        showMapBanner(icon: "lock.open.fill", text: "\(first.displayName) freigeschaltet! Tippen zum Ansehen", seconds: 6) {
+            menuAvatarStore.load()
+            characterEditorHighlight = first
+            showCharacterEditor = true
+        }
     }
 
     private func closePlayerPopup() {
@@ -1080,6 +1472,7 @@ struct MapView: View {
     private func loadHotspots() async {
         guard !ownPlayerId.isEmpty else { return }
         lastHotspotLoad = Date()
+        lastHotspotLoadAt = ownCoordinate
         guard let list = try? await HotspotService().load(playerId: ownPlayerId) else { return }
         hotspots = list
         announceHotspotIfNear()
@@ -1091,7 +1484,9 @@ struct MapView: View {
         let firstLoadMissing = hotspots.isEmpty && (lastHotspotLoad.map { Date().timeIntervalSince($0) > 20 } ?? true)
         // Nach Mitternacht kann man wieder einchecken → Stand neu holen
         let newDay = lastHotspotLoad.map { HotspotSchedule.isStale(loadedAt: $0) } ?? false
-        guard firstLoadMissing || newDay else { return }
+        // Unterwegs: neue Orte in der Gegend (und vom Server nachgeladene) holen
+        let moved = lastHotspotLoad.map { HotspotSchedule.shouldReload(loadedAt: $0, from: lastHotspotLoadAt, position: ownCoordinate) } ?? false
+        guard firstLoadMissing || newDay || moved else { return }
         if newDay { announcedHotspotIds.removeAll() }
         Task { await loadHotspots() }
     }
@@ -1101,7 +1496,7 @@ struct MapView: View {
         for hotspot in hotspots where !announcedHotspotIds.contains(hotspot.id) {
             if HotspotState.of(hotspot, playerAt: ownCoordinate) == .inRange {
                 announcedHotspotIds.insert(hotspot.id)
-                showMapBanner(icon: "bolt.circle.fill", text: "Du bist bei \(hotspot.name) – jetzt einchecken für +\(hotspot.points) Punkte!",
+                showMapBanner(icon: "bolt.circle.fill", text: "Du bist bei \(hotspot.name) – jetzt einchecken!",
                               seconds: 6)
             }
         }
@@ -1117,10 +1512,11 @@ struct MapView: View {
             SoundManager.shared.play(.purchase)
             withAnimation { selectedHotspotId = nil }
             ownPoints = result.totalPoints
+            Task { await refreshQuestBadge() }
             showMapBanner(icon: result.firstOfDay ? "crown.fill" : "checkmark.seal.fill",
                           text: result.firstOfDay
-                            ? "+\(result.points) Punkte – du bist heute der Erste bei \(hotspot.name)!"
-                            : "+\(result.points) Punkte – eingecheckt bei \(hotspot.name)!")
+                            ? "Eingecheckt – du bist heute der Erste bei \(hotspot.name)!"
+                            : "Eingecheckt bei \(hotspot.name)!")
             reloadOwnPlayerData()
         } catch {
             SoundManager.shared.play(.purchaseFailed)
@@ -1150,7 +1546,7 @@ struct MapView: View {
                             Text(isCheckingIn ? "…" : "EINCHECKEN")
                                 .font(.system(size: 15, weight: .black, design: .rounded))
                                 .tracking(1)
-                            Text("\(hotspot.name) · +\(hotspot.points)\(hotspot.checkinsToday == 0 ? " (+\(hotspot.firstOfDayBonus) als Erster)" : "")")
+                            Text(hotspot.checkinsToday == 0 ? "\(hotspot.name) · sei heute der Erste!" : hotspot.name)
                                 .font(.system(size: 11, weight: .bold, design: .rounded))
                                 .lineLimit(1)
                         }
@@ -1190,12 +1586,24 @@ struct MapView: View {
                             .resizable().scaledToFit()
                             .frame(width: 56, height: 56)
                             .saturation(hotspot.checkedInToday ? 0 : 1)
+                            .overlay(alignment: .bottomTrailing) {
+                                if hotspot.isLandmark {
+                                    Image(systemName: hotspot.symbol)
+                                        .font(.system(size: 11, weight: .black))
+                                        .foregroundStyle(.white)
+                                        .frame(width: 24, height: 24)
+                                        .background(Circle().fill(Color.challengrDark))
+                                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                                        .offset(x: 6, y: 4)
+                                }
+                            }
 
                         Text(hotspot.name.uppercased())
                             .font(.system(size: 16, weight: .black, design: .rounded))
+                            .multilineTextAlignment(.center)
                             .foregroundStyle(.challengrBlack)
 
-                        Text("HOTSPOT · +\(hotspot.points) PUNKTE PRO TAG")
+                        Text(hotspot.kindText)
                             .font(.system(size: 10, weight: .black, design: .rounded))
                             .tracking(1)
                             .foregroundStyle(Color.challengrRed)
@@ -1241,6 +1649,13 @@ struct MapView: View {
                                 .font(.system(size: 13, weight: .bold, design: .rounded))
                                 .foregroundStyle(.challengrBlack.opacity(0.7))
                         }
+
+                        // Quellenangabe, die OpenStreetMap verlangt
+                        if hotspot.isLandmark {
+                            Text("Ort: © OpenStreetMap-Mitwirkende")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(.challengrBlack.opacity(0.45))
+                        }
                     }
                     .padding(16)
                     .frame(maxWidth: 280)
@@ -1254,48 +1669,58 @@ struct MapView: View {
         }
     }
 
-    /// Emote an einen Spieler auf der Karte schicken (aus dem Spieler-Popup).
-    private func sendMapEmote(_ emoji: String, to player: PlayerAnnotation) {
-        socket.sendEmote(toId: player.playerId, emoji: emoji)
+    /// Emote an einen Spieler auf der Karte schicken (aus dem Spieler-Popup); token = Emoji oder "stk:<id>".
+    private func sendMapEmote(_ token: String, to player: PlayerAnnotation) {
+        let event = EmoteEvent(token: token)
+        guard spendSticker(event) else { return }
+        socket.sendEmote(toId: player.playerId, emoji: event.emoji, sticker: event.sticker?.id)
         SoundManager.shared.play(.tap)
-        let event = EmoteEvent(emoji: emoji)
         ownMapEmote = event
         closePlayerPopup()
-        DispatchQueue.main.asyncAfter(deadline: .now() + Emotes.visibleSeconds) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + event.visibleSeconds) {
             if ownMapEmote == event { ownMapEmote = nil }
         }
     }
 
     /// Emote im Battle an den Gegner.
-    private func sendBattleEmote(_ emoji: String, opponentId: String) {
+    private func sendBattleEmote(_ token: String, opponentId: String) {
         guard let battleId = currentBattleId else { return }
-        socket.sendEmote(toId: opponentId, emoji: emoji, battleId: battleId)
-        let event = EmoteEvent(emoji: emoji)
+        let event = EmoteEvent(token: token)
+        guard spendSticker(event) else { return }
+        socket.sendEmote(toId: opponentId, emoji: event.emoji, sticker: event.sticker?.id, battleId: battleId)
         ownBattleEmote = event
-        DispatchQueue.main.asyncAfter(deadline: .now() + Emotes.visibleSeconds) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + event.visibleSeconds) {
             if ownBattleEmote == event { ownBattleEmote = nil }
         }
     }
 
+    /// Sticker sind gesammelt: ohne Sticker in der Sammlung nichts schicken, sonst gleich einen abziehen.
+    private func spendSticker(_ event: EmoteEvent) -> Bool {
+        guard let sticker = event.sticker else { return true }
+        guard stickers.count(of: sticker.id) > 0 else { return false }
+        stickers.used(sticker.id)
+        return true
+    }
+
     /// Emote von einem anderen Spieler: im Battle über der Gegner-Figur, sonst über seinem Pin.
-    private func receiveEmote(from playerId: String, emoji: String, battleId: Int64?) {
+    private func receiveEmote(from playerId: String, event: EmoteEvent, battleId: Int64?) {
         if let battleId {
             guard battleId == currentBattleId else { return }
-            let event = EmoteEvent(emoji: emoji)
             opponentBattleEmote = event
-            DispatchQueue.main.asyncAfter(deadline: .now() + Emotes.visibleSeconds) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + event.visibleSeconds) {
                 if opponentBattleEmote == event { opponentBattleEmote = nil }
             }
             return
         }
         guard activeFullScreen == .none else { return }
         if annotations.contains(where: { $0.playerId == playerId }) {
-            pinBubbles[playerId] = emoji
-            DispatchQueue.main.asyncAfter(deadline: .now() + Emotes.visibleSeconds + 0.5) {
-                if pinBubbles[playerId] == emoji { pinBubbles[playerId] = nil }
+            pinBubbles[playerId] = event
+            DispatchQueue.main.asyncAfter(deadline: .now() + event.visibleSeconds + 0.5) {
+                if pinBubbles[playerId] == event { pinBubbles[playerId] = nil }
             }
         } else {
-            showMapBanner(icon: "face.smiling", text: "\(opponentDisplayName(playerId, battleId: nil)) schickt dir \(emoji)")
+            let what = event.sticker.map { "den Sticker „\($0.label)“" } ?? event.emoji
+            showMapBanner(icon: "face.smiling", text: "\(opponentDisplayName(playerId, battleId: nil)) schickt dir \(what)")
         }
     }
 
@@ -1579,16 +2004,33 @@ struct MapView: View {
     private var mapBannerOverlay: some View {
         Group {
             if let banner = mapBanner {
-                MapInfoBanner(icon: banner.icon, text: banner.text)
+                MapInfoBanner(icon: banner.icon, text: banner.text, tappable: banner.action != nil)
+                    .onTapGesture {
+                        guard let action = banner.action else { return }
+                        withAnimation(.easeOut(duration: 0.2)) { mapBanner = nil }
+                        action()
+                    }
                     .padding(.top, 90)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
     }
 
-    private func showMapBanner(icon: String, text: String, seconds: Double = 3) {
+    /// Einmal: "Du hast Sticker!" – damit man den STICKER-Knopf überhaupt findet
+    private func showStickerHintIfNew() async {
+        guard !stickerHintShown, StickerCollection.shared.sendableCount > 0 else { return }
+        try? await Task.sleep(for: .seconds(4)) // nicht gleichzeitig mit der Ankündigung
+        guard activeFullScreen == .none else { return }
+        stickerHintShown = true
+        showMapBanner(icon: "sparkles",
+                      text: "Du hast \(StickerCollection.shared.sendableCount) Sticker! Tipp auf einen Spieler → STICKER", seconds: 6) {
+            showStickerHub = true
+        }
+    }
+
+    private func showMapBanner(icon: String, text: String, seconds: Double = 3, action: (() -> Void)? = nil) {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
-            mapBanner = (icon: icon, text: text)
+            mapBanner = (icon: icon, text: text, action: action)
         }
         mapBannerHideTask?.cancel()
         mapBannerHideTask = Task { @MainActor in
@@ -1638,14 +2080,12 @@ struct MapView: View {
                 async let pointsAsync = playerService.loadPlayerPoints(id: ownPlayerId)
                 async let streakAsync = playerService.loadPlayerStreak(id: ownPlayerId)
                 async let statsAsync  = playerService.loadPlayerStats(id: ownPlayerId)
-                async let historyAsync = playerService.loadPlayerPointsHistory(id: ownPlayerId)
                 async let battlesAsync = playerService.loadPlayerBattles(id: ownPlayerId)
                 async let profileAsync = playerService.loadPlayerProfile(id: ownPlayerId)
 
                 let points = try await pointsAsync
                 let streak = try await streakAsync
                 let stats  = try await statsAsync
-                let history = (try? await historyAsync) ?? []
                 let battles = (try? await battlesAsync) ?? []
                 let profile = (try? await profileAsync) ?? PlayerProfileDTO(status: nil, badges: [])
 
@@ -1657,7 +2097,6 @@ struct MapView: View {
                     ownDailyStreak     = streak
                     ownTotalChallenges = stats.totalChallenges
                     ownWonChallenges   = stats.wonChallenges
-                    pointsHistory      = history
                     battleHistory      = battles
                     profileStatusText  = profile.status
                     profileBadges      = profile.badges
@@ -1873,9 +2312,14 @@ struct MapView: View {
 
             // NEU: Punkte/Streak nach Battle neu laden
             reloadOwnPlayerData()
+            // Feedback 22.10.: geschaffte Tagesaufgabe gleich am Menü markieren, nicht erst beim nächsten Start
+            Task { await refreshQuestBadge() }
 
             resultData = data
             activeFullScreen = .none
+            if let sticker = data.winnerSticker, data.didWin(ownPlayerId: ownPlayerId, ownPlayerName: ownPlayerName) {
+                StickerCollection.shared.received(sticker.id)
+            }
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 activeOverlay = .none
@@ -1913,8 +2357,20 @@ struct MapView: View {
             friendsInbox.handleRequestUpdated(fromId: fromId, toId: toId, status: status)
         }
 
-        socket.onEmote = { fromId, emoji, battleId in
-            receiveEmote(from: fromId, emoji: emoji, battleId: battleId)
+        socket.onEmote = { fromId, event, battleId in
+            receiveEmote(from: fromId, event: event, battleId: battleId)
+        }
+
+        socket.onStickerStock = { stickerId, count in
+            StickerCollection.shared.setCount(count, of: stickerId)
+        }
+
+        socket.onGiftReceived = { fromId in
+            Task { await StickerCollection.shared.refreshGifts(playerId: ownPlayerId) }
+            guard activeFullScreen == .none else { return }
+            showMapBanner(icon: "gift.fill", text: "\(opponentDisplayName(fromId, battleId: nil)) hat dir ein Geschenk geschickt – tippen zum Öffnen", seconds: 5) {
+                showStickerHub = true
+            }
         }
 
         socket.onBattleUpdatedStatus = { battleId, status in
@@ -1993,6 +2449,7 @@ struct MapView: View {
         do {
             let ranks = try await rankService.loadRanks()
             rankColorsByName = Dictionary(uniqueKeysWithValues: ranks.map { ($0.name, $0.uiColor) })
+            allRanks = ranks
         } catch {
             print("Fehler beim Laden der Rank-Farben:", error)
         }
@@ -2101,10 +2558,17 @@ struct MapView: View {
 
         guard isFollowingUser else { return }
         guard hasCapturedInitialZoom else { return }
+        // Während der Spieler die Karte dreht oder zoomt, nicht dazwischenfunken
+        guard dragStartCamera == nil, !twoFingerGesture else {
+            Task { await refreshNearbyPlayers(at: userLoc) }
+            return
+        }
 
-        let currentCamera = position.camera
+        // Die wirklich sichtbare Kamera nehmen: nach einer Drehung durch den Spieler ist position.camera leer –
+        // dann würde die Karte bei jedem Standort-Update wieder nach Norden springen
+        let currentCamera = lastMapCamera ?? position.camera
         let heading = currentCamera?.heading ?? 0
-        let pitch = currentCamera?.pitch ?? MapView.mapPitch
+        let pitch = MapView.mapPitch  // immer schräg – MapKit meldet manchmal 0° (Draufsicht), das darf sich nicht festsetzen
         if let distance = currentCamera?.distance {
             currentZoomDistance = distance
         }
@@ -2143,7 +2607,8 @@ struct MapView: View {
                     coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
                     title: "\(p.name) · \(p.rankName)",
                     rankName: p.rankName,
-                    character: GameCharacter.from(serverId: p.character)
+                    character: GameCharacter.from(serverId: p.character),
+                    goldFrame: p.goldFrame ?? false
                 )
             }
             // Spieler gleiten zur neuen Position statt zu springen
@@ -2155,6 +2620,70 @@ struct MapView: View {
             }
         } catch {
             print("Fehler beim Laden der Nearby Players", error)
+        }
+    }
+
+    /// Ein Finger: Der Finger dreht sich um die Kartenmitte, die Karte dreht sich mit (Kamera bleibt auf dem Spieler).
+    private func handleOneFingerRotation(_ value: DragGesture.Value) {
+        guard !twoFingerGesture, let ownCoordinate, mapSize != .zero else { return }
+        let center = CGPoint(x: mapSize.width / 2, y: mapSize.height / 2)
+        if dragStartCamera == nil {
+            dragStartCamera = lastMapCamera ?? position.camera
+            dragLastAngle = MapRotation.angle(of: value.startLocation, around: center)
+            dragTurned = 0
+        }
+        guard let start = dragStartCamera else { return }
+        let angle = MapRotation.angle(of: value.location, around: center)
+        // ganz nahe der Mitte springt der Winkel – diese Bewegung zählt nicht
+        if hypot(value.location.x - center.x, value.location.y - center.y) > MapRotation.deadZone,
+           let last = dragLastAngle {
+            dragTurned += MapRotation.shortestDelta(from: last, to: angle)
+        }
+        dragLastAngle = angle
+
+        isProgrammaticCameraUpdate = true
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            position = .camera(MapCamera(centerCoordinate: ownCoordinate,
+                                         distance: start.distance,
+                                         heading: MapRotation.heading(start: start.heading, turnedDegrees: dragTurned),
+                                         pitch: MapView.mapPitch))
+        }
+    }
+
+    private func endOneFingerRotation() {
+        dragStartCamera = nil
+        dragLastAngle = nil
+        dragTurned = 0
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { isProgrammaticCameraUpdate = false }
+    }
+
+    private func startTwoFingerGesture() {
+        guard !twoFingerGesture else { return }
+        twoFingerGesture = true
+        // ein angefangenes Ein-Finger-Drehen beenden, sonst kämpfen beide um die Kamera
+        if dragStartCamera != nil { endOneFingerRotation() }
+    }
+
+    /// Spieler wieder in die Mitte, Zoom und Drehung bleiben.
+    private func recenter(on coordinate: CLLocationCoordinate2D, keeping camera: MapCamera) {
+        isFollowingUser = true
+        isProgrammaticCameraUpdate = true
+        withAnimation(.easeOut(duration: 0.3)) {
+            position = .camera(MapCamera(centerCoordinate: coordinate, distance: camera.distance,
+                                         heading: camera.heading, pitch: MapView.mapPitch))
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            isProgrammaticCameraUpdate = false
+        }
+    }
+
+    private func showTapMark(at location: CGPoint) {
+        let mark = MapTapMark(location: location)
+        mapTaps.append(mark)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            mapTaps.removeAll { $0.id == mark.id }
         }
     }
 
@@ -2185,9 +2714,67 @@ struct MapView: View {
     }
 }
 
+/// Drehen mit einem Finger: Die Karte folgt dem Finger, der sich um die Kartenmitte bewegt (wie Pokémon GO).
+enum MapRotation {
+    /// Näher an der Mitte als so viele Punkt: Winkel zu unruhig, zählt nicht
+    static let deadZone: CGFloat = 50
+
+    /// Winkel des Punkts um die Mitte in Grad (Bildschirm-Koordinaten: im Uhrzeigersinn wachsend).
+    static func angle(of point: CGPoint, around center: CGPoint) -> Double {
+        atan2(Double(point.y - center.y), Double(point.x - center.x)) * 180 / .pi
+    }
+
+    /// Kleinster Unterschied zwischen zwei Winkeln (−180…180), damit es beim Übergang 180/−180 nicht springt.
+    static func shortestDelta(from: Double, to: Double) -> Double {
+        var d = (to - from).truncatingRemainder(dividingBy: 360)
+        if d > 180 { d -= 360 }
+        if d < -180 { d += 360 }
+        return d
+    }
+
+    /// Finger im Uhrzeigersinn → Karte dreht im Uhrzeigersinn mit (Blickrichtung nimmt ab), 0…360.
+    static func heading(start: Double, turnedDegrees: Double) -> Double {
+        let h = (start - turnedDegrees).truncatingRemainder(dividingBy: 360)
+        return h < 0 ? h + 360 : h
+    }
+}
+
+/// Eine Stelle, auf die getippt wurde.
+struct MapTapMark: Identifiable {
+    let id = UUID()
+    let location: CGPoint
+}
+
+/// Welle an der getippten Stelle: Punkt + zwei Ringe, die sich ausbreiten und verblassen.
+private struct MapTapRipple: View {
+    @State private var expanded = false
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<2, id: \.self) { ring in
+                Circle()
+                    .stroke(Color.challengrYellow, lineWidth: 3)
+                    .frame(width: 70, height: 70)
+                    .scaleEffect(expanded ? 1 : 0.15)
+                    .opacity(expanded ? 0 : 0.9)
+                    .animation(.easeOut(duration: 0.55).delay(Double(ring) * 0.12), value: expanded)
+            }
+            Circle()
+                .fill(Color.challengrYellow)
+                .frame(width: 12, height: 12)
+                .shadow(color: .black.opacity(0.3), radius: 2)
+                .scaleEffect(expanded ? 0.4 : 1)
+                .opacity(expanded ? 0 : 1)
+                .animation(.easeOut(duration: 0.6), value: expanded)
+        }
+        .onAppear { expanded = true }
+    }
+}
+
 private struct MapInfoBanner: View {
     let icon: String
     let text: String
+    var tappable = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -2202,6 +2789,12 @@ private struct MapInfoBanner: View {
                 .minimumScaleFactor(0.75)
 
             Spacer(minLength: 0)
+
+            if tappable {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .black))
+                    .foregroundColor(.challengrDark.opacity(0.7))
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)

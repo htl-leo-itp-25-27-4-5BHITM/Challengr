@@ -14,6 +14,8 @@ struct FriendsListView: View {
     var allChallenges: [ChallengeDTO] = []
     var socket: GameSocketService? = nil
     var radiusMeters: Double = 250
+    /// Herausforderung abgeschickt – das Menü schließt sich, damit man die Karte sieht
+    var onBattleSent: () -> Void = {}
 
     @StateObject private var vm = FriendsViewModel()
 
@@ -36,13 +38,15 @@ struct FriendsListView: View {
         currentCoordinate: CLLocationCoordinate2D?,
         allChallenges: [ChallengeDTO] = [],
         socket: GameSocketService? = nil,
-        radiusMeters: Double = 250
+        radiusMeters: Double = 250,
+        onBattleSent: @escaping () -> Void = {}
     ) {
         self.ownPlayerId = ownPlayerId
         self.currentCoordinate = currentCoordinate
         self.allChallenges = allChallenges
         self.socket = socket
         self.radiusMeters = radiusMeters
+        self.onBattleSent = onBattleSent
     }
     
     var body: some View {
@@ -87,21 +91,17 @@ struct FriendsListView: View {
                 .background(Capsule().fill(GameStyle.panelFill))
                 .overlay(Capsule().stroke(GameStyle.panelStroke, lineWidth: 1))
 
-                if !vm.incomingGifts.isEmpty {
+                if FriendGifts.isEnabled && !vm.incomingGifts.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         GameSectionHeader(title: "Geschenke", count: vm.incomingGifts.count)
 
                         ForEach(vm.incomingGifts) { gift in
-                            GiftInboxRow(
-                                senderName: giftSenderName(for: gift),
-                                challengrRed: challengrRed,
-                                cardBackground: cardBackground
-                            ) {
+                            GiftInboxRow(senderName: giftSenderName(for: gift)) {
                                 Task {
                                     let senderName = giftSenderName(for: gift)
-                                    let claimed = await vm.claimGift(giftId: gift.id, ownPlayerId: ownPlayerId)
-                                    if claimed {
-                                        openedGift = OpenedGiftPresentation(senderName: senderName)
+                                    if let opened = await vm.claimGift(giftId: gift.id, ownPlayerId: ownPlayerId) {
+                                        openedGift = OpenedGiftPresentation(senderName: senderName, sticker: opened.sticker,
+                                                                            chosen: opened.chosen)
                                     }
                                 }
                             }
@@ -121,7 +121,7 @@ struct FriendsListView: View {
                             Text("Noch keine Freunde")
                                 .font(.system(size: 15, weight: .black, design: .rounded))
                                 .foregroundColor(.white)
-                            Text("Füge Leute aus deiner Nähe hinzu oder lade sie per QR-Code ein.")
+                            Text("Tippe auf „Hinzufügen“ und suche Leute per Namen – oder lade sie per QR-Code ein.")
                                 .font(.footnote)
                                 .multilineTextAlignment(.center)
                                 .foregroundColor(GameStyle.secondaryText)
@@ -145,7 +145,7 @@ struct FriendsListView: View {
                                 },
                                 onSendGift: {
                                     Task {
-                                        await vm.sendGift(ownPlayerId: ownPlayerId, to: friend.id)
+                                        await vm.sendGift(ownPlayerId: ownPlayerId, to: friend.id, name: friend.name)
                                     }
                                 },
                                 onRemove: {
@@ -187,6 +187,11 @@ struct FriendsListView: View {
                             .font(.footnote)
                             .foregroundColor(.challengrRed)
                     }
+                    if let info = vm.infoText {
+                        Text(info)
+                            .font(.footnote)
+                            .foregroundColor(.challengrGreen)
+                    }
 
                     if currentCoordinate == nil {
                         Text("Standort aktivieren, um Spieler in der Nähe zu sehen.")
@@ -222,11 +227,13 @@ struct FriendsListView: View {
         .sheet(isPresented: $showAddFriendSheet) {
             AddFriendSheet(
                 ownPlayerId: ownPlayerId,
+                friendIds: Set(vm.friends.map(\.id)),
+                pendingIds: vm.pendingOutgoingToPlayerIds,
                 onDidSendRequest: {
                     Task { await vm.loadAll(ownPlayerId: ownPlayerId, coordinate: currentCoordinate, radiusMeters: radiusMeters) }
                 }
             )
-            .presentationDetents([.medium])
+            .presentationDetents([.medium, .large])
         }
         .task {
             await vm.loadAll(
@@ -308,11 +315,11 @@ struct FriendsListView: View {
                     }
                 }
             )
-            .presentationDetents([.height(260)])
+            .presentationDetents([.height(220)])
         }
         .sheet(item: $openedGift) { gift in
-            GiftOpenedSheet(senderName: gift.senderName)
-                .presentationDetents([.height(300)])
+            GiftOpenedSheet(senderName: gift.senderName, sticker: gift.sticker, chosen: gift.chosen)
+                .presentationDetents([.height(gift.sticker == nil ? 300 : 440)])
         }
         .overlay(friendBattleOverlay)
     }
@@ -341,7 +348,8 @@ struct FriendsListView: View {
                         otherPlayerName: friend.name,
                         ownPlayerId: ownPlayerId,
                         allChallenges: allChallenges,
-                        socket: socket
+                        socket: socket,
+                        onSent: onBattleSent
                     ) {
                         selectedBattleFriend = nil
                     }
@@ -380,16 +388,19 @@ struct FriendsListView: View {
     private func giftSenderName(for gift: FriendGiftDTO) -> String {
         vm.friends.first(where: { $0.id == gift.fromPlayerId })?.name ?? "Ein Freund"
     }
-
-    private struct OpenedGiftPresentation: Identifiable {
-        let id = UUID()
-        let senderName: String
-    }
 }
 
 private struct AddFriendSheet: View {
     let ownPlayerId: String
+    var friendIds: Set<String> = []
+    var pendingIds: Set<String> = []
     let onDidSendRequest: () -> Void
+
+    @State private var query = ""
+    @State private var results: [PlayerDTO] = []
+    @State private var searching = false
+    @State private var sentIds: Set<String> = []
+    @State private var searchError: String? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var showQR: Bool = false
@@ -405,6 +416,29 @@ private struct AddFriendSheet: View {
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass").foregroundColor(.secondary)
+                        TextField("Name eingeben", text: $query)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .submitLabel(.search)
+                        if searching { ProgressView() }
+                    }
+                    ForEach(results) { player in
+                        searchRow(player)
+                    }
+                    if let searchError {
+                        Text(searchError).font(.footnote).foregroundColor(.red)
+                    } else if !searching && results.isEmpty && query.trimmingCharacters(in: .whitespaces).count >= 2 {
+                        Text("Niemand mit diesem Namen gefunden.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                } header: {
+                    Text("Per Namen suchen")
+                }
+
                 Section {
                     Button {
                         showQR = true
@@ -431,12 +465,29 @@ private struct AddFriendSheet: View {
                     }
                     .disabled(isImportingInvite)
                 } header: {
-                    Text("Freund hinzufügen")
+                    Text("Oder per Einladung")
                 } footer: {
                     Text("Du kannst eine Einladung als QR zeigen, per AirDrop teilen oder den QR von jemand anderem scannen. Wenn AirDrop nur eine Datei lädt, öffne sie hier.")
                 }
             }
             .navigationTitle("Hinzufügen")
+            // kurz warten, bis man fertig getippt hat – nicht bei jedem Buchstaben fragen
+            .task(id: query) {
+                let q = query.trimmingCharacters(in: .whitespaces)
+                guard q.count >= 2 else { results = []; searchError = nil; return }
+                try? await Task.sleep(for: .milliseconds(300))
+                guard !Task.isCancelled else { return }
+                searching = true
+                defer { searching = false }
+                do {
+                    let found = try await friendsService.searchPlayers(query: q)
+                    guard !Task.isCancelled else { return }
+                    results = found
+                    searchError = nil
+                } catch {
+                    if !Task.isCancelled { searchError = "Suche gerade nicht möglich." }
+                }
+            }
             .sheet(item: $shareInviteFile) { shareFile in
                 ShareSheet(activityItems: [shareFile.url])
             }
@@ -475,6 +526,46 @@ private struct AddFriendSheet: View {
                     onDidSendRequest()
                     dismiss()
                 }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func searchRow(_ player: PlayerDTO) -> some View {
+        HStack(spacing: 12) {
+            CharacterBadge(character: GameCharacter.from(serverId: player.character) ?? .opponent, size: 38)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(player.name).font(.system(size: 15, weight: .bold, design: .rounded)).lineLimit(1)
+                Text("\(player.rankName) · \(player.trophies ?? 0) Trophäen")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            if friendIds.contains(player.id) {
+                Label("Freund", systemImage: "checkmark").font(.caption.bold()).foregroundColor(.secondary)
+            } else if sentIds.contains(player.id) || pendingIds.contains(player.id) {
+                Label("Gesendet", systemImage: "checkmark").font(.caption.bold()).foregroundColor(.challengrGreen)
+            } else {
+                Button {
+                    Task {
+                        do {
+                            try await friendsService.sendFriendRequest(from: ownPlayerId, to: player.id)
+                            sentIds.insert(player.id)
+                            SoundManager.shared.play(.tap)
+                            onDidSendRequest()
+                        } catch {
+                            searchError = "Anfrage an \(player.name) ging nicht."
+                        }
+                    }
+                } label: {
+                    Image(systemName: "person.badge.plus")
+                        .font(.system(size: 15, weight: .black))
+                        .foregroundColor(.challengrDark)
+                        .padding(9)
+                        .background(Circle().fill(Color.challengrYellow))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(player.name) als Freund hinzufügen")
             }
         }
     }
@@ -558,7 +649,7 @@ private struct FriendRow: View {
                             .font(.system(size: 16, weight: .black, design: .rounded))
                             .foregroundColor(.white)
                             .lineLimit(1)
-                        Text("\(player.rankName) · \(player.points) P")
+                        Text("\(player.rankName) · \(player.trophies ?? 0) 🏆")
                             .font(.system(size: 12, weight: .semibold, design: .rounded))
                             .foregroundColor(GameStyle.secondaryText)
                         Label(distanceText, systemImage: isNearby ? "location.fill" : "location")
@@ -574,8 +665,10 @@ private struct FriendRow: View {
                 GamePillButton(icon: "bolt.fill", color: .challengrGreen, textColor: .white, action: onBattle)
                     .accessibilityLabel("\(player.name) herausfordern")
             }
-            GamePillButton(icon: "gift.fill", color: .challengrRed, textColor: .white, action: onSendGift)
-                .accessibilityLabel("Geschenk an \(player.name)")
+            if FriendGifts.isEnabled {
+                GamePillButton(icon: "gift.fill", color: .challengrRed, textColor: .white, action: onSendGift)
+                    .accessibilityLabel("Geschenk an \(player.name)")
+            }
         }
         .gamePanel(padding: 12, cornerRadius: 18, highlight: isNearby ? .challengrGreen : nil)
         .contextMenu {
@@ -597,189 +690,66 @@ private struct IncomingFriendRequestSheet: View {
     let onDecline: () -> Void
 
     var body: some View {
-        VStack(spacing: 14) {
-            Capsule()
-                .fill(Color.black.opacity(0.12))
-                .frame(width: 44, height: 5)
-                .padding(.top, 10)
-
+        VStack(spacing: 16) {
             HStack(spacing: 12) {
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .scaledToFit()
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.system(size: 30, weight: .bold))
+                    .foregroundColor(.challengrYellow)
                     .frame(width: 52, height: 52)
-                    .foregroundColor(Color.black.opacity(0.65))
-                    .background(Color.black.opacity(0.06))
-                    .clipShape(Circle())
+                    .background(Circle().fill(GameStyle.panelFill))
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Freundschaftsanfrage")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.secondary)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(fromName)
-                            .font(.system(size: 22, weight: .black, design: .rounded))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-
-                        if fromName == "Lädt…", let pid = fromPlayerId {
-                            Text(pid)
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                        }
-                    }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("FREUNDSCHAFTSANFRAGE")
+                        .font(.system(size: 11, weight: .black, design: .rounded))
+                        .tracking(1.2)
+                        .foregroundColor(GameStyle.secondaryText)
+                    Text(fromName)
+                        .font(.system(size: 22, weight: .black, design: .rounded))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
-
                 Spacer()
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 6)
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
 
-            Text("Möchtest du die Anfrage annehmen?")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.primary.opacity(0.85))
-                .padding(.horizontal, 16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
+            // Annehmen grün und rechts (wie überall im Spiel), Ablehnen neutral – nicht aus Versehen ablehnen
             HStack(spacing: 12) {
                 Button(action: onDecline) {
-                    Text("Ablehnen")
+                    Label("Ablehnen", systemImage: "xmark")
                         .font(.system(size: 16, weight: .black, design: .rounded))
+                        .foregroundColor(.white.opacity(0.85))
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color.black.opacity(0.06))
-                        )
+                        .padding(.vertical, 14)
+                        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(GameStyle.panelFill))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(GameStyle.panelStroke, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
 
                 Button(action: onAccept) {
-                    Text("Annehmen")
+                    Label("Annehmen", systemImage: "checkmark")
                         .font(.system(size: 16, weight: .black, design: .rounded))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color(red: 0.73, green: 0.12, blue: 0.20))
-                        )
+                        .padding(.vertical, 14)
+                        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.challengrGreen))
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 4)
+            .padding(.horizontal, 20)
 
             Spacer(minLength: 8)
         }
-        .background(Color(.systemBackground))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(GameStyle.background.ignoresSafeArea())
+        .presentationDragIndicator(.visible)
     }
 }
 
-private struct GiftInboxRow: View {
-    let senderName: String
-    let challengrRed: Color
-    let cardBackground: Color
-    let onOpen: () -> Void
-
-    var body: some View {
-        Button(action: onOpen) {
-            HStack(spacing: 12) {
-                Image(systemName: "gift.fill")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 48, height: 48)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(challengrRed)
-                    )
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Geschenk erhalten")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.primary)
-
-                    Text("Von \(senderName)")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.secondary)
-            }
-            .padding(14)
-            .background(cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(challengrRed.opacity(0.18), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private struct GiftOpenedSheet: View {
-    let senderName: String
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var animateGift = false
-
-    var body: some View {
-        VStack(spacing: 18) {
-            Capsule()
-                .fill(Color.black.opacity(0.12))
-                .frame(width: 44, height: 5)
-                .padding(.top, 10)
-
-            ZStack {
-                Circle()
-                    .fill(Color(red: 0.73, green: 0.12, blue: 0.20).opacity(0.12))
-                    .frame(width: 110, height: 110)
-                    .scaleEffect(animateGift ? 1.08 : 0.9)
-
-                Image(systemName: "gift.fill")
-                    .font(.system(size: 46, weight: .bold))
-                    .foregroundColor(Color(red: 0.73, green: 0.12, blue: 0.20))
-                    .scaleEffect(animateGift ? 1.0 : 0.6)
-                    .rotationEffect(.degrees(animateGift ? 0 : -12))
-            }
-            .animation(.spring(response: 0.45, dampingFraction: 0.62), value: animateGift)
-
-            Text("Geschenk erhalten")
-                .font(.system(size: 24, weight: .black, design: .rounded))
-
-            Text("\(senderName) hat dir ein Geschenk geschickt.")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.secondary)
-
-            Button("Schließen") {
-                dismiss()
-            }
-            .font(.system(size: 16, weight: .bold))
-            .foregroundColor(.white)
-            .padding(.horizontal, 28)
-            .padding(.vertical, 12)
-            .background(
-                Capsule()
-                    .fill(Color(red: 0.73, green: 0.12, blue: 0.20))
-            )
-            .buttonStyle(.plain)
-
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 20)
-        .background(Color(.systemBackground))
-        .onAppear {
-            animateGift = true
-        }
-    }
+/// Geschenke an Freunde: eins pro Freund und Tag, drin ist ein zufälliger Sticker für die Sammlung.
+enum FriendGifts {
+    static let isEnabled = true
 }
 
 private struct NearbyPlayerRow: View {
@@ -796,7 +766,7 @@ private struct NearbyPlayerRow: View {
                     .font(.system(size: 15, weight: .black, design: .rounded))
                     .foregroundColor(.white)
                     .lineLimit(1)
-                Text("\(player.rankName) · \(player.points) P")
+                Text("\(player.rankName) · \(player.trophies ?? 0) 🏆")
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundColor(GameStyle.secondaryText)
             }

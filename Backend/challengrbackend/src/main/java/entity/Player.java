@@ -25,6 +25,10 @@ public class Player {
     @Column(columnDefinition = "integer default 200 not null")
     private int trophies = 200;
 
+    /** Höchster je erreichter Trophäen-Stand – Rang-Figuren bleiben frei, auch wenn man wieder abrutscht. */
+    @Column(columnDefinition = "integer default 0 not null")
+    private int highestTrophies = 200;
+
     private int consecutiveConflicts = 0;
 
     @Column(length = 255)
@@ -51,9 +55,16 @@ public class Player {
     /** Zuletzt aktiv (Position, Anfrage, WebSocket). Wer länger weg ist, taucht bei "nearby" nicht auf. */
     private Instant lastSeenAt;
 
+    /** Wann das Konto angelegt wurde (ältere Konten: null – dann zählt die erste Aktivität). */
+    private Instant createdAt;
+
     /** "Unsichtbar": weder bei nearby noch per WebSocket für andere sichtbar. */
     @Column(columnDefinition = "boolean default false not null")
     private boolean invisible = false;
+
+    /** Goldener Rahmen fürs volle Sticker-Album – sehen auch die anderen auf der Karte. */
+    @Column(name = "gold_frame", columnDefinition = "boolean default false not null")
+    private boolean goldFrame = false;
 
     public Player(String name, double longitude, double latitude) {
         this.name = name;
@@ -166,7 +177,18 @@ public class Player {
     }
 
     public void setTrophies(int trophies) {
-        this.trophies = trophies;
+        this.trophies = Math.max(0, trophies); // nie ins Minus
+        this.highestTrophies = Math.max(highestTrophies, trophies);
+    }
+
+    /** Nur für Admin-Korrekturen: Rekord direkt setzen (z. B. nach einer falschen Test-Gutschrift). */
+    public void setHighestTrophies(int highestTrophies) {
+        this.highestTrophies = Math.max(0, highestTrophies);
+    }
+
+    /** Höchster je erreichter Stand (mindestens der aktuelle – ältere Konten haben hier noch 0). */
+    public int getHighestTrophies() {
+        return Math.max(highestTrophies, trophies);
     }
 
     /** Liga-Trophäen für einen Modus: beide Liga-Modi teilen sich einen Stand, Friendly → 0. */
@@ -175,11 +197,19 @@ public class Player {
     }
 
     public void setTrophiesFor(control.BattleMode mode, int value) {
-        if (mode.isRanked()) trophies = value;
+        if (mode.isRanked()) setTrophies(value);
     }
 
     public Instant getLastSeenAt() {
         return lastSeenAt;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 
     public void setLastSeenAt(Instant lastSeenAt) {
@@ -192,5 +222,13 @@ public class Player {
 
     public void setInvisible(boolean invisible) {
         this.invisible = invisible;
+    }
+
+    public boolean hasGoldFrame() {
+        return goldFrame;
+    }
+
+    public void setGoldFrame(boolean goldFrame) {
+        this.goldFrame = goldFrame;
     }
 }

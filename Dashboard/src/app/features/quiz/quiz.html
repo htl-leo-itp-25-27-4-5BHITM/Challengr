@@ -1,0 +1,77 @@
+<div class="hero">
+  <div class="hero-inner">
+    <div class="crumbs">Admin <span>/</span> Quiz</div>
+    <h1>Quizfragen</h1>
+    <div class="subtitle">Fragen anlegen, korrigieren oder abschalten. Änderungen gelten sofort, ohne Deploy.</div>
+  </div>
+</div>
+
+@if (error) { <div class="error">{{ error }}</div> }
+
+<div class="card pad section">
+  <div class="card-head">
+    <div class="tabs" style="margin:0">
+      <button class="btn" [class.on]="filter === 'reported'" (click)="setFilter('reported')">Gemeldet</button>
+      <button class="btn" [class.on]="filter === 'hard'" (click)="setFilter('hard')">Fast alle falsch</button>
+      <button class="btn" [class.on]="filter === 'inactive'" (click)="setFilter('inactive')">Abgeschaltet</button>
+      <button class="btn" [class.on]="filter === 'all'" (click)="setFilter('all')">Alle</button>
+    </div>
+    <button class="btn btn--primary" (click)="newQuestion()">Neue Frage</button>
+  </div>
+  <input type="search" placeholder="Frage oder Antwort suchen …" [(ngModel)]="search" (keyup.enter)="load()" (search)="load()" style="width:100%" />
+  @if (msg && editId === null) { <div class="msg">{{ msg }}</div> }
+</div>
+
+@if (editId !== null) {
+  <div class="card pad section">
+    <h2>{{ editId ? 'Frage bearbeiten' : 'Neue Frage' }}</h2>
+    <div class="form" style="margin-top:10px">
+      <label>Frage<textarea maxlength="300" [(ngModel)]="form.text"></textarea></label>
+      @for (l of letters; track l; let i = $index) {
+        <div class="row" style="align-items:end">
+          <label>Antwort {{ l }}<input type="text" maxlength="80" [(ngModel)]="form.choices[i]" /></label>
+          <label style="flex:none;flex-direction:row;align-items:center;gap:6px;padding-bottom:8px">
+            <input type="radio" name="correct" [value]="i" [(ngModel)]="form.correctIndex" /> richtig
+          </label>
+        </div>
+      }
+      <div class="actions">
+        <button class="btn btn--primary" (click)="save()" [disabled]="busy">Speichern</button>
+        <button class="btn" (click)="cancel()">Abbrechen</button>
+      </div>
+      @if (msg) { <div class="msg err">{{ msg }}</div> }
+    </div>
+  </div>
+}
+
+<div class="rows section">
+  @for (q of questions; track q.id) {
+    <div class="card pad" [style.opacity]="q.active ? 1 : 0.55">
+      <div class="card-head" style="align-items:flex-start">
+        <div class="grow">
+          <div style="font-weight:600">{{ q.text }}</div>
+          <div class="sub muted" style="margin-top:6px">
+            @for (c of q.choices; track $index; let i = $index) {
+              <span [style.color]="i === q.correctIndex ? 'var(--green)' : null">{{ letters[i] }}: {{ c }}{{ i === q.correctIndex ? ' ✓' : '' }}</span>@if (i < 3) { · }
+            }
+          </div>
+        </div>
+        <div style="text-align:right;flex:none">
+          @if (q.openReports > 0) { <span class="pill pill--danger">{{ q.openReports }} gemeldet</span> }
+          @if (q.hard) { <span class="pill pill--warn">fast alle falsch</span> }
+          @if (!q.active) { <span class="pill">abgeschaltet</span> }
+          @if (q.edited) { <span class="pill">bearbeitet</span> }
+          <div class="sub muted" style="margin-top:6px">{{ q.answers }} Antworten · {{ rate(q) }} richtig</div>
+        </div>
+      </div>
+      @for (r of reportsFor(q.id); track r.id) {
+        <div class="row-item"><div class="grow"><div>{{ reasonText(r.reason) }}@if (r.comment) { – „{{ r.comment }}“ }</div><div class="sub">{{ r.playerName ?? 'Spieler' }} · {{ r.createdAt | date: 'dd.MM. HH:mm' }}</div></div></div>
+      }
+      <div class="actions" style="margin-top:10px">
+        <button class="btn" (click)="edit(q)">Bearbeiten</button>
+        <button class="btn" [class.btn--danger]="q.active" (click)="toggleActive(q)">{{ q.active ? 'Abschalten' : 'Wieder einschalten' }}</button>
+        @if (q.openReports > 0) { <button class="btn" (click)="resolveReports(q)">Meldungen erledigt</button> }
+      </div>
+    </div>
+  } @empty { <div class="card pad muted">Keine Fragen in dieser Ansicht.</div> }
+</div>

@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "Sticker_vorbei.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

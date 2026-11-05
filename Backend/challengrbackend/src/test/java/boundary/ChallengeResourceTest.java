@@ -125,8 +125,10 @@ class ChallengeResourceTest {
 
         // Jeder Typ braucht genau das Stichwort, an dem die App die Spezial-Ansicht erkennt
         for (String keyword : List.of("Sprint-Challenge", "Check-In-Spot", "Kompass", "Shake",
-                "Schrei-Challenge", "Foto", "Liegestütz")) {
+                "Schrei-Challenge", "Liegestütz")) {
             assertTrue(texts.stream().anyMatch(t -> t.contains(keyword)), "iPhone-Challenge fehlt: " + keyword);
         }
+        // Foto/Farbvergleich ist vorübergehend abgeschaltet
+        assertTrue(texts.stream().noneMatch(t -> t.startsWith("Foto-Beweis")), "Foto-Challenge ist abgeschaltet");
     }
 }

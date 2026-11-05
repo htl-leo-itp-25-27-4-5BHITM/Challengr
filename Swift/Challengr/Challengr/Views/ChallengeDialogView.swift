@@ -11,6 +11,8 @@ struct ChallengeDialogView: View {
 
     let allChallenges: [ChallengeDTO]      // ⬅️ alle vom MapView vorab geladen
     let socket: GameSocketService
+    /// Nach dem Absenden (z.B. Freundes-Menü schließen, damit man die Karte sieht)
+    var onSent: () -> Void = {}
     let onClose: () -> Void
 
     // MARK: - State (State)
@@ -33,14 +35,14 @@ struct ChallengeDialogView: View {
                 Text("HERAUSFORDERN")
                     .font(.system(size: 12, weight: .black, design: .rounded))
                     .tracking(1.4)
-                    .foregroundStyle(.challengrBlack)
+                    .foregroundStyle(.challengrYellow)
 
                 MapAvatarPin(imageName: otherPlayerCharacter.avatarImageName, ringColor: otherPlayerRankColor, isOwnPlayer: false)
 
                 Text(otherPlayerName.uppercased())
                     .font(.system(size: 20, weight: .black, design: .rounded))
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.challengrBlack)
+                    .foregroundStyle(.white)
 
                 if let mode {
                     selectedModeHeader(mode)
@@ -52,7 +54,7 @@ struct ChallengeDialogView: View {
                              : "Der Server lost eine Handy-Challenge aus – Sprint, Lautstärke, Kompass, Schütteln … Das Handy misst, wer gewinnt.")
                             .font(.system(size: 13, weight: .semibold, design: .rounded))
                             .multilineTextAlignment(.center)
-                            .foregroundStyle(.challengrBlack.opacity(0.75))
+                            .foregroundStyle(GameStyle.secondaryText)
                     }
                 } else {
                     VStack(spacing: 10) {
@@ -63,7 +65,7 @@ struct ChallengeDialogView: View {
                                 .tracking(1)
                         }
                         .font(.system(size: 12, weight: .black, design: .rounded))
-                        .foregroundStyle(.challengrBlack.opacity(0.8))
+                        .foregroundStyle(.white.opacity(0.85))
 
                         HStack(spacing: 10) {
                             leagueButton(.rankedKnowledge)
@@ -73,7 +75,7 @@ struct ChallengeDialogView: View {
                         Text("ODER")
                             .font(.system(size: 11, weight: .black, design: .rounded))
                             .tracking(1.4)
-                            .foregroundStyle(.challengrBlack.opacity(0.45))
+                            .foregroundStyle(.white.opacity(0.45))
                             .padding(.top, 2)
 
                         modeButton(.friendly)
@@ -87,10 +89,10 @@ struct ChallengeDialogView: View {
                             Text("SENDEN")
                                 .font(.system(size: 14, weight: .black))
                                 .tracking(1)
-                                .foregroundStyle(.challengrBlack)
+                                .foregroundStyle(Color.challengrDark)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
-                                .background(RoundedRectangle(cornerRadius: 14).fill(.challengrGreen))
+                                .background(RoundedRectangle(cornerRadius: 14).fill(.challengrYellow))
                         }
                         .disabled(!canSend)
                         .opacity(canSend ? 1 : 0.4)
@@ -106,20 +108,17 @@ struct ChallengeDialogView: View {
                         Text(mode != nil ? "ZURÜCK" : "ABBRECHEN")
                             .font(.system(size: 12, weight: .black))
                             .tracking(1)
-                            .foregroundStyle(.chalengrRed)
+                            .foregroundStyle(.white.opacity(0.85))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
-                            .background(RoundedRectangle(cornerRadius: 14).stroke(.chalengrRed, lineWidth: 2))
+                            .background(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.25), lineWidth: 1.5))
                     }
                 }
             }
-            .padding(16)
-            .frame(maxWidth: 320)
-            .background(RoundedRectangle(cornerRadius: 22).fill(.regularMaterial))
-            .overlay(RoundedRectangle(cornerRadius: 22).stroke(.white.opacity(0.15), lineWidth: 1))
-            .shadow(radius: 20)
-            // Spielkarte im Marken-Look: Material und Texte bleiben auch im Dark Mode hell/dunkel.
-            .environment(\.colorScheme, .light)
+            .padding(18)
+            .frame(maxWidth: 330)
+            // Spielkarte im Marken-Look (dunkel wie Battle, Profil, Sticker)
+            .gameOverlayCard()
         }
     }
 
@@ -207,10 +206,10 @@ struct ChallengeDialogView: View {
                         } label: {
                             Label(category, systemImage: icon(for: category))
                                 .font(.system(size: 12, weight: .black, design: .rounded))
-                                .foregroundStyle(selected ? .white : .challengrBlack)
+                                .foregroundStyle(selected && category == "Fitness" ? Color.challengrDark : .white)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 7)
-                                .background(Capsule().fill(selected ? color(for: category) : Color.black.opacity(0.06)))
+                                .background(Capsule().fill(selected ? color(for: category) : Color.white.opacity(0.08)))
                         }
                         .buttonStyle(.plain)
                         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -222,7 +221,7 @@ struct ChallengeDialogView: View {
             if list.isEmpty {
                 Text("In dieser Kategorie gibt es noch keine Challenges.")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.challengrBlack.opacity(0.7))
+                    .foregroundStyle(GameStyle.secondaryText)
             } else {
                 ScrollView {
                     VStack(spacing: 6) {
@@ -233,17 +232,17 @@ struct ChallengeDialogView: View {
                             } label: {
                                 HStack(alignment: .top, spacing: 8) {
                                     Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(selected ? Color.challengrGreen : .challengrBlack.opacity(0.35))
+                                        .foregroundStyle(selected ? Color.challengrDark : .white.opacity(0.35))
                                     Text(challenge.text)
                                         .font(.system(size: 13, weight: .semibold, design: .rounded))
-                                        .foregroundStyle(.challengrBlack)
+                                        .foregroundStyle(selected ? Color.challengrDark : .white)
                                         .multilineTextAlignment(.leading)
                                         .fixedSize(horizontal: false, vertical: true)
                                     Spacer(minLength: 0)
                                 }
                                 .padding(9)
                                 .background(RoundedRectangle(cornerRadius: 12)
-                                    .fill(selected ? Color.challengrYellow.opacity(0.5) : Color.black.opacity(0.04)))
+                                    .fill(selected ? Color.challengrYellow : Color.white.opacity(0.06)))
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel(challenge.text)
@@ -260,7 +259,7 @@ struct ChallengeDialogView: View {
                 } label: {
                     Label("Zufällig", systemImage: "dice.fill")
                         .font(.system(size: 12, weight: .black, design: .rounded))
-                        .foregroundStyle(.challengrBlack)
+                        .foregroundStyle(.challengrYellow)
                 }
                 .buttonStyle(.plain)
             }
@@ -284,6 +283,7 @@ struct ChallengeDialogView: View {
             challengeId: mode == .friendly ? selectedChallengeId : nil
         )
         onClose()
+        onSent()
     }
 
     // MARK: - Helpers (Hilfsfunktionen)
@@ -293,7 +293,7 @@ struct ChallengeDialogView: View {
         case "Fitness":  return .challengrYellow
         case "Mutprobe": return .chalengrRed
         case "Wissen":   return .challengrGreen
-        case "iPhone":   return .black
+        case "iPhone":   return Color(white: 0.35)
         case "Customer": return .gray
         default:         return .challengrYellow
         }

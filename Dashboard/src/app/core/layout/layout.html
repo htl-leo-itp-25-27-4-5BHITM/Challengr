@@ -1,50 +1,45 @@
 <app-header></app-header>
 
 <div class="shell">
-
   <aside class="sidebar">
-    <div class="nav">
+    <nav class="nav">
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <span class="icon">📊</span>
-        <span>Dashboard</span>
+        <app-icon name="overview" /><span>Übersicht</span>
       </a>
-
       <a routerLink="/users" routerLinkActive="active">
-        <span class="icon">👥</span>
-        <span>Users</span>
+        <app-icon name="users" /><span>Spieler</span>
       </a>
-
       <a routerLink="/reports" routerLinkActive="active">
-        <span class="icon">🚩</span>
-        <span>Meldungen</span>
+        <app-icon name="flag" /><span>Meldungen</span>
       </a>
-
+      <a routerLink="/feedback" routerLinkActive="active">
+        <app-icon name="message" /><span>Feedback</span>
+      </a>
+      <a routerLink="/quiz" routerLinkActive="active">
+        <app-icon name="quiz" /><span>Quiz</span>
+      </a>
+      <a routerLink="/events" routerLinkActive="active">
+        <app-icon name="calendar" /><span>Events</span>
+      </a>
+      <a routerLink="/spots" routerLinkActive="active">
+        <app-icon name="pin" /><span>Orte</span>
+      </a>
+      <a routerLink="/system" routerLinkActive="active">
+        <app-icon name="pulse" /><span>System</span>
+      </a>
       <a routerLink="/challenges" routerLinkActive="active">
-        <span class="icon">🏆</span>
-        <span>Challenges</span>
+        <app-icon name="trophy" /><span>Challenges</span>
       </a>
-
-      <a routerLink="/erd" routerLinkActive="active">
-        <span class="icon">🗂️</span>
-        <span>ERD</span>
+      <a routerLink="/erd" routerLinkActive="active" class="nav-minor">
+        <app-icon name="database" /><span>Datenbank</span>
       </a>
-    </div>
-
-    <div class="sidebar-footer">
-      <div class="user">
-        <div class="avatar">AD</div>
-        <div>
-          <div class="name">admin</div>
-          <div class="role">Challengr</div>
-        </div>
-      </div>
-
-      <button class="logout" type="button">Logout</button>
-    </div>
+    </nav>
+    <div class="sidebar-footer">Nur für Admins · Daten sind live</div>
   </aside>
 
   <main class="content">
-    <router-outlet></router-outlet>
+    <div class="page">
+      <router-outlet></router-outlet>
+    </div>
   </main>
-
 </div>

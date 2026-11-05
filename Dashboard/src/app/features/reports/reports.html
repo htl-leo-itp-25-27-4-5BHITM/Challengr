@@ -20,7 +20,7 @@
   }
 
   @if (reports.length === 0 && !error) {
-    <div class="card empty">Keine {{ showAll ? '' : 'offenen ' }}Meldungen 🎉</div>
+    <div class="card empty">Keine {{ showAll ? '' : 'offenen ' }}Meldungen</div>
   }
 
   @for (r of reports; track r.id) {
