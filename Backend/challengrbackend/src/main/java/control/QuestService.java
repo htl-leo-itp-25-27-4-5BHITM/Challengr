@@ -30,14 +30,22 @@ public class QuestService {
     /** Battle-Zeitstempel sind LocalDateTime in der Zeitzone des Servers */
     private static final ZoneId SERVER_ZONE = ZoneId.systemDefault();
 
-    public record TaskView(String id, String title, String icon, int target, int progress, int coins, boolean claimed) {
+    /** sticker = bringt beim Abholen zusätzlich einen Sticker (die "Schau vorbei"-Aufgabe) */
+    public record TaskView(String id, String title, String icon, int target, int progress, int coins, boolean claimed,
+                           boolean sticker) {
         public boolean done() { return progress >= target; }
     }
 
     public record EventView(String id, String title, String subtitle, String startsOn, String endsOn, boolean active,
                             String rewardCharacter, int rewardCoins, List<TaskView> tasks, boolean completed, boolean claimed) {}
 
-    public record Board(int coins, String day, String resetsAt, List<TaskView> daily, List<EventView> events) {}
+    /** claimedSticker: gerade beim Abholen bekommen (sonst null) */
+    public record Board(int coins, String day, String resetsAt, List<TaskView> daily, List<EventView> events,
+                        String claimedSticker) {
+        Board withSticker(String sticker) {
+            return new Board(coins, day, resetsAt, daily, events, sticker);
+        }
+    }
 
     @Inject
     EntityManager em;
@@ -50,6 +58,9 @@ public class QuestService {
 
     @Inject
     QuestEventStore eventStore;
+
+    @Inject
+    StickerRepository stickers;
 
     public static LocalDate today() {
         return LocalDate.now(ZONE);
@@ -75,10 +86,10 @@ public class QuestService {
                 .toList();
 
         String resetsAt = today.plusDays(1).atStartOfDay(ZONE).toInstant().toString();
-        return new Board(player.getPoints(), today.toString(), resetsAt, daily, events);
+        return new Board(player.getPoints(), today.toString(), resetsAt, daily, events, null);
     }
 
-    /** Tagesaufgabe abholen: Coins gutschreiben. */
+    /** Tagesaufgabe abholen: Coins gutschreiben, bei "Schau vorbei" auch einen Sticker. */
     @Transactional
     public Board claimDaily(String playerId, String taskId) {
         LocalDate today = today();
@@ -89,7 +100,12 @@ public class QuestService {
         if (new Counter(playerId, today, today).of(task.metric()) < task.target())
             throw new WebApplicationException("Aufgabe noch nicht geschafft", 409);
         credit(playerId, key, today, task.coins());
-        return board(playerId);
+        String sticker = givesSticker(task) ? stickers.grantRandom(playerId) : null;
+        return board(playerId).withSticker(sticker);
+    }
+
+    static boolean givesSticker(Task task) {
+        return task.id().equals(QuestCatalog.VISIT.id());
     }
 
     /** Event-Belohnung abholen: Coins + Figur (die Figur hängt am gespeicherten Abholen). */
@@ -138,7 +154,8 @@ public class QuestService {
     }
 
     private static TaskView view(Task t, Counter c, boolean claimed) {
-        return new TaskView(t.id(), t.title(), t.icon(), t.target(), Math.min(c.of(t.metric()), t.target()), t.coins(), claimed);
+        return new TaskView(t.id(), t.title(), t.icon(), t.target(), Math.min(c.of(t.metric()), t.target()), t.coins(), claimed,
+                givesSticker(t));
     }
 
     private Set<String> claimedKeys(String playerId) {

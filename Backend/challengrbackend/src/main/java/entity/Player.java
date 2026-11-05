@@ -62,6 +62,10 @@ public class Player {
     @Column(columnDefinition = "boolean default false not null")
     private boolean invisible = false;
 
+    /** Goldener Rahmen fürs volle Sticker-Album – sehen auch die anderen auf der Karte. */
+    @Column(name = "gold_frame", columnDefinition = "boolean default false not null")
+    private boolean goldFrame = false;
+
     public Player(String name, double longitude, double latitude) {
         this.name = name;
         this.longitude = longitude;
@@ -218,5 +222,13 @@ public class Player {
 
     public void setInvisible(boolean invisible) {
         this.invisible = invisible;
+    }
+
+    public boolean hasGoldFrame() {
+        return goldFrame;
+    }
+
+    public void setGoldFrame(boolean goldFrame) {
+        this.goldFrame = goldFrame;
     }
 }

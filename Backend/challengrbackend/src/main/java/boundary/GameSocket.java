@@ -681,6 +681,7 @@ public class GameSocket {
         String loserName  = "Niemand";
         int winnerDelta = 0;
         int loserDelta  = 0;
+        String winnerSticker = null;
         String trashTalk;
 
         if (!isConflict && winnerId != null) {
@@ -692,6 +693,10 @@ public class GameSocket {
                 Battle updated = battleService.findById(battleId);
                 winnerDelta = Optional.ofNullable(updated.getWinnerPointsDelta()).orElse(0);
                 loserDelta  = Optional.ofNullable(updated.getLoserPointsDelta()).orElse(0);
+                // Liga-Sieg: mit etwas Glück ein Sticker
+                if (control.BattleMode.from(battle.getType()).isRanked()) {
+                    winnerSticker = stickerRepository.maybeWinDrop(winnerId, battleId);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("Fehler beim finalisieren von Battle " + battleId + ": " + e.getMessage());
@@ -731,6 +736,7 @@ public class GameSocket {
             "loserName": "%s",
             "loserAvatar": "ownAvatar",
             "loserPointsDelta": %d,
+            "winnerSticker": %s,
             "trashTalk": "%s",
             "fromId": "%s",
             "fromName": "%s",
@@ -749,6 +755,7 @@ public class GameSocket {
                 jsonStringOrNull(loserId),
                 escapeJson(loserName),
                 loserDelta,
+                jsonStringOrNull(winnerSticker),
                 escapeJson(trashTalk),
                 escapeJson(fromId),
                 escapeJson(battle.getFromPlayer().getName()),

@@ -11,6 +11,7 @@ public record FriendGiftDTO(
         FriendGift.Status status,
         Instant createdAt,
         Instant claimedAt,
-        String stickerId
+        String stickerId, // erst nach dem Öffnen
+        boolean fromCollection // vom Absender ausgesucht
 ) {
 }

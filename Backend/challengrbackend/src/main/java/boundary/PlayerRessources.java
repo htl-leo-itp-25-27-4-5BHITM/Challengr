@@ -447,21 +447,21 @@ public class PlayerRessources {
     private PlayerDTO toOwnDTO(Player p) {
         return new PlayerDTO(p.getId(), p.getName(), p.getLatitude(), p.getLongitude(), p.getPoints(),
                 battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), p.isInvisible(),
-                Math.max(p.getHighestTrophies(), p.getTrophies()));
+                Math.max(p.getHighestTrophies(), p.getTrophies()), p.hasGoldFrame());
     }
 
     /** Fremdes Profil: ohne Standort. */
     private PlayerDTO toPublicDTO(Player p) {
         return new PlayerDTO(p.getId(), p.getName(), null, null, p.getPoints(),
                 battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), null,
-                Math.max(p.getHighestTrophies(), p.getTrophies()));
+                Math.max(p.getHighestTrophies(), p.getTrophies()), p.hasGoldFrame());
     }
 
     /** Spieler in der Nähe: nur gerundete Position. */
     private PlayerDTO toNearbyDTO(Player p) {
         return new PlayerDTO(p.getId(), p.getName(), LocationPrivacy.coarse(p.getLatitude()), LocationPrivacy.coarse(p.getLongitude()),
                 p.getPoints(), battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), null,
-                Math.max(p.getHighestTrophies(), p.getTrophies()));
+                Math.max(p.getHighestTrophies(), p.getTrophies()), p.hasGoldFrame());
     }
 
     /** Fortschritt für die Freischalt-Regeln: Siege, Wissens-Siege, Hotspot-Check-ins, Punkte. */

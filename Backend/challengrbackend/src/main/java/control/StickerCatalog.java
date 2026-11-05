@@ -27,6 +27,20 @@ public final class StickerCatalog {
     /** Einmal für jeden Spieler zum Ausprobieren. */
     public static final int STARTER_PACK = 3;
 
+    /** Liga-Sieg: so oft (in Prozent) springt ein Sticker raus, höchstens so oft am Tag – sonst könnte man farmen. */
+    public static final int WIN_DROP_PERCENT = 25;
+    public static final int WIN_DROPS_PER_DAY = 3;
+
+    /** Sticker-Paket im Shop */
+    public static final int PACK_SIZE = 3;
+    public static final int PACK_PRICE = 100;
+
+    /** Album-Stufe: ab so vielen gefundenen Stickern gibt's Coins, beim vollen Album den goldenen Rahmen. */
+    public record Stage(int found, int coins, boolean goldFrame) {}
+
+    public static final List<Stage> STAGES = List.of(
+            new Stage(5, 50, false), new Stage(10, 100, false), new Stage(15, 150, false), new Stage(20, 0, true));
+
     private static final List<String> IDS = FALLBACK.keySet().stream().sorted().toList();
 
     /** Bewegte Sticker kommen 1 zu 3 seltener als normale. */

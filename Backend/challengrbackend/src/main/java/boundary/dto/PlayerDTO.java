@@ -14,5 +14,6 @@ public record PlayerDTO(
         String character, // gewählte Spielfigur, null = App-Standard
         int trophies,     // Liga-Trophäen (Quiz-Show und Real-Life gemeinsam)
         Boolean invisible, // nur beim eigenen Konto gesetzt
-        int highestTrophies // persönlicher Rekord (höchster je erreichter Trophäen-Stand)
+        int highestTrophies, // persönlicher Rekord (höchster je erreichter Trophäen-Stand)
+        boolean goldFrame // volles Sticker-Album
 ) {}
