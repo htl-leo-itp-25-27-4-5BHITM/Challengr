@@ -1,6 +1,6 @@
 # Challengr – Projektstand und Übergabe
 
-Stand: **5. November 2026** · Branch `feature/liga-modus` (auf GitHub) · `main` steht noch auf `7e39882`
+Stand: **5. November 2026** · Branch `feature/liga-modus` (auf GitHub) · `main` am 05.11. per PR #160 auf denselben Stand gemergt (`7b212b5`)
 
 Diese Datei fasst zusammen, worum es geht, was gebaut wurde, wie alles läuft und was offen ist.
 Sie ist zum Weitermachen gedacht – für das Team und für eine neue Claude-Sitzung
@@ -135,7 +135,7 @@ Tryhard 600, Brawler 950, Dueler 1400, Challengr 2000+ (nach oben offen).
 - TestFlight-Gruppen: intern **„Team“**, extern **„Schule“** (2 Tester). Testinformationen inkl. `applereview`-Login ausgefüllt.
 - Builds: `2610121422` (Im Test, alt – Kartenfilter-Bug), `2610130934` (Kartenfix), **`2610131028`** (Kartenfix + viele Spieler), `2610141130` (Trophy Road neu, Rang-Figuren, Karte nur drehbar, Shop zu, nur Trophäen), **`2610141213`** (+ Karte zoombar mit Spieler in der Mitte, Freundes-Menü schließt nach Herausfordern, angemeldet bleiben über Offline-Token im Schlüsselbund), `2610141631` (+ Freundesprofil im Spiel-Look, Namen ändern, Tag/Nacht), `2610161251` (+ Feinschliff 16.10., neues Logo), **`2610161702`** (+ Karten-Drehen repariert), `2610201041` (+ Rangliste, Freunde per Namen/auf der Karte, Feedback 13.–19.10.), `2610201127` (+ Aufgaben, Coins, Beta-Event mit Crash-Test-Dummy), `2610210821` (+ Sounds), `2610211050` (+ Orte aus OpenStreetMap, Kompass, Lade-Screen, Menü kleiner – mit „Nebel“-Fehler auf der Karte), `2610211130` (+ Cartoon-Karte, Nebel weg), `2610241022` (+ Frage melden, Ankündigungs-Banner), `2610241107` (+ Länder-Kompass, Reaktions-Test, Zeitgefühl, Erklär-Bildschirm – **Fehler: hängt bei „Bereit machen“**), `2610241214` (Fix dafür), `2610251425` (+ neuer Sieg-/Niederlage-Screen mit 3D-Siegerehrung), **`2611041538`** (+ Sticker-Emotes, Geschenke mit Stickern, Sticker-Album) – **`2611041538` selbst testen, dann der Gruppe „Schule“ zuweisen** (Backend ist schon live). Text für „Was soll getestet werden?“: `docs/TESTFLIGHT_TESTER_TEXT.md`., `2611051500` (05.11.: Sticker-System, Gedränge, Einstellungen im Profil, dunkle Popups, 48 Emojis)
 
-**Git:** `feature/liga-modus` ist auf GitHub aktuell. `main` hängt hinterher (Stand `7e39882`, 13.10.) – bei Bedarf mergen.
+**Git:** `feature/liga-modus` ist auf GitHub aktuell und wurde am 05.11. per PR #160 nach `main` gemergt (Merge-Commit, alle Einzel-Commits bleiben sichtbar). GitHub-Insights (Commits-Grafik) zählt nur `main` – neue Arbeit also wieder per PR mergen.
 
 **Wo die Passwörter liegen** (nie im Repo):
 | Schlüsselbund-Eintrag (macOS) | Wofür |
@@ -162,7 +162,7 @@ Kubernetes-Secret `challengr-secrets`. Verloren? `./scripts/rotate-secrets.sh` s
 **Offen:** Build in TestFlight erst selbst testen (Geschenk an einen Freund, öffnen, Sticker schicken, Album), dann der Gruppe „Schule“ zuweisen.
 **Sticker-System + Feedback (05.11.):** Menü → Sticker, STICKER-Knopf, Sieg-/Aufgaben-Sticker, Paket, Album-Stufen, goldener Rahmen, Verschenken, Einstellungen im Profil, Gedränge, dunkle Popups, 48 Emojis – Backend live (14:59, Backup `Backups/backup-2026-11-05-sticker-system.sql`), gepusht, Build **`2611051500`** hochgeladen (15:02), Tester-Text aktualisiert. Neue Spalten `player.gold_frame`, `friend_gift.from_collection` sind live angelegt. **Offen:** Build selbst testen, dann der Gruppe „Schule“ zuweisen und Tester-Text einfügen; erledigtes Feedback im Dashboard abhaken.
 **Feedback (Dashboard, Stand 05.11.):** erledigt bzw. mit dem nächsten Build erledigt und danach im Dashboard abhaken: „Overlay verbessern/schöner“ (2×), „Alle Emojis“ (→ 48), „Länderkompass hängt bei 3“ (Fix `0f8dc3e`, 24.10.), „Name schwer zu finden“ (Stift + Zahnrad), „Gegner-Antwort sehen“ (deutlicher), „Spieler ineinander“ (Gedränge), „keine Markierung bei Dailys“, „Beta-Skin“ (Crash-Test-Dummy). Offen/Entscheidung: Trophäen für Events (Vorschlag: nein, verzerrt die Liga), mehr weibliche Figuren (Entwürfe Frost/Kira/Riot/Valka vom 05.11. in `Character3D/entwuerfe_spielerinnen/`, Code `Character3D/pipeline/char/preview/entwuerfe.js`, Rendern aus `char/`: `node preview/entwuerfe.mjs <ordner>`; ältere Vorlagen Vex/Blaze/Nova/Raven in `maedels.js`), Musik pro Challenge, eigenes Quiz, eigene Hotspots, Sounds für alle Knöpfe, Trophy Road (Belohnungen antippen, „Spiele anklicken“ unklar).
-Alte App-Versionen sehen keine Sticker; kommt einer bei ihnen an, zeigen sie das Ersatz-Emoji. Pull Request `feature/liga-modus` → `main` ist offen (nicht gemergt).
+Alte App-Versionen sehen keine Sticker; kommt einer bei ihnen an, zeigen sie das Ersatz-Emoji. Pull Request `feature/liga-modus` → `main` am 05.11. gemergt (#160).
 
 Erledigt am 13.10.: hängende Keycloak-Konten freigeschaltet, Passwort von `test` geändert, 2FA für den
 Keycloak-Admin eingerichtet, Kontakt-Mail bestätigt (`challengrapp.official@gmail.com`), alles gepusht,
