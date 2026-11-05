@@ -1,33 +1,37 @@
 # Text für TestFlight → „Was soll getestet werden?“
 
 Für App Store Connect → TestFlight → Build → *Testinformationen* (max. 4000 Zeichen).
-Stand: Build `2611041538` (04.11.2026). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
+Stand: Build vom 05.11.2026 (Sticker-System). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
 
 ---
 
 **Neu in diesem Update**
 
-🔥 **Sticker!** Schick anderen Spielern Sticker mit den Challengr-Figuren – auf der Karte (Spieler antippen → „+“ → „Sticker“) und im Battle (weißer Knopf neben dem Smiley). Sechs davon bewegen sich sogar.
+🔥 **Alles rund um Sticker an einem Ort:** Münze unten → **Sticker**. Dort öffnest du Geschenke, siehst dein Album und erfährst, wie du an neue Sticker kommst. Tipp auf einen Sticker: groß ansehen, in die Kurzwahl holen oder **einem Freund schenken** – bei jedem Freund steht, ob ihm der Sticker noch fehlt.
 
-🎁 **Geschenke sind zurück – und in jedem steckt ein Sticker.** Schick jedem Freund einmal am Tag ein Geschenk: Profilbild → „Freunde“ → rotes Geschenk beim Freund. Beim Öffnen bekommst du einen zufälligen Sticker. Bewegte Sticker sind selten!
+💬 **Sticker schicken ist jetzt einfacher:** Spieler auf der Karte antippen → gelber Knopf **STICKER** mit deiner Anzahl. Leere Sticker bleiben grau stehen, statt zu verschwinden.
 
-📒 **Sammeln:** Jeder Sticker lässt sich einmal verschicken, danach ist er weg – sammle also ruhig doppelt und dreifach. Im **Sticker-Album** („Album“ im Sticker-Tab) siehst du, welche du schon hast und welche noch fehlen. Zum Start bekommst du 3 Sticker geschenkt.
+🎁 **Neue Wege zu Stickern:** nach Liga-Siegen manchmal ein Sticker, jeden Tag einer für die Aufgabe „Schau vorbei“, Geschenke von Freunden – und das **Sticker-Paket** (3 Sticker für 100 Coins) unter „Sticker“ und im Shop.
 
-🏆 **Neue Siegerehrung:** Nach jedem Battle gibt's eine 3D-Siegerehrung mit Podest, Pokal und Konfetti – und eine Regenwolke für den Verlierer.
+🏅 **Album-Belohnungen:** 5, 10 und 15 gefundene Sticker bringen Coins. Wer alle 20 hat, bekommt den **goldenen Rahmen** – den sehen alle auf der Karte.
+
+👥 **Kein Gedränge mehr:** Stehen mehrere Spieler am selben Fleck, werden sie aufgefächert. Bei vielen gibt es eine Figur mit Zahl – antippen, und du wählst aus der Liste „Spieler hier“.
+
+🎨 **Euer Feedback:** Spieler-Popup und Herausfordern-Fenster im dunklen Challengr-Look, 48 statt 24 Emojis, im Quiz siehst du jetzt deutlich, was dein Gegner gewählt hat, die Zahl bei „Aufgaben“ erscheint gleich nach dem Battle, und die **Einstellungen** sind jetzt im Profil (Zahnrad oben rechts) – Namen ändern geht direkt über den Stift neben deinem Namen.
 
 **Schon da:**
 
 🤖 **Nur in der Beta: das Crash-Test-Event!** Schaffst du alle 6 Challenges unter „Events“ bis 30.11., bekommst du den **Crash-Test-Dummy** als Figur – nach der Beta nie wieder.
 
-🌍 Real-Life-Challenges Länder-Kompass, Reaktions-Test und Zeitgefühl (vorher kurz erklärt), 🚩 Quizfragen melden über die Fahne, 📍 Check-in-Punkte in deiner Gegend (bis zu 5 pro Tag), ✅ tägliche Aufgaben mit Challengr Coins, 🗺️ Cartoon-Karte (die alte gibt's unter Einstellungen → Karte).
+🏆 3D-Siegerehrung nach jedem Battle, 🌍 Real-Life-Challenges Länder-Kompass, Reaktions-Test und Zeitgefühl, 🚩 Quizfragen melden über die Fahne, 📍 Check-in-Punkte (bis zu 5 pro Tag), ✅ tägliche Aufgaben mit Challengr Coins, 🗺️ Cartoon-Karte.
 
-**Bisher schon drin:** Liga mit Quiz-Show und Real-Life-Challenges, Trophy Road mit Rang-Figuren und Rangliste, über 200 Quizfragen, Freunde per Namen suchen, 24 Emotes mit eigener Kurzwahl, Tag und Nacht auf der Karte, Namen ändern, angemeldet bleiben. Der Shop ist vorerst pausiert.
+**Bisher schon drin:** Liga mit Quiz-Show und Real-Life-Challenges, Trophy Road mit Rang-Figuren und Rangliste, über 200 Quizfragen, Freunde per Namen suchen, eigene Emote-Kurzwahl, Tag und Nacht auf der Karte, angemeldet bleiben.
 
 **Bitte testen**
-- Schick einem Freund ein Geschenk und lass dir eins schicken: Kommt es an, und springt beim Öffnen ein Sticker raus?
-- Verschick Sticker auf der Karte und im Battle: Sieht der andere sie? Geht deine Anzahl um eins runter?
-- Stimmt dein Sticker-Album?
-- Kannst du die Sticker gut lesen, auch auf der Karte?
-- Wie gefällt dir die neue Siegerehrung? Ruckelt etwas?
+- Findest du den Sticker-Bereich und den STICKER-Knopf ohne Hilfe?
+- Verschenk einen Sticker an einen Freund: Kommt er an, und stimmt danach deine Anzahl?
+- Kauf ein Sticker-Paket und hol dir eine Album-Belohnung ab.
+- Steht ihr zu mehreren am selben Ort: Kannst du jeden gut antippen?
+- Gefallen dir die neuen dunklen Fenster auf der Karte?
 
 Fehler oder Ideen? Mach einen Screenshot und schick ihn über TestFlight („Feedback senden“).
