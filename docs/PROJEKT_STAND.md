@@ -147,6 +147,8 @@ Tryhard 600, Brawler 950, Dueler 1400, Challengr 2000+ (nach oben offen).
 | Challengr Apple-Prüfer-Account | App-Login `applereview` |
 | Challengr Dashboard test | Dashboard-Login `test` (nur, wenn am 15.10. so gespeichert) |
 
+Der **APNs-Push-Schlüssel** (Key ID `Q2JV5PL6S8`, Team `9CK2N38H9M`) liegt im Kubernetes-Secret `challengr-apns` (vom Nutzer angelegt, Claude darf keine Secrets schreiben).
+**Bitwarden (in Arbeit):** Alle Challengr-Zugangsdaten sollen in den Bitwarden-Ordner „Challengr“ – Import-Skript `~/Developer/ChallengrProjekt/bitwarden_import.sh` (siehe Offene Punkte). Danach ist Bitwarden die Hauptquelle.
 Der **App-Store-Connect-API-Schlüssel** (.p8) liegt nur im Kubernetes-Secret `challengr-asc` (Issuer-ID, Key-ID, Schlüssel) –
 die .p8-Datei selbst sicher aufheben, Apple lässt sie nur einmal herunterladen.
 
@@ -156,6 +158,26 @@ Kubernetes-Secret `challengr-secrets`. Verloren? `./scripts/rotate-secrets.sh` s
 ---
 
 ## 5. Offene Punkte (in dieser Reihenfolge)
+
+### Überblick – alles Offene auf einen Blick (Stand 06.11.)
+
+**Erledigt der Nutzer (Claude kann es nicht oder darf es nicht):**
+1. **Build `2611060850` testen** (enthält auch alles aus `2611051500`): installieren, Mitteilungen erlauben, App *ganz schließen*, sich von einem Freund herausfordern/beschenken lassen → kommt die Push-Mitteilung, öffnet ein Tipp das Richtige? Danach kann Claude prüfen, ob sich das Gerät angemeldet hat (`select count(*) from push_token;` > 0).
+2. **Build `2611060850` der Gruppe „Schule“ zuweisen** und den Tester-Text aus `docs/TESTFLIGHT_TESTER_TEXT.md` einfügen (`2611051500` muss nicht mehr extra zugewiesen werden).
+3. **Bitwarden:** `zsh ~/Developer/ChallengrProjekt/bitwarden_import.sh` ausführen → baut eine Import-Datei aus den Kubernetes-Secrets, dem Schlüsselbund und der APNs-.p8, in Bitwarden unter Einstellungen → Tresor → „Einträge importieren“ (Format „Bitwarden (json)“) einlesen, im Terminal Enter → Datei wird gelöscht. Danach `~/Downloads/AuthKey_Q2JV5PL6S8.p8` löschen und Claude Bescheid geben (dann: „Wo die Passwörter liegen“ auf Bitwarden umstellen, Skript löschen).
+4. **Dashboard-Feedback abhaken** (Liste weiter unten bei „Feedback (Dashboard, Stand 05.11.)“).
+5. **Nächtliches Backup prüfen:** im Backend sichert `BackupService` jede Nacht um 3:00 – im Dashboard unter System → Backups nachsehen, ob täglich eins dazukommt. Dann Punkt 1 („Tägliches DB-Backup – dringend“) streichen.
+6. **Mailserver in Keycloak** und **Keycloak auf `start`** (Punkte 2 und 4 unten) – vor dem Test an der ganzen Schule.
+
+**Braucht eine Entscheidung:**
+- Nächste Figur fürs Spiel: Entwürfe **Kira** (Kunoichi), **Riot** (Rockerin), **Valka** (Walküre) in `Character3D/entwuerfe_spielerinnen/` – umsetzen mit dem Agenten `figuren-pipeline`, z. B. als Belohnung des nächsten Events.
+- Aus dem Feedback: Trophäen für Events (Vorschlag: nein, verzerrt die Liga – lieber Sticker/Coins), Musik pro Challenge, eigene Quizfragen einreichen (mit Freigabe im Dashboard), eigene Hotspots (mit Freigabe), Sounds für alle Knöpfe, Trophy Road: Belohnungen antippen; „Spiele anklicken“ unklar – nachfragen.
+
+**Nächste Feature-Ideen (Vorschlag in dieser Reihenfolge):** Revanche-Knopf im Ergebnis-Screen → Klassen-Duell (Rangliste der Klassen pro Woche) → Übungsmodus gegen Bot (zugleich App-Store-Pflicht B5) → Saisons (Trophäen alle 6–8 Wochen zurück, Saison-Belohnung) → Android (`docs/projekt/Android-Roadmap.md`). Kleiner: Sticker tauschen (Angebot gegen Angebot), Hotspot-König, Streak-Belohnung (7 Tage → seltener Sticker).
+
+**Git:** Seit dem Merge von #160 (05.11.) liegen neue Commits nur auf `feature/liga-modus` – bei Gelegenheit wieder per PR nach `main` (GitHub-Insights zählt nur `main`).
+
+**Claude-Agenten:** Für wiederkehrende Aufgaben gibt es eigene Agenten auf Haiku/Sonnet (`.claude/agents/`, Übersicht in `docs/AGENTEN.md`). Neue Agenten kennt Claude Code erst in einer neuen Sitzung.
 
 **Der öffentliche TestFlight-Test läuft:** Neuester Build ist der externen Gruppe „Schule“ zugewiesen, der
 öffentliche Link ist aktiv, Schüler spielen bereits.
@@ -190,7 +212,7 @@ Zustimmung der Schule liegt vor, Test mit zwei iPhones durchgeführt (Checkliste
    prüfen** – im Gmail-Postfach lagen am 14.10. Mails „New login … Samsung SM-A556B/SM-A566B“ und „password has been changed“.
    Falls das nicht das Team war: Konto sichern, Passwort ändern, 2FA an.
    **Testplan:** erst die 5. Klassen (1–2 Wochen, Link nur in deren Klassen-Chats, Tester-Limit z. B. 150), parallel Backup/Mailserver/Moderation klären, dann die ganze Schule (Plakat, Mail an den Professor).
-1. **Tägliches DB-Backup – dringend**, weil jetzt echte Spielerdaten anfallen (kein CronJob im Namespace).
+1. **Tägliches DB-Backup – vermutlich erledigt:** seit dem Dashboard-Ausbau (24.10.) sichert `BackupService` jede Nacht um 3:00 ins Volume `challengr-backup-pvc` – im Dashboard (System → Backups) bestätigen, dann diesen Punkt streichen. Ursprünglich: dringend, weil echte Spielerdaten anfallen (kein CronJob im Namespace).
    Z. B. Kubernetes-CronJob mit `pg_dump`, 7 Tage aufbewahren. Bis dahin regelmäßig manuell sichern (siehe Befehle).
 2. **Mailserver in Keycloak** (Realm **challengr** → Realm settings → Email; z. B. Gmail mit App-Passwort,
    `smtp.gmail.com:587`, StartTLS; *Save*, dann *Test connection*). Danach „Verify email“ wieder an.
@@ -273,7 +295,7 @@ App-Änderungen → `upload-testflight.sh`; intern sofort verfügbar, extern Bui
 - **Port 8080 lokal:** Manchmal läuft dort eine andere Anwendung (anderes Projekt). Das Test-Backend dann mit `-Dquarkus.http.port=8081` starten und die Proxy-Datei anpassen; die fremde Anwendung nicht beenden.
 - **Push testen ohne Apple-Schlüssel:** im Simulator `xcrun simctl push <UDID> at.htl.leonding.challengr.binder <datei>.json` mit `{"Simulator Target Bundle":"…","aps":{"alert":{"title":"…","body":"…"}},"kind":"GIFT"}` (App vorher in den Hintergrund). Der Server pusht nur an Spieler ohne offene Verbindung – zum Testen also die App ganz schließen. Herausforderungen verfallen nach 60 s; die Anfrage wird beim Öffnen nachgeliefert, wenn sie noch läuft.
 - **Sticker:** Neuer Sticker = Eintrag in `Stickers.all` (App) **und** `control.StickerCatalog.FALLBACK` (Backend, Ersatz-Emoji muss in `GameSocket.EMOTES` stehen; bewegte zusätzlich in `ANIMATED` bzw. `Stickers.animatedIds`) + Imageset `Sticker_<id>` (256 px, `sips -Z 256` + `pngquant`); die Tests vergleichen beide Listen. Bei einem neuen Sticker auch die letzte Album-Stufe in `StickerCatalog.STAGES` (= volles Album, goldener Rahmen) auf die neue Anzahl setzen – ein Test prüft das; wer den Rahmen schon hat, behält ihn. Erst Backend deployen, dann App. Im Test-Harness ist `WIN_DROP_PERCENT` nach `sync_backend.sh` per Hand auf 100 gesetzt (jeder Liga-Sieg bringt einen Sticker), live bleibt es bei 25. `Werbevideo/fightvideo/sticker.mjs <ids>` nummeriert die Ausgabe neu ab `01_` (überschreibt also nicht, erzeugt aber falsch benannte Dateien) – WhatsApp-Originale gesichert in `Werbevideo/sticker/_sicherung_whatsapp_2026-11-04/`. Animierte für die App: Einzelbilder per ImageIO aus `animiert/*.webp` holen, auf 256 px, `img2webp -lossy -q 65 -d 100`.
-- **Zwei Simulatoren zum Selbsttesten** (Harness-App, lokales Backend): `xcrun simctl install <UDID> TestHarness/dd/Build/Products/Debug-iphonesimulator/Challengr.app`, dann `SIMCTL_CHILD_AUDIT_BACKEND_URL=http://localhost:8080 SIMCTL_CHILD_AUDIT_PLAYER_ID=audit-1 SIMCTL_CHILD_AUDIT_PLAYER_NAME=Basti xcrun simctl launch <UDID> at.htl.leonding.challengr.binder -hasSeenOnboarding YES` (zweiter mit `audit-2`/Mia). Spieler vorher per `POST /api/players` mit Header `X-Player-Id` anlegen. Simulatoren „Challengr Tests“ (A) und „Challengr Demo B“ (B).
+- **Zwei Simulatoren zum Selbsttesten** (seit 06.11. mit Skripten im TestHarness): `./backend_neu.sh` (Backend aus dem Repo + Harness-Patch, startet, **leert die DB**), `./seed.sh` (Basti/Mia, Freundschaft, Coins, Sticker, Geschenk; `--crowd` = 10 Statisten), `./sims_starten.sh` (`--build` nach Swift-Änderungen). Simulatoren „Challengr Tests“ (A, Basti) und „Challengr Demo B“ (B, Mia). Oder den Agenten `sim-vorbereiter` beauftragen. Bildschirme automatisch prüfen: Agent `ui-pruefer` (UI-Test mit `Audit.shot`, `TEST_RUNNER_SHOT_DIR` genau so schreiben).
 - **Tag/Nacht testen:** Debug-Builds nehmen `AUDIT_FAKE_TIME` (ISO 8601) als Uhrzeit (`SkyCycle.now()`).
 - **UI-Tests im TestHarness:** Sheets aus dem Münz-Menü (Trophy Road, Shop, Einstellungen) öffnen sich in XCUITests oft nicht –
   die Trophy Road lässt sich in der Harness-Kopie über `AUDIT_TROPHY_ROAD=<playerId>` direkt starten. NavigationLinks per Koordinate antippen.
@@ -326,6 +348,12 @@ Demo-Videos: `~/Developer/ChallengrProjekt/Challengr_Demo_1_Liga_und_Friendly.mp
 25. (25.10.) „Win- und Lose-Screen sieht langweilig aus – vielleicht mit 3D-Animation“ → 3D-Siegerehrung (`aacb627`); Demo-Video mit zwei Simulatoren (TestHarness `ResultDemoTests`, Harness-Backend lost dafür in der Liga Real-Life immer den Reaktions-Test).
 26. (04.11.) „Die WhatsApp-Sticker sollen im Spiel als Emotes verschickt werden können, erst statisch, dann animiert“ (`docs/STICKER_EMOTES.md`) → 20 Sticker, 6 animiert, rückwärtskompatibles Protokoll; vom Nutzer mit zwei Simulatoren getestet, Backend vor dem Deploy gesichert.
 27. (05.11.) „Mehr Wege an Sticker, Doppelte verschenken, Belohnung fürs volle Album (Rahmen), Sticker-Pakete im Shop – und es soll offensichtlicher sein, wie man Sticker sieht und schickt“ → Sticker-Bereich im Menü, STICKER-Knopf, Sieg-/Aufgaben-Sticker, Paket für 100 Coins, Album-Stufen mit goldenem Rahmen, gezieltes Verschenken.
+28. (05.11.) „Einstellungen ins Profil, Shop drin lassen, Gedränge auf der Karte“ + Feedback aus dem Dashboard (PDF) → Zahnrad im Profil, Auffächern/„Spieler hier“, dunkle Popups, 48 Emojis (nicht alle – Minderjährige), Gegner-Antwort im Quiz deutlicher, Name-Stift, Aufgaben-Zahl aktuell; alles live mit Build `2611051500`.
+29. (05.11.) „Mehr weibliche Figuren – mach krasse Entwürfe“ → Frost, Kira, Riot, Valka im Toon-Stil (bewusst nicht sexualisiert, Zielgruppe Schüler).
+30. (05.11.) „Wieso sehe ich auf GitHub keine Commits, merge alles auf main“ → Insights zählt nur `main`; PR #160 per Merge-Commit gemergt.
+31. (06.11.) „Winter-Event mit Frost gleich, Beta-Skin bleibt“ + „Push-Benachrichtigungen“ → Event parallel bis 06.01., APNs-Push (nur wenn App zu); APNs-Schlüssel vom Nutzer, Secret vom Nutzer angelegt; live mit Build `2611060850`.
+32. (06.11.) „Zugangsdaten in Bitwarden“ → Claude darf keine Secrets schreiben → Import-Skript, das die Werte nie anzeigt.
+33. (06.11.) „Tokens sparen: Agenten auf Haiku/Sonnet“ → 7 Agenten in `.claude/agents/`, Harness-Skripte, Übersicht `docs/AGENTEN.md`.
     Danach: „Geschenke wieder einschalten, drin ist ein zufälliger Sticker, den man einmal schicken kann – sammeln, auch 20× denselben, Sticker-Album“ → Sammlung am Server, Start-Paket, ein Geschenk pro Freund und Tag; PR nach `main` vorbereitet.
 
 **Material außerhalb des Repos:** Präsentation „Challengr – Entwicklung seit September“: https://claude.ai/artifact/38ZBn5HvMEeupkN5L6ZfDd (privat, über „Teilen“ freigeben). WhatsApp-Sticker (32, zwei Pakete als `.wastickers` + PNG-ZIP): `~/Developer/ChallengrProjekt/Sticker/pakete/` (Skripte zum Neu-Erzeugen lagen nur im Scratchpad – Sticker = Figuren-Renders aus `Character3D/app_modelle/*_full.png` + Arial Rounded Bold, Apple-Emojis nur für privaten Gebrauch). Karten-Konzept und Verlauf-Screenshots: `~/Developer/ChallengrProjekt/Karten_Konzept/`, Beta-Figur-Konzepte: `~/Developer/ChallengrProjekt/BetaSkin_Konzepte/`.
