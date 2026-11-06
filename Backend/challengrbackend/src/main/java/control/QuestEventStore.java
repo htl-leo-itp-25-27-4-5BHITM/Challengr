@@ -19,7 +19,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-/** Events aus der Datenbank. Beim allerersten Start wird das Beta-Event angelegt. */
+/** Events aus der Datenbank. Beim allerersten Start wird das Beta-Event angelegt, das Winter-Event einmal nachgereicht. */
 @ApplicationScoped
 public class QuestEventStore {
 
@@ -36,6 +36,10 @@ public class QuestEventStore {
     void seed() {
         long n = em.createQuery("SELECT COUNT(e) FROM QuestEventEntity e", Long.class).getSingleResult();
         if (n == 0) save(QuestCatalog.BETA);
+        // In bestehende Datenbanken nachreichen (solange es läuft); danach im Dashboard pflegen
+        if (find(QuestCatalog.WINTER.id()).isEmpty() && !QuestService.today().isAfter(QuestCatalog.WINTER.end())) {
+            save(QuestCatalog.WINTER);
+        }
     }
 
     public List<Event> list() {

@@ -72,6 +72,19 @@ public final class QuestCatalog {
                             new Task("DAILY_6", "Erledige 6 Tagesaufgaben", "checklist", Metric.DAILY_QUESTS, 6, 0)
                     ));
 
+    /** Winter-Event (läuft parallel zum Beta-Event) → Eis-Boarderin Frost. Wird einmal angelegt, falls es fehlt. */
+    public static final Event WINTER =
+            new Event("winter", "Winter-Event: Frost", "Bis 6. Jänner – hol dir die Eis-Boarderin!",
+                    LocalDate.of(2026, 11, 6), LocalDate.of(2027, 1, 6), "frost", 150,
+                    List.of(
+                            new Task("DAYS_7", "Spiele an 7 verschiedenen Tagen", "calendar", Metric.ACTIVE_DAYS, 7, 0),
+                            new Task("BATTLES_15", "Spiele 15 Battles", "bolt.fill", Metric.BATTLES, 15, 0),
+                            new Task("WINS_5", "Gewinne 5 Liga-Battles", "trophy.fill", Metric.LEAGUE_WINS, 5, 0),
+                            new Task("REALLIFE_3", "Spiele 3 Real-Life-Challenges", "figure.run", Metric.REALLIFE, 3, 0),
+                            new Task("FRIEND_3", "Fordere 3× einen Freund heraus", "person.2.fill", Metric.FRIEND_BATTLES, 3, 0),
+                            new Task("DAILY_10", "Erledige 10 Tagesaufgaben", "checklist", Metric.DAILY_QUESTS, 10, 0)
+                    ));
+
     /** Symbol in der App je Messgröße (für im Dashboard angelegte Aufgaben). */
     public static String iconFor(Metric m) {
         return switch (m) {

@@ -19,6 +19,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
     case kaeptnRex = "kaeptn-rex"
     // Event-Belohnungen (nur solange das Event läuft)
     case crashDummy = "crash-dummy"
+    case frost = "frost"
 
     /// Start-Figur, bis man im Figuren-Editor eine andere wählt.
     static let own: GameCharacter = .junge
@@ -49,6 +50,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .lyra:      return "Lyra"
         case .kaeptnRex: return "Käpt'n Rex"
         case .crashDummy: return "Crash-Test-Dummy"
+        case .frost:     return "Frost"
         }
     }
 
@@ -65,6 +67,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .lyra:             return "Waldläuferin · Ausdauer"
         case .kaeptnRex:        return "Pirat · Glücksritter"
         case .crashDummy:       return "Beta-Tester · Event"
+        case .frost:            return "Eis-Boarderin · Event"
         }
     }
 
@@ -82,6 +85,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .kai:              return .rank("Brawler", trophies: 950)
         case .kage:             return .rank("Dueler", trophies: 1400)
         case .crashDummy:       return .event("Beta-Event")
+        case .frost:            return .event("Winter-Event")
         }
     }
 
@@ -98,6 +102,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .lyra:      return "Lyra"
         case .kaeptnRex: return "Rex"
         case .crashDummy: return "Dummy"
+        case .frost:     return "Frost"
         }
     }
 
@@ -115,6 +120,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .lyra:      return Color(red: 0.30, green: 0.68, blue: 0.40)
         case .kaeptnRex: return Color(red: 0.20, green: 0.50, blue: 0.60)
         case .crashDummy: return Color(red: 0.90, green: 0.68, blue: 0.10)
+        case .frost:     return Color(red: 0.25, green: 0.55, blue: 0.85)
         }
     }
 
