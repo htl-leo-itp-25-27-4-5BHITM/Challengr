@@ -74,6 +74,25 @@ spec:
                   name: challengr-asc
                   key: ASC_PRIVATE_KEY
                   optional: true
+            # Push-Benachrichtigungen (optional – ohne Secret ist Push aus)
+            - name: APNS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: challengr-apns
+                  key: APNS_KEY_ID
+                  optional: true
+            - name: APNS_TEAM_ID
+              valueFrom:
+                secretKeyRef:
+                  name: challengr-apns
+                  key: APNS_TEAM_ID
+                  optional: true
+            - name: APNS_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: challengr-apns
+                  key: APNS_PRIVATE_KEY
+                  optional: true
           # Datenbank-Backups (Dashboard → System), eigenes Volume
           volumeMounts:
             - name: backups

@@ -11,6 +11,8 @@ import SwiftUI
 @main
 struct ChallengrApp: App {
     @Environment(\.scenePhase) private var scenePhase
+    /// Push-Token von iOS
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
         WindowGroup {

@@ -74,6 +74,8 @@ struct SettingsView: View {
                         SoundManager.shared.play(.click)
                         if enabled {
                             NotificationManager.shared.requestAuthorizationIfNeeded()
+                        } else {
+                            PushRegistration.shared.unregister()
                         }
                     }
                 }
@@ -134,6 +136,7 @@ struct SettingsView: View {
                         // Wait a fraction of a second so the dismiss animation can finish
                         // before the root view transitions out
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            PushRegistration.shared.unregister() // keine Mitteilungen mehr fürs alte Konto
                             auth.logout()
                         }
                     } label: {

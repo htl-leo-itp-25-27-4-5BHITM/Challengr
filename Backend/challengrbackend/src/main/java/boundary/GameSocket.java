@@ -92,6 +92,9 @@ public class GameSocket {
     control.StickerRepository stickerRepository;
 
     @Inject
+    control.PushService pushService;
+
+    @Inject
     control.QuizStatsService quizStats;
 
     // ---------------------------------------------------------
@@ -364,6 +367,9 @@ public class GameSocket {
                 escapeJson(battle.getStatus())
         );
         sendToPlayer(fromId, confirmPayload);
+
+        // App zu? Dann per Push (die Anfrage wird beim Öffnen nachgeliefert)
+        pushService.challenge(toId, fromId, mode);
     }
 
     private void sendBattleRejected(String playerId, String toId, String reason) {

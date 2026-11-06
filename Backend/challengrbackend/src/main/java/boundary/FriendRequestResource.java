@@ -42,6 +42,9 @@ public class FriendRequestResource {
     FriendGiftRepository friendGiftRepository;
 
     @Inject
+    control.PushService push;
+
+    @Inject
     BanEnforcementService banEnforcement;
 
     private void enforceNotBanned() {
@@ -65,6 +68,7 @@ public class FriendRequestResource {
         }
         FriendRequest request = friendRequestRepository.create(dto.fromPlayerId(), dto.toPlayerId());
         GameSocket.emitFriendRequestCreated(request.getId(), request.getFromPlayerId(), request.getToPlayerId());
+        push.friendRequest(request.getToPlayerId(), request.getFromPlayerId());
         return toDTO(request);
     }
 
@@ -102,6 +106,7 @@ public class FriendRequestResource {
         friendshipRepository.createIfMissing(updated.getFromPlayerId(), updated.getToPlayerId());
 
         GameSocket.emitFriendRequestUpdated(updated.getId(), updated.getFromPlayerId(), updated.getToPlayerId(), updated.getStatus().name());
+        push.friendAccepted(updated.getFromPlayerId(), updated.getToPlayerId());
 
         return toDTO(updated);
     }
@@ -162,6 +167,7 @@ public class FriendRequestResource {
             gift = friendGiftRepository.create(dto.fromPlayerId(), dto.toPlayerId());
         }
         GameSocket.emitGiftReceived(gift.getFromPlayerId(), gift.getToPlayerId());
+        push.gift(gift.getToPlayerId(), gift.getFromPlayerId());
         return toDTO(gift);
     }
 

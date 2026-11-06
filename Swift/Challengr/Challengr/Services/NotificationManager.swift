@@ -9,9 +9,8 @@ import UserNotifications
 /// Local notifications (Lokale Mitteilungen) for events that arrive while the app
 /// is in the background, e.g. a challenge right after the user switched apps.
 ///
-/// Note: this is not remote push. When iOS suspends the app the WebSocket closes,
-/// so events only arrive while the app is still alive (open or recently backgrounded).
-/// Real push needs an APNs key + backend sender (see Swift/README.md).
+/// Ist die App ganz zu (WebSocket getrennt), schickt der Server eine echte Push-Mitteilung
+/// (`PushRegistration`, Backend `PushService`) – so kommt nichts doppelt.
 final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationManager()
 
@@ -30,10 +29,17 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         let center = UNUserNotificationCenter.current()
         center.delegate = self
         center.getNotificationSettings { settings in
-            guard settings.authorizationStatus == .notDetermined else { return }
-            center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-                if let error { print("🔔 Notification permission error:", error) }
-                print("🔔 Notifications granted:", granted)
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                PushRegistration.shared.registerForPush()
+            case .notDetermined:
+                center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+                    if let error { print("🔔 Notification permission error:", error) }
+                    print("🔔 Notifications granted:", granted)
+                    if granted { PushRegistration.shared.registerForPush() }
+                }
+            default:
+                break
             }
         }
     }
@@ -93,5 +99,17 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     ) {
         // App is in foreground: in-app UI already shows the event.
         completionHandler([])
+    }
+
+    /// Tipp auf eine Push-Mitteilung → die Karte öffnet Geschenke bzw. Freunde
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        if let kind = PushRegistration.kind(from: response.notification.request.content.userInfo) {
+            DispatchQueue.main.async { PushRegistration.shared.opened = kind }
+        }
+        completionHandler()
     }
 }

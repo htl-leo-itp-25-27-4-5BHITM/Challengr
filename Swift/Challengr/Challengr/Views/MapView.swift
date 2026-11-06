@@ -922,6 +922,20 @@ struct MapView: View {
                 break
             }
         }
+        // Tipp auf eine Push-Mitteilung (auch beim Kaltstart): passende Stelle öffnen
+        .onReceive(PushRegistration.shared.$opened.compactMap { $0 }) { kind in
+            PushRegistration.shared.opened = nil
+            switch kind {
+            case .gift:
+                showStickerHub = true
+            case .friendRequest, .friendAccepted:
+                reloadOwnPlayerData()
+                profileStartTab = 1
+                showProfile = true
+            case .challenge:
+                break // die Anfrage kommt nach dem Verbinden von selbst
+            }
+        }
         .onChange(of: friendsInbox.lastBannerText) { _, newValue in
             guard let text = newValue, !text.isEmpty else { return }
             showMapBanner(icon: "person.badge.plus", text: text)
