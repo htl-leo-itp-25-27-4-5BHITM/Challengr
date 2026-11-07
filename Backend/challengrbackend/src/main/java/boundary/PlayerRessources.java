@@ -198,13 +198,14 @@ public class PlayerRessources {
         String like = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
         return em.createQuery("""
                         SELECT p FROM Player p WHERE LOWER(p.name) LIKE :q ESCAPE '\\'
-                        AND p.id <> :me AND p.id <> :deleted
+                        AND p.id <> :me AND p.id <> :deleted AND p.id <> :bot
                         ORDER BY CASE WHEN LOWER(p.name) LIKE :prefix ESCAPE '\\' THEN 0 ELSE 1 END, p.trophies DESC
                         """, Player.class)
                 .setParameter("q", like)
                 .setParameter("prefix", like.substring(1))
                 .setParameter("me", me.id())
                 .setParameter("deleted", control.AccountDeletionService.DELETED_PLAYER_ID)
+                .setParameter("bot", control.PracticeBot.ID)
                 .setMaxResults(40)
                 .getResultStream()
                 .filter(p -> !blocked.contains(p.getId()))

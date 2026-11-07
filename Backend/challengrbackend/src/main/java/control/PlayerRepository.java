@@ -131,13 +131,16 @@ public class PlayerRepository {
         em.merge(existing);
     }
 
+    /** Fertige Battles eines Spielers – ohne Übungs-Battles gegen den Bot (zählen nirgends). */
     public List<Battle> findDoneBattlesForPlayer(Player player) {
         return em.createQuery("""
             SELECT b FROM Battle b
             WHERE b.status = 'DONE'
             AND (b.fromPlayer = :player OR b.toPlayer = :player)
+            AND b.fromPlayer.id <> :bot AND b.toPlayer.id <> :bot
         """, Battle.class)
                 .setParameter("player", player)
+                .setParameter("bot", PracticeBot.ID)
                 .getResultList();
     }
 

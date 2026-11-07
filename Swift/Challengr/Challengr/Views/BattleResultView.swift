@@ -151,7 +151,7 @@ struct BattleResultView: View {
     /// Zähler läuft von 0 bis zum Trophäen-Gewinn bzw. -Verlust
     private func countTrophies() {
         let target = ownDelta
-        guard data.mode.isRanked, target != 0 else { return }
+        guard data.countsForLeague, target != 0 else { return }
         let steps = min(abs(target), 30)
         for i in 1...steps {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8 * Double(i) / Double(steps)) {
@@ -182,7 +182,7 @@ struct BattleResultView: View {
     }
 
     private var modeChip: some View {
-        Text(data.mode.title.uppercased())
+        Text(data.isPractice ? "ÜBUNG · \(data.mode.shortTitle.uppercased())" : data.mode.title.uppercased())
             .font(.system(size: 11, weight: .black, design: .rounded))
             .tracking(1.6)
             .foregroundColor(.white.opacity(0.75))
@@ -224,7 +224,9 @@ struct BattleResultView: View {
         switch kind {
         case .win: return "\(names.opponent) ist geschlagen!"
         case .lose: return "\(names.opponent) war diesmal stärker. Kopf hoch!"
-        case .draw: return data.mode.isRanked ? "Keiner hat gewonnen – keine Trophäen." : "Keiner hat gewonnen – war ja nur ein Friendly."
+        case .draw:
+            if data.isPractice { return "Keiner hat gewonnen – war ja nur Training." }
+            return data.mode.isRanked ? "Keiner hat gewonnen – keine Trophäen." : "Keiner hat gewonnen – war ja nur ein Friendly."
         case .conflict: return "Ihr habt unterschiedlich abgestimmt – keine Einigung."
         }
     }
@@ -259,7 +261,7 @@ struct BattleResultView: View {
 
     @ViewBuilder
     private var trophyCounter: some View {
-        if data.mode.isRanked && ownDelta != 0 {
+        if data.countsForLeague && ownDelta != 0 {
             HStack(spacing: 10) {
                 Image(systemName: "trophy.fill")
                     .font(.system(size: 26, weight: .black))
@@ -278,7 +280,8 @@ struct BattleResultView: View {
             .background(Capsule().fill(Color.white.opacity(0.07)))
             .overlay(Capsule().stroke((ownDelta > 0 ? Color.challengrGreen : .challengrRed).opacity(0.5), lineWidth: 2))
         } else {
-            Text(data.mode.isRanked ? "KEINE TROPHÄEN VERÄNDERT" : data.mode.trophyText(delta: 0).uppercased())
+            Text(data.isPractice ? "ÜBUNG – ES GING UM NICHTS"
+                 : data.mode.isRanked ? "KEINE TROPHÄEN VERÄNDERT" : data.mode.trophyText(delta: 0).uppercased())
                 .font(.system(size: 14, weight: .black, design: .rounded))
                 .tracking(1)
                 .multilineTextAlignment(.center)

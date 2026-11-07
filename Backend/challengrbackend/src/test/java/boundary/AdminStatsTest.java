@@ -47,7 +47,7 @@ class AdminStatsTest {
                 .body("days", is(14))
                 .body("daily.size()", is(14))
                 .body("battlesByHour.size()", is(24))
-                .body("modes.name", contains("Quiz-Show", "Real-Life", "Friendly"))
+                .body("modes.name", contains("Quiz-Show", "Real-Life", "Friendly", "Übung"))
                 .body("ranks.name", hasItems("Quitter", "Scrapper", "Challengr"))
                 .body("totals.players", greaterThan(0))
                 .body("totals.activeToday", greaterThan(0))

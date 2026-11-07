@@ -36,6 +36,9 @@ public class BattleService {
     @Inject
     QuizHistory quizHistory;
 
+    @Inject
+    PracticeBot practiceBot;
+
     @Transactional
     public Battle findById(Long battleId) {
         return battleRepository.findById(battleId);
@@ -99,6 +102,16 @@ public class BattleService {
         if (fromPlayerId.equals(toPlayerId)) {
             throw new BattleRejectedException("Du kannst dich nicht selbst herausfordern");
         }
+        boolean practice = PracticeBot.is(toPlayerId);
+        if (PracticeBot.is(fromPlayerId)) {
+            throw new BattleRejectedException("Ungültiger Absender");
+        }
+        if (practice) {
+            if (!mode.isRanked()) {
+                throw new BattleRejectedException("Üben geht als Quiz-Show oder Real-Life-Challenge");
+            }
+            practiceBot.ensure();
+        }
         // B2: blockiert (egal von wem) → keine Herausforderung möglich
         if (blockRepository.blockedEitherWay(fromPlayerId, toPlayerId)) {
             throw new BattleRejectedException("Dieser Spieler ist nicht erreichbar");
@@ -108,7 +121,8 @@ public class BattleService {
             throw new BattleRejectedException("Mit diesem Spieler läuft schon eine offene Challenge");
         }
         // Wer mitten im Battle steckt, kann keine neue Anfrage bekommen oder schicken
-        if (isInRunningBattle(toPlayerId)) {
+        // (der Bot spielt mit allen gleichzeitig)
+        if (!practice && isInRunningBattle(toPlayerId)) {
             throw new BattleRejectedException("Spieler ist gerade in einem Battle");
         }
         if (isInRunningBattle(fromPlayerId)) {
@@ -125,7 +139,7 @@ public class BattleService {
             throw new IllegalArgumentException("toPlayer not found");
         }
 
-        Challenges challenge = pickChallenge(mode, challengeId, fromPlayerId, toPlayerId);
+        Challenges challenge = pickChallenge(mode, challengeId, practice, fromPlayerId, toPlayerId);
 
         ChallengeCategory category = challenge.getChallengeCategory();
 
@@ -349,7 +363,7 @@ public class BattleService {
 
     private static final java.util.Random RANDOM = new java.util.Random();
 
-    private Challenges pickChallenge(BattleMode mode, Long challengeId, String fromPlayerId, String toPlayerId) {
+    private Challenges pickChallenge(BattleMode mode, Long challengeId, boolean practice, String fromPlayerId, String toPlayerId) {
         if (mode == BattleMode.FRIENDLY) {
             if (challengeId == null) {
                 throw new BattleRejectedException("Bitte eine Challenge wählen");
@@ -367,6 +381,8 @@ public class BattleService {
                         mode == BattleMode.RANKED_KNOWLEDGE ? BattleMode.KNOWLEDGE_CATEGORY : BattleMode.REALLIFE_CATEGORY)
                 .stream()
                 .filter(c -> mode != BattleMode.RANKED_KNOWLEDGE || c.getCorrectIndex() != null)
+                // Üben: kein Check-In-Spot (bis zu 500 m laufen, um gegen einen Bot zu gewinnen)
+                .filter(c -> !practice || c.getText() == null || !c.getText().contains("Check-In-Spot"))
                 .toList();
         if (pool.isEmpty()) {
             throw new BattleRejectedException("Für diese Liga gibt es noch keine Challenges");
@@ -427,12 +443,12 @@ public class BattleService {
         }
 
         BattleMode mode = BattleMode.from(battle.getType());
-        if (!mode.isRanked()) {
+        if (!mode.isRanked() || PracticeBot.isPractice(battle)) {
             battle.setWinner(winner);
             battle.setStatus("DONE");
             battle.setWinnerPointsDelta(0);
             battle.setLoserPointsDelta(0);
-            System.out.printf("finalizeResult (Friendly): winner=%s – keine Trophäen%n", winner.getName());
+            System.out.printf("finalizeResult (Friendly/Übung): winner=%s – keine Trophäen%n", winner.getName());
             return;
         }
 

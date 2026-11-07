@@ -213,8 +213,9 @@ public class QuestService {
                                 SELECT b FROM Battle b
                                 WHERE (b.fromPlayer.id = :p OR b.toPlayer.id = :p) AND b.status = 'DONE'
                                 AND b.statusChangedAt >= :s AND b.statusChangedAt < :e
+                                AND b.fromPlayer.id <> :bot AND b.toPlayer.id <> :bot
                                 """, Battle.class)
-                        .setParameter("p", playerId).setParameter("s", start).setParameter("e", end).getResultList();
+                        .setParameter("p", playerId).setParameter("bot", PracticeBot.ID).setParameter("s", start).setParameter("e", end).getResultList();
             }
             return battles;
         }

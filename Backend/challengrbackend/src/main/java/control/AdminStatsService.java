@@ -57,8 +57,11 @@ public class AdminStatsService {
 
         List<Player> players = em.createQuery("SELECT p FROM Player p", Player.class).getResultList().stream()
                 .filter(p -> !AccountDeletionService.DELETED_PLAYER_ID.equals(p.getId()))
+                .filter(p -> !PracticeBot.is(p.getId()))
                 .toList();
-        List<Battle> battles = em.createQuery("SELECT b FROM Battle b", Battle.class).getResultList();
+        List<Battle> allBattles = em.createQuery("SELECT b FROM Battle b", Battle.class).getResultList();
+        // Übungs-Battles gegen den Bot nur als eigene Zahl bei den Modi – sonst zählen sie nirgends
+        List<Battle> battles = allBattles.stream().filter(b -> !PracticeBot.isPractice(b)).toList();
         List<HotspotCheckin> checkins = em.createQuery("SELECT c FROM HotspotCheckin c", HotspotCheckin.class).getResultList();
         List<PlayerActivity> activity = em.createQuery("SELECT a FROM PlayerActivity a", PlayerActivity.class).getResultList();
 
@@ -130,7 +133,9 @@ public class AdminStatsService {
         List<NamedCount> modes = List.of(
                 new NamedCount("Quiz-Show", doneInRange.stream().filter(b -> mode(b) == BattleMode.RANKED_KNOWLEDGE).count()),
                 new NamedCount("Real-Life", doneInRange.stream().filter(b -> mode(b) == BattleMode.RANKED_REALLIFE).count()),
-                new NamedCount("Friendly", doneInRange.stream().filter(b -> mode(b) == BattleMode.FRIENDLY).count()));
+                new NamedCount("Friendly", doneInRange.stream().filter(b -> mode(b) == BattleMode.FRIENDLY).count()),
+                new NamedCount("Übung", allBattles.stream().filter(b -> PracticeBot.isPractice(b) && "DONE".equals(b.getStatus())
+                        && !day(b.getCreatedAt()).isBefore(from)).count()));
 
         Map<String, String> outcomeNames = new LinkedHashMap<>();
         outcomeNames.put("DONE", "Gespielt");

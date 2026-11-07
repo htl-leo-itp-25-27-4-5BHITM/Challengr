@@ -222,9 +222,13 @@ B1 und B3 nach Möglichkeit schon vor TestFlight erledigen.
 - Standortdaten nur so lange speichern, wie sie fürs Spiel gebraucht werden (aktuelle Position, keine Bewegungshistorie). Prüfen, ob irgendwo Positionen historisiert oder geloggt werden (Server-Logs, `System.out.println` mit Koordinaten).
 - Inaktive Accounts nach einer festen Frist löschen oder anonymisieren und das in der Datenschutzerklärung angeben.
 
-### B5 · Prüfer-Zugang — [ ]
+### B5 · Prüfer-Zugang — [x]
 
-> **Umsetzungsstand:** noch offen (erst für den öffentlichen App Store nötig).
+> **Umsetzungsstand:** erledigt (07.11.2026). Konto `applereview` + **Übungsmodus**: Münz-Menü → „Üben“ (Hantel) →
+> Quiz-Show oder Real-Life gegen den Server-Bot „Trainings-Dummy“ (`control.PracticeBot`, Spieler-ID `practice-bot`).
+> Der Bot nimmt nach 1,5 s an, antwortet in der Quiz-Show (~55 % richtig) und liefert bei Real-Life einen Wert knapp um den
+> des Spielers. Übungs-Battles zählen nirgends (Trophäen, Sticker, Aufgaben, Rangliste, Verlauf); kein Check-In-Spot.
+> Text für die App-Review-Notizen: „Tap the coin button at the bottom → dumbbell icon (Üben) to play a full battle against a bot – no second player needed.“
 - Ein Demo-Account plus ein Weg, ohne zweiten Spieler in der Nähe ein Battle zu sehen (Bot-Gegner oder Übungsmodus). Apple prüft aus den USA.
 
 ---

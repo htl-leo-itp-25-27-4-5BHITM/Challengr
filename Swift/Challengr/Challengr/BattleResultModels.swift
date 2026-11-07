@@ -60,9 +60,16 @@ struct BattleResultData {
     /// Liga-Sieg: Sticker, den der Sieger dazu bekommen hat (nicht immer)
     var winnerSticker: Sticker? = nil
 
+    /// Übung gegen den Trainings-Dummy – zählt nicht für die Liga
+    var isPractice: Bool { participants?.isPractice ?? false }
+
+    /// Geht es um Trophäen? (Liga, aber nicht beim Üben)
+    var countsForLeague: Bool { mode.isRanked && !isPractice }
+
     /// "+28 🏆" in der Liga, im Friendly nur "–" (es geht um nichts).
     func deltaLabel(_ delta: Int) -> String {
-        mode.isRanked ? "\(delta >= 0 ? "+" : "")\(delta) 🏆" : "FRIENDLY"
+        if isPractice { return "ÜBUNG" }
+        return mode.isRanked ? "\(delta >= 0 ? "+" : "")\(delta) 🏆" : "FRIENDLY"
     }
 
     /// "Basti 320 : 210 Mia" – Endstand der Quiz-Show, nil außerhalb der Liga Wissen.

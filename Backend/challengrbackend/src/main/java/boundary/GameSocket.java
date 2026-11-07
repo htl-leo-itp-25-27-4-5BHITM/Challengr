@@ -281,6 +281,16 @@ public class GameSocket {
         if (last != null && now - last < EMOTE_COOLDOWN.toMillis()) {
             return; // zu schnell hintereinander
         }
+        if (control.PracticeBot.is(toId) && battleId != null) {
+            String reply = control.PracticeBot.REPLIES.get(BOT_RANDOM.nextInt(control.PracticeBot.REPLIES.size()));
+            Long bid = battleId;
+            schedule(() -> sendToPlayer(senderId, """
+                {"type": "emote", "fromId": "%s", "emoji": "%s", "sticker": null, "battleId": %d}
+                """.formatted(control.PracticeBot.ID, reply, bid)), Duration.ofMillis(1200));
+            LAST_EMOTE_AT.put(senderId, now);
+            return; // Sticker an den Bot werden nicht verbraucht
+        }
+
         if (sticker != null) {
             if (!isOnline(toId)) return; // sonst wäre der Sticker weg, ohne dass ihn jemand sieht
             int left = stickerRepository.consume(senderId, sticker);
@@ -368,8 +378,49 @@ public class GameSocket {
         );
         sendToPlayer(fromId, confirmPayload);
 
+        if (control.PracticeBot.is(toId)) {
+            Long battleId = battle.getId();
+            schedule(() -> botAccept(battleId), botAcceptDelay);
+            return;
+        }
+
         // App zu? Dann per Push (die Anfrage wird beim Öffnen nachgeliefert)
         pushService.challenge(toId, fromId, mode);
+    }
+
+    // -------------------- Übungsgegner ----------------------
+
+    /** Kurz "Warte auf Annahme" zeigen, dann nimmt der Bot an. */
+    static volatile Duration botAcceptDelay = Duration.ofMillis(1500);
+    /** So lange "rechnet" der Bot, nachdem der Spieler seinen Messwert geschickt hat. */
+    static volatile Duration botMetricDelay = Duration.ofMillis(1200);
+    private static final java.util.Random BOT_RANDOM = new java.util.Random();
+
+    private void botAccept(Long battleId) {
+        Battle battle = battleService.transitionFromRequested(battleId, "ACCEPTED", control.PracticeBot.ID);
+        if (battle == null) return; // inzwischen abgebrochen
+        broadcastStatus(battle);
+        afterAccepted(battle);
+    }
+
+    private void botQuizAnswer(Long battleId, int round) {
+        QuizState q = QUIZZES.get(battleId);
+        if (q == null) return;
+        Integer correct;
+        synchronized (q) {
+            if (q.finished || q.roundClosed || q.round != round) return;
+            correct = q.questions.get(round).getCorrectIndex();
+        }
+        var move = control.PracticeBot.quizMove(correct == null ? -1 : correct, quizRoundTime.toMillis(), BOT_RANDOM);
+        schedule(() -> applyQuizAnswer(battleId, round, control.PracticeBot.ID, move.answerIndex()),
+                Duration.ofMillis(move.delayMs()));
+    }
+
+    private void botMetric(Long battleId, MetricResults.Kind kind, double playerValue, String fromId, String toId) {
+        double value = control.PracticeBot.metricValue(playerValue, kind.integer, BOT_RANDOM);
+        if (METRIC_RESULTS.record(battleId, kind, control.PracticeBot.ID, value, fromId, toId)) {
+            evaluateMetricBattle(battleId);
+        }
     }
 
     private void sendBattleRejected(String playerId, String toId, String reason) {
@@ -538,6 +589,23 @@ public class GameSocket {
             }
         }
 
+        broadcastStatus(battle);
+
+        // Sonderfall: Surrender → direkt Sieger/Verlierer bestimmen
+        if ("DONE_SURRENDER".equals(status)) {
+            handleSurrender(battle, senderId);
+        }
+
+        if ("ACCEPTED".equals(status)) {
+            afterAccepted(battle);
+        }
+
+        if ("CHECKIN_DONE".equals(status)) {
+            handleCheckinDone(battle, senderId);
+        }
+    }
+
+    private void broadcastStatus(Battle battle) {
         String payload = """
         {
           "type": "battle-updated",
@@ -548,22 +616,13 @@ public class GameSocket {
 
         sendToPlayer(battle.getFromPlayer().getId(), payload);
         sendToPlayer(battle.getToPlayer().getId(), payload);
+    }
 
-        // Sonderfall: Surrender → direkt Sieger/Verlierer bestimmen
-        if ("DONE_SURRENDER".equals(status)) {
-            handleSurrender(battle, senderId);
-        }
-
-        if ("ACCEPTED".equals(status)) {
-            if (control.BattleMode.from(battle.getType()) == control.BattleMode.RANKED_KNOWLEDGE) {
-                startQuiz(battle);
-            } else if (isKnowledgeBattle(battle)) {
-                sendKnowledgeQuestion(battle);
-            }
-        }
-
-        if ("CHECKIN_DONE".equals(status)) {
-            handleCheckinDone(battle, senderId);
+    private void afterAccepted(Battle battle) {
+        if (control.BattleMode.from(battle.getType()) == control.BattleMode.RANKED_KNOWLEDGE) {
+            startQuiz(battle);
+        } else if (isKnowledgeBattle(battle)) {
+            sendKnowledgeQuestion(battle);
         }
     }
 
@@ -702,7 +761,7 @@ public class GameSocket {
                 winnerDelta = Optional.ofNullable(updated.getWinnerPointsDelta()).orElse(0);
                 loserDelta  = Optional.ofNullable(updated.getLoserPointsDelta()).orElse(0);
                 // Liga-Sieg: mit etwas Glück ein Sticker
-                if (control.BattleMode.from(battle.getType()).isRanked()) {
+                if (control.BattleMode.from(battle.getType()).isRanked() && !control.PracticeBot.isPractice(battle)) {
                     winnerSticker = stickerRepository.maybeWinDrop(winnerId, battleId);
                 }
             } catch (Exception e) {
@@ -710,7 +769,7 @@ public class GameSocket {
                 System.out.println("Fehler beim finalisieren von Battle " + battleId + ": " + e.getMessage());
             }
 
-            trashTalk = "GG!";
+            trashTalk = control.PracticeBot.isPractice(battle) ? "Gut trainiert!" : "GG!";
             resetConflictCountersForBattle(battle);
 
         } else if (isConflict) {
@@ -1331,6 +1390,9 @@ public class GameSocket {
         }
         sendToPlayer(q.fromId, payload);
         sendToPlayer(q.toId, payload);
+        if (control.PracticeBot.is(q.fromId) || control.PracticeBot.is(q.toId)) {
+            botQuizAnswer(battleId, round);
+        }
         schedule(() -> closeQuizRound(battleId, round), quizRoundTime.plus(QUIZ_GRACE));
     }
 
@@ -1369,15 +1431,21 @@ public class GameSocket {
         Long battleId = requireLong(msg, "battleId");
         int round = msg.path("round").asInt(-1) - 1;
         int answerIndex = msg.path("answerIndex").asInt(-1);
+        if (control.PracticeBot.is(playerId) || !applyQuizAnswer(battleId, round, playerId, answerIndex)) {
+            System.out.println("quiz-answer ignoriert: " + msg);
+        }
+    }
+
+    /** @return false, wenn der Spieler nicht zu dieser Quiz-Show gehört */
+    private boolean applyQuizAnswer(Long battleId, int round, String playerId, int answerIndex) {
         QuizState q = QUIZZES.get(battleId);
         if (q == null || playerId == null || !q.isPlayer(playerId)) {
-            System.out.println("quiz-answer ignoriert: " + msg);
-            return;
+            return false;
         }
         boolean bothAnswered;
         synchronized (q) {
-            if (q.finished || q.roundClosed || round != q.round) return;
-            if (q.answers.putIfAbsent(playerId, answerIndex) != null) return; // nur die erste Antwort zählt
+            if (q.finished || q.roundClosed || round != q.round) return true;
+            if (q.answers.putIfAbsent(playerId, answerIndex) != null) return true; // nur die erste Antwort zählt
             Challenges c = q.questions.get(q.round);
             long elapsed = System.currentTimeMillis() - q.roundStartedAt;
             boolean correct = c.getCorrectIndex() != null && c.getCorrectIndex() == answerIndex;
@@ -1390,6 +1458,7 @@ public class GameSocket {
         if (bothAnswered) {
             closeQuizRound(battleId, round);
         }
+        return true;
     }
 
     private void closeQuizRound(Long battleId, int round) {
@@ -1421,7 +1490,10 @@ public class GameSocket {
             ObjectNode scores = root.putObject("scores");
             q.scores.forEach(scores::put);
             payload = root.toString();
-            recordQuizStat(c, q.answers.get(q.fromId), q.answers.get(q.toId));
+            // Antworten des Bots sind gewürfelt – würden die "fast alle falsch"-Statistik verfälschen
+            if (!control.PracticeBot.is(q.fromId) && !control.PracticeBot.is(q.toId)) {
+                recordQuizStat(c, q.answers.get(q.fromId), q.answers.get(q.toId));
+            }
         }
         sendToPlayer(q.fromId, payload);
         sendToPlayer(q.toId, payload);
@@ -1548,10 +1620,15 @@ public class GameSocket {
         String fromId = battle.getFromPlayer().getId();
         String toId   = battle.getToPlayer().getId();
 
+        if (control.PracticeBot.is(playerId)) return;
         boolean bothThere = METRIC_RESULTS.record(battleId, kind, playerId, value, fromId, toId);
         if (bothThere) {
             evaluateMetricBattle(battleId);
             return;
+        }
+        if (control.PracticeBot.isPractice(battle)) {
+            Double own = METRIC_RESULTS.value(battleId, playerId); // schon begrenzt
+            schedule(() -> botMetric(battleId, kind, own, fromId, toId), botMetricDelay);
         }
 
         System.out.println(kind.key + "-result von " + playerId + " gespeichert, warte auf Gegner...");
@@ -1585,7 +1662,8 @@ public class GameSocket {
         List<String> votes = switch (outcome) {
             case FROM_WINS -> List.of(fromId);
             case TO_WINS   -> List.of(toId);
-            case CONFLICT  -> List.of(fromId, toId);   // bestehendes Konfliktsystem greift
+            // Übung: kein Konflikt-Abzug wegen eines Bots
+            case CONFLICT  -> control.PracticeBot.isPractice(battle) ? List.of(NOBODY) : List.of(fromId, toId);
             case DRAW      -> List.of(NOBODY);
         };
         computeAndBroadcastResult(battle, votes);

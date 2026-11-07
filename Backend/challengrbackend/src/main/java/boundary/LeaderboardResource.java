@@ -65,6 +65,7 @@ public class LeaderboardResource {
         // Reihenfolge: Trophäen, bei Gleichstand wer höher war, dann Name – so springt die Liste nicht hin und her
         List<Player> ranked = em.createQuery("SELECT p FROM Player p", Player.class).getResultList().stream()
                 .filter(p -> !AccountDeletionService.DELETED_PLAYER_ID.equals(p.getId()))
+                .filter(p -> !control.PracticeBot.is(p.getId()))
                 .filter(p -> p.getBanUntil() == null || !p.getBanUntil().isAfter(now))
                 .sorted(Comparator.comparingInt(Player::getTrophies).reversed()
                         .thenComparing(Comparator.comparingInt(Player::getHighestTrophies).reversed())

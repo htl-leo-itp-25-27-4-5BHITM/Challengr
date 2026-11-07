@@ -299,6 +299,10 @@ struct MapView: View {
     @State private var crowdChooser: MapSpots.Crowd? = nil
     /// Einmaliger Hinweis "Du hast Sticker!"
     @AppStorage("stickerHintShown") private var stickerHintShown = false
+    /// Menü → Üben (gegen den Trainings-Dummy)
+    @State private var showPractice = false
+    /// Einmaliger Hinweis "Niemand in der Nähe? Üben"
+    @AppStorage("practiceHintShown") private var practiceHintShown = false
 
     @State private var showNearbyText = true
 
@@ -466,6 +470,7 @@ struct MapView: View {
         }
         .overlay(hotspotPopupOverlay)
         .overlay(challengeDialogOverlay)
+        .overlay(practiceOverlay)
         .overlay(incomingChallengeOverlay)
         .overlay(outgoingChallengeOverlay)
         .overlay(resultPendingOverlay)
@@ -890,6 +895,7 @@ struct MapView: View {
                 await StickerCollection.shared.load()
                 await StickerCollection.shared.refreshGifts(playerId: ownPlayerId)
                 await showStickerHintIfNew()
+                await showPracticeHintIfAlone()
             }
             trophyRoadLastSeen = TrophyRoadMemory.lastSeen(playerId: ownPlayerId)
             seedInitialZoom()
@@ -1155,6 +1161,11 @@ struct MapView: View {
             MapMenuItem(id: "quests", title: "Aufgaben", systemImage: "checklist", color: .purple,
                         badge: questClaimable) {
                 showQuests = true
+            },
+            // Üben gegen den Trainings-Dummy – auch ohne Spieler in der Nähe (und für den App-Store-Prüfer)
+            MapMenuItem(id: "practice", title: "Üben", systemImage: "dumbbell.fill", color: .blue) {
+                guard outgoingBattleInfo == nil, incomingChallenge == nil, !isInBattle else { return }
+                showPractice = true
             },
             // Sticker: Album, Geschenke öffnen, Paket kaufen (Zahl = ungeöffnete Geschenke + Belohnungen)
             MapMenuItem(id: "stickers", title: "Sticker", systemImage: "book.closed.fill", color: .orange,
@@ -1782,6 +1793,19 @@ struct MapView: View {
         }
     }
 
+    /// Übung gegen den Bot: keine Trophäen
+    private var practiceBadge: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "dumbbell.fill")
+            Text("ÜBUNG · OHNE TROPHÄEN").tracking(0.8)
+        }
+        .font(.system(size: 12, weight: .black, design: .rounded))
+        .foregroundColor(.white)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Capsule().fill(Color.blue))
+    }
+
     /// Modus einer Anfrage: Liga Wissen / Liga Real-Life / Friendly.
     private func modeBadge(_ mode: BattleMode) -> some View {
         HStack(spacing: 6) {
@@ -1915,6 +1939,18 @@ struct MapView: View {
         }
     }
 
+    /// Menü → Üben
+    private var practiceOverlay: some View {
+        Group {
+            if showPractice {
+                PracticeDialogView(ownPlayerId: ownPlayerId, socket: socket) {
+                    showPractice = false
+                }
+                .transition(.scale)
+            }
+        }
+    }
+
     /// Overlay shown for the attacker while the request is pending.
     private var outgoingChallengeOverlay: some View {
         Group {
@@ -1943,7 +1979,11 @@ struct MapView: View {
                             .font(.system(size: 18, weight: .black, design: .rounded))
                             .foregroundColor(.challengrDark)
 
-                        modeBadge(socket.modeByBattle[outgoing.battleId] ?? .friendly)
+                        if PracticeBot.isBot(outgoing.opponentId) {
+                            practiceBadge
+                        } else {
+                            modeBadge(socket.modeByBattle[outgoing.battleId] ?? .friendly)
+                        }
 
                         Text(outgoing.challengeName)
                             .font(.system(size: 14, weight: .bold, design: .rounded))
@@ -2039,6 +2079,18 @@ struct MapView: View {
         showMapBanner(icon: "sparkles",
                       text: "Du hast \(StickerCollection.shared.sendableCount) Sticker! Tipp auf einen Spieler → STICKER", seconds: 6) {
             showStickerHub = true
+        }
+    }
+
+    /// Einmal: niemand in der Nähe → aufs Üben hinweisen (neue Spieler sollen nicht vor einer leeren Karte stehen)
+    private func showPracticeHintIfAlone() async {
+        guard !practiceHintShown else { return }
+        try? await Task.sleep(for: .seconds(12)) // nach dem Sticker-Hinweis, Spieler in der Nähe sind dann geladen
+        guard annotations.isEmpty, activeFullScreen == .none, outgoingBattleInfo == nil, incomingChallenge == nil else { return }
+        practiceHintShown = true
+        showMapBanner(icon: "dumbbell.fill",
+                      text: "Niemand in der Nähe? Üb gegen den Trainings-Dummy", seconds: 6) {
+            showPractice = true
         }
     }
 
