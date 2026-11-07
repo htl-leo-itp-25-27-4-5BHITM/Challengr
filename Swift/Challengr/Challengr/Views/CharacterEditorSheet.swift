@@ -107,25 +107,21 @@ struct CharacterEditorSheet: View {
                         withAnimation { proxy.scrollTo(highlight.rawValue, anchor: .center) }
                     }
                 } else {
-                    VStack(spacing: 10) {
-                        Image(systemName: "wand.and.stars")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundStyle(Color.secondary)
-
-                        Text("KOMMT BALD")
-                            .font(.system(size: 14, weight: .black, design: .rounded))
-                            .tracking(1.2)
-                            .foregroundStyle(Color.secondary)
-
-                        Text("\(selectedCategory.rawValue) für \(store.selectedPreset.title) kommen bald.\nAktuell gibt es nur das Standard-Outfit.")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundStyle(Color.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 20)
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        ForEach(AvatarPresets.presets(for: .skins)) { preset in
+                            presetTile(preset)
+                                .id(preset.id)
+                        }
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 28)
-                    .padding(.bottom, 10)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+
+                    Text("Skins sind andere Looks einer Figur – selten und schwer zu bekommen. Weitere kommen bald.")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 28)
+                        .padding(.vertical, 10)
                 }
             }
             }
@@ -169,7 +165,7 @@ struct CharacterEditorSheet: View {
         }
         .onAppear {
             // Always start in Outfits so the user sees their character immediately.
-            selectedCategory = .outfits
+            selectedCategory = highlight?.isSkin == true ? .skins : .outfits
             store.load()
             if let highlight { store.selectedPresetId = highlight.rawValue }
             store.errorMessage = nil
@@ -224,6 +220,16 @@ struct CharacterEditorSheet: View {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .stroke(isSelected ? Color.challengrYellow : Color.black.opacity(0.06), lineWidth: isSelected ? 3 : 1)
                 )
+                .overlay(alignment: .topLeading) {
+                    if preset.character?.isSkin == true {
+                        Label("LEGENDÄR", systemImage: "bolt.fill")
+                            .font(.system(size: 9, weight: .black, design: .rounded))
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 7).padding(.vertical, 3)
+                            .background(Capsule().fill(Color.challengrYellow))
+                            .padding(8)
+                    }
+                }
                 .shadow(color: .black.opacity(0.10), radius: 10, x: 0, y: 6)
 
                 Text(preset.title.uppercased())

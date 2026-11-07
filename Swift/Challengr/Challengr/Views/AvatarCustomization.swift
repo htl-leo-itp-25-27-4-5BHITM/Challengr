@@ -4,10 +4,9 @@ import Combine
 // Lightweight local avatar customization (Fall B: presets only)
 
 enum AvatarCategory: String, CaseIterable, Identifiable {
-    case outfits = "Outfits"
-    case hats = "Hüte"
-    case pants = "Hose"
-    case shoes = "Schuhe"
+    case outfits = "Figuren"
+    /// Andere Optik einer Figur (z. B. Blitzritter für Sir Brecht)
+    case skins = "Skins"
 
     var id: String { rawValue }
 }
@@ -32,7 +31,7 @@ enum AvatarPresets {
             title: character.displayName,
             imageName: character.imageName,
             avatarImageName: character.avatarImageName,
-            category: .outfits,
+            category: character.isSkin ? .skins : .outfits,
             character: character
         )
     }

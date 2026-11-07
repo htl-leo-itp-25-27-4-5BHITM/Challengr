@@ -67,6 +67,7 @@ public final class CharacterCatalog {
             new Entry("hayato", "Hayato", Requirement.TROPHIES, 600),          // Tryhard
             new Entry("kai", "Kai", Requirement.TROPHIES, 950),                // Brawler
             new Entry("kage", "Kage", Requirement.TROPHIES, 1400),             // Dueler
+            new Entry("sir-brecht-blitz", "Blitzritter", Requirement.TROPHIES, 2000), // Challengr – legendärer Skin von Sir Brecht
             // Event-Belohnungen (QuestCatalog.EVENTS)
             new Entry("crash-dummy", "Crash-Test-Dummy", Requirement.EVENT, 1, "beta"),
             new Entry("frost", "Frost", Requirement.EVENT, 1, "winter")

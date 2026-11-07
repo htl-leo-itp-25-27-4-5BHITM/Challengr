@@ -44,6 +44,7 @@ extension GameCharacter {
         case .kaeptnRex:  return "Der Schatz im Blitz"
         case .crashDummy: return "Testobjekt Nr. 1"
         case .frost:      return "Mit dem ersten Schnee"
+        case .sirBrechtBlitz: return "Der Blitzgeborene"
         }
     }
 
@@ -74,6 +75,8 @@ extension GameCharacter {
             return "Der Crash-Test-Dummy stand im Labor genau unter dem Einschlag. Seitdem kann er sich bewegen und will alles ausprobieren. Er war der erste Tester der Liga und ist heute Trainingspartner für alle, die üben wollen. Er verliert gern. Meistens."
         case .frost:
             return "Frost kam mit dem Winter, durch einen eisigen Riss oben am Berg, das Board unterm Arm. Wo sie fährt, gefriert der Boden. Die Liga ist ihr zu langsam – und das will sie ändern."
+        case .sirBrechtBlitz:
+            return "Man erzählt sich, Sir Brecht sei einmal ganz oben in der Liga angekommen – und der Blitz sei direkt in sein Schwert gefahren. Seitdem glüht seine Rüstung schwarz und gold, und über seinem Helm schwebt eine Krone aus Licht. Nur wer selbst den Rang Challengr erreicht, bekommt ihn je zu sehen."
         }
     }
 
@@ -92,6 +95,7 @@ extension GameCharacter {
         case .kaeptnRex:  return "Glück? Nein. Stil!"
         case .crashDummy: return "Aua. Nochmal!"
         case .frost:      return "Cool bleiben."
+        case .sirBrechtBlitz: return "Ein Hieb. Ein Blitz. Aus."
         }
     }
 
@@ -108,7 +112,7 @@ extension GameCharacter {
         case .kaeptnRex:  return .merlo
         case .kai:        return .lyra
         case .lyra:       return .kai
-        case .crashDummy, .frost: return nil
+        case .crashDummy, .frost, .sirBrechtBlitz: return nil
         }
     }
 
@@ -127,10 +131,12 @@ extension GameCharacter {
         case .kaeptnRex:  return ["Arrr! Die Trophäen nehm ich mit.", "Glück? Nein. Stil!"]
         case .crashDummy: return ["Aua. Aber gewonnen!", "Test bestanden."]
         case .frost:      return ["Zu langsam – eingefroren!", "Cool bleiben. Hab ich."]
+        case .sirBrechtBlitz: return ["Ein Hieb. Ein Blitz. Aus.", "Der Blitz hat entschieden."]
         }
     }
 
-    func isRival(of other: GameCharacter?) -> Bool { other != nil && rival == other }
+    /// Skins zählen wie ihre Figur (Blitzritter gegen Ragnar ist auch ein Rivalen-Duell).
+    func isRival(of other: GameCharacter?) -> Bool { other != nil && base.rival == other?.base }
 }
 
 extension BattleResultData {

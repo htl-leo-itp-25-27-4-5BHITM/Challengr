@@ -20,6 +20,8 @@ enum GameCharacter: String, CaseIterable, Identifiable {
     // Event-Belohnungen (nur solange das Event läuft)
     case crashDummy = "crash-dummy"
     case frost = "frost"
+    // Skins (andere Optik einer Figur, eigenes Modell)
+    case sirBrechtBlitz = "sir-brecht-blitz"
 
     /// Start-Figur, bis man im Figuren-Editor eine andere wählt.
     static let own: GameCharacter = .junge
@@ -37,6 +39,22 @@ enum GameCharacter: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Bei Skins die Figur, zu der der Skin gehört (eigenes Modell, gleiche Rivalen).
+    var skinOf: GameCharacter? {
+        switch self {
+        case .sirBrechtBlitz: return .sirBrecht
+        default: return nil
+        }
+    }
+
+    var isSkin: Bool { skinOf != nil }
+
+    /// Grundfigur (Skins → ihre Figur, sonst die Figur selbst).
+    var base: GameCharacter { skinOf ?? self }
+
+    /// Skins dieser Figur.
+    var skins: [GameCharacter] { GameCharacter.allCases.filter { $0.skinOf == self } }
+
     var displayName: String {
         switch self {
         case .junge:     return "Junge"
@@ -51,6 +69,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .kaeptnRex: return "Käpt'n Rex"
         case .crashDummy: return "Crash-Test-Dummy"
         case .frost:     return "Frost"
+        case .sirBrechtBlitz: return "Blitzritter"
         }
     }
 
@@ -68,6 +87,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .kaeptnRex:        return "Pirat · Glücksritter"
         case .crashDummy:       return "Beta-Tester · Event"
         case .frost:            return "Eis-Boarderin · Event"
+        case .sirBrechtBlitz:   return "Legendärer Skin · Sir Brecht"
         }
     }
 
@@ -86,6 +106,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .kage:             return .rank("Dueler", trophies: 1400)
         case .crashDummy:       return .event("Beta-Event")
         case .frost:            return .event("Winter-Event")
+        case .sirBrechtBlitz:   return .rank("Challengr", trophies: 2000)
         }
     }
 
@@ -103,6 +124,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .kaeptnRex: return "Rex"
         case .crashDummy: return "Dummy"
         case .frost:     return "Frost"
+        case .sirBrechtBlitz: return "SirBrechtBlitz"
         }
     }
 
@@ -121,6 +143,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .kaeptnRex: return Color(red: 0.20, green: 0.50, blue: 0.60)
         case .crashDummy: return Color(red: 0.90, green: 0.68, blue: 0.10)
         case .frost:     return Color(red: 0.25, green: 0.55, blue: 0.85)
+        case .sirBrechtBlitz: return Color(red: 0.16, green: 0.13, blue: 0.22)
         }
     }
 

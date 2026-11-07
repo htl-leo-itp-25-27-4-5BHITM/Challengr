@@ -59,7 +59,16 @@ final class GameCharacterTests: XCTestCase {
     }
 
     func testOutfitPresetsAreAllCharacters() {
-        XCTAssertEqual(AvatarPresets.presets(for: .outfits).compactMap(\.character), GameCharacter.allCases)
+        XCTAssertEqual(AvatarPresets.presets(for: .outfits).compactMap(\.character), GameCharacter.allCases.filter { !$0.isSkin })
+        XCTAssertEqual(AvatarPresets.presets(for: .skins).compactMap(\.character), [.sirBrechtBlitz])
+    }
+
+    func testSkinsBelongToTheirCharacter() {
+        XCTAssertEqual(GameCharacter.sirBrechtBlitz.skinOf, .sirBrecht)
+        XCTAssertEqual(GameCharacter.sirBrecht.skins, [.sirBrechtBlitz])
+        XCTAssertEqual(GameCharacter.sirBrechtBlitz.base, .sirBrecht)
+        XCTAssertTrue(GameCharacter.sirBrechtBlitz.isRival(of: .ragnar), "Skins haben die Rivalen ihrer Figur")
+        XCTAssertNotNil(UIImage(named: GameCharacter.sirBrechtBlitz.mapSheetName))
     }
 
     func testOldTwoDPresetFallsBackToOwnCharacter() {
