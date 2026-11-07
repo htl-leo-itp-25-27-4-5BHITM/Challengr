@@ -73,6 +73,10 @@ struct BattleResultView: View {
                     modeChip
                         .padding(.top, 12)
 
+                    if data.isRivalDuel {
+                        rivalChip
+                    }
+
                     title
 
                     ZStack(alignment: .bottom) {
@@ -325,13 +329,26 @@ struct BattleResultView: View {
         .foregroundColor(color)
     }
 
+    /// Erzrivalen aus der Geschichte (z. B. Sir Brecht gegen Ragnar).
+    private var rivalChip: some View {
+        Label("RIVALEN-DUELL", systemImage: "bolt.fill")
+            .font(.system(size: 11, weight: .black, design: .rounded))
+            .tracking(1.6)
+            .foregroundColor(.white)
+            .padding(.horizontal, 12).padding(.vertical, 5)
+            .background(Capsule().fill(Color.challengrRed.opacity(0.85)))
+            .scaleEffect(titleShown ? 1 : 0.4)
+            .opacity(titleShown ? 1 : 0)
+    }
+
     private var trashTalk: some View {
-        VStack(spacing: 8) {
-            Text("TRASH TALK")
+        let quote = data.victoryQuote
+        return VStack(spacing: 8) {
+            Text(quote.map { "\($0.speaker.displayName.uppercased()) SAGT" } ?? "TRASH TALK")
                 .font(.system(size: 11, weight: .black, design: .rounded))
                 .tracking(2)
                 .foregroundColor(.white.opacity(0.5))
-            Text(data.trashTalk)
+            Text(quote.map { "„\($0.text)“" } ?? data.trashTalk)
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .multilineTextAlignment(.center)
                 .foregroundColor(.white.opacity(0.9))

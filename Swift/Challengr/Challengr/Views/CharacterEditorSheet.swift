@@ -10,6 +10,8 @@ struct CharacterEditorSheet: View {
 
     @State private var selectedCategory: AvatarCategory = .outfits
     @State private var detent: PresentationDetent = .large
+    @State private var showStory = false
+    @State private var storyCharacter: GameCharacter?
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -26,6 +28,17 @@ struct CharacterEditorSheet: View {
             Text("CHARAKTER")
                 .font(.system(size: 18, weight: .black, design: .rounded))
                 .tracking(2)
+                .frame(maxWidth: .infinity)
+                .overlay(alignment: .trailing) {
+                    Button { showStory = true } label: {
+                        Label("STORY", systemImage: "book.fill")
+                            .font(.system(size: 12, weight: .black, design: .rounded))
+                            .foregroundStyle(.challengrYellow)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 20)
+                    .accessibilityLabel("Geschichte: \(ChallengrStory.title)")
+                }
 
             // Preview
             ZStack {
@@ -51,10 +64,19 @@ struct CharacterEditorSheet: View {
             .padding(.horizontal, 20)
 
             if let character = store.selectedPreset.character {
-                Text(character.tagline.uppercased())
-                    .font(.system(size: 11, weight: .black, design: .rounded))
-                    .tracking(1.2)
-                    .foregroundStyle(Color.secondary)
+                HStack(spacing: 10) {
+                    Text(character.tagline.uppercased())
+                        .font(.system(size: 11, weight: .black, design: .rounded))
+                        .tracking(1.2)
+                        .foregroundStyle(Color.secondary)
+                    Button { storyCharacter = character } label: {
+                        Label("STECKBRIEF", systemImage: "person.text.rectangle")
+                            .font(.system(size: 11, weight: .black, design: .rounded))
+                            .tracking(1)
+                            .foregroundStyle(.challengrYellow)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
 
             // Category picker
@@ -153,6 +175,10 @@ struct CharacterEditorSheet: View {
             store.errorMessage = nil
         }
         .task { await store.loadUnlocks(playerId: playerId) }
+        .sheet(isPresented: $showStory) {
+            StoryView(isUnlocked: store.isUnlocked, lockedHint: store.progressText)
+        }
+        .sheet(item: $storyCharacter) { CharacterStoryView(character: $0) }
         .presentationDetents([.medium, .large], selection: $detent)
         .presentationDragIndicator(.visible)
         .background(GameStyle.background.ignoresSafeArea())
