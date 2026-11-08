@@ -40,6 +40,8 @@ struct PlayerDTO: Codable, Identifiable {
     var goldFrame: Bool? = nil
     /// Trägt das Kopfgeld (leuchtet rot auf der Karte)
     var bounty: Bool? = nil
+    /// Stufe der gewählten Figur (1–10, Aura auf der Karte)
+    var characterLevel: Int? = nil
 }
 
 // MARK: - Challenge DTOs (Challenge-DTOs)

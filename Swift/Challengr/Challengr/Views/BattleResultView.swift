@@ -81,6 +81,10 @@ struct BattleResultView: View {
                         bountyBanner(bonus)
                     }
 
+                    if kind == .win, let level = data.winnerLevelUp {
+                        levelUpBanner(level)
+                    }
+
                     title
 
                     ZStack(alignment: .bottom) {
@@ -331,6 +335,21 @@ struct BattleResultView: View {
                 .font(.system(size: 16, weight: .black, design: .rounded))
         }
         .foregroundColor(color)
+    }
+
+    /// Eigene Figur eine Stufe höher – bei 3/6/10 mit neuer Aura.
+    private func levelUpBanner(_ level: Int) -> some View {
+        let tier = CharacterLevel.tier(level), newAura = [3, 6, 10].contains(level)
+        return Label(newAura ? "STUFE \(level) · \(tier.name.uppercased()) FREIGESCHALTET" : "FIGUR AUF STUFE \(level)",
+                     systemImage: "arrow.up.circle.fill")
+            .font(.system(size: 11, weight: .black, design: .rounded))
+            .tracking(1)
+            .foregroundColor(tier == .none ? .white : .challengrDark)
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            .background(Capsule().fill(tier == .none ? Color.white.opacity(0.18) : tier.color))
+            .shadow(color: tier.color.opacity(0.7), radius: newAura ? 12 : 0)
+            .scaleEffect(titleShown ? 1 : 0.4)
+            .opacity(titleShown ? 1 : 0)
     }
 
     /// Kopfgeld kassiert (Sieger) oder verloren (Verlierer).

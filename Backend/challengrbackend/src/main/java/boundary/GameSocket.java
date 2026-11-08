@@ -1552,7 +1552,10 @@ public class GameSocket {
         if (winnerId == null) return "";
         Battle b = battleService.findById(battleId);
         Integer bonus = b == null ? null : b.getBountyBonus();
-        return bonus == null || bonus <= 0 ? "" : ",\n      \"bountyBonus\": %d".formatted(bonus);
+        String json = bonus == null || bonus <= 0 ? "" : ",\n      \"bountyBonus\": %d".formatted(bonus);
+        // Figur des Siegers eine Stufe höher
+        Integer level = b == null ? null : b.getWinnerLevelUp();
+        return level == null ? json : json + ",\n      \"winnerLevelUp\": %d".formatted(level);
     }
 
     /** Endstand der Quiz-Show fürs Ergebnis ("quiz": {fromScore, toScore}), sonst leer. */

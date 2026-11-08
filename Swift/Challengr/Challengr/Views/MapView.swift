@@ -44,6 +44,8 @@ struct PlayerAnnotation: Identifiable {
     var goldFrame = false
     /// Trägt das Kopfgeld → leuchtet rot
     var bounty = false
+    /// Stufe der Figur (Aura)
+    var level = 1
 }
 
 enum ActiveFullScreen {
@@ -155,6 +157,8 @@ struct MapView: View {
     /// Static ownPlayerName & coordinates
     /// Eigenes Kopfgeld (man wird gejagt)
     @State private var ownHasBounty = false
+    /// Stufe der eigenen Figur (Aura auf der Karte)
+    @State private var ownCharacterLevel = 1
     /// Meistgespielter Gegner mit Bilanz (nil = noch keiner)
     @State private var nemesis: Nemesis?
     /// Läuft gerade eine Chaos-Stunde?
@@ -1029,7 +1033,8 @@ struct MapView: View {
             seed: ownPlayerId,
             height: chaos.giants ? 140 : 78,
             goldFrame: stickers.hasGoldFrame,
-            bounty: ownHasBounty
+            bounty: ownHasBounty,
+            level: ownCharacterLevel
         )
         // Sticker × 0.7 ≈ 84 pt wie über fremden Pins
         .overlay(alignment: .top) { EmoteBubble(event: ownMapEmote, stickerSize: 120).scaleEffect(0.7).offset(y: -30) }
@@ -1062,7 +1067,8 @@ struct MapView: View {
                     seed: annotation.playerId,
                     height: chaos.giants ? 140 : 78,
                     goldFrame: annotation.goldFrame,
-                    bounty: annotation.bounty
+                    bounty: annotation.bounty,
+                    level: annotation.level
                 )
                 .overlay(alignment: .topTrailing) {
                     if nemesis?.playerId == annotation.playerId { NemesisBadge().offset(x: -4, y: 8) }
@@ -2220,6 +2226,8 @@ struct MapView: View {
                     ownPlayerName      = name
                     ownRankName        = rank
                     ownTrophies        = me.trophies
+                    ownHasBounty       = me.bounty ?? false
+                    ownCharacterLevel  = me.characterLevel ?? 1
                     ownPoints          = points
                     ownDailyStreak     = streak
                     ownTotalChallenges = stats.totalChallenges
@@ -2737,7 +2745,8 @@ struct MapView: View {
                     rankName: p.rankName,
                     character: GameCharacter.from(serverId: p.character),
                     goldFrame: p.goldFrame ?? false,
-                    bounty: p.bounty ?? false
+                    bounty: p.bounty ?? false,
+                    level: p.characterLevel ?? 1
                 )
             }
             // Spieler gleiten zur neuen Position statt zu springen
@@ -2747,6 +2756,7 @@ struct MapView: View {
             if let me = players.first(where: { $0.id == ownPlayerId }) {
                 ownPlayerName = me.name
                 ownHasBounty = me.bounty ?? false
+                ownCharacterLevel = me.characterLevel ?? 1
             }
         } catch {
             print("Fehler beim Laden der Nearby Players", error)

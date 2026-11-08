@@ -41,6 +41,9 @@ public class Battle {
 
     /** Kopfgeld, das der Sieger mit diesem Battle kassiert hat (steckt schon in winnerPointsDelta), sonst null. */
     private Integer bountyBonus;
+
+    /** Neue Figuren-Stufe des Siegers, wenn dieser Sieg ihn eine Stufe höher gebracht hat, sonst null. */
+    private Integer winnerLevelUp;
     private Integer loserPointsDelta;
 
 
@@ -136,6 +139,14 @@ public class Battle {
 
     public void setWinnerPointsDelta(Integer winnerPointsDelta) {
         this.winnerPointsDelta = winnerPointsDelta;
+    }
+
+    public Integer getWinnerLevelUp() {
+        return winnerLevelUp;
+    }
+
+    public void setWinnerLevelUp(Integer winnerLevelUp) {
+        this.winnerLevelUp = winnerLevelUp;
     }
 
     public Integer getBountyBonus() {

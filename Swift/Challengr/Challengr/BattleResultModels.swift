@@ -61,6 +61,8 @@ struct BattleResultData {
     var winnerSticker: Sticker? = nil
     /// Kopfgeld, das der Sieger kassiert hat (steckt schon in winnerPointsDelta)
     var bountyBonus: Int? = nil
+    /// Neue Figuren-Stufe des Siegers, wenn er eine Stufe aufgestiegen ist
+    var winnerLevelUp: Int? = nil
 
     /// Übung gegen den Trainings-Dummy – zählt nicht für die Liga
     var isPractice: Bool { participants?.isPractice ?? false }

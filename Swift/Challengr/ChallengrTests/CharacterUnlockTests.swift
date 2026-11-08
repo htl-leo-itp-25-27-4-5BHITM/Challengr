@@ -11,7 +11,7 @@ final class CharacterUnlockTests: XCTestCase {
 
     func testIdsMatchTheBackend() {
         XCTAssertEqual(GameCharacter.allCases.map(\.rawValue),
-                       ["junge", "maedchen", "sir-brecht", "ragnar", "hayato", "kage", "kai", "merlo", "lyra", "kaeptn-rex", "crash-dummy", "frost", "sir-brecht-blitz"])
+                       ["junge", "maedchen", "sir-brecht", "ragnar", "hayato", "kage", "kai", "merlo", "lyra", "kaeptn-rex", "crash-dummy", "frost", "sir-brecht-blitz", "kaeptn-rex-jaeger"])
         XCTAssertEqual(GameCharacter.sirBrechtBlitz.requirement, .rank("Challengr", trophies: 2000))
         XCTAssertEqual(GameCharacter.rankRewards(atTrophies: 2000), [.sirBrechtBlitz], "Belohnung für den höchsten Rang")
         XCTAssertEqual(GameCharacter.crashDummy.requirement, .event("Beta-Event"))

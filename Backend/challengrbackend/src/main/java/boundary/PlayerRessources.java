@@ -33,6 +33,9 @@ public class PlayerRessources {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     @Inject
+    control.CharacterLevel characterLevel;
+
+    @Inject
     control.ActivityTracker activity;
 
     @Inject
@@ -448,21 +451,21 @@ public class PlayerRessources {
     private PlayerDTO toOwnDTO(Player p) {
         return new PlayerDTO(p.getId(), p.getName(), p.getLatitude(), p.getLongitude(), p.getPoints(),
                 battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), p.isInvisible(),
-                Math.max(p.getHighestTrophies(), p.getTrophies()), p.hasGoldFrame(), p.hasBounty());
+                Math.max(p.getHighestTrophies(), p.getTrophies()), p.hasGoldFrame(), p.hasBounty(), p.getCharacterLevel());
     }
 
     /** Fremdes Profil: ohne Standort. */
     private PlayerDTO toPublicDTO(Player p) {
         return new PlayerDTO(p.getId(), p.getName(), null, null, p.getPoints(),
                 battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), null,
-                Math.max(p.getHighestTrophies(), p.getTrophies()), p.hasGoldFrame(), p.hasBounty());
+                Math.max(p.getHighestTrophies(), p.getTrophies()), p.hasGoldFrame(), p.hasBounty(), p.getCharacterLevel());
     }
 
     /** Spieler in der Nähe: nur gerundete Position. */
     private PlayerDTO toNearbyDTO(Player p) {
         return new PlayerDTO(p.getId(), p.getName(), LocationPrivacy.coarse(p.getLatitude()), LocationPrivacy.coarse(p.getLongitude()),
                 p.getPoints(), battleService.rankNameForPoints(p.getTrophies()), p.getCharacter(), p.getTrophies(), null,
-                Math.max(p.getHighestTrophies(), p.getTrophies()), p.hasGoldFrame(), p.hasBounty());
+                Math.max(p.getHighestTrophies(), p.getTrophies()), p.hasGoldFrame(), p.hasBounty(), p.getCharacterLevel());
     }
 
     /** Fortschritt für die Freischalt-Regeln: Siege, Wissens-Siege, Hotspot-Check-ins, Punkte. */
@@ -477,7 +480,7 @@ public class PlayerRessources {
                 .count();
         int checkins = (int) hotspotRepository.countForPlayer(player.getId());
         return new CharacterCatalog.Progress(won.size(), knowledgeWins, checkins, player.getHighestTrophies(),
-                questService.claimedRewardCharacters(player.getId()));
+                questService.claimedRewardCharacters(player.getId()), player.getBountiesClaimed());
     }
 
     /** Frei nach den Regeln – oder schon gewählt (z.B. vor einer Regeländerung freigeschaltet), die bleibt dem Spieler. */
@@ -486,8 +489,9 @@ public class PlayerRessources {
     }
 
     /** Eine Figur mit Freischalt-Stand für diesen Spieler. */
+    /** level/levelWins/nextLevelWins: Figuren-Stufe aus Liga-Siegen mit dieser Figur (nextLevelWins -1 = höchste Stufe) */
     public record CharacterUnlockDTO(String id, String name, String requirement, int required, int progress,
-                                     boolean unlocked, boolean selected) {}
+                                     boolean unlocked, boolean selected, int level, int levelWins, int nextLevelWins) {}
 
     @GET
     @Path("/{id}/characters")
@@ -497,10 +501,15 @@ public class PlayerRessources {
             throw new NotFoundException();
         }
         var progress = progressOf(player);
+        var wins = characterLevel.winsByCharacter(player.getId());
         return CharacterCatalog.ALL.stream()
-                .map(e -> new CharacterUnlockDTO(e.id(), e.name(), e.requirement().name(), e.required(),
-                        Math.min(progress.of(e), Math.max(e.required(), 0)),
-                        isUnlockedFor(player, e, progress), e.id().equals(player.getCharacter())))
+                .map(e -> {
+                    int w = wins.getOrDefault(e.id(), 0), level = control.CharacterLevel.level(w);
+                    return new CharacterUnlockDTO(e.id(), e.name(), e.requirement().name(), e.required(),
+                            Math.min(progress.of(e), Math.max(e.required(), 0)),
+                            isUnlockedFor(player, e, progress), e.id().equals(player.getCharacter()),
+                            level, w, control.CharacterLevel.nextLevelWins(level));
+                })
                 .toList();
     }
 
@@ -521,6 +530,7 @@ public class PlayerRessources {
             throw new WebApplicationException(entry.name() + " ist noch gesperrt", 403);
         }
         player.setCharacter(entry.id());
+        characterLevel.refreshCurrent(player);
         return toOwnDTO(player);
     }
 

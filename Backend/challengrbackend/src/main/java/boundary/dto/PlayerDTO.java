@@ -16,5 +16,6 @@ public record PlayerDTO(
         Boolean invisible, // nur beim eigenen Konto gesetzt
         int highestTrophies, // persönlicher Rekord (höchster je erreichter Trophäen-Stand)
         boolean goldFrame, // volles Sticker-Album
-        boolean bounty // trägt das Kopfgeld (leuchtet rot auf der Karte)
+        boolean bounty, // trägt das Kopfgeld (leuchtet rot auf der Karte)
+        int characterLevel // Stufe der gewählten Figur (1–10, Aura auf der Karte)
 ) {}

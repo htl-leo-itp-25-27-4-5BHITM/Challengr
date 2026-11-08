@@ -70,6 +70,10 @@ public class Player {
     @Column(name = "bounty_since")
     private Instant bountySince;
 
+    /** Stufe der gerade gewählten Figur (1–10, control.CharacterLevel) – damit die Karte die Aura ohne Extra-Abfrage zeigt. */
+    @Column(name = "character_level", columnDefinition = "integer default 1 not null")
+    private int characterLevel = 1;
+
     /** Wie oft dieser Spieler ein Kopfgeld kassiert hat. */
     @Column(name = "bounties_claimed", columnDefinition = "integer default 0 not null")
     private int bountiesClaimed = 0;
@@ -250,6 +254,14 @@ public class Player {
 
     public boolean hasBounty() {
         return bountySince != null;
+    }
+
+    public int getCharacterLevel() {
+        return Math.max(1, characterLevel);
+    }
+
+    public void setCharacterLevel(int characterLevel) {
+        this.characterLevel = characterLevel;
     }
 
     public int getBountiesClaimed() {

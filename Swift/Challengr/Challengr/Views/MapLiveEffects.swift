@@ -16,6 +16,8 @@ struct MapCharacterPin: View {
     var goldFrame = false
     /// Kopfgeld: pulsierendes rotes Leuchten und Krone
     var bounty = false
+    /// Figuren-Stufe: Aura ab 3, Plakette ab 2
+    var level = 1
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.mapCrowded) private var crowded
@@ -35,6 +37,7 @@ struct MapCharacterPin: View {
                             .offset(y: (50 + 90 * p) * MapVibe.groundRatio / 2 - 12)
                     }
                 }
+                LevelAura(level: level, time: reduceMotion ? 0 : t)
                 if bounty {
                     let pulse = reduceMotion ? 0.5 : (sin(t * 4) + 1) / 2
                     Ellipse()
@@ -65,6 +68,9 @@ struct MapCharacterPin: View {
                         .offset(y: -7)
                         .overlay(alignment: .top) {
                             if bounty { Bounty.tag.offset(y: -22) }
+                        }
+                        .overlay(alignment: .bottomTrailing) {
+                            if level > 1 { LevelPlate(level: level).offset(x: -height * 0.18, y: -4) }
                         }
                 }
             }

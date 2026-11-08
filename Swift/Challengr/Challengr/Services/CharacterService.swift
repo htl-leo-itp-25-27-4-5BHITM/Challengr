@@ -10,6 +10,11 @@ struct CharacterUnlockDTO: Codable, Equatable {
     let progress: Int
     let unlocked: Bool
     let selected: Bool
+    /// Figuren-Stufe aus Liga-Siegen mit dieser Figur (nil bei alten Backends)
+    var level: Int? = nil
+    var levelWins: Int? = nil
+    /// Siege für die nächste Stufe, -1 = höchste Stufe
+    var nextLevelWins: Int? = nil
 }
 
 enum CharacterServiceError: LocalizedError {

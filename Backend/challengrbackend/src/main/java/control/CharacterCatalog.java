@@ -22,7 +22,9 @@ public final class CharacterCatalog {
         /** Rang auf der Trophy Road: höchster je erreichter Trophäen-Stand (required = Untergrenze des Rangs) */
         TROPHIES,
         /** Belohnung eines Events (QuestCatalog) – frei, sobald die Event-Belohnung abgeholt wurde; bleibt für immer */
-        EVENT
+        EVENT,
+        /** kassierte Kopfgelder (BountyService) */
+        BOUNTIES
     }
 
     /** {@code event}: Id des Events bei {@link Requirement#EVENT}, sonst null. */
@@ -34,9 +36,13 @@ public final class CharacterCatalog {
 
     /** Was ein Spieler bisher erreicht hat – daraus ergibt sich, was frei ist. */
     /** events = Figuren-Ids aus abgeholten Event-Belohnungen */
-    public record Progress(int wins, int knowledgeWins, int checkins, int trophies, java.util.Set<String> events) {
+    public record Progress(int wins, int knowledgeWins, int checkins, int trophies, java.util.Set<String> events, int bounties) {
         public Progress(int wins, int knowledgeWins, int checkins, int trophies) {
-            this(wins, knowledgeWins, checkins, trophies, java.util.Set.of());
+            this(wins, knowledgeWins, checkins, trophies, java.util.Set.of(), 0);
+        }
+
+        public Progress(int wins, int knowledgeWins, int checkins, int trophies, java.util.Set<String> events) {
+            this(wins, knowledgeWins, checkins, trophies, events, 0);
         }
 
         public int of(Requirement r) {
@@ -46,6 +52,7 @@ public final class CharacterCatalog {
                 case KNOWLEDGE_WINS -> knowledgeWins;
                 case CHECKINS -> checkins;
                 case TROPHIES -> trophies;
+                case BOUNTIES -> bounties;
             };
         }
 
@@ -68,6 +75,7 @@ public final class CharacterCatalog {
             new Entry("kai", "Kai", Requirement.TROPHIES, 950),                // Brawler
             new Entry("kage", "Kage", Requirement.TROPHIES, 1400),             // Dueler
             new Entry("sir-brecht-blitz", "Blitzritter", Requirement.TROPHIES, 2000), // Challengr – legendärer Skin von Sir Brecht
+            new Entry("kaeptn-rex-jaeger", "Kopfgeldjäger", Requirement.BOUNTIES, 5), // mythischer Skin von Käpt'n Rex
             // Event-Belohnungen (QuestCatalog.EVENTS)
             new Entry("crash-dummy", "Crash-Test-Dummy", Requirement.EVENT, 1, "beta"),
             new Entry("frost", "Frost", Requirement.EVENT, 1, "winter")

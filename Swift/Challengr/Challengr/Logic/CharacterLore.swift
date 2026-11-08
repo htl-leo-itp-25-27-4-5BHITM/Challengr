@@ -45,6 +45,7 @@ extension GameCharacter {
         case .crashDummy: return "Testobjekt Nr. 1"
         case .frost:      return "Mit dem ersten Schnee"
         case .sirBrechtBlitz: return "Der Blitzgeborene"
+        case .kaeptnRexJaeger: return "Der Jäger der Könige"
         }
     }
 
@@ -77,6 +78,8 @@ extension GameCharacter {
             return "Frost kam mit dem Winter, durch einen eisigen Riss oben am Berg, das Board unterm Arm. Wo sie fährt, gefriert der Boden. Die Liga ist ihr zu langsam – und das will sie ändern."
         case .sirBrechtBlitz:
             return "Man erzählt sich, Sir Brecht sei einmal ganz oben in der Liga angekommen – und der Blitz sei direkt in sein Schwert gefahren. Seitdem glüht seine Rüstung schwarz und gold, und über seinem Helm schwebt eine Krone aus Licht. Nur wer selbst den Rang Challengr erreicht, bekommt ihn je zu sehen."
+        case .kaeptnRexJaeger:
+            return "Irgendwann hat Käpt'n Rex aufgehört, Schätze zu jagen – und angefangen, Könige zu jagen. Mit Halstuch, Raben und einer Klinge, die rot glüht, holt er sich jedes Kopfgeld der Stadt. Wer ihn so sieht, weiß: Fünf Könige sind schon gefallen."
         }
     }
 
@@ -96,6 +99,7 @@ extension GameCharacter {
         case .crashDummy: return "Aua. Nochmal!"
         case .frost:      return "Cool bleiben."
         case .sirBrechtBlitz: return "Ein Hieb. Ein Blitz. Aus."
+        case .kaeptnRexJaeger: return "Jeder König fällt."
         }
     }
 
@@ -112,7 +116,7 @@ extension GameCharacter {
         case .kaeptnRex:  return .merlo
         case .kai:        return .lyra
         case .lyra:       return .kai
-        case .crashDummy, .frost, .sirBrechtBlitz: return nil
+        case .crashDummy, .frost, .sirBrechtBlitz, .kaeptnRexJaeger: return nil
         }
     }
 
@@ -132,6 +136,7 @@ extension GameCharacter {
         case .crashDummy: return ["Aua. Aber gewonnen!", "Test bestanden."]
         case .frost:      return ["Zu langsam – eingefroren!", "Cool bleiben. Hab ich."]
         case .sirBrechtBlitz: return ["Ein Hieb. Ein Blitz. Aus.", "Der Blitz hat entschieden."]
+        case .kaeptnRexJaeger: return ["Dein Kopfgeld gehört jetzt mir.", "Jeder König fällt."]
         }
     }
 

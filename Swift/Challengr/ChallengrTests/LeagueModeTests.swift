@@ -263,4 +263,19 @@ final class LeagueModeTests: XCTestCase {
         let off = try JSONDecoder().decode(ChaosStatus.self, from: Data(#"{"active":false,"rule":null,"title":null,"description":null,"endsAt":null}"#.utf8))
         XCTAssertFalse(off.active)
     }
+
+    func testCharacterLevelsMatchTheBackend() {
+        XCTAssertEqual(CharacterLevel.level(wins: 0), 1)
+        XCTAssertEqual(CharacterLevel.level(wins: 1), 2)
+        XCTAssertEqual(CharacterLevel.level(wins: 5), 3)
+        XCTAssertEqual(CharacterLevel.level(wins: 45), 10)
+        XCTAssertEqual(CharacterLevel.level(wins: 999), 10)
+        XCTAssertEqual(CharacterLevel.tier(2), .none)
+        XCTAssertEqual(CharacterLevel.tier(3), .bronze)
+        XCTAssertEqual(CharacterLevel.tier(6), .silver)
+        XCTAssertEqual(CharacterLevel.tier(10), .gold)
+        XCTAssertEqual(GameCharacter.kaeptnRexJaeger.skinOf, .kaeptnRex)
+        XCTAssertEqual(GameCharacter.kaeptnRexJaeger.requirement, .bounties(5))
+        XCTAssertEqual(UnlockRequirement.bounties(5).text(progress: 2), "2/5 Kopfgelder")
+    }
 }

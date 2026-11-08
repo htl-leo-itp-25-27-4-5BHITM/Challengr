@@ -22,6 +22,9 @@ public class BattleService {
     control.ChaosService chaos;
 
     @Inject
+    control.CharacterLevel characterLevel;
+
+    @Inject
     BattleRepository battleRepository;
 
     @Inject
@@ -480,6 +483,9 @@ public class BattleService {
         }
         // Sieger verdient seinen Trophäen-Gewinn auch als Punkte (Währung)
         winner.setPoints(winner.getPoints() + Math.max(0, winnerDelta));
+        // Figuren-Stufe: Liga-Siege mit der gewählten Figur
+        int levelUp = characterLevel.addWin(winner);
+        if (levelUp > 0) battle.setWinnerLevelUp(levelUp);
 
         battle.setWinner(winner);
         battle.setStatus("DONE");

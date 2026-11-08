@@ -110,6 +110,17 @@ nonisolated final class AvatarCustomizationStore: ObservableObject {
         unlocks[character.rawValue]?.unlocked ?? (character.requirement == .none)
     }
 
+    /// Figuren-Stufe (1, wenn unbekannt)
+    func level(_ character: GameCharacter) -> Int {
+        unlocks[character.rawValue]?.level ?? 1
+    }
+
+    /// "4/6 Siege bis Stufe 4", "Höchste Stufe" – nil ohne Daten vom Server
+    func levelProgressText(_ character: GameCharacter) -> String? {
+        guard let u = unlocks[character.rawValue], let level = u.level, let wins = u.levelWins, let next = u.nextLevelWins else { return nil }
+        return next < 0 ? "Höchste Stufe" : "\(wins)/\(next) Liga-Siege bis Stufe \(level + 1)"
+    }
+
     /// "1/3 Siege", "2/5 Check-ins" … für gesperrte Figuren.
     func progressText(_ character: GameCharacter) -> String {
         character.requirement.text(progress: unlocks[character.rawValue]?.progress ?? 0)

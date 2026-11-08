@@ -64,6 +64,7 @@ struct CharacterEditorSheet: View {
             .padding(.horizontal, 20)
 
             if let character = store.selectedPreset.character {
+                levelLine(character)
                 HStack(spacing: 10) {
                     Text(character.tagline.uppercased())
                         .font(.system(size: 11, weight: .black, design: .rounded))
@@ -181,6 +182,26 @@ struct CharacterEditorSheet: View {
         .environment(\.colorScheme, .dark)
     }
 
+    /// "STUFE 6 · SILBER-AURA" und Fortschritt bis zur nächsten Stufe
+    private func levelLine(_ character: GameCharacter) -> some View {
+        let level = store.level(character), tier = CharacterLevel.tier(level)
+        return VStack(spacing: 3) {
+            HStack(spacing: 6) {
+                LevelPlate(level: level)
+                Text("STUFE \(level)\(tier == .none ? "" : " · " + tier.name.uppercased())")
+                    .font(.system(size: 12, weight: .black, design: .rounded))
+                    .tracking(1)
+                    .foregroundStyle(tier == .none ? Color.white : tier.color)
+            }
+            if let progress = store.levelProgressText(character) {
+                Text(progress)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color.secondary)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
     private func presetTile(_ preset: AvatarPreset) -> some View {
         let isSelected = store.selectedPresetId == preset.id
         let locked = preset.character.map { !store.isUnlocked($0) } ?? false
@@ -220,6 +241,11 @@ struct CharacterEditorSheet: View {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .stroke(isSelected ? Color.challengrYellow : Color.black.opacity(0.06), lineWidth: isSelected ? 3 : 1)
                 )
+                .overlay(alignment: .bottomTrailing) {
+                    if let c = preset.character, !locked, store.level(c) > 1 {
+                        LevelPlate(level: store.level(c)).padding(8)
+                    }
+                }
                 .overlay(alignment: .topLeading) {
                     if preset.character?.isSkin == true {
                         Label("LEGENDÄR", systemImage: "bolt.fill")
