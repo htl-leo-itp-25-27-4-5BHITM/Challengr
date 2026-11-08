@@ -1,5 +1,6 @@
 import XCTest
 import SceneKit
+import UIKit
 @testable import Challengr
 
 /// Liga (Wissen / Real-Life) und Friendly: Modus, Quiz-Show und Server-Nachrichten.
@@ -277,5 +278,12 @@ final class LeagueModeTests: XCTestCase {
         XCTAssertEqual(GameCharacter.kaeptnRexJaeger.skinOf, .kaeptnRex)
         XCTAssertEqual(GameCharacter.kaeptnRexJaeger.requirement, .bounties(5))
         XCTAssertEqual(UnlockRequirement.bounties(5).text(progress: 2), "2/5 Kopfgelder")
+    }
+
+    func testGlitchStaysSecret() {
+        XCTAssertEqual(GameCharacter.glitch.requirement, .secret)
+        XCTAssertEqual(UnlockRequirement.secret.text(progress: 0), "???", "die Bedingung wird nicht verraten")
+        XCTAssertFalse(GameCharacter.glitch.isSkin)
+        XCTAssertNotNil(UIImage(named: GameCharacter.glitch.mapSheetName))
     }
 }

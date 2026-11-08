@@ -51,10 +51,10 @@ class CharacterResourceTest {
         for (Map<String, Object> c : list) unlocked.put((String) c.get("id"), (Boolean) c.get("unlocked"));
         assertEquals(Boolean.TRUE, unlocked.get("junge"));
         assertEquals(Boolean.TRUE, unlocked.get("maedchen"));
-        for (String locked : List.of("sir-brecht", "ragnar", "hayato", "kage", "kai", "merlo", "lyra", "kaeptn-rex", "crash-dummy", "frost", "sir-brecht-blitz", "kaeptn-rex-jaeger")) {
+        for (String locked : List.of("sir-brecht", "ragnar", "hayato", "kage", "kai", "merlo", "lyra", "kaeptn-rex", "crash-dummy", "frost", "sir-brecht-blitz", "kaeptn-rex-jaeger", "glitch")) {
             assertEquals(Boolean.FALSE, unlocked.get(locked), locked + " ist am Anfang gesperrt");
         }
-        assertEquals(14, list.size());
+        assertEquals(15, list.size());
         Map<String, Object> lyra = list.stream().filter(c -> "lyra".equals(c.get("id"))).findFirst().orElseThrow();
         assertEquals("CHECKINS", lyra.get("requirement"));
         assertEquals(5, lyra.get("required"));

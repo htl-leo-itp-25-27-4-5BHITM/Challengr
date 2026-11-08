@@ -603,6 +603,7 @@ final class GameSocketService: ObservableObject {
                 result.winnerSticker = Stickers.byId(json["winnerSticker"] as? String)
                 result.bountyBonus = json["bountyBonus"] as? Int
                 result.winnerLevelUp = json["winnerLevelUp"] as? Int
+                result.secretUnlocked = json["secretUnlocked"] as? String
                 if let quiz = json["quiz"] as? [String: Any] {
                     result.quizFromScore = quiz["fromScore"] as? Int
                     result.quizToScore = quiz["toScore"] as? Int

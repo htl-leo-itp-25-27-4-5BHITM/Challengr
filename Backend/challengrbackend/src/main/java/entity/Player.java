@@ -74,6 +74,13 @@ public class Player {
     @Column(name = "character_level", columnDefinition = "integer default 1 not null")
     private int characterLevel = 1;
 
+    /** Geheimnis Glitch: Übungs-Quiz-Shows in Folge mit 0 Punkten, und ob Glitch schon frei ist */
+    @Column(name = "glitch_streak", columnDefinition = "integer default 0 not null")
+    private int glitchStreak = 0;
+
+    @Column(name = "glitch_unlocked", columnDefinition = "boolean default false not null")
+    private boolean glitchUnlocked = false;
+
     /** Wie oft dieser Spieler ein Kopfgeld kassiert hat. */
     @Column(name = "bounties_claimed", columnDefinition = "integer default 0 not null")
     private int bountiesClaimed = 0;
@@ -262,6 +269,22 @@ public class Player {
 
     public void setCharacterLevel(int characterLevel) {
         this.characterLevel = characterLevel;
+    }
+
+    public int getGlitchStreak() {
+        return glitchStreak;
+    }
+
+    public void setGlitchStreak(int glitchStreak) {
+        this.glitchStreak = glitchStreak;
+    }
+
+    public boolean isGlitchUnlocked() {
+        return glitchUnlocked;
+    }
+
+    public void setGlitchUnlocked(boolean glitchUnlocked) {
+        this.glitchUnlocked = glitchUnlocked;
     }
 
     public int getBountiesClaimed() {

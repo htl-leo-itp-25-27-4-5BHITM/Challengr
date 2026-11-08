@@ -80,6 +80,9 @@ public class GameSocket {
     private static final String NOBODY = "";
 
     @Inject
+    control.GlitchSecret glitchSecret;
+
+    @Inject
     BattleService battleService;
 
     @Inject
@@ -789,7 +792,7 @@ public class GameSocket {
 
         String metricsJson = buildMetricsJson(battle, winnerId, loserId);
         String outcome = isConflict ? "CONFLICT" : winnerId != null ? "WIN" : "DRAW";
-        metricsJson = metricsJson + buildQuizJson(battleId) + buildBountyJson(battleId, winnerId);
+        metricsJson = metricsJson + buildQuizJson(battleId) + buildBountyJson(battleId, winnerId) + buildSecretJson(battle);
 
         String payload = """
         {
@@ -1545,6 +1548,22 @@ public class GameSocket {
         String winner = from > to ? q.fromId : to > from ? q.toId : NOBODY;
         System.out.printf("Quiz-Show %d beendet: %d : %d%n", battleId, from, to);
         computeAndBroadcastResult(battle, List.of(winner));
+    }
+
+    /** Geheimnis gelüftet? Übungs-Quiz-Show gegen den Dummy zu Ende gespielt → GlitchSecret zählt mit. */
+    private String buildSecretJson(Battle battle) {
+        if (!control.PracticeBot.isPractice(battle) || !control.BattleMode.from(battle.getType()).isQuiz()) return "";
+        QuizState q = QUIZZES.get(battle.getId());
+        if (q == null) return "";
+        String human;
+        int score;
+        synchronized (q) {
+            if (!q.finished) return "";   // aufgegeben zählt nicht
+            human = control.PracticeBot.is(q.fromId) ? q.toId : q.fromId;
+            score = q.scores.getOrDefault(human, 0);
+        }
+        return glitchSecret.recordPracticeQuiz(human, score)
+                ? ",\n      \"secretUnlocked\": \"%s\"".formatted(control.GlitchSecret.ID) : "";
     }
 
     /** Kassiertes Kopfgeld fürs Ergebnis ("bountyBonus"), sonst leer. */

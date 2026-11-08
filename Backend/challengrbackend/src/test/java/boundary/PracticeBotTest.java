@@ -120,6 +120,38 @@ class PracticeBotTest {
                 .body("id", not(hasItem((int) battleId)));
     }
 
+    /** Übungs-Quiz-Show zu Ende spielen, immer falsch antworten → 0 Punkte */
+    private JsonNode loseQuizOnPurpose(WsTestClient me) throws Exception {
+        long battleId = startPractice(me, "RANKED_KNOWLEDGE");
+        for (int round = 1; round <= 4; round++) {
+            JsonNode q = me.await("quiz-question", 5);
+            assertNotNull(q, "Frage " + round);
+            int wrong = (correctIndexFor(q.get("question").get("id").asLong()) + 1) % 4;
+            me.send("{\"type\":\"quiz-answer\",\"battleId\":" + battleId + ",\"round\":" + round + ",\"answerIndex\":" + wrong + "}");
+            assertNotNull(me.await("quiz-round-result", 5));
+        }
+        JsonNode result = me.await("battle-result", 5);
+        assertNotNull(result);
+        return result;
+    }
+
+    @Test
+    void glitchBreaksOutAfterThreeZeroPointQuizShows() throws Exception {
+        String id = "glitch-" + System.nanoTime();
+        Login.as(id).contentType("application/json")
+                .body("{\"id\":\"" + id + "\",\"name\":\"" + id + "\",\"latitude\":48.3,\"longitude\":14.3}")
+                .when().post("/api/players").then().statusCode(200);
+        WsTestClient me = connect(id);
+        assertFalse(loseQuizOnPurpose(me).has("secretUnlocked"));
+        assertFalse(loseQuizOnPurpose(me).has("secretUnlocked"));
+        Login.as(id).when().get("/api/players/" + id + "/characters").then().statusCode(200)
+                .body("find { it.id == 'glitch' }.unlocked", is(false));
+        JsonNode third = loseQuizOnPurpose(me);
+        assertEquals("glitch", third.get("secretUnlocked").asText(), "Glitch bricht aus dem Dummy aus");
+        Login.as(id).when().get("/api/players/" + id + "/characters").then().statusCode(200)
+                .body("find { it.id == 'glitch' }.unlocked", is(true));
+    }
+
     @Test
     void realLifeAgainstTheBotWithTwoPlayersAtOnce() throws Exception {
         WsTestClient me = connect(A);

@@ -258,7 +258,8 @@ struct CharacterEditorSheet: View {
                 }
                 .shadow(color: .black.opacity(0.10), radius: 10, x: 0, y: 6)
 
-                Text(preset.title.uppercased())
+                // Geheime Figur: nicht einmal der Name wird verraten
+                Text(locked && preset.character?.requirement == .secret ? "???" : preset.title.uppercased())
                     .font(.system(size: 12, weight: .black, design: .rounded))
                     .tracking(1)
                     .foregroundColor(.secondary)

@@ -24,7 +24,9 @@ public final class CharacterCatalog {
         /** Belohnung eines Events (QuestCatalog) – frei, sobald die Event-Belohnung abgeholt wurde; bleibt für immer */
         EVENT,
         /** kassierte Kopfgelder (BountyService) */
-        BOUNTIES
+        BOUNTIES,
+        /** Geheimnis – frei, sobald es gelüftet ist (z. B. GlitchSecret); steht wie Events in Progress.events */
+        SECRET
     }
 
     /** {@code event}: Id des Events bei {@link Requirement#EVENT}, sonst null. */
@@ -47,7 +49,7 @@ public final class CharacterCatalog {
 
         public int of(Requirement r) {
             return switch (r) {
-                case NONE, EVENT -> 0;
+                case NONE, EVENT, SECRET -> 0;
                 case WINS -> wins;
                 case KNOWLEDGE_WINS -> knowledgeWins;
                 case CHECKINS -> checkins;
@@ -58,7 +60,8 @@ public final class CharacterCatalog {
 
         /** Fortschritt für eine Figur (Event-Figuren: 1 = Belohnung eines Events mit dieser Figur abgeholt). */
         public int of(Entry e) {
-            return e.requirement() == Requirement.EVENT ? (events.contains(e.id()) ? 1 : 0) : of(e.requirement());
+            boolean flag = e.requirement() == Requirement.EVENT || e.requirement() == Requirement.SECRET;
+            return flag ? (events.contains(e.id()) ? 1 : 0) : of(e.requirement());
         }
     }
 
@@ -76,6 +79,8 @@ public final class CharacterCatalog {
             new Entry("kage", "Kage", Requirement.TROPHIES, 1400),             // Dueler
             new Entry("sir-brecht-blitz", "Blitzritter", Requirement.TROPHIES, 2000), // Challengr – legendärer Skin von Sir Brecht
             new Entry("kaeptn-rex-jaeger", "Kopfgeldjäger", Requirement.BOUNTIES, 5), // mythischer Skin von Käpt'n Rex
+            // Geheime Figur (control.GlitchSecret)
+            new Entry(GlitchSecret.ID, "Glitch", Requirement.SECRET, 1),
             // Event-Belohnungen (QuestCatalog.EVENTS)
             new Entry("crash-dummy", "Crash-Test-Dummy", Requirement.EVENT, 1, "beta"),
             new Entry("frost", "Frost", Requirement.EVENT, 1, "winter")

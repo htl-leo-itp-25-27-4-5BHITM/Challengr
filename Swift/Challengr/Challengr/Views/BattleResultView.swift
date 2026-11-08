@@ -15,6 +15,8 @@ struct BattleResultView: View {
     @State private var detailsShown = false
     @State private var shownDelta = 0
     @State private var flash = 0.0
+    /// Geheimnis gelüftet: Glitch bricht aus dem Dummy aus
+    @State private var glitchShown = false
 
     private enum Kind { case win, lose, draw, conflict }
 
@@ -129,7 +131,15 @@ struct BattleResultView: View {
                 .frame(maxWidth: .infinity)
             }
         }
+        .overlay {
+            if glitchShown { GlitchReveal { glitchShown = false } }
+        }
         .onAppear(perform: runSequence)
+        .task {
+            guard data.secretUnlocked == GameCharacter.glitch.rawValue else { return }
+            try? await Task.sleep(for: .seconds(2.2))
+            glitchShown = true
+        }
     }
 
     // MARK: - Ablauf

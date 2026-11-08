@@ -479,8 +479,10 @@ public class PlayerRessources {
                 .filter(b -> control.BattleMode.from(b.getType()) == control.BattleMode.RANKED_KNOWLEDGE)
                 .count();
         int checkins = (int) hotspotRepository.countForPlayer(player.getId());
+        var flags = new java.util.HashSet<>(questService.claimedRewardCharacters(player.getId()));
+        if (player.isGlitchUnlocked()) flags.add(control.GlitchSecret.ID);
         return new CharacterCatalog.Progress(won.size(), knowledgeWins, checkins, player.getHighestTrophies(),
-                questService.claimedRewardCharacters(player.getId()), player.getBountiesClaimed());
+                flags, player.getBountiesClaimed());
     }
 
     /** Frei nach den Regeln – oder schon gewählt (z.B. vor einer Regeländerung freigeschaltet), die bleibt dem Spieler. */
