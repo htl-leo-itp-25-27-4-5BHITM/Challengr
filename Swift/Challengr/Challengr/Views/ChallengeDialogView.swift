@@ -17,11 +17,14 @@ struct ChallengeDialogView: View {
 
     // MARK: - State (State)
     @State private var mode: BattleMode? = nil
-    @State private var selectedCategory: String = "Fitness"
+    @State private var selectedCategory: String = ChallengeDialogView.quizCategory
     @State private var selectedChallengeId: Int64? = nil
 
-    // Kategorien wie in der Webapp / Backend
-    private let categories: [String] = ["Fitness", "Mutprobe", "Wissen", "iPhone", "Customer"]
+    /// Eigene Kachel im Friendly: Quiz-Show (4 Fragen) statt einer gewählten Challenge.
+    static let quizCategory = "Quiz-Show"
+    /// Fitness (selbst gezählt) und die einzelne Wissensfrage gibt es im Friendly nicht mehr.
+    private let categories: [String] = [ChallengeDialogView.quizCategory, "iPhone", "Mutprobe", "Customer"]
+    private var quizPicked: Bool { selectedCategory == ChallengeDialogView.quizCategory }
 
     var body: some View {
         ZStack {
@@ -206,7 +209,7 @@ struct ChallengeDialogView: View {
                         } label: {
                             Label(category, systemImage: icon(for: category))
                                 .font(.system(size: 12, weight: .black, design: .rounded))
-                                .foregroundStyle(selected && category == "Fitness" ? Color.challengrDark : .white)
+                                .foregroundStyle(.white)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 7)
                                 .background(Capsule().fill(selected ? color(for: category) : Color.white.opacity(0.08)))
@@ -218,7 +221,13 @@ struct ChallengeDialogView: View {
             }
 
             let list = ChallengePicker.challenges(in: selectedCategory, from: allChallenges)
-            if list.isEmpty {
+            if quizPicked {
+                Text("4 Wissensfragen, je 15 Sekunden. Richtig gibt Punkte, schneller gibt Bonus. Es geht um nichts.")
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(GameStyle.secondaryText)
+                    .padding(.vertical, 6)
+            } else if list.isEmpty {
                 Text("In dieser Kategorie gibt es noch keine Challenges.")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(GameStyle.secondaryText)
@@ -270,7 +279,7 @@ struct ChallengeDialogView: View {
 
     private var canSend: Bool {
         guard let mode else { return false }
-        return mode.isRanked || selectedChallengeId != nil
+        return mode.isRanked || quizPicked || selectedChallengeId != nil
     }
 
     private func send() {
@@ -279,8 +288,8 @@ struct ChallengeDialogView: View {
         socket.sendCreateBattle(
             fromId: ownPlayerId,
             toId: otherPlayerId,
-            mode: mode,
-            challengeId: mode == .friendly ? selectedChallengeId : nil
+            mode: mode == .friendly && quizPicked ? .friendlyQuiz : mode,
+            challengeId: mode == .friendly && !quizPicked ? selectedChallengeId : nil
         )
         onClose()
         onSent()
@@ -292,7 +301,7 @@ struct ChallengeDialogView: View {
         switch category {
         case "Fitness":  return .challengrYellow
         case "Mutprobe": return .chalengrRed
-        case "Wissen":   return .challengrGreen
+        case "Wissen", ChallengeDialogView.quizCategory: return .purple
         case "iPhone":   return Color(white: 0.35)
         case "Customer": return .gray
         default:         return .challengrYellow
@@ -304,6 +313,7 @@ struct ChallengeDialogView: View {
         case "Fitness":  return "sportscourt"
         case "Mutprobe": return "flame"
         case "Wissen":   return "lightbulb"
+        case ChallengeDialogView.quizCategory: return "brain.head.profile"
         case "iPhone":   return "iphone"
         case "Customer": return "person.2"
         default:         return "questionmark"

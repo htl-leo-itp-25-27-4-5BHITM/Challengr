@@ -4,6 +4,8 @@ import SwiftUI
 enum BattleMode: String, CaseIterable, Identifiable {
     /// Es geht um nichts: Kategorie und Challenge frei wählbar.
     case friendly = "FRIENDLY"
+    /// Es geht um nichts: Quiz-Show wie in der Liga.
+    case friendlyQuiz = "FRIENDLY_QUIZ"
     /// Liga, Wissen: Quiz-Show mit 4 Fragen.
     case rankedKnowledge = "RANKED_KNOWLEDGE"
     /// Liga, Real-Life: zufällige vom Handy gemessene Challenge.
@@ -17,11 +19,15 @@ enum BattleMode: String, CaseIterable, Identifiable {
         self = serverValue.flatMap(BattleMode.init(rawValue:)) ?? .friendly
     }
 
-    var isRanked: Bool { self != .friendly }
+    var isRanked: Bool { self == .rankedKnowledge || self == .rankedRealLife }
+
+    /// Quiz-Show mit 4 Fragen (Liga oder Friendly).
+    var isQuiz: Bool { self == .rankedKnowledge || self == .friendlyQuiz }
 
     var title: String {
         switch self {
         case .friendly:        return "Friendly"
+        case .friendlyQuiz:    return "Friendly · Quiz-Show"
         case .rankedKnowledge: return "Liga · Quiz-Show"
         case .rankedRealLife:  return "Liga · Real-Life"
         }
@@ -31,7 +37,7 @@ enum BattleMode: String, CaseIterable, Identifiable {
     var shortTitle: String {
         switch self {
         case .friendly:        return "Friendly"
-        case .rankedKnowledge: return "Quiz-Show"
+        case .friendlyQuiz, .rankedKnowledge: return "Quiz-Show"
         case .rankedRealLife:  return "Real-Life-Challenge"
         }
     }
@@ -39,6 +45,7 @@ enum BattleMode: String, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .friendly:        return "Es geht um nichts – du wählst die Challenge"
+        case .friendlyQuiz:    return "Quiz-Show · 4 Fragen · ohne Trophäen"
         case .rankedKnowledge: return "Quiz-Show · 4 Fragen · Tempo zählt"
         case .rankedRealLife:  return "Zufällige Handy-Challenge · gemessen"
         }
@@ -47,6 +54,7 @@ enum BattleMode: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .friendly:        return "hand.wave.fill"
+        case .friendlyQuiz:    return "brain.head.profile"
         case .rankedKnowledge: return "brain.head.profile"
         case .rankedRealLife:  return "figure.run"
         }
@@ -54,7 +62,7 @@ enum BattleMode: String, CaseIterable, Identifiable {
 
     var color: Color {
         switch self {
-        case .friendly:        return .challengrGreen
+        case .friendly, .friendlyQuiz: return .challengrGreen
         case .rankedKnowledge: return .purple
         case .rankedRealLife:  return .challengrRed
         }
@@ -63,7 +71,7 @@ enum BattleMode: String, CaseIterable, Identifiable {
     /// Text für die Trophäen-Änderung auf dem Ergebnis-Screen.
     func trophyText(delta: Int) -> String {
         switch self {
-        case .friendly:        return "Friendly – es ging um nichts"
+        case .friendly, .friendlyQuiz: return "Friendly – es ging um nichts"
         case .rankedKnowledge, .rankedRealLife: return "\(delta >= 0 ? "+" : "")\(delta) Trophäen"
         }
     }

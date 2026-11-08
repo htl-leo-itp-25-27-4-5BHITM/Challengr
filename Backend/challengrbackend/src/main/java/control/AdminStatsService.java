@@ -96,7 +96,7 @@ public class AdminStatsService {
                     players.stream().filter(p -> day.equals(firstDay.get(p.getId()))).count(),
                     done.stream().filter(b -> mode(b) == BattleMode.RANKED_KNOWLEDGE).count(),
                     done.stream().filter(b -> mode(b) == BattleMode.RANKED_REALLIFE).count(),
-                    done.stream().filter(b -> mode(b) == BattleMode.FRIENDLY).count(),
+                    done.stream().filter(b -> mode(b).isFriendly()).count(),
                     checkins.stream().filter(c -> day.equals(c.getDay())).count()));
         }
 
@@ -133,7 +133,7 @@ public class AdminStatsService {
         List<NamedCount> modes = List.of(
                 new NamedCount("Quiz-Show", doneInRange.stream().filter(b -> mode(b) == BattleMode.RANKED_KNOWLEDGE).count()),
                 new NamedCount("Real-Life", doneInRange.stream().filter(b -> mode(b) == BattleMode.RANKED_REALLIFE).count()),
-                new NamedCount("Friendly", doneInRange.stream().filter(b -> mode(b) == BattleMode.FRIENDLY).count()),
+                new NamedCount("Friendly", doneInRange.stream().filter(b -> mode(b).isFriendly()).count()),
                 new NamedCount("Übung", allBattles.stream().filter(b -> PracticeBot.isPractice(b) && "DONE".equals(b.getStatus())
                         && !day(b.getCreatedAt()).isBefore(from)).count()));
 
@@ -161,12 +161,12 @@ public class AdminStatsService {
                 Collectors.counting()));
 
         Map<String, Long> perChallenge = doneInRange.stream()
-                .filter(b -> mode(b) != BattleMode.RANKED_KNOWLEDGE && b.getChallenge() != null)
+                .filter(b -> !mode(b).isQuiz() && b.getChallenge() != null)
                 .collect(Collectors.groupingBy(b -> shortName(b.getChallenge().getText()), Collectors.counting()));
 
         Map<String, long[]> record = new HashMap<>();   // [battles, wins]
         for (Battle b : battles) {
-            if (!"DONE".equals(b.getStatus()) || mode(b) == BattleMode.FRIENDLY) continue;
+            if (!"DONE".equals(b.getStatus()) || mode(b).isFriendly()) continue;
             for (Player p : List.of(b.getFromPlayer(), b.getToPlayer())) {
                 long[] r = record.computeIfAbsent(p.getId(), x -> new long[2]);
                 r[0]++;

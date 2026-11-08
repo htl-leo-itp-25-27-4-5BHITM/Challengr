@@ -418,7 +418,7 @@ public class PlayerRessources {
         public String status;
         public int pointsDelta;
         public boolean won;
-        /** FRIENDLY, RANKED_KNOWLEDGE oder RANKED_REALLIFE */
+        /** FRIENDLY, FRIENDLY_QUIZ, RANKED_KNOWLEDGE oder RANKED_REALLIFE */
         public String mode;
 
         public BattleHistoryDTO() {}
@@ -579,7 +579,7 @@ public class PlayerRessources {
             }
 
             String category = b.getCategory() != null ? b.getCategory().getName() : "";
-            String challengeText = control.BattleMode.from(b.getType()) == control.BattleMode.RANKED_KNOWLEDGE
+            String challengeText = control.BattleMode.from(b.getType()).isQuiz()
                     ? "Quiz-Show" : b.getChallenge() != null ? b.getChallenge().getText() : "";
             String winnerName = b.getWinner() != null ? b.getWinner().getName() : null;
 

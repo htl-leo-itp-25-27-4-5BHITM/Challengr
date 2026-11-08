@@ -42,6 +42,7 @@ public class PushService {
             case RANKED_KNOWLEDGE -> "Quiz-Show in der Liga";
             case RANKED_REALLIFE -> "Real-Life-Challenge in der Liga";
             case FRIENDLY -> "Friendly";
+            case FRIENDLY_QUIZ -> "Quiz-Show (Friendly)";
         };
         notifyOffline(toId, fromId, Kind.CHALLENGE, "⚔️ " + name(fromId) + " fordert dich heraus!",
                 what + " – schnell öffnen, die Anfrage läuft nach einer Minute ab.");

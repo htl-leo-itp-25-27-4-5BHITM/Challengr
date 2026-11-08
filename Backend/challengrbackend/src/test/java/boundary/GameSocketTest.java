@@ -312,6 +312,34 @@ class GameSocketTest {
     }
 
     @Test
+    void friendlyQuizShowCountsNoTrophies() throws Exception {
+        GameSocket.quizIntro = Duration.ofMillis(50);
+        GameSocket.quizRevealPause = Duration.ofMillis(50);
+        WsTestClient attacker = connect(A);
+        WsTestClient defender = connect(B);
+        int before = trophies(A);
+        long battleId = createAcceptedRanked(attacker, defender, "FRIENDLY_QUIZ");
+
+        for (int round = 1; round <= 4; round++) {
+            JsonNode qa = attacker.await("quiz-question", 5);
+            assertNotNull(qa, "Frage " + round);
+            assertNotNull(defender.await("quiz-question", 5));
+            int correct = correctIndexFor(qa.get("question").get("id").asLong());
+            attacker.send(quizAnswer(battleId, round, correct));
+            defender.send(quizAnswer(battleId, round, (correct + 1) % 4));
+            assertNotNull(attacker.await("quiz-round-result", 5));
+            defender.await("quiz-round-result", 5);
+        }
+
+        JsonNode result = attacker.await("battle-result", 5);
+        assertNotNull(result);
+        assertEquals(A, result.get("winnerId").asText());
+        assertEquals("FRIENDLY_QUIZ", result.get("mode").asText());
+        assertEquals(0, result.get("winnerPointsDelta").asInt(), "Friendly: keine Trophäen");
+        assertEquals(before, trophies(A));
+    }
+
+    @Test
     void quizRoundClosesWhenNobodyAnswers() throws Exception {
         GameSocket.quizIntro = Duration.ofMillis(50);
         GameSocket.quizRevealPause = Duration.ofMillis(50);

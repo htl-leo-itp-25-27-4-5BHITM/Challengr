@@ -523,7 +523,7 @@ struct MapView: View {
             battleMode = socket.modeByBattle[battleId] ?? .friendly
             friendlyWaiting = false
             opponentFinished = false
-            if battleMode == .rankedKnowledge { quizModel.start(battleId: battleId) }
+            if battleMode.isQuiz { quizModel.start(battleId: battleId) }
         }
         .onChange(of: showProfile) { isShown in
             if isShown {
@@ -555,7 +555,7 @@ struct MapView: View {
                 if let info = activeBattleInfo,
                    let battleId = currentBattleId {
 
-                    if battleMode == .rankedKnowledge {
+                    if battleMode.isQuiz {
                         QuizShowView(
                             model: quizModel,
                             battleId: battleId,

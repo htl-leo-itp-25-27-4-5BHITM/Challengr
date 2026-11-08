@@ -453,7 +453,7 @@ public class GameSocket {
                 ? battle.getChallenge().getChallengeCategory().getName() : "";
         control.BattleMode mode = control.BattleMode.from(battle.getType());
         // Liga Wissen: die erste Frage nicht schon in der Anfrage verraten
-        String challengeText = mode == control.BattleMode.RANKED_KNOWLEDGE
+        String challengeText = mode.isQuiz()
                 ? "Quiz-Show: " + QUIZ_ROUNDS + " Fragen" : battle.getChallenge().getText();
         return """
     {
@@ -619,7 +619,7 @@ public class GameSocket {
     }
 
     private void afterAccepted(Battle battle) {
-        if (control.BattleMode.from(battle.getType()) == control.BattleMode.RANKED_KNOWLEDGE) {
+        if (control.BattleMode.from(battle.getType()).isQuiz()) {
             startQuiz(battle);
         } else if (isKnowledgeBattle(battle)) {
             sendKnowledgeQuestion(battle);
@@ -1558,7 +1558,7 @@ public class GameSocket {
         Long battleId = requireLong(msg, "battleId");
         Battle battle = battleService.findById(battleId);
         if (battle == null || playerId == null || !isParticipant(battle, playerId) || !isRunning(battle)
-                || control.BattleMode.from(battle.getType()).isRanked()) {
+                || control.BattleMode.from(battle.getType()) != control.BattleMode.FRIENDLY) {
             System.out.println("friendly-finished ignoriert: " + msg);
             return;
         }

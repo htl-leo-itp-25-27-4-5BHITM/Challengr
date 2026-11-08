@@ -223,4 +223,14 @@ final class LeagueModeTests: XCTestCase {
         socket.handleIncoming(text: #"{"type":"opponent-finished","battleId":6}"#)
         await fulfillment(of: [q, o, r, f], timeout: 2)
     }
+
+    func testFriendlyQuizShowIsAQuizWithoutTrophies() {
+        let mode = BattleMode(serverValue: "FRIENDLY_QUIZ")
+        XCTAssertEqual(mode, .friendlyQuiz)
+        XCTAssertTrue(mode.isQuiz)
+        XCTAssertFalse(mode.isRanked)
+        XCTAssertTrue(BattleMode.rankedKnowledge.isQuiz)
+        XCTAssertFalse(BattleMode.friendly.isQuiz)
+        XCTAssertEqual(mode.trophyText(delta: 0), "Friendly – es ging um nichts")
+    }
 }

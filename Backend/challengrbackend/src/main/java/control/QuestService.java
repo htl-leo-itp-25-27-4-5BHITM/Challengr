@@ -188,7 +188,7 @@ public class QuestService {
                         .filter(b -> b.getWinner() != null && playerId.equals(b.getWinner().getId())).count();
                 case QUIZ_SHOWS -> (int) battles().stream().filter(b -> BattleMode.from(b.getType()) == BattleMode.RANKED_KNOWLEDGE).count();
                 case REALLIFE -> (int) battles().stream().filter(b -> BattleMode.from(b.getType()) == BattleMode.RANKED_REALLIFE).count();
-                case FRIENDLIES -> (int) battles().stream().filter(b -> BattleMode.from(b.getType()) == BattleMode.FRIENDLY).count();
+                case FRIENDLIES -> (int) battles().stream().filter(b -> BattleMode.from(b.getType()).isFriendly()).count();
                 case FRIEND_BATTLES -> {
                     Set<String> friends = new HashSet<>(friendships.listFriendIds(playerId));
                     yield (int) battles().stream().filter(b -> friends.contains(opponent(b))).count();

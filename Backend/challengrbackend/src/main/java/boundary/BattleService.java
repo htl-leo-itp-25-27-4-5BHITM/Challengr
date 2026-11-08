@@ -378,16 +378,16 @@ public class BattleService {
             return challenge;
         }
         List<Challenges> pool = challengeRepository.findChallengesByKat(
-                        mode == BattleMode.RANKED_KNOWLEDGE ? BattleMode.KNOWLEDGE_CATEGORY : BattleMode.REALLIFE_CATEGORY)
+                        mode.isQuiz() ? BattleMode.KNOWLEDGE_CATEGORY : BattleMode.REALLIFE_CATEGORY)
                 .stream()
-                .filter(c -> mode != BattleMode.RANKED_KNOWLEDGE || c.getCorrectIndex() != null)
+                .filter(c -> !mode.isQuiz() || c.getCorrectIndex() != null)
                 // Üben: kein Check-In-Spot (bis zu 500 m laufen, um gegen einen Bot zu gewinnen)
                 .filter(c -> !practice || c.getText() == null || !c.getText().contains("Check-In-Spot"))
                 .toList();
         if (pool.isEmpty()) {
             throw new BattleRejectedException("Für diese Liga gibt es noch keine Challenges");
         }
-        if (mode == BattleMode.RANKED_KNOWLEDGE) {
+        if (mode.isQuiz()) {
             // erste Quiz-Frage: eine, die beide zuletzt nicht hatten
             return quizHistory.freshFirst(pool, RANDOM, fromPlayerId, toPlayerId).get(0);
         }
