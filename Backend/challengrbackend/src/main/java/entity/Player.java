@@ -81,6 +81,10 @@ public class Player {
     @Column(name = "glitch_unlocked", columnDefinition = "boolean default false not null")
     private boolean glitchUnlocked = false;
 
+    /** Riss-Splitter aus besiegten Riss-Wächtern (Währung für Boss-Skins) */
+    @Column(name = "rift_shards", columnDefinition = "integer default 0 not null")
+    private int riftShards = 0;
+
     /** Wie oft dieser Spieler ein Kopfgeld kassiert hat. */
     @Column(name = "bounties_claimed", columnDefinition = "integer default 0 not null")
     private int bountiesClaimed = 0;
@@ -285,6 +289,14 @@ public class Player {
 
     public void setGlitchUnlocked(boolean glitchUnlocked) {
         this.glitchUnlocked = glitchUnlocked;
+    }
+
+    public int getRiftShards() {
+        return riftShards;
+    }
+
+    public void setRiftShards(int riftShards) {
+        this.riftShards = riftShards;
     }
 
     public int getBountiesClaimed() {

@@ -163,6 +163,11 @@ struct MapView: View {
     @State private var nemesis: Nemesis?
     /// Läuft gerade eine Chaos-Stunde?
     @State private var chaos: ChaosStatus = .off
+    /// Riss-Wächter in der Nähe, eigene Riss-Splitter, Popup und laufender Kampf
+    @State private var bosses: [BossView] = []
+    @State private var riftShards = 0
+    @State private var selectedBoss: BossView?
+    @State private var bossFight: BossFightModel?
     @State private var ownPlayerName: String
     @State private var ownCoordinate: CLLocationCoordinate2D? = nil
     
@@ -492,6 +497,16 @@ struct MapView: View {
         .overlay(hotspotPopupOverlay)
         .overlay(challengeDialogOverlay)
         .overlay(practiceOverlay)
+        .overlay(bossOverlay)
+        .fullScreenCover(isPresented: Binding(get: { bossFight != nil }, set: { if !$0 { bossFight = nil } })) {
+            if let bossFight {
+                BossFightView(model: bossFight, socket: socket) {
+                    self.bossFight = nil
+                    reloadOwnPlayerData()
+                    Task { await refreshBosses() }
+                }
+            }
+        }
         .overlay(incomingChallengeOverlay)
         .overlay(outgoingChallengeOverlay)
         .overlay(resultPendingOverlay)
@@ -806,6 +821,16 @@ struct MapView: View {
                 }
             }
 
+            // Riss-Wächter
+            ForEach(bosses) { boss in
+                MapCircle(center: boss.coordinate, radius: RiftBoss.joinRadius)
+                    .foregroundStyle(RiftBoss.purple.opacity(0.15))
+                    .stroke(RiftBoss.purple.opacity(0.85), style: StrokeStyle(lineWidth: 3, dash: [6, 4]))
+                Annotation("Riss-Wächter", coordinate: boss.coordinate, anchor: .bottom) {
+                    bossPin(boss)
+                }
+            }
+
             // Hotspots (Check-in-Punkte)
             ForEach(hotspots) { hotspot in
                 MapCircle(center: hotspot.coordinate, radius: hotspot.radiusMeters)
@@ -1109,6 +1134,9 @@ struct MapView: View {
         var pins: [ToonPin] = hotspots.map {
             ToonPin(id: "h-" + $0.id, coordinate: $0.coordinate, label: $0.name, content: AnyView(hotspotPin($0)))
         }
+        pins += bosses.map {
+            ToonPin(id: "b-\($0.id)", coordinate: $0.coordinate, label: "", priority: 1, content: AnyView(bossPin($0)))
+        }
         let spots = spotLayout
         pins += annotations.filter { !spots.hidden.contains($0.playerId) }.map {
             ToonPin(id: "p-" + $0.playerId, coordinate: spots.positions[$0.playerId] ?? $0.coordinate, label: $0.title,
@@ -1126,6 +1154,7 @@ struct MapView: View {
 
     private var toonCircles: [ToonCircle] {
         var circles = hotspots.map { ToonCircle(id: $0.id, center: $0.coordinate, radius: $0.radiusMeters, kind: .hotspot) }
+        circles += bosses.map { ToonCircle(id: "boss-\($0.id)", center: $0.coordinate, radius: RiftBoss.joinRadius, kind: .hotspot) }
         if let ownCoordinate {
             circles.append(ToonCircle(id: "range", center: ownCoordinate, radius: 200, kind: .range))
         }
@@ -2006,6 +2035,76 @@ struct MapView: View {
         }
     }
 
+    /// Riss-Wächter angetippt: Infos und Beitreten (nur in der Nähe)
+    private var bossOverlay: some View {
+        Group {
+            if let boss = selectedBoss {
+                let distance = ownCoordinate.map {
+                    CLLocation(latitude: $0.latitude, longitude: $0.longitude)
+                        .distance(from: CLLocation(latitude: boss.latitude, longitude: boss.longitude))
+                }
+                let near = (distance ?? .infinity) <= RiftBoss.joinRadius
+                ZStack {
+                    Color.black.opacity(0.35).ignoresSafeArea().onTapGesture { selectedBoss = nil }
+                    VStack(spacing: 12) {
+                        Text("RISS-WÄCHTER")
+                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .foregroundStyle(RiftBoss.purple)
+                        Text(boss.place)
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.8))
+                        Image(RiftBoss.imageName).resizable().scaledToFit().frame(height: 150)
+                        ProgressView(value: boss.hpFraction).tint(RiftBoss.purple)
+                        Text("Übermächtig: allein nicht zu schaffen. \(boss.fighters)/\(boss.minFighters) Kämpfer – der Kampf startet ab \(boss.minFighters). Belohnung: Riss-Splitter.")
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(GameStyle.secondaryText)
+                        if near {
+                            GamePrimaryButton(title: "Kämpfen", color: RiftBoss.purple) {
+                                bossFight = BossFightModel(boss: boss)
+                                selectedBoss = nil
+                            }
+                        } else {
+                            Text(distance.map { "Geh näher an den Riss (\(Int($0)) m)" } ?? "Standort unbekannt")
+                                .font(.system(size: 13, weight: .black, design: .rounded))
+                                .foregroundStyle(.challengrYellow)
+                        }
+                        Text("Deine Riss-Splitter: \(riftShards)")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                    .padding(18)
+                    .frame(maxWidth: 330)
+                    .gameOverlayCard()
+                }
+                .transition(.scale)
+            }
+        }
+    }
+
+    private func bossPin(_ boss: BossView) -> some View {
+        Button {
+            closePlayerPopup()
+            withAnimation { selectedBoss = boss }
+        } label: {
+            BossMapPin(boss: boss)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func refreshBosses() async {
+        guard let nearby = try? await RiftBoss.load() else { return }
+        let newOnes = nearby.bosses.filter { b in !bosses.contains { $0.id == b.id } }
+        if let first = newOnes.first, activeFullScreen == .none {
+            showMapBanner(icon: "bolt.trianglebadge.exclamationmark.fill",
+                          text: "Ein Riss-Wächter ist bei \(first.place) aufgetaucht! Allein keine Chance – holt Verstärkung.", seconds: 6) {
+                selectedBoss = first
+            }
+        }
+        withAnimation { bosses = nearby.bosses }
+        riftShards = nearby.shards
+    }
+
     /// Menü → Üben
     private var practiceOverlay: some View {
         Group {
@@ -2246,6 +2345,7 @@ struct MapView: View {
     /// Sets up WebSocket and preloads challenges (WebSocket starten & Challenges vorladen)
     private func setupSocket() {
         socket.connect()
+        socket.onBossMessage = { message in bossFight?.apply(message) }
 
         // Preload challenges for all categories once at startup.
         Task {
@@ -2751,6 +2851,7 @@ struct MapView: View {
             }
             // Spieler gleiten zur neuen Position statt zu springen
             withAnimation(.easeInOut(duration: 0.8)) { annotations = updated }
+            Task { await refreshBosses() }
             announceArrivals(updated)
 
             if let me = players.first(where: { $0.id == ownPlayerId }) {

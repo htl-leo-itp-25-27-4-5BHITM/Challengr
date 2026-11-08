@@ -25,6 +25,8 @@ public final class CharacterCatalog {
         EVENT,
         /** kassierte Kopfgelder (BountyService) */
         BOUNTIES,
+        /** Riss-Splitter aus Riss-Wächter-Kämpfen (RiftBossService) – Boss-Skins */
+        SHARDS,
         /** Geheimnis – frei, sobald es gelüftet ist (z. B. GlitchSecret); steht wie Events in Progress.events */
         SECRET
     }
@@ -38,13 +40,14 @@ public final class CharacterCatalog {
 
     /** Was ein Spieler bisher erreicht hat – daraus ergibt sich, was frei ist. */
     /** events = Figuren-Ids aus abgeholten Event-Belohnungen */
-    public record Progress(int wins, int knowledgeWins, int checkins, int trophies, java.util.Set<String> events, int bounties) {
+    public record Progress(int wins, int knowledgeWins, int checkins, int trophies, java.util.Set<String> events, int bounties,
+                           int shards) {
         public Progress(int wins, int knowledgeWins, int checkins, int trophies) {
-            this(wins, knowledgeWins, checkins, trophies, java.util.Set.of(), 0);
+            this(wins, knowledgeWins, checkins, trophies, java.util.Set.of(), 0, 0);
         }
 
         public Progress(int wins, int knowledgeWins, int checkins, int trophies, java.util.Set<String> events) {
-            this(wins, knowledgeWins, checkins, trophies, events, 0);
+            this(wins, knowledgeWins, checkins, trophies, events, 0, 0);
         }
 
         public int of(Requirement r) {
@@ -55,6 +58,7 @@ public final class CharacterCatalog {
                 case CHECKINS -> checkins;
                 case TROPHIES -> trophies;
                 case BOUNTIES -> bounties;
+                case SHARDS -> shards;
             };
         }
 
@@ -79,6 +83,7 @@ public final class CharacterCatalog {
             new Entry("kage", "Kage", Requirement.TROPHIES, 1400),             // Dueler
             new Entry("sir-brecht-blitz", "Blitzritter", Requirement.TROPHIES, 2000), // Challengr – legendärer Skin von Sir Brecht
             new Entry("kaeptn-rex-jaeger", "Kopfgeldjäger", Requirement.BOUNTIES, 5), // mythischer Skin von Käpt'n Rex
+            new Entry("ragnar-kristall", "Kristall-Ragnar", Requirement.SHARDS, 60), // Boss-Skin von Ragnar
             // Geheime Figur (control.GlitchSecret)
             new Entry(GlitchSecret.ID, "Glitch", Requirement.SECRET, 1),
             // Event-Belohnungen (QuestCatalog.EVENTS)

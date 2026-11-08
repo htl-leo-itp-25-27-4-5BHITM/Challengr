@@ -84,6 +84,16 @@ public class WsTestClient {
         return null;
     }
 
+    /** Wartet auf die nächste Nachricht dieses Typs, die die Bedingung erfüllt (andere werden verworfen). */
+    JsonNode awaitMatching(String type, java.util.function.Predicate<JsonNode> condition, long seconds) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(seconds);
+        while (System.nanoTime() < deadline) {
+            JsonNode m = messages.poll(50, TimeUnit.MILLISECONDS);
+            if (m != null && type.equals(m.path("type").asText()) && condition.test(m)) return m;
+        }
+        return null;
+    }
+
     /** Wartet auf "battle-updated" mit genau diesem Status. */
     JsonNode awaitStatus(String status, long seconds) throws InterruptedException {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(seconds);

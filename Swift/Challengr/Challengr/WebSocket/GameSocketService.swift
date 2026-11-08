@@ -62,6 +62,8 @@ final class GameSocketService: ObservableObject {
     }
     
     var onBattleResult: ((BattleResultData) -> Void)?
+    /// Riss-Wächter: alle Nachrichten "boss-…" (state, phase, slam, finale, end, rejected)
+    var onBossMessage: ((BossMessage) -> Void)?
     /// Emote von einem anderen Spieler: fromId, Emoji/Sticker, battleId (nil = auf der Karte)
     var onEmote: ((String, EmoteEvent, Int64?) -> Void)?
     /// Neuer Stand eines Stickers nach dem Verschicken: stickerId, wie viele noch übrig sind
@@ -249,6 +251,14 @@ final class GameSocketService: ObservableObject {
         if let challengeId { payload["challengeId"] = challengeId }
         send(json: payload)
     }
+
+    // MARK: - Riss-Wächter
+
+    func sendBossJoin(bossId: Int64) { send(json: ["type": "boss-join", "bossId": bossId]) }
+    /// units = Tipper/Schüttler seit dem letzten Paket
+    func sendBossHit(bossId: Int64, units: Int) { send(json: ["type": "boss-hit", "bossId": bossId, "units": units]) }
+    func sendBossDodge(bossId: Int64) { send(json: ["type": "boss-dodge", "bossId": bossId]) }
+    func sendBossScream(bossId: Int64, db: Double) { send(json: ["type": "boss-scream", "bossId": bossId, "db": db]) }
 
     /// Antwort in der Quiz-Show (Runde ab 1).
     func sendQuizAnswer(battleId: Int64, round: Int, answerIndex: Int) {
@@ -464,6 +474,11 @@ final class GameSocketService: ObservableObject {
         do {
             guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let type = json["type"] as? String else {
+                return
+            }
+
+            if type.hasPrefix("boss-") {
+                if let message = BossMessage(json: json) { onBossMessage?(message) }
                 return
             }
 

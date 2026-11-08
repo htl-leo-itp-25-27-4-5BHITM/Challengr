@@ -482,7 +482,7 @@ public class PlayerRessources {
         var flags = new java.util.HashSet<>(questService.claimedRewardCharacters(player.getId()));
         if (player.isGlitchUnlocked()) flags.add(control.GlitchSecret.ID);
         return new CharacterCatalog.Progress(won.size(), knowledgeWins, checkins, player.getHighestTrophies(),
-                flags, player.getBountiesClaimed());
+                flags, player.getBountiesClaimed(), player.getRiftShards());
     }
 
     /** Frei nach den Regeln – oder schon gewählt (z.B. vor einer Regeländerung freigeschaltet), die bleibt dem Spieler. */

@@ -60,7 +60,7 @@ final class GameCharacterTests: XCTestCase {
 
     func testOutfitPresetsAreAllCharacters() {
         XCTAssertEqual(AvatarPresets.presets(for: .outfits).compactMap(\.character), GameCharacter.allCases.filter { !$0.isSkin })
-        XCTAssertEqual(AvatarPresets.presets(for: .skins).compactMap(\.character), [.sirBrechtBlitz, .kaeptnRexJaeger])
+        XCTAssertEqual(AvatarPresets.presets(for: .skins).compactMap(\.character), [.sirBrechtBlitz, .kaeptnRexJaeger, .ragnarKristall])
     }
 
     func testSkinsBelongToTheirCharacter() {

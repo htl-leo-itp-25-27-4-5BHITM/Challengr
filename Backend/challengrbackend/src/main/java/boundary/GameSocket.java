@@ -80,6 +80,9 @@ public class GameSocket {
     private static final String NOBODY = "";
 
     @Inject
+    control.RiftBossService riftBoss;
+
+    @Inject
     control.GlitchSecret glitchSecret;
 
     @Inject
@@ -229,6 +232,10 @@ public class GameSocket {
                 case "send-emote"           -> handleEmote(msg, playerId);
                 case "quiz-answer"          -> handleQuizAnswer(msg, playerId);
                 case "friendly-finished"    -> handleFriendlyFinished(msg, playerId);
+                case "boss-join"            -> handleBossJoin(msg, playerId);
+                case "boss-hit"             -> riftBoss.hit(requireLong(msg, "bossId"), playerId, msg.path("units").asInt(0));
+                case "boss-dodge"           -> riftBoss.dodge(requireLong(msg, "bossId"), playerId);
+                case "boss-scream"          -> riftBoss.scream(requireLong(msg, "bossId"), playerId, msg.path("db").asDouble(-60));
                 default -> sendError(session, "Unknown type");
             }
         } catch (Exception e) {
@@ -257,6 +264,17 @@ public class GameSocket {
      * Bei einem Sticker setzt der Server das Ersatz-Emoji selbst – alte Apps zeigen dann einfach das Emoji.
      * Sticker sind gesammelt (StickerRepository): jeder Versand verbraucht einen, der Absender bekommt den neuen Stand.
      */
+    /** Riss-Wächter beitreten – Position vom Server (wie bei nearby), nicht vom Client. */
+    private void handleBossJoin(JsonNode msg, String playerId) {
+        Long bossId = requireLong(msg, "bossId");
+        Player p = playerId == null ? null : io.quarkus.narayana.jta.QuarkusTransaction.requiringNew().call(() -> playerRepository.findById(playerId));
+        if (p == null) return;
+        String error = riftBoss.join(bossId, playerId, p.getLatitude(), p.getLongitude());
+        if (error != null) {
+            sendToPlayer(playerId, "{\"type\":\"boss-rejected\",\"bossId\":%d,\"reason\":\"%s\"}".formatted(bossId, escapeJson(error)));
+        }
+    }
+
     private void handleEmote(JsonNode msg, String senderId) {
         String toId  = msg.path("toId").asText(null);
         String emoji = msg.path("emoji").asText(null);

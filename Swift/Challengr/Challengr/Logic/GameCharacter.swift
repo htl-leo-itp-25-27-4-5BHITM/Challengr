@@ -23,6 +23,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
     // Skins (andere Optik einer Figur, eigenes Modell)
     case sirBrechtBlitz = "sir-brecht-blitz"
     case kaeptnRexJaeger = "kaeptn-rex-jaeger"
+    case ragnarKristall = "ragnar-kristall"
     // Geheim (nirgends angekündigt)
     case glitch = "glitch"
 
@@ -47,6 +48,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         switch self {
         case .sirBrechtBlitz: return .sirBrecht
         case .kaeptnRexJaeger: return .kaeptnRex
+        case .ragnarKristall: return .ragnar
         default: return nil
         }
     }
@@ -75,6 +77,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .frost:     return "Frost"
         case .sirBrechtBlitz: return "Blitzritter"
         case .kaeptnRexJaeger: return "Kopfgeldjäger"
+        case .ragnarKristall: return "Kristall-Ragnar"
         case .glitch:    return "Glitch"
         }
     }
@@ -95,6 +98,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .frost:            return "Eis-Boarderin · Event"
         case .sirBrechtBlitz:   return "Legendärer Skin · Sir Brecht"
         case .kaeptnRexJaeger:  return "Mythischer Skin · Käpt'n Rex"
+        case .ragnarKristall:   return "Boss-Skin · Ragnar"
         case .glitch:           return "Geheim · Fehler im System"
         }
     }
@@ -116,6 +120,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .frost:            return .event("Winter-Event")
         case .sirBrechtBlitz:   return .rank("Challengr", trophies: 2000)
         case .kaeptnRexJaeger:  return .bounties(5)
+        case .ragnarKristall:   return .shards(60)
         case .glitch:           return .secret
         }
     }
@@ -136,6 +141,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .frost:     return "Frost"
         case .sirBrechtBlitz: return "SirBrechtBlitz"
         case .kaeptnRexJaeger: return "RexJaeger"
+        case .ragnarKristall: return "RagnarKristall"
         case .glitch:    return "Glitch"
         }
     }
@@ -157,6 +163,7 @@ enum GameCharacter: String, CaseIterable, Identifiable {
         case .frost:     return Color(red: 0.25, green: 0.55, blue: 0.85)
         case .sirBrechtBlitz: return Color(red: 0.16, green: 0.13, blue: 0.22)
         case .kaeptnRexJaeger: return Color(red: 0.45, green: 0.06, blue: 0.12)
+        case .ragnarKristall: return Color(red: 0.42, green: 0.22, blue: 0.7)
         case .glitch:    return Color(red: 0.25, green: 0.1, blue: 0.45)
         }
     }
@@ -192,6 +199,8 @@ enum UnlockRequirement: Equatable {
     case event(String)
     /// Kassierte Kopfgelder (mythischer Skin)
     case bounties(Int)
+    /// Riss-Splitter aus Riss-Wächter-Kämpfen (Boss-Skins)
+    case shards(Int)
     /// Geheimnis – Bedingung wird nicht verraten
     case secret
 
@@ -199,7 +208,7 @@ enum UnlockRequirement: Equatable {
         switch self {
         case .none: return 0
         case .event, .secret: return 1
-        case .wins(let n), .knowledgeWins(let n), .checkins(let n), .rank(_, let n), .bounties(let n): return n
+        case .wins(let n), .knowledgeWins(let n), .checkins(let n), .rank(_, let n), .bounties(let n), .shards(let n): return n
         }
     }
 
@@ -213,6 +222,7 @@ enum UnlockRequirement: Equatable {
         case .knowledgeWins(let n): return "\(p)\(n) Quiz-Siege"
         case .checkins(let n):      return "\(p)\(n) Check-ins"
         case .bounties(let n):      return "\(p)\(n) Kopfgelder"
+        case .shards(let n):        return "\(p)\(n) Riss-Splitter"
         case .secret:               return "???"
         case .rank(let name, let n): return progress == nil ? "Rang \(name)" : "Rang \(name) · \(p)\(n)"
         case .event(let name):      return name
