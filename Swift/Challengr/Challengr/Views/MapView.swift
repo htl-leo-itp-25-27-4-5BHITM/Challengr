@@ -155,6 +155,8 @@ struct MapView: View {
     /// Static ownPlayerName & coordinates
     /// Eigenes Kopfgeld (man wird gejagt)
     @State private var ownHasBounty = false
+    /// Meistgespielter Gegner mit Bilanz (nil = noch keiner)
+    @State private var nemesis: Nemesis?
     @State private var ownPlayerName: String
     @State private var ownCoordinate: CLLocationCoordinate2D? = nil
     
@@ -894,6 +896,7 @@ struct MapView: View {
             Task { await syncCharacterAndUnlocks() }
             Task { await loadHotspots() }
             Task { await refreshQuestBadge() }
+            Task { await refreshNemesis() }
             Task { await showAnnouncementIfNew() }
             Task {
                 await StickerCollection.shared.load()
@@ -1047,6 +1050,9 @@ struct MapView: View {
                     goldFrame: annotation.goldFrame,
                     bounty: annotation.bounty
                 )
+                .overlay(alignment: .topTrailing) {
+                    if nemesis?.playerId == annotation.playerId { NemesisBadge().offset(x: -4, y: 8) }
+                }
             }
             .buttonStyle(.plain)
             .accessibilityLabel(annotation.title)
@@ -1291,6 +1297,12 @@ struct MapView: View {
                             .font(.system(size: 10, weight: .bold, design: .rounded))
                             .tracking(1)
                             .foregroundStyle(rankColor(for: player.rankName))
+                        if let nemesis, nemesis.playerId == player.playerId {
+                            Label("ERZFEIND · \(nemesis.recordText.uppercased())", systemImage: "flame.fill")
+                                .font(.system(size: 9, weight: .black, design: .rounded))
+                                .tracking(0.6)
+                                .foregroundStyle(NemesisBadge.color)
+                        }
                         if player.bounty {
                             Label("KOPFGELD · +\(Bounty.bonus) 🏆, WENN DU GEWINNST", systemImage: "crown.fill")
                                 .font(.system(size: 9, weight: .black, design: .rounded))
@@ -1762,10 +1774,25 @@ struct MapView: View {
     }
 
     /// Neue Spieler im Radius kurz ankündigen.
+    private func refreshNemesis() async {
+        let found = try? await NemesisService().load()
+        nemesis = found ?? nil
+    }
+
     private func announceArrivals(_ players: [PlayerAnnotation]) {
         let ids = players.map(\.playerId)
         let arrivals = MapVibe.newArrivals(previous: knownNearbyIds, current: ids)
         knownNearbyIds = ids
+        // Erzfeind taucht auf: eigene Meldung mit Bilanz, Tipp öffnet sein Popup
+        if let nemesis, arrivals.contains(nemesis.playerId),
+           let player = players.first(where: { $0.playerId == nemesis.playerId }),
+           activeFullScreen == .none, !showPlayerPopup {
+            showMapBanner(icon: "flame.fill", text: "Dein Erzfeind \(nemesis.name) ist in der Nähe! Bilanz \(nemesis.recordText)", seconds: 5) {
+                selectedPlayer = player
+                showPlayerPopup = true
+            }
+            return
+        }
         guard let first = arrivals.first,
               let player = players.first(where: { $0.playerId == first }),
               activeFullScreen == .none, !showPlayerPopup else { return }
@@ -2392,6 +2419,7 @@ struct MapView: View {
             reloadOwnPlayerData()
             // Feedback 22.10.: geschaffte Tagesaufgabe gleich am Menü markieren, nicht erst beim nächsten Start
             Task { await refreshQuestBadge() }
+            Task { await refreshNemesis() }
 
             resultData = data
             activeFullScreen = .none

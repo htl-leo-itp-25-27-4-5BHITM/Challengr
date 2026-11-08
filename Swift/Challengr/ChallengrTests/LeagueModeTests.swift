@@ -243,4 +243,11 @@ final class LeagueModeTests: XCTestCase {
         let row = try JSONDecoder().decode(LeaderboardRow.self, from: Data(#"{"place":1,"playerId":"a","name":"Mia","trophies":900,"rankName":"Brawler","me":false,"bounty":true}"#.utf8))
         XCTAssertEqual(row.bounty, true)
     }
+
+    func testNemesisRecordText() throws {
+        let n = try JSONDecoder().decode(Nemesis.self, from: Data(#"{"playerId":"b","name":"Mia","battles":13,"wins":7,"losses":6}"#.utf8))
+        XCTAssertEqual(n.recordText, "7 : 6 für dich")
+        XCTAssertEqual(Nemesis(playerId: "b", name: "Mia", battles: 8, wins: 4, losses: 4).recordText, "4 : 4 – Gleichstand")
+        XCTAssertEqual(Nemesis(playerId: "b", name: "Mia", battles: 7, wins: 2, losses: 5).recordText, "2 : 5 für Mia")
+    }
 }
