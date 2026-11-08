@@ -250,4 +250,17 @@ final class LeagueModeTests: XCTestCase {
         XCTAssertEqual(Nemesis(playerId: "b", name: "Mia", battles: 8, wins: 4, losses: 4).recordText, "4 : 4 – Gleichstand")
         XCTAssertEqual(Nemesis(playerId: "b", name: "Mia", battles: 7, wins: 2, losses: 5).recordText, "2 : 5 für Mia")
     }
+
+    func testChaosStatusFromServer() throws {
+        let json = #"{"active":true,"rule":"GIANTS","title":"Riesen-Stunde","description":"Alle Figuren auf der Karte sind riesig.","endsAt":"2026-11-08T16:42:10.123456Z"}"#
+        let chaos = try JSONDecoder().decode(ChaosStatus.self, from: Data(json.utf8))
+        XCTAssertTrue(chaos.giants)
+        let end = try XCTUnwrap(chaos.endDate)
+        XCTAssertEqual(chaos.remainingText(now: end.addingTimeInterval(-37 * 60)), "noch 37 min")
+        let plain = ChaosStatus(active: true, rule: "MEGA_QUIZ", endsAt: "2026-11-08T16:42:10Z")
+        XCTAssertNotNil(plain.endDate, "auch ohne Sekundenbruchteile")
+        XCTAssertFalse(plain.giants)
+        let off = try JSONDecoder().decode(ChaosStatus.self, from: Data(#"{"active":false,"rule":null,"title":null,"description":null,"endsAt":null}"#.utf8))
+        XCTAssertFalse(off.active)
+    }
 }

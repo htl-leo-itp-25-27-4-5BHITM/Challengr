@@ -174,7 +174,7 @@ struct QuizShowView: View {
                 .shadow(color: .challengrYellow.opacity(0.6), radius: 16)
                 .scaleEffect(introAppeared ? 1 : 1.8)
                 .opacity(introAppeared ? 1 : 0)
-            Text("4 Fragen · 15 Sekunden · Tempo zählt")
+            Text("Wissensfragen · 15 Sekunden · Tempo zählt")
                 .font(.system(size: 14, weight: .bold, design: .rounded))
                 .foregroundColor(.white.opacity(0.8))
             ProgressView().tint(.white)

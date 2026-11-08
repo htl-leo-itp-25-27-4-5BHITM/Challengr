@@ -157,6 +157,8 @@ struct MapView: View {
     @State private var ownHasBounty = false
     /// Meistgespielter Gegner mit Bilanz (nil = noch keiner)
     @State private var nemesis: Nemesis?
+    /// Läuft gerade eine Chaos-Stunde?
+    @State private var chaos: ChaosStatus = .off
     @State private var ownPlayerName: String
     @State private var ownCoordinate: CLLocationCoordinate2D? = nil
     
@@ -438,8 +440,17 @@ struct MapView: View {
                 .padding(.top, 28)
                 .padding(.horizontal, 18)
 
-                HStack {
+                HStack(spacing: 8) {
                     trophiesChip
+                    if chaos.active {
+                        Button {
+                            showMapBanner(icon: "bolt.fill", text: chaos.description ?? "Chaos-Stunde!", seconds: 5)
+                        } label: {
+                            ChaosChip(status: chaos, now: skyClock)
+                        }
+                        .buttonStyle(.plain)
+                        .transition(.scale.combined(with: .opacity))
+                    }
                     Spacer()
                 }
                 .padding(.top, 10)
@@ -885,8 +896,9 @@ struct MapView: View {
         .accentColor(.challengrYellow)
         .ignoresSafeArea()
         .task {
-            // Himmel jede Minute an den Sonnenstand anpassen
+            // Himmel jede Minute an den Sonnenstand anpassen, Chaos-Stunde jede Minute prüfen
             while !Task.isCancelled {
+                await refreshChaos()
                 try? await Task.sleep(for: .seconds(60))
                 skyClock = SkyCycle.now()
             }
@@ -1015,6 +1027,7 @@ struct MapView: View {
             ringColor: .challengrYellow,
             sonar: true,
             seed: ownPlayerId,
+            height: chaos.giants ? 140 : 78,
             goldFrame: stickers.hasGoldFrame,
             bounty: ownHasBounty
         )
@@ -1047,6 +1060,7 @@ struct MapView: View {
                     character: annotation.character ?? .opponent,
                     ringColor: rankColor(for: annotation.rankName),
                     seed: annotation.playerId,
+                    height: chaos.giants ? 140 : 78,
                     goldFrame: annotation.goldFrame,
                     bounty: annotation.bounty
                 )
@@ -1774,6 +1788,14 @@ struct MapView: View {
     }
 
     /// Neue Spieler im Radius kurz ankündigen.
+    private func refreshChaos() async {
+        guard let status = try? await ChaosService().load() else { return }
+        if status.active && !chaos.active {
+            showMapBanner(icon: "bolt.fill", text: "⚡ CHAOS-STUNDE: \(status.title ?? "") – \(status.description ?? "")", seconds: 5)
+        }
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) { chaos = status }
+    }
+
     private func refreshNemesis() async {
         let found = try? await NemesisService().load()
         nemesis = found ?? nil

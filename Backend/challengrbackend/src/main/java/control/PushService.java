@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @ActivateRequestContext
 public class PushService {
 
-    public enum Kind { CHALLENGE, GIFT, FRIEND_REQUEST, FRIEND_ACCEPTED, BOUNTY }
+    public enum Kind { CHALLENGE, GIFT, FRIEND_REQUEST, FRIEND_ACCEPTED, BOUNTY, CHAOS }
 
     /** Gleiche Art vom gleichen Absender höchstens so oft – gegen Spam */
     static final Duration SAME_PUSH_GAP = Duration.ofSeconds(30);
@@ -58,6 +58,10 @@ public class PushService {
 
     public void friendAccepted(String toId, String fromId) {
         notifyOffline(toId, fromId, Kind.FRIEND_ACCEPTED, "🤝 Neuer Freund", name(fromId) + " hat deine Anfrage angenommen.");
+    }
+
+    public void chaos(String toId, ChaosService.Rule rule) {
+        notifyOffline(toId, null, Kind.CHAOS, "⚡ CHAOS-STUNDE: " + rule.title, rule.description + " Nur eine Stunde – los!");
     }
 
     public void bountyOnYou(String toId) {

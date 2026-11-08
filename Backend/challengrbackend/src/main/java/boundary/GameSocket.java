@@ -454,7 +454,7 @@ public class GameSocket {
         control.BattleMode mode = control.BattleMode.from(battle.getType());
         // Liga Wissen: die erste Frage nicht schon in der Anfrage verraten
         String challengeText = mode.isQuiz()
-                ? "Quiz-Show: " + QUIZ_ROUNDS + " Fragen" : battle.getChallenge().getText();
+                ? "Quiz-Show: " + quizRounds() + " Fragen" : battle.getChallenge().getText();
         return """
     {
       "type": "%s",
@@ -762,7 +762,9 @@ public class GameSocket {
                 loserDelta  = Optional.ofNullable(updated.getLoserPointsDelta()).orElse(0);
                 // Liga-Sieg: mit etwas Glück ein Sticker
                 if (control.BattleMode.from(battle.getType()).isRanked() && !control.PracticeBot.isPractice(battle)) {
-                    winnerSticker = stickerRepository.maybeWinDrop(winnerId, battleId);
+                    winnerSticker = stickerRepository.maybeWinDrop(winnerId, battleId,
+                            io.quarkus.arc.Arc.container().instance(control.ChaosService.class).get()
+                                    .active(control.ChaosService.Rule.STICKER_RAIN));
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -1309,6 +1311,13 @@ public class GameSocket {
     // ---------------------------------------------------------
 
     static final int QUIZ_ROUNDS = 4;
+    /** Chaos-Stunde „Mega-Quiz“ */
+    static final int MEGA_QUIZ_ROUNDS = 6;
+
+    private static int quizRounds() {
+        var chaos = io.quarkus.arc.Arc.container().instance(control.ChaosService.class).get();
+        return chaos != null && chaos.active(control.ChaosService.Rule.MEGA_QUIZ) ? MEGA_QUIZ_ROUNDS : QUIZ_ROUNDS;
+    }
     static final Duration DEFAULT_QUIZ_ROUND_TIME = Duration.ofSeconds(15);
     static final Duration DEFAULT_QUIZ_REVEAL = Duration.ofMillis(3500);
     static final Duration DEFAULT_QUIZ_INTRO = Duration.ofSeconds(3);
@@ -1358,7 +1367,7 @@ public class GameSocket {
     }
 
     private void startQuiz(Battle battle) {
-        List<Challenges> questions = battleService.quizQuestions(battle.getId(), QUIZ_ROUNDS);
+        List<Challenges> questions = battleService.quizQuestions(battle.getId(), quizRounds());
         if (questions.isEmpty()) {
             computeAndBroadcastResult(battle, List.of(NOBODY));
             return;

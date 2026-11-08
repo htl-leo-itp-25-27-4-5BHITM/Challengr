@@ -80,12 +80,23 @@ public class StickerRepository {
     /** Nach einem Liga-Sieg: mit etwas Glück ein Sticker (pro Battle höchstens einer, pro Tag höchstens ein paar). */
     @Transactional
     public String maybeWinDrop(String playerId, long battleId) {
-        return maybeWinDrop(playerId, battleId, RANDOM);
+        return maybeWinDrop(playerId, battleId, RANDOM, false);
+    }
+
+    /** rain = Chaos-Stunde „Sticker-Regen“: jeder Sieg bringt einen Sticker, höheres Tageslimit */
+    @Transactional
+    public String maybeWinDrop(String playerId, long battleId, boolean rain) {
+        return maybeWinDrop(playerId, battleId, RANDOM, rain);
     }
 
     @Transactional
     public String maybeWinDrop(String playerId, long battleId, Random rnd) {
-        if (rnd.nextInt(100) >= StickerCatalog.WIN_DROP_PERCENT) return null;
+        return maybeWinDrop(playerId, battleId, rnd, false);
+    }
+
+    @Transactional
+    public String maybeWinDrop(String playerId, long battleId, Random rnd, boolean rain) {
+        if (!rain && rnd.nextInt(100) >= StickerCatalog.WIN_DROP_PERCENT) return null;
         String key = "sticker-win:" + battleId;
         var today = QuestService.today();
         long dropsToday = em.createQuery("""
@@ -93,7 +104,8 @@ public class StickerRepository {
                         WHERE c.playerId = :p AND c.questKey LIKE 'sticker-win:%' AND c.day = :d
                         """, Long.class)
                 .setParameter("p", playerId).setParameter("d", today).getSingleResult();
-        if (dropsToday >= StickerCatalog.WIN_DROPS_PER_DAY || claimed(playerId, key)) return null;
+        int limit = rain ? StickerCatalog.RAIN_DROPS_PER_DAY : StickerCatalog.WIN_DROPS_PER_DAY;
+        if (dropsToday >= limit || claimed(playerId, key)) return null;
         em.persist(new QuestClaim(playerId, key, today, 0));
         return grantRandom(playerId);
     }

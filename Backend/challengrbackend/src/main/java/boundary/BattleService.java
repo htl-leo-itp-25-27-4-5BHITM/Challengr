@@ -19,6 +19,9 @@ public class BattleService {
     control.BountyService bountyService;
 
     @Inject
+    control.ChaosService chaos;
+
+    @Inject
     BattleRepository battleRepository;
 
     @Inject
@@ -387,6 +390,11 @@ public class BattleService {
                 // Üben: kein Check-In-Spot (bis zu 500 m laufen, um gegen einen Bot zu gewinnen)
                 .filter(c -> !practice || c.getText() == null || !c.getText().contains("Check-In-Spot"))
                 .toList();
+        // Chaos-Stunde „Nur Schreien“: Real-Life nur die Schrei-Challenge (falls es sie gibt)
+        if (mode == BattleMode.RANKED_REALLIFE && chaos.active(control.ChaosService.Rule.SCREAM_ONLY)) {
+            List<Challenges> scream = pool.stream().filter(c -> c.getText() != null && c.getText().startsWith("Schrei-Challenge")).toList();
+            if (!scream.isEmpty()) pool = scream;
+        }
         if (pool.isEmpty()) {
             throw new BattleRejectedException("Für diese Liga gibt es noch keine Challenges");
         }
@@ -458,6 +466,8 @@ public class BattleService {
         int loserBefore = loser.trophiesFor(mode);
         var trophyDelta = control.TrophyMath.delta(winner.trophiesFor(mode), loserBefore);
         int winnerDelta = trophyDelta.winnerDelta();
+        // Chaos-Stunde „Doppelte Trophäen“: der Sieger bekommt das Doppelte (der Verlierer verliert nicht mehr)
+        if (chaos.active(control.ChaosService.Rule.DOUBLE_TROPHIES)) winnerDelta *= 2;
         int loserDelta = trophyDelta.loserDelta();
         winner.setTrophiesFor(mode, winner.trophiesFor(mode) + winnerDelta);
         loser.setTrophiesFor(mode, loserBefore + loserDelta);

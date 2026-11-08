@@ -30,6 +30,8 @@ public final class StickerCatalog {
     /** Liga-Sieg: so oft (in Prozent) springt ein Sticker raus, höchstens so oft am Tag – sonst könnte man farmen. */
     public static final int WIN_DROP_PERCENT = 25;
     public static final int WIN_DROPS_PER_DAY = 3;
+    /** Chaos-Stunde „Sticker-Regen“ */
+    public static final int RAIN_DROPS_PER_DAY = 10;
 
     /** Sticker-Paket im Shop */
     public static final int PACK_SIZE = 3;
