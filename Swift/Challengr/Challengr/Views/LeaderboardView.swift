@@ -185,10 +185,16 @@ struct LeaderboardRowView: View {
                     .font(.system(size: 15, weight: .black, design: .rounded))
                     .foregroundColor(.white)
                     .lineLimit(1)
-                Text(row.rankName.uppercased())
-                    .font(.system(size: 10, weight: .black, design: .rounded))
-                    .tracking(0.8)
-                    .foregroundColor(ringColor)
+                HStack(spacing: 6) {
+                    Text(row.rankName.uppercased())
+                        .foregroundColor(ringColor)
+                    if row.bounty == true {
+                        Label("KOPFGELD", systemImage: "crown.fill")
+                            .foregroundColor(Bounty.red)
+                    }
+                }
+                .font(.system(size: 10, weight: .black, design: .rounded))
+                .tracking(0.8)
             }
             Spacer(minLength: 4)
 
@@ -204,6 +210,6 @@ struct LeaderboardRowView: View {
         }
         .gamePanel(padding: 10, cornerRadius: 16, highlight: row.me ? .challengrYellow : nil)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Platz \(row.place), \(row.name)\(row.me ? ", du" : ""), \(row.rankName), \(row.trophies) Trophäen")
+        .accessibilityLabel("Platz \(row.place), \(row.name)\(row.me ? ", du" : ""), \(row.rankName), \(row.trophies) Trophäen\(row.bounty == true ? ", trägt das Kopfgeld" : "")")
     }
 }

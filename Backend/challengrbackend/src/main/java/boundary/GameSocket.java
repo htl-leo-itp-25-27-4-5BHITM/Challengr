@@ -787,7 +787,7 @@ public class GameSocket {
 
         String metricsJson = buildMetricsJson(battle, winnerId, loserId);
         String outcome = isConflict ? "CONFLICT" : winnerId != null ? "WIN" : "DRAW";
-        metricsJson = metricsJson + buildQuizJson(battleId);
+        metricsJson = metricsJson + buildQuizJson(battleId) + buildBountyJson(battleId, winnerId);
 
         String payload = """
         {
@@ -1536,6 +1536,14 @@ public class GameSocket {
         String winner = from > to ? q.fromId : to > from ? q.toId : NOBODY;
         System.out.printf("Quiz-Show %d beendet: %d : %d%n", battleId, from, to);
         computeAndBroadcastResult(battle, List.of(winner));
+    }
+
+    /** Kassiertes Kopfgeld fürs Ergebnis ("bountyBonus"), sonst leer. */
+    private String buildBountyJson(Long battleId, String winnerId) {
+        if (winnerId == null) return "";
+        Battle b = battleService.findById(battleId);
+        Integer bonus = b == null ? null : b.getBountyBonus();
+        return bonus == null || bonus <= 0 ? "" : ",\n      \"bountyBonus\": %d".formatted(bonus);
     }
 
     /** Endstand der Quiz-Show fürs Ergebnis ("quiz": {fromScore, toScore}), sonst leer. */

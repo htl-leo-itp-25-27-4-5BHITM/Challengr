@@ -59,6 +59,8 @@ struct BattleResultData {
     var quizToScore: Int? = nil
     /// Liga-Sieg: Sticker, den der Sieger dazu bekommen hat (nicht immer)
     var winnerSticker: Sticker? = nil
+    /// Kopfgeld, das der Sieger kassiert hat (steckt schon in winnerPointsDelta)
+    var bountyBonus: Int? = nil
 
     /// Übung gegen den Trainings-Dummy – zählt nicht für die Liga
     var isPractice: Bool { participants?.isPractice ?? false }

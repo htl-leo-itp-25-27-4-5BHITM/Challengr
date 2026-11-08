@@ -34,7 +34,8 @@ public class LeaderboardResource {
 
     static final int TOP = 10;
 
-    public record Row(int place, String playerId, String name, int trophies, String rankName, String character, boolean me) {}
+    public record Row(int place, String playerId, String name, int trophies, String rankName, String character, boolean me,
+                      boolean bounty) {}
 
     /** {@code me} ist null, wenn es das eigene Konto (noch) nicht gibt. */
     public record Leaderboard(List<Row> school, List<Row> friends, Row me, int totalPlayers) {}
@@ -89,7 +90,7 @@ public class LeaderboardResource {
             if (!isMe && blocked.contains(p.getId())) continue;
             Rank rank = rankRepository.rankForPoints(p.getTrophies(), ranks);
             Row row = new Row(places[i], p.getId(), p.getName(), p.getTrophies(),
-                    rank == null ? "Unranked" : rank.getName(), p.getCharacter(), isMe);
+                    rank == null ? "Unranked" : rank.getName(), p.getCharacter(), isMe, p.hasBounty());
             if (school.size() < TOP) school.add(row);
             if (isMe) me = row;
             if (isMe || friendIds.contains(p.getId())) friends.add(row);

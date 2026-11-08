@@ -38,6 +38,8 @@ struct PlayerDTO: Codable, Identifiable {
     var highestTrophies: Int? = nil
     /// Goldener Rahmen fürs volle Sticker-Album
     var goldFrame: Bool? = nil
+    /// Trägt das Kopfgeld (leuchtet rot auf der Karte)
+    var bounty: Bool? = nil
 }
 
 // MARK: - Challenge DTOs (Challenge-DTOs)

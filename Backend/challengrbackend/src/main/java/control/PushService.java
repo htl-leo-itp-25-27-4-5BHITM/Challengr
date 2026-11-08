@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @ActivateRequestContext
 public class PushService {
 
-    public enum Kind { CHALLENGE, GIFT, FRIEND_REQUEST, FRIEND_ACCEPTED }
+    public enum Kind { CHALLENGE, GIFT, FRIEND_REQUEST, FRIEND_ACCEPTED, BOUNTY }
 
     /** Gleiche Art vom gleichen Absender höchstens so oft – gegen Spam */
     static final Duration SAME_PUSH_GAP = Duration.ofSeconds(30);
@@ -58,6 +58,16 @@ public class PushService {
 
     public void friendAccepted(String toId, String fromId) {
         notifyOffline(toId, fromId, Kind.FRIEND_ACCEPTED, "🤝 Neuer Freund", name(fromId) + " hat deine Anfrage angenommen.");
+    }
+
+    public void bountyOnYou(String toId) {
+        notifyOffline(toId, null, Kind.BOUNTY, "👑 Kopfgeld auf dich!",
+                "Du bist die Nummer 1 – jetzt jagen dich alle. Wer dich besiegt, kassiert " + BountyService.BONUS + " Bonus-Trophäen.");
+    }
+
+    public void bountyLost(String toId, String hunterId) {
+        notifyOffline(toId, hunterId, Kind.BOUNTY, "💀 Kopfgeld kassiert",
+                name(hunterId) + " hat dich erwischt und trägt jetzt das Kopfgeld. Hol es dir zurück!");
     }
 
     /** true = verschickt (an alle Geräte des Spielers) */

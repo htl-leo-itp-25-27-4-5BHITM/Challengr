@@ -14,6 +14,8 @@ struct MapCharacterPin: View {
     var height: CGFloat = 78
     /// Volles Sticker-Album: goldener Bodenring
     var goldFrame = false
+    /// Kopfgeld: pulsierendes rotes Leuchten und Krone
+    var bounty = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.mapCrowded) private var crowded
@@ -33,12 +35,20 @@ struct MapCharacterPin: View {
                             .offset(y: (50 + 90 * p) * MapVibe.groundRatio / 2 - 12)
                     }
                 }
+                if bounty {
+                    let pulse = reduceMotion ? 0.5 : (sin(t * 4) + 1) / 2
+                    Ellipse()
+                        .fill(Bounty.red.opacity(0.35 + 0.25 * pulse))
+                        .frame(width: 70 + 14 * pulse, height: (70 + 14 * pulse) * MapVibe.groundRatio)
+                        .blur(radius: 6)
+                }
                 Ellipse()
                     .fill(Color.black.opacity(0.3))
                     .frame(width: 42, height: 42 * MapVibe.groundRatio)
                     .blur(radius: 2)
                 Ellipse()
-                    .stroke(goldFrame ? AnyShapeStyle(GoldFrame.gradient) : AnyShapeStyle(ringColor), lineWidth: goldFrame ? 5 : 3)
+                    .stroke(bounty ? AnyShapeStyle(Bounty.red) : goldFrame ? AnyShapeStyle(GoldFrame.gradient) : AnyShapeStyle(ringColor),
+                            lineWidth: goldFrame || bounty ? 5 : 3)
                     .frame(width: 54, height: 54 * MapVibe.groundRatio)
                     // nachts leuchtet der Ring, der goldene immer ein bisschen
                     .shadow(color: goldFrame ? Color.yellow.opacity(night ? 0.9 : 0.6) : night ? ringColor.opacity(0.9) : .clear,
@@ -51,7 +61,11 @@ struct MapCharacterPin: View {
                         .scaledToFit()
                         // Gleicher Maßstab für alle: höhere Sheets (Merlos Hut) werden größer, nicht gestaucht
                         .frame(height: height * MapSprites.heightFactor(of: frame))
+                        .shadow(color: bounty ? Bounty.red.opacity(0.9) : .clear, radius: bounty ? 6 : 0)
                         .offset(y: -7)
+                        .overlay(alignment: .top) {
+                            if bounty { Bounty.tag.offset(y: -22) }
+                        }
                 }
             }
             // Platz nach oben, damit nichts abgeschnitten wird (Hüte, Schwerter)

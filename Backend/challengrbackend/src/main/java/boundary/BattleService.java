@@ -16,6 +16,9 @@ import java.util.List;
 public class BattleService {
 
     @Inject
+    control.BountyService bountyService;
+
+    @Inject
     BattleRepository battleRepository;
 
     @Inject
@@ -458,6 +461,13 @@ public class BattleService {
         int loserDelta = trophyDelta.loserDelta();
         winner.setTrophiesFor(mode, winner.trophiesFor(mode) + winnerDelta);
         loser.setTrophiesFor(mode, loserBefore + loserDelta);
+        // Kopfgeld: wer den Träger besiegt, kassiert Bonus-Trophäen und trägt es ab jetzt selbst
+        int bounty = bountyService.claimIfHolder(winner, loser);
+        if (bounty > 0) {
+            winner.setTrophiesFor(mode, winner.trophiesFor(mode) + bounty);
+            winnerDelta += bounty;
+            battle.setBountyBonus(bounty);
+        }
         // Sieger verdient seinen Trophäen-Gewinn auch als Punkte (Währung)
         winner.setPoints(winner.getPoints() + Math.max(0, winnerDelta));
 

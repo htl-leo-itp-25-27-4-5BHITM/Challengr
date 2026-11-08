@@ -42,6 +42,8 @@ struct PlayerAnnotation: Identifiable {
     var character: GameCharacter? = nil
     /// Volles Sticker-Album → goldener Ring
     var goldFrame = false
+    /// Trägt das Kopfgeld → leuchtet rot
+    var bounty = false
 }
 
 enum ActiveFullScreen {
@@ -151,6 +153,8 @@ struct MapView: View {
     @State private var resultData: BattleResultData? = nil
 
     /// Static ownPlayerName & coordinates
+    /// Eigenes Kopfgeld (man wird gejagt)
+    @State private var ownHasBounty = false
     @State private var ownPlayerName: String
     @State private var ownCoordinate: CLLocationCoordinate2D? = nil
     
@@ -1008,7 +1012,8 @@ struct MapView: View {
             ringColor: .challengrYellow,
             sonar: true,
             seed: ownPlayerId,
-            goldFrame: stickers.hasGoldFrame
+            goldFrame: stickers.hasGoldFrame,
+            bounty: ownHasBounty
         )
         // Sticker × 0.7 ≈ 84 pt wie über fremden Pins
         .overlay(alignment: .top) { EmoteBubble(event: ownMapEmote, stickerSize: 120).scaleEffect(0.7).offset(y: -30) }
@@ -1039,7 +1044,8 @@ struct MapView: View {
                     character: annotation.character ?? .opponent,
                     ringColor: rankColor(for: annotation.rankName),
                     seed: annotation.playerId,
-                    goldFrame: annotation.goldFrame
+                    goldFrame: annotation.goldFrame,
+                    bounty: annotation.bounty
                 )
             }
             .buttonStyle(.plain)
@@ -1285,6 +1291,12 @@ struct MapView: View {
                             .font(.system(size: 10, weight: .bold, design: .rounded))
                             .tracking(1)
                             .foregroundStyle(rankColor(for: player.rankName))
+                        if player.bounty {
+                            Label("KOPFGELD · +\(Bounty.bonus) 🏆, WENN DU GEWINNST", systemImage: "crown.fill")
+                                .font(.system(size: 9, weight: .black, design: .rounded))
+                                .tracking(0.6)
+                                .foregroundStyle(Bounty.red)
+                        }
                         if player.goldFrame {
                             Text("★ STICKER-ALBUM KOMPLETT")
                                 .font(.system(size: 9, weight: .black, design: .rounded))
@@ -2674,7 +2686,8 @@ struct MapView: View {
                     title: "\(p.name) · \(p.rankName)",
                     rankName: p.rankName,
                     character: GameCharacter.from(serverId: p.character),
-                    goldFrame: p.goldFrame ?? false
+                    goldFrame: p.goldFrame ?? false,
+                    bounty: p.bounty ?? false
                 )
             }
             // Spieler gleiten zur neuen Position statt zu springen
@@ -2683,6 +2696,7 @@ struct MapView: View {
 
             if let me = players.first(where: { $0.id == ownPlayerId }) {
                 ownPlayerName = me.name
+                ownHasBounty = me.bounty ?? false
             }
         } catch {
             print("Fehler beim Laden der Nearby Players", error)

@@ -66,6 +66,14 @@ public class Player {
     @Column(name = "gold_frame", columnDefinition = "boolean default false not null")
     private boolean goldFrame = false;
 
+    /** Kopfgeld: seit wann dieser Spieler es trägt (immer höchstens einer), sonst null. */
+    @Column(name = "bounty_since")
+    private Instant bountySince;
+
+    /** Wie oft dieser Spieler ein Kopfgeld kassiert hat. */
+    @Column(name = "bounties_claimed", columnDefinition = "integer default 0 not null")
+    private int bountiesClaimed = 0;
+
     public Player(String name, double longitude, double latitude) {
         this.name = name;
         this.longitude = longitude;
@@ -230,5 +238,25 @@ public class Player {
 
     public void setGoldFrame(boolean goldFrame) {
         this.goldFrame = goldFrame;
+    }
+
+    public Instant getBountySince() {
+        return bountySince;
+    }
+
+    public void setBountySince(Instant bountySince) {
+        this.bountySince = bountySince;
+    }
+
+    public boolean hasBounty() {
+        return bountySince != null;
+    }
+
+    public int getBountiesClaimed() {
+        return bountiesClaimed;
+    }
+
+    public void setBountiesClaimed(int bountiesClaimed) {
+        this.bountiesClaimed = bountiesClaimed;
     }
 }

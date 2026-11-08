@@ -15,5 +15,6 @@ public record PlayerDTO(
         int trophies,     // Liga-Trophäen (Quiz-Show und Real-Life gemeinsam)
         Boolean invisible, // nur beim eigenen Konto gesetzt
         int highestTrophies, // persönlicher Rekord (höchster je erreichter Trophäen-Stand)
-        boolean goldFrame // volles Sticker-Album
+        boolean goldFrame, // volles Sticker-Album
+        boolean bounty // trägt das Kopfgeld (leuchtet rot auf der Karte)
 ) {}

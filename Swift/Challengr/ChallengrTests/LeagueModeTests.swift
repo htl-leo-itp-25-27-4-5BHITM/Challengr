@@ -233,4 +233,14 @@ final class LeagueModeTests: XCTestCase {
         XCTAssertFalse(BattleMode.friendly.isQuiz)
         XCTAssertEqual(mode.trophyText(delta: 0), "Friendly – es ging um nichts")
     }
+
+    func testBountyIsDecodedFromServerData() throws {
+        let json = #"{"id":"a","name":"Mia","latitude":null,"longitude":null,"points":1,"rankName":"Brawler","trophies":900,"bounty":true}"#
+        let player = try JSONDecoder().decode(PlayerDTO.self, from: Data(json.utf8))
+        XCTAssertEqual(player.bounty, true)
+        let old = try JSONDecoder().decode(PlayerDTO.self, from: Data(#"{"id":"a","name":"Mia","points":1,"rankName":"Brawler"}"#.utf8))
+        XCTAssertNil(old.bounty, "alte Backends ohne Kopfgeld")
+        let row = try JSONDecoder().decode(LeaderboardRow.self, from: Data(#"{"place":1,"playerId":"a","name":"Mia","trophies":900,"rankName":"Brawler","me":false,"bounty":true}"#.utf8))
+        XCTAssertEqual(row.bounty, true)
+    }
 }

@@ -9,6 +9,8 @@ struct LeaderboardRow: Codable, Identifiable, Equatable {
     let rankName: String
     var character: String? = nil
     let me: Bool
+    /// Trägt das Kopfgeld
+    var bounty: Bool? = nil
 
     var id: String { playerId }
 }

@@ -77,6 +77,10 @@ struct BattleResultView: View {
                         rivalChip
                     }
 
+                    if let bonus = data.bountyBonus, bonus > 0 {
+                        bountyBanner(bonus)
+                    }
+
                     title
 
                     ZStack(alignment: .bottom) {
@@ -327,6 +331,20 @@ struct BattleResultView: View {
                 .font(.system(size: 16, weight: .black, design: .rounded))
         }
         .foregroundColor(color)
+    }
+
+    /// Kopfgeld kassiert (Sieger) oder verloren (Verlierer).
+    private func bountyBanner(_ bonus: Int) -> some View {
+        Label(kind == .win ? "KOPFGELD KASSIERT · +\(bonus) 🏆 · JETZT JAGEN SIE DICH" : "DEIN KOPFGELD IST WEG",
+              systemImage: "crown.fill")
+            .font(.system(size: 11, weight: .black, design: .rounded))
+            .tracking(1)
+            .foregroundColor(.white)
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            .background(Capsule().fill(Bounty.red))
+            .shadow(color: Bounty.red.opacity(0.7), radius: 10)
+            .scaleEffect(titleShown ? 1 : 0.4)
+            .opacity(titleShown ? 1 : 0)
     }
 
     /// Erzrivalen aus der Geschichte (z. B. Sir Brecht gegen Ragnar).

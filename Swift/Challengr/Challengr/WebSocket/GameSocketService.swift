@@ -601,6 +601,7 @@ final class GameSocketService: ObservableObject {
                 result.participants = BattleParticipants.parse(json, fromKey: "fromId", toKey: "toId")
                 result.mode = BattleMode(serverValue: json["mode"] as? String)
                 result.winnerSticker = Stickers.byId(json["winnerSticker"] as? String)
+                result.bountyBonus = json["bountyBonus"] as? Int
                 if let quiz = json["quiz"] as? [String: Any] {
                     result.quizFromScore = quiz["fromScore"] as? Int
                     result.quizToScore = quiz["toScore"] as? Int

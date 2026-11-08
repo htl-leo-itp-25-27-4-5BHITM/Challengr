@@ -38,6 +38,9 @@ public class Battle {
     private Double targetLongitude;
 
     private Integer winnerPointsDelta;
+
+    /** Kopfgeld, das der Sieger mit diesem Battle kassiert hat (steckt schon in winnerPointsDelta), sonst null. */
+    private Integer bountyBonus;
     private Integer loserPointsDelta;
 
 
@@ -133,6 +136,14 @@ public class Battle {
 
     public void setWinnerPointsDelta(Integer winnerPointsDelta) {
         this.winnerPointsDelta = winnerPointsDelta;
+    }
+
+    public Integer getBountyBonus() {
+        return bountyBonus;
+    }
+
+    public void setBountyBonus(Integer bountyBonus) {
+        this.bountyBonus = bountyBonus;
     }
 
     public Integer getLoserPointsDelta() {
