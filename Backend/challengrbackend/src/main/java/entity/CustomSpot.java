@@ -31,6 +31,10 @@ public class CustomSpot {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
+    /** Temporärer Checkpoint (Dashboard → Riss-Wächter): verschwindet zu dieser Zeit; null = bleibt */
+    @Column(name = "expires_at")
+    private Instant expiresAt;
+
     public CustomSpot() {}
 
     public String getId() { return id; }
@@ -50,4 +54,9 @@ public class CustomSpot {
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
     public Instant getCreatedAt() { return createdAt; }
+    public Instant getExpiresAt() { return expiresAt; }
+    public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
+
+    /** aktiv und (falls temporär) noch nicht abgelaufen */
+    public boolean isLive() { return active && (expiresAt == null || expiresAt.isAfter(Instant.now())); }
 }

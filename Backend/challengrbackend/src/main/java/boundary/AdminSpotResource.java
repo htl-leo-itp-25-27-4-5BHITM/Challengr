@@ -102,7 +102,8 @@ public class AdminSpotResource {
     @Transactional
     public List<SpotDTO> custom() {
         Map<String, Long> checkins = checkinCounts(30);
-        return em.createQuery("SELECT c FROM CustomSpot c ORDER BY c.createdAt DESC", CustomSpot.class).getResultStream()
+        // temporäre Riss-Checkpoints stehen auf der Riss-Wächter-Seite
+        return em.createQuery("SELECT c FROM CustomSpot c WHERE c.expiresAt IS NULL ORDER BY c.createdAt DESC", CustomSpot.class).getResultStream()
                 .map(c -> toDTO(c, checkins.getOrDefault(c.getId(), 0L))).toList();
     }
 

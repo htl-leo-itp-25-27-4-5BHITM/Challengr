@@ -5,6 +5,7 @@ import control.AdminAudit;
 import control.PlayerRepository;
 import control.PracticeBot;
 import control.RiftBossService;
+import entity.CustomSpot;
 import entity.Player;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -79,6 +80,48 @@ public class AdminBossResource {
         var b = bosses.spawnNear(p);
         audit.log("BOSS_SPAWN", p.getId(), p.getName(), null, b.place, null);
         return bosses.all().stream().filter(v -> v.id() == b.id).findFirst().orElseThrow();
+    }
+
+    /** Temporärer Checkpoint fürs Dashboard (Ablaufzeit statt Koordinaten) */
+    public record Checkpoint(String id, String name, double latitude, double longitude, Instant expiresAt) {
+        static Checkpoint of(CustomSpot c) {
+            return new Checkpoint(c.getId(), c.getName(), c.getLatitude(), c.getLongitude(), c.getExpiresAt());
+        }
+    }
+
+    @GET
+    @Path("/checkpoints")
+    @Transactional
+    public List<Checkpoint> checkpoints() {
+        return bosses.checkpoints().stream().map(Checkpoint::of).toList();
+    }
+
+    /** Body: {"playerId": "...", "boss": true} – Checkpoint beim Spieler für 30 Minuten, auf Wunsch gleich mit Riss. */
+    @POST
+    @Path("/checkpoints")
+    @Transactional
+    public Checkpoint createCheckpoint(Map<String, Object> body) {
+        Object id = body == null ? null : body.get("playerId");
+        Player p = id == null ? null : players.findById(id.toString());
+        if (p == null) throw new WebApplicationException("Spieler nicht gefunden", 404);
+        if (p.getLatitude() == 0 && p.getLongitude() == 0) throw new WebApplicationException("Von diesem Spieler ist kein Standort bekannt", 409);
+        CustomSpot c = bosses.createCheckpoint(p);
+        audit.log("CHECKPOINT_NEW", p.getId(), p.getName(), null, c.getName(), "30 Minuten");
+        if (Boolean.TRUE.equals(body.get("boss"))) {
+            bosses.spawn(c.getName(), c.getLatitude(), c.getLongitude());
+            audit.log("BOSS_SPAWN", p.getId(), p.getName(), null, c.getName(), null);
+        }
+        return Checkpoint.of(c);
+    }
+
+    @DELETE
+    @Path("/checkpoints/{id}")
+    @Transactional
+    public void removeCheckpoint(@PathParam("id") String id) {
+        CustomSpot c = em.find(CustomSpot.class, id);
+        if (c == null || c.getExpiresAt() == null) throw new NotFoundException();
+        c.setActive(false);
+        audit.log("CHECKPOINT_END", null, null, c.getName(), null, null);
     }
 
     @DELETE

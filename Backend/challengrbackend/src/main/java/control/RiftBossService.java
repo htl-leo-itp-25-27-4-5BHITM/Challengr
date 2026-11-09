@@ -2,6 +2,7 @@ package control;
 
 import boundary.GameSocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import entity.CustomSpot;
 import entity.Landmark;
 import entity.Player;
 import io.quarkus.narayana.jta.QuarkusTransaction;
@@ -394,9 +395,47 @@ public class RiftBossService {
      * sonst ein paar Meter neben seiner Position.
      */
     public Boss spawnNear(Player p) {
+        // zuerst ein temporärer Riss-Checkpoint in der Nähe, dann der nächste öffentliche Ort
+        Optional<CustomSpot> checkpoint = em.createQuery(
+                        "SELECT c FROM CustomSpot c WHERE c.active = true AND c.expiresAt IS NOT NULL", CustomSpot.class)
+                .getResultStream()
+                .filter(CustomSpot::isLive)
+                .filter(c -> HotspotCatalog.distanceMeters(p.getLatitude(), p.getLongitude(), c.getLatitude(), c.getLongitude()) <= 300)
+                .findFirst();
+        if (checkpoint.isPresent()) {
+            return spawn(checkpoint.get().getName(), checkpoint.get().getLatitude(), checkpoint.get().getLongitude());
+        }
         Optional<Landmark> place = landmarks.near(p.getLatitude(), p.getLongitude()).stream().findFirst();
+        // ohne Ort: gerundet wie bei "nearby" und ohne Namen – verrät nicht, wo genau jemand ist
         return place.map(l -> spawn(l.getName(), l.getLatitude(), l.getLongitude()))
-                .orElseGet(() -> spawn("Bei " + p.getName(), p.getLatitude() + 0.0003, p.getLongitude()));
+                .orElseGet(() -> spawn(CHECKPOINT_NAME, LocationPrivacy.coarse(p.getLatitude()), LocationPrivacy.coarse(p.getLongitude())));
+    }
+
+    public static final String CHECKPOINT_NAME = "Riss-Punkt";
+    public static final Duration CHECKPOINT_LIFETIME = Duration.ofMinutes(30);
+
+    /**
+     * Dashboard: temporärer Check-in-Punkt beim Spieler (30 Minuten), damit der Riss genau dort erscheinen kann.
+     * Neutraler Name und gerundete Position – niemand erfährt daraus, wo genau der Spieler ist.
+     */
+    public CustomSpot createCheckpoint(Player p) {
+        CustomSpot c = new CustomSpot();
+        c.setId("riss-" + Long.toString(System.currentTimeMillis(), 36));
+        c.setName(CHECKPOINT_NAME);
+        c.setLatitude(LocationPrivacy.coarse(p.getLatitude()));
+        c.setLongitude(LocationPrivacy.coarse(p.getLongitude()));
+        c.setRadiusMeters(80);
+        c.setPoints(5);
+        c.setBonus(5);
+        c.setExpiresAt(Instant.now().plus(CHECKPOINT_LIFETIME));
+        em.persist(c);
+        return c;
+    }
+
+    /** Laufende temporäre Checkpoints (Dashboard) */
+    public List<CustomSpot> checkpoints() {
+        return em.createQuery("SELECT c FROM CustomSpot c WHERE c.active = true AND c.expiresAt IS NOT NULL", CustomSpot.class)
+                .getResultStream().filter(CustomSpot::isLive).sorted(Comparator.comparing(CustomSpot::getExpiresAt)).toList();
     }
 
     /** Dashboard: Riss schließen – Kämpfer erfahren es wie bei einer Flucht. */

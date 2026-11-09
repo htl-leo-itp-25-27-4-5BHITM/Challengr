@@ -26,8 +26,22 @@
 </div>
 
 <div class="card pad section">
+  <div class="card-head"><h2>Checkpoints (30 Minuten)</h2></div>
+  <div class="card-sub">Temporäre Check-in-Punkte „Riss-Punkt“ – für alle sichtbar, Einchecken bringt Coins, der Riss erscheint genau dort.</div>
+  <div class="rows" style="margin-top:10px">
+    @for (c of checkpoints; track c.id) {
+      <div class="row-item">
+        <div class="grow"><div>{{ c.name }} · <a [href]="pointLink(c)" target="_blank" rel="noopener">Karte</a></div><div class="sub">verschwindet in {{ minutesLeft(c.expiresAt) }} min</div></div>
+        <button class="btn btn--danger" (click)="removeCheckpoint(c)">Entfernen</button>
+      </div>
+    } @empty { <div class="muted">Kein Checkpoint aktiv.</div> }
+  </div>
+</div>
+
+<div class="card pad section">
   <div class="card-head"><h2>Riss bei einem Spieler öffnen</h2><button class="btn" (click)="loadAll()"><app-icon name="refresh" /></button></div>
-  <div class="card-sub">Der Riss erscheint am nächsten öffentlichen Check-in-Ort beim letzten bekannten Standort des Spielers (gibt es keinen, ein paar Meter daneben). Er bleibt 30 Minuten; gekämpft wird ab 2 Spielern.</div>
+  <div class="card-sub"><b>Checkpoint 30 min</b>: temporärer Check-in-Punkt beim Spieler. <b>Checkpoint + Riss</b>: dazu gleich der Boss genau dort.
+    <b>Riss hier öffnen</b>: am Checkpoint beim Spieler, sonst am nächsten öffentlichen Ort. Der Riss bleibt 30 Minuten; gekämpft wird ab 2 Spielern.</div>
   <div class="form" style="margin-top:10px">
     <label>Spieler suchen<input type="text" [(ngModel)]="search" placeholder="Name" /></label>
     <label class="check"><input type="checkbox" [(ngModel)]="onlyOnline" /> nur gerade online</label>
@@ -37,6 +51,8 @@
       <div class="row-item">
         <span class="dot" [class.is-ok]="p.online" [class.is-off]="!p.online"></span>
         <div class="grow"><div>{{ p.name }}</div><div class="sub">{{ p.online ? 'online' : 'zuletzt ' + (p.lastSeenAt | date: 'dd.MM. HH:mm') }}</div></div>
+        <button class="btn" (click)="checkpoint(p, false)" [disabled]="busyId === p.id"><app-icon name="pin" /> Checkpoint 30 min</button>
+        <button class="btn" (click)="checkpoint(p, true)" [disabled]="busyId === p.id"><app-icon name="pin" /> Checkpoint + Riss</button>
         <button class="btn btn--primary" (click)="spawn(p)" [disabled]="busyId === p.id"><app-icon name="crash" /> Riss hier öffnen</button>
       </div>
     } @empty { <div class="muted">Keine Spieler mit bekanntem Standort.</div> }

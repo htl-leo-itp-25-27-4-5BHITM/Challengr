@@ -76,7 +76,7 @@ public class HotspotResource {
         java.util.List<Spot> spots = new java.util.ArrayList<>(HotspotCatalog.ALL.stream().map(Spot::of).toList());
         // eigene Orte aus dem Dashboard: für alle sichtbar wie die Schule
         em.createQuery("SELECT c FROM CustomSpot c WHERE c.active = true", entity.CustomSpot.class)
-                .getResultStream().forEach(c -> spots.add(Spot.of(c)));
+                .getResultStream().filter(entity.CustomSpot::isLive).forEach(c -> spots.add(Spot.of(c)));
         Player player = playerId == null ? null : playerRepository.findById(playerId);
         if (player != null && control.LocationPrivacy.hasPosition(player)) {
             landmarks.near(player.getLatitude(), player.getLongitude()).forEach(l -> spots.add(Spot.of(l)));
@@ -96,7 +96,7 @@ public class HotspotResource {
         Spot hotspot = HotspotCatalog.find(hotspotId).map(Spot::of)
                 .or(() -> landmarks.find(hotspotId).map(Spot::of))
                 .or(() -> java.util.Optional.ofNullable(em.find(entity.CustomSpot.class, hotspotId))
-                        .filter(entity.CustomSpot::isActive).map(Spot::of))
+                        .filter(entity.CustomSpot::isLive).map(Spot::of))
                 .orElseThrow(() -> new WebApplicationException("Unbekannter Hotspot", 404));
         if (req == null || req.playerId() == null || req.latitude() == null || req.longitude() == null) {
             throw new WebApplicationException("playerId, latitude und longitude fehlen", 400);

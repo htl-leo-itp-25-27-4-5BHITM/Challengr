@@ -112,6 +112,29 @@ class RiftBossTest {
     }
 
     @Test
+    void temporaryCheckpointNearAPlayerForHalfAnHour() {
+        QuarkusTransaction.requiringNew().run(() -> players.findById(A).setLastSeenAt(Instant.now()));
+        String id = Login.admin().contentType("application/json").body("{\"playerId\":\"" + A + "\",\"boss\":true}")
+                .when().post("/api/admin/bosses/checkpoints").then().statusCode(200)
+                .body("name", is(RiftBossService.CHECKPOINT_NAME))
+                .extract().path("id");
+        // für alle sichtbar, ohne Spielernamen, Position gerundet
+        Login.as(B).when().get("/api/hotspots").then().statusCode(200).body("id", hasItem(id));
+        Login.admin().when().get("/api/admin/bosses/checkpoints").then().statusCode(200).body("id", hasItem(id));
+        Login.admin().when().get("/api/admin/spots/custom").then().statusCode(200).body("id", not(hasItem(id)));
+        // der Riss steht genau am Checkpoint
+        Login.as(A).when().get("/api/bosses/nearby").then().statusCode(200)
+                .body("bosses.place", hasItem(RiftBossService.CHECKPOINT_NAME));
+        // ein weiterer Riss beim selben Spieler nimmt auch den Checkpoint
+        Login.admin().contentType("application/json").body("{\"playerId\":\"" + A + "\"}")
+                .when().post("/api/admin/bosses/spawn").then().statusCode(200).body("place", is(RiftBossService.CHECKPOINT_NAME));
+
+        Login.admin().when().delete("/api/admin/bosses/checkpoints/" + id).then().statusCode(204);
+        Login.as(B).when().get("/api/hotspots").then().statusCode(200).body("id", not(hasItem(id)));
+        Login.as(A).when().get("/api/admin/bosses/checkpoints").then().statusCode(403);
+    }
+
+    @Test
     void aloneTheFightDoesNotEvenStart() throws Exception {
         long id = bosses.spawn("Park", LAT, LON).id;
         WsTestClient a = connect(A);

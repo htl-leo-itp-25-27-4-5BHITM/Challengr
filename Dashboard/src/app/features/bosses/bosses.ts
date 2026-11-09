@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 
 interface Boss { id: number; name: string; place: string; latitude: number; longitude: number; hp: number; maxHp: number; phase: string; fighters: number; minFighters: number; expiresAt: string; fightEndsAt: string | null; }
 interface Candidate { id: string; name: string; online: boolean; lastSeenAt: string; character: string | null; }
+interface Checkpoint { id: string; name: string; latitude: number; longitude: number; expiresAt: string; }
 
 const PHASES: Record<string, string> = { WAITING: 'wartet auf Kämpfer', FIGHT: 'Kampf läuft', RAGE: 'Raserei', FINALE: 'Finale' };
 
@@ -15,6 +16,7 @@ const PHASES: Record<string, string> = { WAITING: 'wartet auf Kämpfer', FIGHT: 
 })
 export class Bosses implements OnInit, OnDestroy {
   bosses: Boss[] = [];
+  checkpoints: Checkpoint[] = [];
   players: Candidate[] = [];
   search = '';
   onlyOnline = false;
@@ -42,6 +44,7 @@ export class Bosses implements OnInit, OnDestroy {
 
   loadBosses(): void {
     this.http.get<Boss[]>('/api/admin/bosses').subscribe({ next: (b) => { this.bosses = b; this.cd.markForCheck(); }, error: () => {} });
+    this.http.get<Checkpoint[]>('/api/admin/bosses/checkpoints').subscribe({ next: (c) => { this.checkpoints = c; this.cd.markForCheck(); }, error: () => {} });
   }
 
   get filtered(): Candidate[] {
@@ -61,6 +64,28 @@ export class Bosses implements OnInit, OnDestroy {
       error: (e) => { this.busyId = null; this.msg = e?.error?.message ?? e?.error ?? 'Riss konnte nicht geöffnet werden.'; this.cd.markForCheck(); },
     });
   }
+
+  /** Checkpoint beim Spieler für 30 Minuten – mit boss = true gleich mit Riss. */
+  checkpoint(p: Candidate, boss: boolean): void {
+    this.busyId = p.id;
+    this.msg = null;
+    this.http.post<Checkpoint>('/api/admin/bosses/checkpoints', { playerId: p.id, boss }).subscribe({
+      next: () => {
+        this.busyId = null;
+        this.msg = boss
+          ? `Checkpoint und Riss bei ${p.name} – 30 Minuten. Alle sehen „Riss-Punkt“ (ohne Namen, Position auf ~50 m gerundet).`
+          : `Checkpoint bei ${p.name} – 30 Minuten. „Riss hier öffnen“ setzt den Boss jetzt genau dorthin.`;
+        this.loadBosses();
+      },
+      error: (e) => { this.busyId = null; this.msg = e?.error?.message ?? e?.error ?? 'Checkpoint konnte nicht angelegt werden.'; this.cd.markForCheck(); },
+    });
+  }
+
+  removeCheckpoint(c: Checkpoint): void {
+    this.http.delete(`/api/admin/bosses/checkpoints/${c.id}`).subscribe(() => { this.msg = 'Checkpoint entfernt.'; this.loadBosses(); });
+  }
+
+  pointLink(c: { latitude: number; longitude: number }): string { return `https://www.openstreetmap.org/?mlat=${c.latitude}&mlon=${c.longitude}#map=17/${c.latitude}/${c.longitude}`; }
 
   close(b: Boss): void {
     this.http.delete(`/api/admin/bosses/${b.id}`).subscribe(() => { this.msg = `Riss bei ${b.place} geschlossen.`; this.loadBosses(); });
