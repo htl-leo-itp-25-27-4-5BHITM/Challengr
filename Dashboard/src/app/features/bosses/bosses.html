@@ -1,0 +1,44 @@
+<div class="hero">
+  <div class="hero-inner">
+    <div class="crumbs">Admin <span>/</span> Riss-Wächter</div>
+    <h1>Riss-Wächter</h1>
+    <div class="subtitle">Den Co-op-Boss bei einem Spieler auftauchen lassen – zum Testen oder als Überraschung. Von selbst kommt er nur 15–20 Uhr, wenn zwei Spieler in der Nähe sind.</div>
+  </div>
+</div>
+
+@if (error) { <div class="error">{{ error }}</div> }
+@if (msg) { <div class="msg section">{{ msg }}</div> }
+
+<div class="card pad section">
+  <div class="card-head"><h2>Offene Risse</h2><button class="btn" (click)="loadBosses()"><app-icon name="refresh" /></button></div>
+  <div class="rows" style="margin-top:10px">
+    @for (b of bosses; track b.id) {
+      <div class="row-item">
+        <div class="grow">
+          <div>{{ b.place }} · <a [href]="mapLink(b)" target="_blank" rel="noopener">Karte</a></div>
+          <div class="sub">{{ phase(b.phase) }} · {{ b.fighters }}/{{ b.minFighters }} Kämpfer · {{ hpPercent(b) }} % Leben
+            @if (b.fightEndsAt) { · Kampf endet in {{ minutesLeft(b.fightEndsAt) }} min } @else { · verschwindet in {{ minutesLeft(b.expiresAt) }} min }</div>
+        </div>
+        <button class="btn btn--danger" (click)="close(b)">Schließen</button>
+      </div>
+    } @empty { <div class="muted">Gerade ist kein Riss offen.</div> }
+  </div>
+</div>
+
+<div class="card pad section">
+  <div class="card-head"><h2>Riss bei einem Spieler öffnen</h2><button class="btn" (click)="loadAll()"><app-icon name="refresh" /></button></div>
+  <div class="card-sub">Der Riss erscheint am nächsten öffentlichen Check-in-Ort beim letzten bekannten Standort des Spielers (gibt es keinen, ein paar Meter daneben). Er bleibt 30 Minuten; gekämpft wird ab 2 Spielern.</div>
+  <div class="form" style="margin-top:10px">
+    <label>Spieler suchen<input type="text" [(ngModel)]="search" placeholder="Name" /></label>
+    <label class="check"><input type="checkbox" [(ngModel)]="onlyOnline" /> nur gerade online</label>
+  </div>
+  <div class="rows list-scroll" style="margin-top:10px">
+    @for (p of filtered; track p.id) {
+      <div class="row-item">
+        <span class="dot" [class.is-ok]="p.online" [class.is-off]="!p.online"></span>
+        <div class="grow"><div>{{ p.name }}</div><div class="sub">{{ p.online ? 'online' : 'zuletzt ' + (p.lastSeenAt | date: 'dd.MM. HH:mm') }}</div></div>
+        <button class="btn btn--primary" (click)="spawn(p)" [disabled]="busyId === p.id"><app-icon name="crash" /> Riss hier öffnen</button>
+      </div>
+    } @empty { <div class="muted">Keine Spieler mit bekanntem Standort.</div> }
+  </div>
+</div>

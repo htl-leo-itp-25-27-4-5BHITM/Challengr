@@ -11,6 +11,7 @@ import { System } from './features/system/system';
 import { Quiz } from './features/quiz/quiz';
 import { Events } from './features/events/events';
 import { Spots } from './features/spots/spots';
+import { Bosses } from './features/bosses/bosses';
 
 const routes: Routes = [
   { path: '', component: Dashboard },
@@ -23,6 +24,7 @@ const routes: Routes = [
   { path: 'quiz', component: Quiz },
   { path: 'events', component: Events },
   { path: 'spots', component: Spots },
+  { path: 'bosses', component: Bosses },
   { path: '**', redirectTo: '' },
 ];
 

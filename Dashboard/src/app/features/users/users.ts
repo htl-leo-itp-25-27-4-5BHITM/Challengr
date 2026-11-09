@@ -45,7 +45,7 @@ export const ACTIONS: Record<string, string> = {
   QUIZ_ON: 'Frage aktiviert', QUIZ_OFF: 'Frage deaktiviert', QUIZ_REPORTS: 'Fragen-Meldungen erledigt', EVENT_NEW: 'Event neu',
   EVENT_EDIT: 'Event geändert', EVENT_DELETE: 'Event gelöscht', SPOT_HIDE: 'Ort ausgeblendet', SPOT_SHOW: 'Ort eingeblendet',
   SPOT_NEW: 'Eigener Ort neu', SPOT_EDIT: 'Eigener Ort geändert', SPOT_OFF: 'Eigener Ort aus', ANNOUNCE: 'Ankündigung',
-  ANNOUNCE_END: 'Ankündigung beendet',
+  ANNOUNCE_END: 'Ankündigung beendet', BOSS_SPAWN: 'Riss geöffnet', BOSS_CLOSE: 'Riss geschlossen',
 };
 
 /** Spieler suchen, ansehen und sperren. */

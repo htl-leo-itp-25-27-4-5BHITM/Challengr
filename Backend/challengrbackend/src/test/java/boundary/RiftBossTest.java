@@ -90,6 +90,28 @@ class RiftBossTest {
     }
 
     @Test
+    void dashboardOpensARiftNearAPlayerAndClosesIt() {
+        QuarkusTransaction.requiringNew().run(() -> players.findById(A).setLastSeenAt(Instant.now()));
+        Login.admin().when().get("/api/admin/bosses/players").then().statusCode(200)
+                .body("id", hasItem(A))
+                .body("find { it.id == 'demo-1' }.name", notNullValue());
+        Login.as(A).when().get("/api/admin/bosses/players").then().statusCode(403);
+
+        int id = Login.admin().contentType("application/json").body("{\"playerId\":\"" + A + "\"}")
+                .when().post("/api/admin/bosses/spawn").then().statusCode(200)
+                .body("phase", is("WAITING"))
+                .extract().path("id");
+        Login.as(A).when().get("/api/bosses/nearby").then().statusCode(200).body("bosses.id", hasItem(id));
+        Login.admin().when().get("/api/admin/bosses").then().statusCode(200).body("id", hasItem(id));
+
+        Login.admin().when().delete("/api/admin/bosses/" + id).then().statusCode(204);
+        Login.as(A).when().get("/api/bosses/nearby").then().statusCode(200).body("bosses.id", not(hasItem(id)));
+        Login.admin().when().delete("/api/admin/bosses/" + id).then().statusCode(404);
+        Login.admin().contentType("application/json").body("{\"playerId\":\"gibts-nicht\"}")
+                .when().post("/api/admin/bosses/spawn").then().statusCode(404);
+    }
+
+    @Test
     void aloneTheFightDoesNotEvenStart() throws Exception {
         long id = bosses.spawn("Park", LAT, LON).id;
         WsTestClient a = connect(A);

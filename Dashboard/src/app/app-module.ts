@@ -20,10 +20,11 @@ import { System } from './features/system/system';
 import { Quiz } from './features/quiz/quiz';
 import { Events } from './features/events/events';
 import { Spots } from './features/spots/spots';
+import { Bosses } from './features/bosses/bosses';
 import { FormsModule } from '@angular/forms';
 
 @NgModule({
-  declarations: [App, Layout, Header, Icon, Dashboard, TrendChart, BarChart, HBarList, Users, Challenges, Erd, Reports, Feedback, System, Quiz, Events, Spots],
+  declarations: [App, Layout, Header, Icon, Dashboard, TrendChart, BarChart, HBarList, Users, Challenges, Erd, Reports, Feedback, System, Quiz, Events, Spots, Bosses],
   imports: [BrowserModule, AppRoutingModule, FormsModule, HttpClientModule],
   providers: [
     provideBrowserGlobalErrorListeners(),

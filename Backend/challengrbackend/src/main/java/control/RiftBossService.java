@@ -380,6 +380,37 @@ public class RiftBossService {
         }
     }
 
+    /** Alle offenen Risse (Dashboard) */
+    public List<View> all() {
+        return bosses.values().stream()
+                .filter(b -> b.phase().ordinal() < Phase.DEFEATED.ordinal())
+                .sorted(Comparator.comparingLong(b -> b.id))
+                .map(this::view)
+                .toList();
+    }
+
+    /**
+     * Dashboard: Riss beim Spieler öffnen – am nächsten öffentlichen Ort (Check-in-Ort),
+     * sonst ein paar Meter neben seiner Position.
+     */
+    public Boss spawnNear(Player p) {
+        Optional<Landmark> place = landmarks.near(p.getLatitude(), p.getLongitude()).stream().findFirst();
+        return place.map(l -> spawn(l.getName(), l.getLatitude(), l.getLongitude()))
+                .orElseGet(() -> spawn("Bei " + p.getName(), p.getLatitude() + 0.0003, p.getLongitude()));
+    }
+
+    /** Dashboard: Riss schließen – Kämpfer erfahren es wie bei einer Flucht. */
+    public boolean close(long bossId) {
+        Boss b = bosses.remove(bossId);
+        if (b == null) return false;
+        synchronized (b) {
+            b.endedAt = Instant.now();
+            b.phase = Phase.ESCAPED;
+        }
+        sendAll(b, Map.of("type", "boss-end", "bossId", b.id, "result", "ESCAPED"));
+        return true;
+    }
+
     /** Nur für Tests */
     public void clear() {
         bosses.clear();
