@@ -51,6 +51,43 @@ final class RiftBossTests: XCTestCase {
         XCTAssertEqual(model.stage, .won(shards: 14, coins: 50))
     }
 
+    func testWeakSpotsQuestionsAndDamageNumbers() throws {
+        let model = BossFightModel(boss: try boss())
+        let now = Date()
+        model.apply(try XCTUnwrap(BossMessage(json: ["type": "boss-state", "bossId": 7, "hp": 6000, "maxHp": 6000, "phase": "FIGHT",
+                                                     "fighters": 2, "minFighters": 2])))
+        model.apply(try XCTUnwrap(BossMessage(json: ["type": "boss-weakspot", "bossId": 7, "spotId": 3, "x": 0.4, "y": 0.6, "ms": 2000])), now: now)
+        XCTAssertEqual(model.weakSpot, .init(id: 3, x: 0.4, y: 0.6, deadline: now.addingTimeInterval(2)))
+
+        // kritischer Treffer: eine große Zahl, die gleiche Änderung im Stand danach nicht nochmal
+        model.apply(try XCTUnwrap(BossMessage(json: ["type": "boss-crit", "bossId": 7, "spotId": 3, "damage": 120])))
+        XCTAssertNil(model.weakSpot)
+        model.apply(try XCTUnwrap(BossMessage(json: ["type": "boss-state", "bossId": 7, "hp": 5880, "maxHp": 6000, "phase": "FIGHT",
+                                                     "fighters": 2, "minFighters": 2])))
+        XCTAssertEqual(model.pops.map(\.text), ["KRITISCH -120"])
+
+        model.apply(try XCTUnwrap(BossMessage(json: ["type": "boss-question", "bossId": 7, "questionId": 42, "text": "Hauptstadt?",
+                                                     "options": ["A", "B", "C", "D"], "ms": 8000])), now: now)
+        model.pick(2)
+        XCTAssertEqual(model.question?.picked, 2)
+        model.apply(try XCTUnwrap(BossMessage(json: ["type": "boss-answer-result", "bossId": 7, "questionId": 42,
+                                                     "correct": false, "correctIndex": 1, "damage": -100])))
+        XCTAssertEqual(model.question?.correctIndex, 1)
+        XCTAssertEqual(model.pops.last?.text, "FALSCH +100")
+        XCTAssertEqual(model.pops.last?.heal, true)
+
+        // Heilung durch die falsche Antwort wird nicht doppelt gezeigt, normale Treffer: kleine Zahl
+        model.apply(try XCTUnwrap(BossMessage(json: ["type": "boss-state", "bossId": 7, "hp": 5980, "maxHp": 6000, "phase": "FIGHT",
+                                                     "fighters": 2, "minFighters": 2])))
+        model.apply(try XCTUnwrap(BossMessage(json: ["type": "boss-state", "bossId": 7, "hp": 5965, "maxHp": 6000, "phase": "FIGHT",
+                                                     "fighters": 2, "minFighters": 2])))
+        XCTAssertEqual(model.pops.map(\.text), ["KRITISCH -120", "FALSCH +100", "-15"])
+    }
+
+    func testBossModelIsBundled() {
+        XCTAssertNotNil(Bundle.main.url(forResource: "RissWaechter", withExtension: "scn"))
+    }
+
     func testOtherBossesAndRejection() throws {
         let model = BossFightModel(boss: try boss())
         model.apply(try XCTUnwrap(BossMessage(json: ["type": "boss-end", "bossId": 99, "result": "DEFEATED"])))

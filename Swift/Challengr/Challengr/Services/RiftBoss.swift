@@ -55,6 +55,11 @@ enum BossMessage: Equatable {
     case finale(bossId: Int64, seconds: Double)
     case end(bossId: Int64, defeated: Bool, shards: Int, coins: Int)
     case rejected(bossId: Int64, reason: String)
+    /// Schwachstelle leuchtet an Position x/y (0…1 im Boss-Bild) für ms Millisekunden
+    case weakspot(bossId: Int64, spotId: Int64, x: Double, y: Double, ms: Int)
+    case crit(bossId: Int64, spotId: Int64, damage: Int)
+    case question(bossId: Int64, questionId: Int64, text: String, options: [String], ms: Int)
+    case answerResult(bossId: Int64, questionId: Int64, correct: Bool, correctIndex: Int, damage: Int)
 
     init?(json: [String: Any]) {
         guard let type = json["type"] as? String, let id = (json["bossId"] as? NSNumber)?.int64Value else { return nil }
@@ -73,6 +78,17 @@ enum BossMessage: Equatable {
             self = .end(bossId: id, defeated: json["result"] as? String == "DEFEATED", shards: int("shards"), coins: int("coins"))
         case "boss-rejected":
             self = .rejected(bossId: id, reason: json["reason"] as? String ?? "")
+        case "boss-weakspot":
+            self = .weakspot(bossId: id, spotId: (json["spotId"] as? NSNumber)?.int64Value ?? 0,
+                             x: (json["x"] as? NSNumber)?.doubleValue ?? 0.5, y: (json["y"] as? NSNumber)?.doubleValue ?? 0.5, ms: int("ms"))
+        case "boss-crit":
+            self = .crit(bossId: id, spotId: (json["spotId"] as? NSNumber)?.int64Value ?? 0, damage: int("damage"))
+        case "boss-question":
+            self = .question(bossId: id, questionId: (json["questionId"] as? NSNumber)?.int64Value ?? 0,
+                             text: json["text"] as? String ?? "", options: json["options"] as? [String] ?? [], ms: int("ms"))
+        case "boss-answer-result":
+            self = .answerResult(bossId: id, questionId: (json["questionId"] as? NSNumber)?.int64Value ?? 0,
+                                 correct: json["correct"] as? Bool ?? false, correctIndex: int("correctIndex"), damage: int("damage"))
         default:
             return nil
         }
@@ -81,7 +97,8 @@ enum BossMessage: Equatable {
     var bossId: Int64 {
         switch self {
         case .state(let id, _, _, _, _, _, _), .phase(let id, _, _), .slam(let id, _), .finale(let id, _),
-             .end(let id, _, _, _), .rejected(let id, _): return id
+             .end(let id, _, _, _), .rejected(let id, _), .weakspot(let id, _, _, _, _), .crit(let id, _, _),
+             .question(let id, _, _, _, _), .answerResult(let id, _, _, _, _): return id
         }
     }
 }
@@ -105,6 +122,33 @@ nonisolated final class BossFightModel: ObservableObject {
     /// Zähler für Wackeln/Blitz bei jedem Treffer
     @Published var hitFlash = 0
     @Published var roared = false
+    /// Zähler für den Riss-Schlag (3D-Boss springt und stampft)
+    @Published var slamCount = 0
+
+    struct WeakSpot: Equatable { let id: Int64; let x: Double; let y: Double; let deadline: Date }
+    struct Question: Equatable {
+        let id: Int64; let text: String; let options: [String]; let deadline: Date
+        var picked: Int? = nil
+        var correctIndex: Int? = nil
+    }
+    /// Schwebende Schadenszahl ("-120", "+100")
+    struct Pop: Identifiable, Equatable { let id: Int; let text: String; let big: Bool; let heal: Bool; let x: Double }
+
+    @Published var weakSpot: WeakSpot?
+    @Published var question: Question?
+    @Published var pops: [Pop] = []
+    private var popCounter = 0
+    /// Schon als "KRITISCH"/"RICHTIG" angezeigt → die gleiche Änderung im nächsten Stand nicht nochmal zeigen
+    private var shownChange: Int?
+
+    func pop(_ text: String, big: Bool = false, heal: Bool = false, x: Double = 0.5) {
+        popCounter += 1
+        pops.append(Pop(id: popCounter, text: text, big: big, heal: heal, x: x))
+        if pops.count > 8 { pops.removeFirst(pops.count - 8) }
+    }
+
+    /// Antwort auf die Riss-Frage gewählt (Ergebnis kommt vom Server)
+    func pick(_ index: Int) { question?.picked = index }
 
     init(boss: BossView) {
         bossId = boss.id
@@ -118,7 +162,16 @@ nonisolated final class BossFightModel: ObservableObject {
         guard message.bossId == bossId else { return }
         switch message {
         case let .state(_, hp, maxHp, phase, fighters, minFighters, fightEndsAt):
-            if hp < self.hp { hitFlash += 1 }
+            let change = hp - self.hp
+            if change != 0, change == shownChange {
+                shownChange = nil
+                if change < 0 { hitFlash += 1 }
+            } else if change < 0 {
+                hitFlash += 1
+                pop("-\(-change)", x: Double.random(in: 0.3...0.7))
+            } else if change > 0, stage == .rage || stage == .fight {
+                pop("+\(change)", heal: true, x: Double.random(in: 0.3...0.7))
+            }
             self.hp = hp
             self.maxHp = maxHp
             self.fighters = fighters
@@ -137,6 +190,7 @@ nonisolated final class BossFightModel: ObservableObject {
             if phase == "RAGE" { stage = .rage; finaleDeadline = nil }
         case let .slam(_, ms):
             slamDeadline = now.addingTimeInterval(Double(ms) / 1000)
+            slamCount += 1
         case let .finale(_, seconds):
             stage = .finale
             slamDeadline = nil
@@ -147,6 +201,19 @@ nonisolated final class BossFightModel: ObservableObject {
             finaleDeadline = nil
         case let .rejected(_, reason):
             stage = .rejected(reason)
+        case let .weakspot(_, spotId, x, y, ms):
+            weakSpot = WeakSpot(id: spotId, x: x, y: y, deadline: now.addingTimeInterval(Double(ms) / 1000))
+        case let .crit(_, spotId, damage):
+            if weakSpot?.id == spotId { weakSpot = nil }
+            shownChange = -damage
+            pop("KRITISCH -\(damage)", big: true, x: 0.5)
+        case let .question(_, questionId, text, options, ms):
+            question = Question(id: questionId, text: text, options: options, deadline: now.addingTimeInterval(Double(ms) / 1000))
+        case let .answerResult(_, questionId, correct, correctIndex, damage):
+            guard question?.id == questionId else { return }
+            question?.correctIndex = correctIndex
+            shownChange = -damage
+            pop(correct ? "RICHTIG -\(damage)" : "FALSCH +\(-damage)", big: true, heal: !correct)
         }
     }
 }
@@ -177,15 +244,25 @@ struct BossMapPin: View {
                 .background(Capsule().fill(Color.black.opacity(0.7)))
 
                 ZStack(alignment: .bottom) {
+                    // Lichtsäule aus dem Riss – von Weitem auf der Karte zu sehen
+                    LinearGradient(colors: [RiftBoss.purple.opacity(0.0), RiftBoss.purple.opacity(0.55 + 0.25 * pulse), RiftBoss.purple.opacity(0.9)],
+                                   startPoint: .top, endPoint: .bottom)
+                        .frame(width: 46 + 10 * pulse, height: 300)
+                        .blur(radius: 8)
+                        .offset(y: -20)
                     Ellipse()
-                        .fill(RadialGradient(colors: [RiftBoss.purple.opacity(0.9), .clear], center: .center, startRadius: 2, endRadius: 70))
-                        .frame(width: 140 + 20 * pulse, height: (140 + 20 * pulse) * MapVibe.groundRatio)
+                        .fill(RadialGradient(colors: [RiftBoss.purple.opacity(0.95), .clear], center: .center, startRadius: 2, endRadius: 95))
+                        .frame(width: 190 + 24 * pulse, height: (190 + 24 * pulse) * MapVibe.groundRatio)
+                    Ellipse()
+                        .stroke(Color.challengrYellow.opacity(0.8), lineWidth: 3)
+                        .frame(width: 120, height: 120 * MapVibe.groundRatio)
                     if let frame = MapSprites.frame(sheet: RiftBoss.mapSheetName, at: reduceMotion ? 0 : Int(t * 8)) {
                         Image(uiImage: frame)
                             .resizable()
                             .scaledToFit()
-                            .frame(height: 150)
-                            .offset(y: -8)
+                            .frame(height: 215)
+                            .shadow(color: RiftBoss.purple, radius: 12)
+                            .offset(y: -10)
                     }
                 }
             }

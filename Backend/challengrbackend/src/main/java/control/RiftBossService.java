@@ -2,6 +2,7 @@ package control;
 
 import boundary.GameSocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import entity.Challenges;
 import entity.CustomSpot;
 import entity.Landmark;
 import entity.Player;
@@ -33,13 +34,18 @@ public class RiftBossService {
     public enum Phase { WAITING, FIGHT, RAGE, FINALE, DEFEATED, ESCAPED }
 
     public static final String NAME = "Riss-Wächter";
-    public static final int MAX_HP = 5000;
-    /** Heilung pro Sekunde während des Kampfs (nicht im Finale) */
-    public static final int HEAL_PER_SECOND = 12;
+    public static final int MAX_HP = 6000;
     /** Schaden pro Treffer-Einheit (Tippen/Schütteln) */
     public static final int DAMAGE_PER_UNIT = 3;
-    /** Höchstens so viel Schaden pro Spieler und Sekunde – allein bleibt man unter der Heilung + Zeit */
-    public static final int MAX_DPS = 36;
+    /** Höchstens so viel Tipp-/Schüttel-Schaden pro Spieler und Sekunde */
+    public static final int MAX_DPS = 20;
+    /** Heilung nur zur Strafe: pro Kämpfer, der dem Riss-Schlag nicht ausweicht */
+    public static final int SLAM_HEAL = 150;
+    /** Schwachstelle rechtzeitig getroffen (kritischer Treffer, pro Spieler einmal) */
+    public static final int WEAKSPOT_DAMAGE = 120;
+    /** Riss-Frage richtig beantwortet / falsch beantwortet (heilt ihn) */
+    public static final int QUESTION_DAMAGE = 200;
+    public static final int QUESTION_HEAL = 100;
     public static final int MIN_FIGHTERS = 2;
     /** Wie nah man am Boss sein muss, um beizutreten */
     public static final double JOIN_RADIUS_M = 250;
@@ -55,6 +61,13 @@ public class RiftBossService {
     public static volatile Duration slamWindow = Duration.ofMillis(1500);
     public static volatile Duration finaleWindow = Duration.ofSeconds(6);
     public static volatile Duration debuffTime = Duration.ofSeconds(10);
+    public static volatile Duration weakspotEvery = Duration.ofSeconds(10);
+    public static volatile Duration weakspotWindow = Duration.ofMillis(2000);
+    public static volatile Duration questionEvery = Duration.ofSeconds(30);
+    public static volatile Duration questionWindow = Duration.ofSeconds(8);
+
+    /** Riss-Frage: Wissensfrage aus dem Quiz-Pool */
+    record Question(long id, String text, List<String> options, int correct) {}
 
     public static final class Boss {
         public final long id;
@@ -74,6 +87,14 @@ public class RiftBossService {
         final Map<String, long[]> dpsWindow = new ConcurrentHashMap<>();   // [Sekunde, Schaden in dieser Sekunde]
         final Map<String, Instant> debuffUntil = new ConcurrentHashMap<>();
         Instant endedAt;
+        // Schwachstelle
+        long weakId;
+        Instant weakDeadline, nextWeakAt;
+        final Set<String> weakHit = ConcurrentHashMap.newKeySet();
+        // Riss-Frage
+        Question question;
+        Instant questionDeadline, nextQuestionAt;
+        final Set<String> answered = ConcurrentHashMap.newKeySet();
 
         Boss(long id, String place, double latitude, double longitude, Instant now) {
             this.id = id;
@@ -103,6 +124,9 @@ public class RiftBossService {
 
     @Inject
     LandmarkService landmarks;
+
+    @Inject
+    ChallengeRepository challenges;
 
     // ---------------------------------------------------------
     // Auftauchen
@@ -190,6 +214,8 @@ public class RiftBossService {
                 Instant now = Instant.now();
                 b.phase = Phase.FIGHT;
                 b.fightEndsAt = now.plus(fightTime);
+                b.nextWeakAt = now.plusSeconds(5);
+                b.nextQuestionAt = now.plusSeconds(20);
             }
         }
         broadcastState(b);
@@ -215,6 +241,53 @@ public class RiftBossService {
             b.damage.merge(playerId, dmg, Integer::sum);
             finished = updatePhase(b, Instant.now());
         }
+        if (finished) end(b); else broadcastState(b);
+    }
+
+    /** Schwachstelle getroffen – nur die aktuelle, rechtzeitig und einmal pro Spieler. */
+    public void crit(long bossId, String playerId, long spotId) {
+        Boss b = bosses.get(bossId);
+        if (b == null) return;
+        boolean finished;
+        int dmg;
+        synchronized (b) {
+            Instant now = Instant.now();
+            if (!b.fighters.contains(playerId) || (b.phase != Phase.FIGHT && b.phase != Phase.RAGE)
+                    || spotId != b.weakId || b.weakDeadline == null || now.isAfter(b.weakDeadline) || !b.weakHit.add(playerId)) return;
+            dmg = WEAKSPOT_DAMAGE;
+            Instant debuff = b.debuffUntil.get(playerId);
+            if (debuff != null && debuff.isAfter(now)) dmg /= 2;
+            b.hp = Math.max(0, b.hp - dmg);
+            b.damage.merge(playerId, dmg, Integer::sum);
+            finished = updatePhase(b, now);
+        }
+        send(playerId, Map.of("type", "boss-crit", "bossId", b.id, "spotId", spotId, "damage", dmg));
+        if (finished) end(b); else broadcastState(b);
+    }
+
+    /** Antwort auf die Riss-Frage: richtig = Schaden, falsch = er heilt sich. Einmal pro Spieler. */
+    public void answer(long bossId, String playerId, long questionId, int index) {
+        Boss b = bosses.get(bossId);
+        if (b == null) return;
+        boolean finished, correct;
+        int correctIndex;
+        synchronized (b) {
+            Instant now = Instant.now();
+            Question q = b.question;
+            if (!b.fighters.contains(playerId) || q == null || q.id() != questionId || b.questionDeadline == null
+                    || now.isAfter(b.questionDeadline) || !b.answered.add(playerId)) return;
+            correct = index == q.correct();
+            correctIndex = q.correct();
+            if (correct) {
+                b.hp = Math.max(0, b.hp - QUESTION_DAMAGE);
+                b.damage.merge(playerId, QUESTION_DAMAGE, Integer::sum);
+            } else {
+                b.hp = Math.min(MAX_HP, b.hp + QUESTION_HEAL);
+            }
+            finished = updatePhase(b, now);
+        }
+        send(playerId, Map.of("type", "boss-answer-result", "bossId", b.id, "questionId", questionId,
+                "correct", correct, "correctIndex", correctIndex, "damage", correct ? QUESTION_DAMAGE : -QUESTION_HEAL));
         if (finished) end(b); else broadcastState(b);
     }
 
@@ -272,15 +345,36 @@ public class RiftBossService {
                 if (b.fightEndsAt.isBefore(now) && b.phase != Phase.FINALE) {
                     escaped = true;
                 } else if (b.phase == Phase.FIGHT || b.phase == Phase.RAGE) {
-                    b.hp = Math.min(MAX_HP, b.hp + HEAL_PER_SECOND);
-                    changed = true;
+                    // keine Heilung von selbst – nur als Strafe (Riss-Schlag nicht ausgewichen, falsche Riss-Frage)
+                    if (b.nextWeakAt != null && !now.isBefore(b.nextWeakAt)) {
+                        b.weakId++;
+                        b.weakHit.clear();
+                        b.weakDeadline = now.plus(weakspotWindow);
+                        b.nextWeakAt = now.plus(weakspotEvery);
+                        // Position auf dem Boss (0…1), nicht ganz am Rand
+                        sendAll(b, Map.of("type", "boss-weakspot", "bossId", b.id, "spotId", b.weakId,
+                                "x", 0.25 + random.nextDouble() * 0.5, "y", 0.2 + random.nextDouble() * 0.55,
+                                "ms", weakspotWindow.toMillis()));
+                    }
+                    if (b.nextQuestionAt != null && !now.isBefore(b.nextQuestionAt)) {
+                        b.nextQuestionAt = now.plus(questionEvery);
+                        Question q = randomQuestion();
+                        if (q != null) {
+                            b.question = q;
+                            b.answered.clear();
+                            b.questionDeadline = now.plus(questionWindow);
+                            sendAll(b, Map.of("type", "boss-question", "bossId", b.id, "questionId", q.id(), "text", q.text(),
+                                    "options", q.options(), "ms", questionWindow.toMillis()));
+                        }
+                    }
                     if (b.phase == Phase.RAGE) {
                         if (b.slamDeadline != null && !now.isBefore(b.slamDeadline)) {
                             // wer nicht ausgewichen ist: halber Schaden für eine Weile, der Boss heilt sich
                             for (String f : b.fighters) {
                                 if (!b.dodged.contains(f)) {
                                     b.debuffUntil.put(f, now.plus(debuffTime));
-                                    b.hp = Math.min(MAX_HP, b.hp + 80);
+                                    b.hp = Math.min(MAX_HP, b.hp + SLAM_HEAL);
+                                    changed = true;
                                 }
                             }
                             b.slamDeadline = null;
@@ -311,6 +405,24 @@ public class RiftBossService {
             if (defeated) end(b);
             else if (escaped) escape(b);
             else if (changed) broadcastState(b);
+        }
+    }
+
+    /** Zufällige Wissensfrage mit vier Antworten (wie in der Quiz-Show) */
+    Question randomQuestion() {
+        try {
+            return QuarkusTransaction.requiringNew().call(() -> {
+                List<Challenges> pool = challenges.findChallengesByKat(BattleMode.KNOWLEDGE_CATEGORY).stream()
+                        .filter(c -> c.getCorrectIndex() != null && c.getOptionA() != null)
+                        .toList();
+                if (pool.isEmpty()) return null;
+                Challenges c = pool.get(random.nextInt(pool.size()));
+                return new Question(c.getId(), c.getText(),
+                        List.of(c.getOptionA(), c.getOptionB(), c.getOptionC(), c.getOptionD()), c.getCorrectIndex());
+            });
+        } catch (Exception e) {
+            System.out.println("Riss-Frage nicht geladen: " + e.getMessage());
+            return null;
         }
     }
 

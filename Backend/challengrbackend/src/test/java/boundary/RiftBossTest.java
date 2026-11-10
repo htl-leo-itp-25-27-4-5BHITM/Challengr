@@ -37,6 +37,9 @@ class RiftBossTest {
     @Inject
     PlayerRepository players;
 
+    @Inject
+    control.ChallengeRepository challengeRepository;
+
     private final List<WsTestClient> clients = new ArrayList<>();
 
     private void place(String id, double lat, double lon) {
@@ -157,11 +160,67 @@ class RiftBossTest {
         assertTrue(rejected.get("reason").asText().contains("zu weit"));
     }
 
+    private long startFight(WsTestClient a, WsTestClient b) throws Exception {
+        long id = bosses.spawn("Brunnen", LAT, LON).id;
+        a.send(join(id));
+        a.await("boss-state", 5);
+        b.send(join(id));
+        assertNotNull(b.awaitMatching("boss-state", n -> "FIGHT".equals(n.get("phase").asText()), 5));
+        return id;
+    }
+
     @Test
-    void soloDamageCannotOutpaceTheHealing() {
-        // Höchstschaden eines Spielers pro Sekunde abzüglich Heilung über die ganze Kampfzeit < Lebenspunkte
-        long seconds = RiftBossService.fightTime.toSeconds();
-        assertTrue((RiftBossService.MAX_DPS - RiftBossService.HEAL_PER_SECOND) * seconds < RiftBossService.MAX_HP);
+    void healsOnlyAsPunishment() throws Exception {
+        WsTestClient a = connect(A), b = connect(B);
+        long id = startFight(a, b);
+        bosses.setHp(id, 4000);
+        bosses.tick(Instant.now().plusSeconds(2));
+        assertEquals(4000, bosses.find(id).orElseThrow().hp(), "keine Heilung von selbst");
+        // Raserei: Riss-Schlag – B weicht nicht aus → Strafheilung
+        bosses.setHp(id, RiftBossService.MAX_HP / 2);
+        int before = bosses.find(id).orElseThrow().hp();
+        bosses.tick(Instant.now().plusSeconds(4));
+        assertNotNull(a.await("boss-slam", 5));
+        a.send("{\"type\":\"boss-dodge\",\"bossId\":" + id + "}");
+        Thread.sleep(200);
+        bosses.tick(Instant.now().plusSeconds(6));
+        int after = bosses.find(id).orElseThrow().hp();
+        assertEquals(before + RiftBossService.SLAM_HEAL, after, "nur B hat den Schlag verpasst");
+    }
+
+    @Test
+    void weakSpotsAndRiftQuestions() throws Exception {
+        WsTestClient a = connect(A), b = connect(B);
+        long id = startFight(a, b);
+        int hp0 = bosses.find(id).orElseThrow().hp();
+
+        bosses.tick(Instant.now().plusSeconds(6));
+        JsonNode spot = a.await("boss-weakspot", 5);
+        assertNotNull(spot, "Schwachstelle leuchtet auf");
+        long spotId = spot.get("spotId").asLong();
+        a.send("{\"type\":\"boss-crit\",\"bossId\":" + id + ",\"spotId\":" + spotId + "}");
+        assertEquals(RiftBossService.WEAKSPOT_DAMAGE, a.await("boss-crit", 5).get("damage").asInt());
+        a.send("{\"type\":\"boss-crit\",\"bossId\":" + id + ",\"spotId\":" + spotId + "}");
+        Thread.sleep(200);
+        assertEquals(hp0 - RiftBossService.WEAKSPOT_DAMAGE, bosses.find(id).orElseThrow().hp(), "pro Spieler nur einmal");
+
+        bosses.tick(Instant.now().plusSeconds(21));
+        JsonNode q = a.await("boss-question", 5);
+        assertNotNull(q, "Riss-Frage kommt");
+        assertEquals(4, q.get("options").size());
+        assertNotNull(b.await("boss-question", 5));
+        long qid = q.get("questionId").asLong();
+        int correct = QuarkusTransaction.requiringNew().call(() -> challengeRepository.findById(qid).getCorrectIndex());
+        a.send("{\"type\":\"boss-answer\",\"bossId\":" + id + ",\"questionId\":" + qid + ",\"index\":" + correct + "}");
+        JsonNode ra = a.await("boss-answer-result", 5);
+        assertTrue(ra.get("correct").asBoolean());
+        b.send("{\"type\":\"boss-answer\",\"bossId\":" + id + ",\"questionId\":" + qid + ",\"index\":" + ((correct + 1) % 4) + "}");
+        JsonNode rb = b.await("boss-answer-result", 5);
+        assertFalse(rb.get("correct").asBoolean());
+        assertEquals(correct, rb.get("correctIndex").asInt());
+        Thread.sleep(200);
+        assertEquals(hp0 - RiftBossService.WEAKSPOT_DAMAGE - RiftBossService.QUESTION_DAMAGE + RiftBossService.QUESTION_HEAL,
+                bosses.find(id).orElseThrow().hp());
     }
 
     @Test

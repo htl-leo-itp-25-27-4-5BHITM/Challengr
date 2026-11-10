@@ -34,6 +34,15 @@ struct BossFightView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
 
+                // offen bis zum Ablauf, nach der Antwort noch kurz mit Auflösung
+                if let q = model.question, q.deadline.addingTimeInterval(q.correctIndex == nil ? 0 : 1.5) > now, isFighting {
+                    VStack {
+                        Spacer()
+                        questionCard(q, now: now)
+                            .padding(.bottom, 40)
+                    }
+                }
+
                 if let deadline = model.slamDeadline, deadline > now, dodgedSlam != deadline, isFighting {
                     slamOverlay(deadline: deadline, now: now)
                 }
@@ -127,19 +136,102 @@ struct BossFightView: View {
         .accessibilityLabel("Lebenspunkte \(model.hp) von \(model.maxHp)")
     }
 
+    /// 3D-Boss mit Schwachstelle zum Antippen und schwebenden Schadenszahlen darüber.
     private func bossImage(now: Date) -> some View {
-        let t = now.timeIntervalSinceReferenceDate
-        let wobble = reduceMotion ? 0 : (model.stage == .rage ? sin(t * 30) * 4 : sin(t * 2) * 2)
-        return Image(RiftBoss.imageName)
-            .resizable()
-            .scaledToFit()
-            .frame(maxHeight: 300)
-            .offset(x: wobble)
-            .scaleEffect(model.stage == .finale ? 1.08 : 1)
-            .shadow(color: (model.stage == .rage ? Color.red : RiftBoss.purple).opacity(0.8), radius: 30)
-            .modifier(HitShake(trigger: model.hitFlash))
-            .animation(reduceMotion ? nil : .linear(duration: 0.3), value: model.hitFlash)
-            .opacity(model.stage == .escaped ? 0.25 : 1)
+        GeometryReader { geo in
+            ZStack {
+                Boss3DView(hitCount: model.hitFlash, slamCount: model.slamCount,
+                           rage: model.stage == .rage, finale: model.stage == .finale)
+                    .shadow(color: (model.stage == .rage ? Color.red : RiftBoss.purple).opacity(0.7), radius: 30)
+                    .opacity(model.stage == .escaped ? 0.25 : 1)
+
+                if let spot = model.weakSpot, spot.deadline > now, isFighting {
+                    weakSpotButton(spot, now: now)
+                        .position(x: geo.size.width * spot.x, y: geo.size.height * spot.y)
+                }
+
+                ForEach(model.pops) { pop in
+                    DamagePopView(pop: pop)
+                        .position(x: geo.size.width * pop.x, y: geo.size.height * 0.35)
+                }
+            }
+        }
+        .frame(height: 320)
+        .modifier(HitShake(trigger: model.slamCount * 3))
+        .animation(reduceMotion ? nil : .linear(duration: 0.4), value: model.slamCount)
+    }
+
+    /// Leuchtender Kristall – wer ihn rechtzeitig trifft, landet einen kritischen Treffer.
+    private func weakSpotButton(_ spot: BossFightModel.WeakSpot, now: Date) -> some View {
+        let pulse = reduceMotion ? 1 : 1 + 0.15 * sin(now.timeIntervalSinceReferenceDate * 12)
+        return Button {
+            socket.sendBossCrit(bossId: model.bossId, spotId: spot.id)
+            model.weakSpot = nil
+        } label: {
+            ZStack {
+                Circle().fill(Color.challengrYellow.opacity(0.35)).frame(width: 84, height: 84)
+                Image(systemName: "sparkle")
+                    .font(.system(size: 40, weight: .black))
+                    .foregroundStyle(.white)
+                    .shadow(color: .challengrYellow, radius: 12)
+            }
+            .scaleEffect(pulse)
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.impact(weight: .medium), trigger: spot.id)
+        .accessibilityLabel("Schwachstelle – jetzt antippen")
+    }
+
+    /// Riss-Frage: vier Antworten, kurze Zeit. Richtig schadet ihm, falsch heilt ihn.
+    private func questionCard(_ q: BossFightModel.Question, now: Date) -> some View {
+        VStack(spacing: 10) {
+            HStack {
+                Label("RISS-FRAGE", systemImage: "questionmark.diamond.fill")
+                    .font(.system(size: 12, weight: .black, design: .rounded))
+                    .foregroundColor(RiftBoss.purple)
+                Spacer()
+                Text("\(max(0, Int(ceil(q.deadline.timeIntervalSince(now))))) s")
+                    .font(.system(size: 13, weight: .black, design: .monospaced))
+                    .foregroundColor(.white)
+            }
+            Text(q.text)
+                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .multilineTextAlignment(.center)
+                .foregroundColor(.white)
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                ForEach(Array(q.options.enumerated()), id: \.offset) { index, option in
+                    Button {
+                        guard q.picked == nil else { return }
+                        model.pick(index)
+                        socket.sendBossAnswer(bossId: model.bossId, questionId: q.id, index: index)
+                    } label: {
+                        Text(option)
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .padding(6)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(answerColor(q, index)))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 20).fill(Color.black.opacity(0.85)))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(RiftBoss.purple, lineWidth: 2))
+        .padding(.horizontal, 16)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    private func answerColor(_ q: BossFightModel.Question, _ index: Int) -> Color {
+        if let correct = q.correctIndex {
+            if index == correct { return .challengrGreen }
+            if index == q.picked { return .challengrRed }
+        } else if index == q.picked {
+            return RiftBoss.purple
+        }
+        return Color.white.opacity(0.12)
     }
 
     @ViewBuilder
@@ -308,5 +400,23 @@ nonisolated final class BossShakeCounter: ObservableObject {
 
     func stop() {
         motion.stopAccelerometerUpdates()
+    }
+}
+
+/// Schadenszahl, die nach oben schwebt und verblasst.
+private struct DamagePopView: View {
+    let pop: BossFightModel.Pop
+    @State private var risen = false
+
+    var body: some View {
+        Text(pop.text)
+            .font(.system(size: pop.big ? 28 : 18, weight: .black, design: .rounded))
+            .foregroundColor(pop.heal ? .challengrGreen : pop.big ? .challengrYellow : .white)
+            .shadow(color: .black.opacity(0.8), radius: 3)
+            .offset(y: risen ? -90 : 0)
+            .opacity(risen ? 0 : 1)
+            .scaleEffect(risen ? 1.2 : 0.8)
+            .onAppear { withAnimation(.easeOut(duration: 1.2)) { risen = true } }
+            .allowsHitTesting(false)
     }
 }

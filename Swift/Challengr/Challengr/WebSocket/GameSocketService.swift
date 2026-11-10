@@ -258,6 +258,10 @@ final class GameSocketService: ObservableObject {
     /// units = Tipper/Schüttler seit dem letzten Paket
     func sendBossHit(bossId: Int64, units: Int) { send(json: ["type": "boss-hit", "bossId": bossId, "units": units]) }
     func sendBossDodge(bossId: Int64) { send(json: ["type": "boss-dodge", "bossId": bossId]) }
+    func sendBossCrit(bossId: Int64, spotId: Int64) { send(json: ["type": "boss-crit", "bossId": bossId, "spotId": spotId]) }
+    func sendBossAnswer(bossId: Int64, questionId: Int64, index: Int) {
+        send(json: ["type": "boss-answer", "bossId": bossId, "questionId": questionId, "index": index])
+    }
     func sendBossScream(bossId: Int64, db: Double) { send(json: ["type": "boss-scream", "bossId": bossId, "db": db]) }
 
     /// Antwort in der Quiz-Show (Runde ab 1).

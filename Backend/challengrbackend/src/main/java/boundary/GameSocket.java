@@ -235,6 +235,8 @@ public class GameSocket {
                 case "boss-join"            -> handleBossJoin(msg, playerId);
                 case "boss-hit"             -> riftBoss.hit(requireLong(msg, "bossId"), playerId, msg.path("units").asInt(0));
                 case "boss-dodge"           -> riftBoss.dodge(requireLong(msg, "bossId"), playerId);
+                case "boss-crit"            -> riftBoss.crit(requireLong(msg, "bossId"), playerId, msg.path("spotId").asLong(-1));
+                case "boss-answer"          -> riftBoss.answer(requireLong(msg, "bossId"), playerId, msg.path("questionId").asLong(-1), msg.path("index").asInt(-1));
                 case "boss-scream"          -> riftBoss.scream(requireLong(msg, "bossId"), playerId, msg.path("db").asDouble(-60));
                 default -> sendError(session, "Unknown type");
             }
