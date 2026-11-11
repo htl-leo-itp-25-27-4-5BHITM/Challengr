@@ -19,7 +19,7 @@ Stand: Build vom 11.11.2026 (Kopfgeld, Chaos-Stunde, Figuren-Stufen, Riss-Wächt
 
 🛡️ **Neue Skins:** **Kopfgeldjäger** für Käpt'n Rex (kassiere 5 Kopfgelder) und **Kristall-Ragnar** (sammle 60 Riss-Splitter). Schau im Figuren-Editor im Tab **Skins** nach.
 
-🌌 **Riss-Wächter (neu überarbeitet):** Er heilt sich nur noch, wenn ihr Fehler macht. Tippt die **leuchtenden Schwachstellen** für kritische Treffer an und beantwortet die **Riss-Fragen** – falsch heilt ihn! Im Kampf jetzt in 3D, auf der Karte mit Lichtsäule.  An öffentlichen Orten kann ein riesiger Boss auftauchen, aber nur, wenn mindestens 2 Spieler in der Nähe sind. Geh zum Ort (Beitritt nur im Umkreis von 250 m), kämpft zu zweit: tippen und schütteln, dem Riss-Schlag ausweichen und am Ende **gemeinsam laut schreien**. Allein ist er nicht zu schaffen! Belohnung: Riss-Splitter und Coins.
+🌌 **Riss-Wächter:** An öffentlichen Orten kann ein riesiger Boss auftauchen – erkennbar an der violetten Lichtsäule auf der Karte. Geh hin (Beitritt im Umkreis von 250 m) und kämpft mindestens zu zweit: tippen und schütteln, die **leuchtenden Schwachstellen** für kritische Treffer antippen, **Riss-Fragen** beantworten (falsch heilt ihn!), dem Riss-Schlag ausweichen und am Ende **gemeinsam laut schreien**. Er heilt sich nur, wenn ihr Fehler macht – allein ist er nicht zu schaffen. Belohnung: Riss-Splitter und Coins.
 ⚠️ Bitte nur an öffentlichen Plätzen und nie auf der Straße spielen. Achte auf den Verkehr und schau beim Gehen nicht nur aufs Handy!
 
 🤫 **Es gibt ein Geheimnis …** Eine geheime Figur wartet darauf, gefunden zu werden. Im Figuren-Editor siehst du sie nur als „???“.
@@ -31,7 +31,7 @@ Stand: Build vom 11.11.2026 (Kopfgeld, Chaos-Stunde, Figuren-Stufen, Riss-Wächt
 - Siehst du ein Kopfgeld auf der Karte? Was passiert, wenn du den Spieler besiegst?
 - Wirkt die Chaos-Stunde und die Regel wie beschrieben?
 - Steigt deine Figur nach Siegen auf? Sieht die Aura gut aus?
-- Riss-Wächter: Kommt ihr zu zweit rein, klappen Tippen, Ausweichen und Schreien?
+- Riss-Wächter: Kommt ihr zu zweit rein? Klappen Tippen, Schwachstellen, Riss-Fragen, Ausweichen und Schreien? Siehst du den Boss in 3D?
 - Findest du das Geheimnis?
 
 Fehler oder Ideen? Mach einen Screenshot und schick ihn über TestFlight („Feedback senden“).
