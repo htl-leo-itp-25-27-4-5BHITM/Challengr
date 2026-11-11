@@ -1,7 +1,7 @@
 # Text für TestFlight → „Was soll getestet werden?“
 
 Für App Store Connect → TestFlight → Build → *Testinformationen* (max. 4000 Zeichen).
-Stand: Build vom 08.11.2026 (Kopfgeld, Chaos-Stunde, Figuren-Stufen, Riss-Wächter). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
+Stand: Build vom 11.11.2026 (Kopfgeld, Chaos-Stunde, Figuren-Stufen, Riss-Wächter). Bei neuen Builds oben die Neuerungen ergänzen, Erledigtes kürzen.
 
 ---
 
@@ -19,7 +19,7 @@ Stand: Build vom 08.11.2026 (Kopfgeld, Chaos-Stunde, Figuren-Stufen, Riss-Wächt
 
 🛡️ **Neue Skins:** **Kopfgeldjäger** für Käpt'n Rex (kassiere 5 Kopfgelder) und **Kristall-Ragnar** (sammle 60 Riss-Splitter). Schau im Figuren-Editor im Tab **Skins** nach.
 
-🌌 **Riss-Wächter:** An öffentlichen Orten kann ein riesiger Boss auftauchen, aber nur, wenn mindestens 2 Spieler in der Nähe sind. Geh zum Ort (Beitritt nur im Umkreis von 250 m), kämpft zu zweit: tippen und schütteln, dem Riss-Schlag ausweichen und am Ende **gemeinsam laut schreien**. Allein ist er nicht zu schaffen! Belohnung: Riss-Splitter und Coins.
+🌌 **Riss-Wächter (neu überarbeitet):** Er heilt sich nur noch, wenn ihr Fehler macht. Tippt die **leuchtenden Schwachstellen** für kritische Treffer an und beantwortet die **Riss-Fragen** – falsch heilt ihn! Im Kampf jetzt in 3D, auf der Karte mit Lichtsäule.  An öffentlichen Orten kann ein riesiger Boss auftauchen, aber nur, wenn mindestens 2 Spieler in der Nähe sind. Geh zum Ort (Beitritt nur im Umkreis von 250 m), kämpft zu zweit: tippen und schütteln, dem Riss-Schlag ausweichen und am Ende **gemeinsam laut schreien**. Allein ist er nicht zu schaffen! Belohnung: Riss-Splitter und Coins.
 ⚠️ Bitte nur an öffentlichen Plätzen und nie auf der Straße spielen. Achte auf den Verkehr und schau beim Gehen nicht nur aufs Handy!
 
 🤫 **Es gibt ein Geheimnis …** Eine geheime Figur wartet darauf, gefunden zu werden. Im Figuren-Editor siehst du sie nur als „???“.
